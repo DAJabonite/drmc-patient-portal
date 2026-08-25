@@ -1,31 +1,452 @@
-html {
-  font-size: 14px;
+/* ============================================================================
+   DRMC Patient Portal — design system
+   Bootstrap 5.3 theming via --bs-* CSS custom properties (no Sass recompile).
+   Every token below is documented in /docs/design.md. Do not invent colors.
+   ========================================================================== */
+
+:root {
+    /* Brand palette (observed from real DRMC references) */
+    --drmc-primary: #0d4e86;
+    --drmc-primary-dark: #0c4c82;
+    --drmc-primary-deep: #002973;          /* nav active / focus */
+    --drmc-govph-bar: #3b3b3f;             /* GOVPH utility bar & footer */
+    --drmc-band: #f7f7f7;                  /* secondary nav band / card bg */
+    --drmc-border: #dee2e6;
+
+    /* Bootstrap 5.3 theme overrides */
+    --bs-primary: #0d4e86;
+    --bs-primary-rgb: 13, 78, 134;
+    --bs-link-color: #0d4e86;
+    --bs-link-color-rgb: 13, 78, 134;
+    --bs-link-hover-color: #0c4c82;
+    --bs-link-hover-color-rgb: 12, 76, 130;
+    --bs-body-color: #212529;
+    --bs-body-bg: #ffffff;
+    --bs-secondary-bg: #f7f7f7;
+    --bs-secondary-color: #495057;
+    --bs-secondary-color-rgb: 73, 80, 87;
+    --bs-border-color: #dee2e6;
+    --bs-focus-ring-color: rgba(13, 78, 134, 0.4);
 }
 
-@media (min-width: 768px) {
-  html {
+html {
     font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
 }
 
 body {
-  margin-bottom: 60px;
+    background-color: #ffffff;
+    color: #212529;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
+/* Focus visibility for keyboard users (WCAG 2.2 AA) */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.btn:focus-visible {
+    outline: 3px solid var(--drmc-primary-deep);
+    outline-offset: 2px;
+    border-radius: 2px;
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+/* Skip-to-content link */
+.skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 2000;
+    background: #fff;
+    color: var(--drmc-primary-deep);
+    padding: 0.6rem 1rem;
+    font-weight: 600;
+}
+.skip-link:focus {
+    left: 0;
+    top: 0;
+}
+
+/* ============================================================================
+   GOVPH utility bar (dark navy)
+   ========================================================================== */
+.govph-bar {
+    background-color: var(--drmc-govph-bar);
+    color: #fff;
+    font-size: 0.85rem;
+    padding: 0.35rem 0;
+}
+.govph-bar a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+.govph-bar a:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+.govph-bar .govph-time {
+    white-space: nowrap;
+}
+
+/* ============================================================================
+   Masthead (brand blue)
+   ========================================================================== */
+.masthead {
+    background-color: var(--drmc-primary);
+    color: #fff;
+    padding: 1rem 0;
+}
+.masthead .masthead-seal {
+    height: 88px;              /* <=100px per GWTD */
+    width: auto;
+    max-width: 100%;
+}
+.masthead .masthead-brand {
+    color: #fff;
+    text-decoration: none;
+    display: inline-flex;
+    flex-direction: column;
+}
+.masthead .masthead-meta {
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: 0.01em;
+    color: #dbe6f2;
+}
+.masthead .masthead-wordmark {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    max-height: 64px;
+    margin: 0.25rem 0 0;
+}
+.masthead .masthead-location {
+    font-size: 0.78rem;
+    color: #cfe0f0;
+    line-height: 1.2;
+}
+.masthead .masthead-tagline {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #eef4fb;
+    letter-spacing: 0.02em;
+}
+
+/* ============================================================================
+   Primary nav
+   ========================================================================== */
+.navbar-drmc {
+    background-color: #ffffff;
+    border-bottom: 1px solid var(--drmc-border);
+}
+.navbar-drmc .nav-link {
+    color: #212529;
+    font-weight: 500;
+    padding: 0.75rem 1rem;
+}
+.navbar-drmc .nav-link:hover {
+    color: var(--drmc-primary);
+}
+.navbar-drmc .nav-link.active {
+    color: var(--drmc-primary-deep);
+    font-weight: 700;
+    box-shadow: inset 0 -3px 0 var(--drmc-primary-deep);
+}
+.navbar-drmc .navbar-toggler {
+    border-color: rgba(13, 78, 134, 0.3);
+}
+.navbar-drmc .navbar-brand {
+    font-weight: 700;
+    color: var(--drmc-primary);
+}
+
+/* Secondary nav (light band) */
+.secondary-nav {
+    background-color: var(--drmc-band);
+    border-bottom: 1px solid var(--drmc-border);
+}
+.secondary-nav .nav-link {
+    color: #495057;
+    font-size: 0.9rem;
+    padding: 0.7rem 0.9rem;
+    font-weight: 500;
+}
+.secondary-nav .nav-link:hover {
+    color: var(--drmc-primary);
+    background-color: #fff;
+}
+.secondary-nav .nav-link.active {
+    color: var(--drmc-primary-deep);
+    font-weight: 700;
+    background-color: #ffffff;
+    box-shadow: inset 0 -3px 0 var(--drmc-primary-deep);
+}
+
+/* ============================================================================
+   Buttons
+   ========================================================================== */
+.btn-drmc {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--drmc-primary);
+    --bs-btn-border-color: var(--drmc-primary);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--drmc-primary-dark);
+    --bs-btn-hover-border-color: var(--drmc-primary-dark);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--drmc-primary-deep);
+    --bs-btn-active-border-color: var(--drmc-primary-deep);
+    --bs-btn-disabled-color: #fff;
+    --bs-btn-disabled-bg: var(--drmc-primary);
+    --bs-btn-disabled-border-color: var(--drmc-primary);
+    --bs-btn-focus-shadow-rgb: 13, 78, 134;
+}
+.btn-outline-drmc {
+    --bs-btn-color: var(--drmc-primary);
+    --bs-btn-border-color: var(--drmc-primary);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--drmc-primary);
+    --bs-btn-hover-border-color: var(--drmc-primary);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--drmc-primary-deep);
+    --bs-btn-active-border-color: var(--drmc-primary-deep);
+}
+
+/* ============================================================================
+   Hero (Landing)
+   ========================================================================== */
+.hero {
+    background: linear-gradient(160deg, var(--drmc-primary) 0%, var(--drmc-primary-deep) 100%);
+    color: #fff;
+    padding: 4rem 0;
+}
+.hero h1 {
+    font-weight: 700;
+    font-size: clamp(1.9rem, 4vw, 3rem);
+    letter-spacing: -0.01em;
+}
+.hero .lead {
+    color: #e6eef7;
+    font-size: clamp(1.05rem, 2vw, 1.3rem);
+    max-width: 60ch;
+}
+.hero .hero-fact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem 2rem;
+    margin-top: 1.75rem;
+}
+.hero .hero-fact .fact {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    font-size: 0.98rem;
+}
+.hero .hero-fact .fact svg {
+    flex: 0 0 auto;
+    color: #cfe0f0;
+    margin-top: 0.1rem;
+}
+
+/* ============================================================================
+   Sections and cards
+   ========================================================================== */
+.section {
+    padding: 3.5rem 0;
+}
+.section-title {
+    font-weight: 700;
+    color: var(--drmc-primary);
+    letter-spacing: -0.01em;
+    margin-bottom: 0.25rem;
+}
+.section-subtitle {
+    color: #6c757d;
+    margin-bottom: 1.75rem;
+}
+
+.card {
+    border: 1px solid var(--drmc-border);
+    border-radius: 0.5rem;
+    transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+.card:hover {
+    box-shadow: 0 0.5rem 1.25rem rgba(13, 78, 134, 0.12);
+    transform: translateY(-2px);
+}
+.card .card-title {
+    font-weight: 700;
+    color: var(--drmc-primary);
+}
+.card .card-text {
+    color: #495057;
+}
+.card-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 0.5rem;
+    background-color: rgba(13, 78, 134, 0.1);
+    color: var(--drmc-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+}
+.department-card .card-icon {
+    background-color: rgba(13, 78, 134, 0.08);
+}
+
+/* Dashboard summary cards */
+.summary-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+}
+.summary-card .card-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+}
+.summary-card .card-value {
+    font-size: 2.1rem;
+    font-weight: 700;
+    color: var(--drmc-primary);
+    line-height: 1.1;
+}
+.summary-card .card-footer {
+    margin-top: auto;
+    background: none;
+    border-top: 1px solid var(--drmc-border);
+    padding: 0.75rem 1rem 1rem;
+}
+.summary-card a {
+    color: var(--drmc-primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+.summary-card a:hover {
+    text-decoration: underline;
+}
+
+/* ============================================================================
+   Forms (Register / Login)
+   ========================================================================== */
+.auth-page {
+    background-color: var(--drmc-band);
+    padding: 3rem 0;
+    min-height: 70vh;
+}
+.auth-card {
+    max-width: 460px;
+    margin: 0 auto;
+    background: #fff;
+    border: 1px solid var(--drmc-border);
+    border-radius: 0.6rem;
+    padding: 2rem 2rem 1.5rem;
+    box-shadow: 0 0.5rem 1.5rem rgba(13, 78, 134, 0.08);
+}
+.auth-card h2 {
+    font-weight: 700;
+    color: var(--drmc-primary);
+    margin-bottom: 0.25rem;
+}
+.auth-card .auth-subtitle {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+}
+.form-label {
+    font-weight: 600;
+    color: #212529;
+}
+.form-control,
+.form-select {
+    padding: 0.6rem 0.75rem;
+    border-radius: 0.4rem;
+}
+.input-validation-error {
+    border-color: #b02a37 !important;
+}
+.field-validation-error {
+    color: #b02a37;
+    font-size: 0.88rem;
+    display: block;
+    margin-top: 0.25rem;
+}
+.text-danger {
+    color: #b02a37 !important;
+}
+
+/* ============================================================================
+   Auth layout accents
+   ========================================================================== */
+.auth-brandbar {
+    background-color: var(--drmc-primary);
+    color: #fff;
+    padding: 1.25rem 0;
+}
+.auth-brandbar .auth-logo {
+    height: 56px;
+    width: auto;
+}
+
+/* ============================================================================
+   Footer (GOVPH-standard)
+   ========================================================================== */
+.footer-drmc {
+    background-color: var(--drmc-govph-bar);
+    color: #e6e6e6;
+    padding: 3rem 0 1.5rem;
+    font-size: 0.92rem;
+}
+.footer-drmc h6 {
+    color: #fff;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+}
+.footer-drmc a {
+    color: #d0d0d0;
+    text-decoration: none;
+}
+.footer-drmc a:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+.footer-drmc .footer-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.footer-drmc .footer-list li {
+    margin-bottom: 0.5rem;
+}
+.footer-drmc .footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    font-size: 0.85rem;
+    color: #b9b9b9;
+}
+.footer-seal {
+    height: 54px;
+    width: auto;
+    margin-bottom: 0.75rem;
+}
+
+/* Utility */
+.text-primary-drmc { color: var(--drmc-primary) !important; }
+.bg-primary-drmc { background-color: var(--drmc-primary) !important; }
+.bg-band { background-color: var(--drmc-band) !important; }
+.rounded-4 { border-radius: 0.75rem !important; }
+
+@media (max-width: 767.98px) {
+    .masthead .masthead-seal { height: 64px; }
+    .masthead .masthead-wordmark { max-height: 44px; }
+    .hero { padding: 2.5rem 0; }
+    .section { padding: 2.5rem 0; }
+    .govph-bar .container { flex-wrap: wrap; }
 }

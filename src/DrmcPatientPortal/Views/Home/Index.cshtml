@@ -1,8 +1,90 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model LandingViewModel
+@{
+    ViewData["Title"] = "Davao Regional Medical Center";
+    var signedIn = User.Identity?.IsAuthenticated ?? false;
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<!-- Hero -->
+<section class="hero">
+    <div class="container">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8">
+                <h1>Davao Regional Medical Center</h1>
+                <p class="lead mb-0">Caring for Life, Changing Lives.</p>
+                <p class="mt-2 text-white-50" style="color:#cfe0f0 !important;">
+                    A Level III DOH Teaching and Training Hospital with a 1,000-bed capacity,
+                    serving the communities of Davao del Norte, Davao del Sur, Davao Oriental, and Davao de Oro.
+                </p>
+                <div class="hero-fact">
+                    <div class="fact">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zM8 2.5A1.5 1.5 0 0 1 9.5 1h3A1.5 1.5 0 0 1 14 2.5v3A1.5 1.5 0 0 1 12.5 7h-3A1.5 1.5 0 0 1 8 5.5v-3zM1 8.5A1.5 1.5 0 0 1 2.5 7h3A1.5 1.5 0 0 1 7 8.5v3A1.5 1.5 0 0 1 5.5 13h-3A1.5 1.5 0 0 1 1 11.5v-3zM8 8.5A1.5 1.5 0 0 1 9.5 7h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 8 11.5v-3z"/></svg>
+                        <span>Level III DOH Teaching &amp; Training Hospital</span>
+                    </div>
+                    <div class="fact">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M8 1a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM3 9.5A1.5 1.5 0 0 1 4.5 8h7A1.5 1.5 0 0 1 13 9.5c0 2.5-1.5 4.5-5 4.5S3 12 3 9.5z"/></svg>
+                        <span>1,000-bed capacity</span>
+                    </div>
+                    <div class="fact">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0zM4.5 8a3.5 3.5 0 1 0 7 0 3.5 3.5 0 0 0-7 0z"/></svg>
+                        <span>Brgy. Apokon, Tagum City, Davao del Norte</span>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap gap-3 mt-4">
+                    @if (!signedIn)
+                    {
+                        <a class="btn btn-light btn-lg fw-semibold" asp-area="Identity" asp-page="/Account/Register">Create an account</a>
+                        <a class="btn btn-outline-light btn-lg" asp-area="Identity" asp-page="/Account/Login">Sign in</a>
+                    }
+                    else
+                    {
+                        <a class="btn btn-light btn-lg fw-semibold" asp-controller="Patient" asp-action="Home">Go to my dashboard</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Clinical Departments -->
+<section class="section">
+    <div class="container">
+        <h2 class="section-title">@Model.DepartmentHeading</h2>
+        <p class="section-subtitle">@Model.DepartmentSubheading</p>
+        <div class="row g-4">
+            @foreach (var dept in Model.Departments)
+            {
+                <div class="col-sm-6 col-md-4 col-lg-3">
+                    <div class="card department-card h-100">
+                        <div class="card-body">
+                            <span class="card-icon"><partial name="_DepartmentIcon" model="dept.Icon" /></span>
+                            <h3 class="h6 card-title mb-2">@dept.Name</h3>
+                            <p class="card-text small mb-0">@dept.Description</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- Patient portal CTA -->
+<section class="section bg-band">
+    <div class="container text-center">
+        <h2 class="section-title">Your patient portal</h2>
+        <p class="section-subtitle mx-auto" style="max-width: 640px;">
+            Access your appointment information, recent results, and messages in one place.
+            Register for an account or sign in to get started.
+        </p>
+        <div class="d-flex justify-content-center flex-wrap gap-3">
+            @if (!signedIn)
+            {
+                <a class="btn btn-drmc btn-lg px-4" asp-area="Identity" asp-page="/Account/Register">Register</a>
+                <a class="btn btn-outline-drmc btn-lg px-4" asp-area="Identity" asp-page="/Account/Login">Log in</a>
+            }
+            else
+            {
+                <a class="btn btn-drmc btn-lg px-4" asp-controller="Patient" asp-action="Home">Go to my dashboard</a>
+            }
+        </div>
+    </div>
+</section>

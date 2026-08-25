@@ -1,0 +1,38 @@
+@model string
+@{
+    // Render an inline SVG icon for a clinical department (no external icon font,
+    // so it works offline and in the sandboxed preview).
+    var icon = (Model ?? string.Empty).ToLowerInvariant();
+    var fill = "currentColor";
+    var desc = icon;
+}
+@switch (icon)
+{
+    case "stethoscope":
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="@fill" viewBox="0 0 16 16" role="img" aria-label="Stethoscope"><path d="M2 1a1 1 0 0 1 1-1h2a1 1 0 0 1 0 2H3v5a3 3 0 0 0 6 0V3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v6a5 5 0 0 1-10 0V1z"/><path d="M12 8.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/><path d="M12 9a1 1 0 0 1 1 1 2.5 2.5 0 0 1-5 0 1 1 0 0 1 .5-.87 4 4 0 0 0 4 0z"/></svg>
+        break;
+    case "scalpel":
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="@fill" viewBox="0 0 16 16" role="img" aria-label="Scalpel"><path d="M10.5 1.5a1.5 1.5 0 0 1 2.12 2.12l-6.7 6.7-3.18 3.19 3.18-.86 6.7-6.7a1.5 1.5 0 0 1 0 0z"/><path d="M1.5 14.5v-1l.5-1.5 1.5-.5 1.5.5L4 14.5z" opacity=".6"/></svg>
+        break;
+    case "baby":
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="@fill" viewBox="0 0 16 16" role="img" aria-label="Baby"><path d="M8 1a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/><path d="M8 6.5a5.5 5.5 0 0 0-5 3.5c0 2.5 2 4.5 5 4.5s5-2 5-4.5a5.5 5.5 0 0 0-5-3.5z"/></svg>
+        break;
+    case "venus":
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="@fill" viewBox="0 0 16 16" role="img" aria-label="Women's health"><path d="M7 1a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/><path d="M7 5.5a5.5 5.5 0 1 0 1 0h1a1 1 0 0 0 .5 0 5.5 5.5 0 1 0-2.5 0z"/><path d="M6.5 6.5H7v3H6.5a.5.5 0 0 0-.5.5v.5H6a.5.5 0 0 0-.5.5v.5A.5.5 0 0 0 6 12h1v1h2v1H8v1H6v1H4v-2h1v-1H4v-2h1v-1H4a.5.5 0 0 1-.5-.5v-.5a.5.5 0 0 1 .5-.5h1V6.5h1.5z" opacity=".6"/></svg>
+        break;
+    case "house-user":
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="@fill" viewBox="0 0 16 16" role="img" aria-label="Family and community medicine"><path d="M8 1 1 7h2v7h3v-4h4v4h3V7h2L8 1z"/><circle cx="8" cy="9" r="1.5"/><path d="M8 7.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z" opacity=".5"/></svg>
+        break;
+    case "syringe":
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="@fill" viewBox="0 0 16 16" role="img" aria-label="Anesthesiology"><path d="M9.5 1.5 7 4l1 1 1-1 1 1 1.5-1.5a.7.7 0 0 0-1-1z"/><path d="M4 12 11 5l1.5 1.5L5.5 13.5 4 12z"/><path d="M3 13l-1 1 .5.5L1.5 15l1 .5L4 14l-1-1z" opacity=".6"/></svg>
+        break;
+    case "eye":
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="@fill" viewBox="0 0 16 16" role="img" aria-label="Ophthalmology"><path d="M8 3C4.5 3 1.7 5.6.7 8c1 2.4 3.8 5 7.3 5s6.3-2.6 7.3-5C14.3 5.6 11.5 3 8 3zm0 8a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/><circle cx="8" cy="8" r="1.5"/></svg>
+        break;
+    case "scan":
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="@fill" viewBox="0 0 16 16" role="img" aria-label="Radiology"><path d="M2 3h12v9H2z" fill="none" stroke="@fill" stroke-width="1.4"/><path d="M4 10h8M4 8h8M4 6h5"/><circle cx="11" cy="6" r="1"/></svg>
+        break;
+    default:
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="@fill" viewBox="0 0 16 16" role="img" aria-label="Department"><path d="M8 1a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM8 3a5 5 0 0 1 5 5H3a5 5 0 0 1 5-5z"/></svg>
+        break;
+}
