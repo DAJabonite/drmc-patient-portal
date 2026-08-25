@@ -1,63 +1,149 @@
 @page
 @model RegisterModel
 @{
-    ViewData["Title"] = "Create an account";
+    ViewData["Title"] = "Create your account";
 }
 
 <div class="auth-page">
     <div class="container">
-        <div class="auth-card">
-            <a class="d-inline-flex align-items-center gap-2 mb-3 text-decoration-none" asp-controller="Home" asp-action="Index">
-                <img src="~/images/drmc-seal.png" alt="" style="height:40px;width:auto;" />
-                <span class="fw-semibold text-primary-drmc">Davao Regional Medical Center</span>
-            </a>
-            <h2>Create an account</h2>
-            <p class="auth-subtitle">Join the DRMC patient portal to view your care information.</p>
+        <div class="auth-card auth-card-wide">
+            <div class="text-center mb-4">
+                <a class="d-inline-flex align-items-center gap-2 mb-2 text-decoration-none" asp-controller="Home" asp-action="Index">
+                    <img src="~/images/drmc-seal.png" alt="DRMC Seal" style="height:46px;width:auto;" />
+                    <span class="fw-bold fs-5 text-primary-drmc">Davao Regional Medical Center</span>
+                </a>
+                <h1 class="h3 fw-bold text-primary-drmc mb-1">Create your account</h1>
+                <p class="text-muted small mb-0">One registration for appointments, care information, and request tracking.</p>
+            </div>
 
             <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
 
-                <div class="mb-3">
-                    <label asp-for="Input.FullName" class="form-label">Full name</label>
-                    <input asp-for="Input.FullName" class="form-control" autocomplete="name" aria-required="true" />
-                    <span asp-validation-for="Input.FullName" class="field-validation-error"></span>
+                <div class="row g-3">
+                    <!-- Names -->
+                    <div class="col-md-4">
+                        <label asp-for="Input.FirstName" class="form-label">First name</label>
+                        <input asp-for="Input.FirstName" class="form-control" autocomplete="given-name" placeholder="Juan" />
+                        <span asp-validation-for="Input.FirstName" class="field-validation-error"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Input.MiddleName" class="form-label">Middle <span class="fw-normal text-muted">(opt.)</span></label>
+                        <input asp-for="Input.MiddleName" class="form-control" autocomplete="additional-name" placeholder="Santos" />
+                        <span asp-validation-for="Input.MiddleName" class="field-validation-error"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Input.LastName" class="form-label">Last name</label>
+                        <input asp-for="Input.LastName" class="form-control" autocomplete="family-name" placeholder="Dela Cruz" />
+                        <span asp-validation-for="Input.LastName" class="field-validation-error"></span>
+                    </div>
+
+                    <!-- Email & Mobile -->
+                    <div class="col-md-6">
+                        <label asp-for="Input.Email" class="form-label">Email address</label>
+                        <input asp-for="Input.Email" class="form-control" type="email" autocomplete="email" placeholder="you@example.com" />
+                        <span asp-validation-for="Input.Email" class="field-validation-error"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Input.Mobile" class="form-label">Mobile number</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted fw-semibold">+63</span>
+                            <input asp-for="Input.Mobile" class="form-control" inputmode="numeric" autocomplete="tel-national" placeholder="9175550123" />
+                        </div>
+                        <span asp-validation-for="Input.Mobile" class="field-validation-error"></span>
+                        <div class="form-text small text-muted">10-digit number starting with 9 (e.g. 9171234567).</div>
+                    </div>
+
+                    <!-- Government ID -->
+                    <div class="col-md-6">
+                        <label asp-for="Input.IdType" class="form-label">Valid government ID</label>
+                        <select asp-for="Input.IdType" class="form-select">
+                            <option value="" disabled selected>Choose your ID...</option>
+                            <option value="Philippine National ID (PhilSys)">Philippine National ID (PhilSys)</option>
+                            <option value="PhilHealth ID">PhilHealth ID</option>
+                            <option value="Driver's License">Driver's License</option>
+                            <option value="Philippine Passport">Philippine Passport</option>
+                            <option value="SSS / GSIS ID">SSS / GSIS ID</option>
+                            <option value="UMID">UMID</option>
+                            <option value="PRC ID">PRC ID</option>
+                            <option value="Postal ID">Postal ID</option>
+                        </select>
+                        <span asp-validation-for="Input.IdType" class="field-validation-error"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Input.IdNumber" class="form-label">ID number</label>
+                        <input asp-for="Input.IdNumber" class="form-control" placeholder="As printed on your ID" />
+                        <span asp-validation-for="Input.IdNumber" class="field-validation-error"></span>
+                    </div>
+
+                    <!-- Passwords -->
+                    <div class="col-md-6">
+                        <label asp-for="Input.Password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <input asp-for="Input.Password" class="form-control" type="password" id="regPassword" autocomplete="new-password" placeholder="At least 8 characters" />
+                            <button class="btn btn-outline-secondary pw-toggle" type="button" aria-controls="regPassword" aria-pressed="false" aria-label="Show password">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Input.Password" class="field-validation-error"></span>
+                        <div class="form-text small text-muted">Must include uppercase, lowercase, number, and symbol.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Input.ConfirmPassword" class="form-label">Confirm password</label>
+                        <div class="input-group">
+                            <input asp-for="Input.ConfirmPassword" class="form-control" type="password" id="regConfirmPassword" autocomplete="new-password" placeholder="Re-enter your password" />
+                            <button class="btn btn-outline-secondary pw-toggle" type="button" aria-controls="regConfirmPassword" aria-pressed="false" aria-label="Show password">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Input.ConfirmPassword" class="field-validation-error"></span>
+                    </div>
+
+                    <!-- Privacy Consent -->
+                    <div class="col-12">
+                        <div class="form-check p-3 rounded-2 bg-light border">
+                            <input asp-for="Input.PrivacyConsent" class="form-check-input ms-0 me-2" type="checkbox" id="regConsent" />
+                            <label class="form-check-label small" for="regConsent">
+                                I consent to the collection and use of my personal information under
+                                <a asp-controller="Home" asp-action="Privacy" target="_blank" class="fw-semibold text-primary-drmc">RA 10173 (Data Privacy Act)</a>.
+                            </label>
+                        </div>
+                        <span asp-validation-for="Input.PrivacyConsent" class="field-validation-error"></span>
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="col-12 mt-4">
+                        <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-drmc fw-bold py-2">Create account</button>
+                    </div>
+
+                    <!-- Sign in link -->
+                    <div class="col-12 text-center mt-3">
+                        <p class="small text-muted mb-0">
+                            Already have an account? <a asp-page="./Login" asp-route-returnUrl="@Url.Content("~/Patient/Home")" class="fw-semibold text-primary-drmc">Sign in</a>
+                        </p>
+                    </div>
                 </div>
-
-                <div class="mb-3">
-                    <label asp-for="Input.Email" class="form-label">Email</label>
-                    <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" />
-                    <span asp-validation-for="Input.Email" class="field-validation-error"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Input.ContactNumber" class="form-label">Contact number</label>
-                    <input asp-for="Input.ContactNumber" class="form-control" autocomplete="tel" aria-required="true" />
-                    <span asp-validation-for="Input.ContactNumber" class="field-validation-error"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Input.Password" class="form-label">Password</label>
-                    <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" />
-                    <span asp-validation-for="Input.Password" class="field-validation-error"></span>
-                    <div class="form-text" id="password-hint">At least 8 characters, with an uppercase, lowercase, number, and symbol.</div>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Input.ConfirmPassword" class="form-label">Confirm password</label>
-                    <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" />
-                    <span asp-validation-for="Input.ConfirmPassword" class="field-validation-error"></span>
-                </div>
-
-                <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-drmc">Create account</button>
             </form>
-
-            <p class="mt-3 mb-0 small text-muted">
-                Already have an account? <a asp-page="./Login" asp-route-returnUrl="@Url.Content("~/Patient/Home")">Sign in</a>
-            </p>
         </div>
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.querySelectorAll('.pw-toggle').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var targetId = btn.getAttribute('aria-controls');
+                var input = document.getElementById(targetId);
+                if (!input) return;
+                var isPassword = input.getAttribute('type') === 'password';
+                input.setAttribute('type', isPassword ? 'text' : 'password');
+                btn.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
+                btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+                var icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+                }
+            });
+        });
+    </script>
 }

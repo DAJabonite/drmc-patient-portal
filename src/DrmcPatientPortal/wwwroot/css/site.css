@@ -1,58 +1,68 @@
 /* ============================================================================
-   DRMC Patient Portal — design system
-   Bootstrap 5.3 theming via --bs-* CSS custom properties (no Sass recompile).
-   Every token below is documented in /docs/design.md. Do not invent colors.
+   DRMC Patient Portal — Design System & Custom Tokens
+   Bootstrap 5.3 Theme Overrides & Accessible Styles (WCAG 2.2 AA)
+   Consistent Brand Palette: #0e4e87
    ========================================================================== */
 
 :root {
-    /* Brand palette (observed from real DRMC references) */
-    --drmc-primary: #0d4e86;
-    --drmc-primary-dark: #0c4c82;
-    --drmc-primary-deep: #002973;          /* nav active / focus */
-    --drmc-govph-bar: #3b3b3f;             /* GOVPH utility bar & footer */
-    --drmc-band: #f7f7f7;                  /* secondary nav band / card bg */
+    /* Brand Palette */
+    --drmc-primary: #0e4e87;
+    --drmc-primary-dark: #093963;
+    --drmc-primary-deep: #062846;
+    --drmc-primary-light: #1665ad;
+    --drmc-accent-gold: #f2b32a;
+    --drmc-accent-gold-dark: #b8810e;
+    --drmc-govph-bar: #23272e;
+    --drmc-band: #f4f7fa;
     --drmc-border: #dee2e6;
+    --drmc-surface: #ffffff;
 
-    /* Bootstrap 5.3 theme overrides */
-    --bs-primary: #0d4e86;
-    --bs-primary-rgb: 13, 78, 134;
-    --bs-link-color: #0d4e86;
-    --bs-link-color-rgb: 13, 78, 134;
-    --bs-link-hover-color: #0c4c82;
-    --bs-link-hover-color-rgb: 12, 76, 130;
+    /* Bootstrap 5.3 Theme Overrides */
+    --bs-primary: #0e4e87;
+    --bs-primary-rgb: 14, 78, 135;
+    --bs-link-color: #0e4e87;
+    --bs-link-color-rgb: 14, 78, 135;
+    --bs-link-hover-color: #093963;
+    --bs-link-hover-color-rgb: 9, 57, 99;
     --bs-body-color: #212529;
-    --bs-body-bg: #ffffff;
-    --bs-secondary-bg: #f7f7f7;
+    --bs-body-bg: #f9fbfd;
+    --bs-secondary-bg: #f4f7fa;
     --bs-secondary-color: #495057;
     --bs-secondary-color-rgb: 73, 80, 87;
     --bs-border-color: #dee2e6;
-    --bs-focus-ring-color: rgba(13, 78, 134, 0.4);
+    --bs-focus-ring-color: rgba(14, 78, 135, 0.25);
 }
 
 html {
     font-size: 16px;
+    scroll-behavior: smooth;
 }
 
 body {
-    background-color: #ffffff;
+    background-color: var(--bs-body-bg);
     color: #212529;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
-/* Focus visibility for keyboard users (WCAG 2.2 AA) */
+main {
+    flex: 1 0 auto;
+}
+
+/* Accessibility Focus States */
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 .btn:focus-visible {
-    outline: 3px solid var(--drmc-primary-deep);
+    outline: 3px solid var(--drmc-accent-gold);
     outline-offset: 2px;
-    border-radius: 2px;
 }
 
-/* Skip-to-content link */
 .skip-link {
     position: absolute;
     left: -9999px;
@@ -60,357 +70,270 @@ textarea:focus-visible,
     z-index: 2000;
     background: #fff;
     color: var(--drmc-primary-deep);
-    padding: 0.6rem 1rem;
-    font-weight: 600;
+    padding: 0.6rem 1.2rem;
+    font-weight: 700;
+    border-radius: 0 0 0.5rem 0.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 .skip-link:focus {
-    left: 0;
+    left: 1rem;
     top: 0;
 }
 
 /* ============================================================================
-   GOVPH utility bar (dark navy)
-   ========================================================================== */
-.govph-bar {
-    background-color: var(--drmc-govph-bar);
-    color: #fff;
-    font-size: 0.85rem;
-    padding: 0.35rem 0;
-}
-.govph-bar a {
-    color: #fff;
-    text-decoration: none;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-}
-.govph-bar a:hover {
-    color: #fff;
-    text-decoration: underline;
-}
-.govph-bar .govph-time {
-    min-width: 0;
-    text-align: right;
-}
-
-/* ============================================================================
-   Masthead (brand blue)
+   Masthead Header with Integrated PST Clock
    ========================================================================== */
 .masthead {
-    background-color: var(--drmc-primary);
+    background-color: #0e4e87;
     color: #fff;
-    padding: 1.25rem 0;
+    padding: 1.1rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
-/* The complete real DRMC lockup: DRMC seal + chrome wordmark + DOH seal + metadata. */
 .masthead .masthead-lockup {
-    display: block;
-    width: 100%;
-    max-width: 1190px;
-    height: auto;
-    /* keep within GWTD 100px logo height, but let it breathe */
-    max-height: 96px;
+    max-height: 72px;
+    width: auto;
     object-fit: contain;
+    display: block;
 }
-.masthead .masthead-tagline {
-    font-size: 0.9rem;
+.pst-clock {
+    font-size: 0.84rem;
+    line-height: 1.35;
+    color: #ffffff;
+}
+.pst-clock .pst-label {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+.pst-clock .pst-time {
+    font-size: 0.86rem;
+    color: #ffffff;
     font-weight: 600;
-    color: #eef4fb;
-    letter-spacing: 0.02em;
 }
 
 /* ============================================================================
-   Primary nav
+   Primary Navbar
    ========================================================================== */
 .navbar-drmc {
     background-color: #ffffff;
-    border-bottom: 1px solid var(--drmc-border);
+    border-bottom: 2px solid #e2e8f0;
+    padding: 0.6rem 0;
+    box-shadow: 0 2px 10px rgba(14, 78, 135, 0.05);
 }
 .navbar-drmc .nav-link {
-    color: #212529;
-    font-weight: 500;
-    padding: 0.75rem 1rem;
-    white-space: nowrap;
+    color: #334155;
+    font-weight: 600;
+    font-size: 0.92rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    transition: all 0.15s ease;
 }
 .navbar-drmc .nav-link:hover {
     color: var(--drmc-primary);
+    background-color: #f1f5f9;
 }
-.navbar-drmc .nav-link.active {
-    color: var(--drmc-primary-deep);
-    font-weight: 700;
-    box-shadow: inset 0 -3px 0 var(--drmc-primary-deep);
-}
-.navbar-drmc .navbar-toggler {
-    border-color: rgba(13, 78, 134, 0.3);
+.nav-divider {
+    width: 1px;
+    height: 28px;
+    background-color: #cbd5e1;
+    margin: 0 1rem;
 }
 .navbar-drmc .navbar-brand {
-    font-weight: 700;
     color: var(--drmc-primary);
+    font-weight: 700;
+    font-size: 1.2rem;
 }
 
-/* Secondary nav (light band) */
-.secondary-nav {
-    background-color: var(--drmc-band);
-    border-bottom: 1px solid var(--drmc-border);
+/* ============================================================================
+   Hero Section with DRMC Facade Background & Gradient Overlay
+   ========================================================================== */
+.hero-section {
+    position: relative;
+    background-image: 
+        linear-gradient(135deg, rgba(14, 78, 135, 0.94) 0%, rgba(14, 78, 135, 0.86) 45%, rgba(6, 40, 70, 0.92) 100%),
+        url('/images/drmc-facade.jpg');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    color: #ffffff;
+    padding: 1rem 0;
 }
-.secondary-nav .nav-link {
-    color: #495057;
-    font-size: 0.9rem;
-    padding: 0.7rem 0.9rem;
-    font-weight: 500;
-    white-space: nowrap;
+.hero-section .container {
+    position: relative;
+    z-index: 1;
 }
-.secondary-nav .nav-link:hover {
-    color: var(--drmc-primary);
-    background-color: #fff;
+.hero-title {
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
 }
-.secondary-nav .nav-link.active {
-    color: var(--drmc-primary-deep);
-    font-weight: 700;
+.hero-tagline {
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+}
+.hero-lead {
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+}
+.hero-chip {
+    background: rgba(255, 255, 255, 0.16) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.28) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.hero-service-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.8) !important;
+}
+.hover-bg-light:hover {
+    background-color: #f8fafc;
+}
+.service-icon-box {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ============================================================================
+   Department Cards & Icons
+   ========================================================================== */
+.department-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     background-color: #ffffff;
-    box-shadow: inset 0 -3px 0 var(--drmc-primary-deep);
 }
-
-/* ============================================================================
-   Buttons
-   ========================================================================== */
-/* Bootstrap 5.3 bakes default component colors at compile time, so overrides
-   of --bs-primary do NOT retheme .btn-primary / .nav-pills. We retheme them
-   explicitly so every reachable page (incl. Identity manage screens) matches. */
-.btn-primary {
-    --bs-btn-color: #fff;
-    --bs-btn-bg: var(--drmc-primary);
-    --bs-btn-border-color: var(--drmc-primary);
-    --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: var(--drmc-primary-dark);
-    --bs-btn-hover-border-color: var(--drmc-primary-dark);
-    --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: var(--drmc-primary-deep);
-    --bs-btn-active-border-color: var(--drmc-primary-deep);
-    --bs-btn-disabled-color: #fff;
-    --bs-btn-disabled-bg: var(--drmc-primary);
-    --bs-btn-disabled-border-color: var(--drmc-primary);
-    --bs-btn-focus-shadow-rgb: 13, 78, 134;
+.department-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 24px rgba(14, 78, 135, 0.08) !important;
 }
-.btn-outline-primary {
-    --bs-btn-color: var(--drmc-primary);
-    --bs-btn-border-color: var(--drmc-primary);
-    --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: var(--drmc-primary);
-    --bs-btn-hover-border-color: var(--drmc-primary);
-    --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: var(--drmc-primary-deep);
-    --bs-btn-active-border-color: var(--drmc-primary-deep);
-}
-.nav-pills {
-    --bs-nav-pills-link-active-bg: var(--drmc-primary);
-    --bs-nav-pills-link-active-color: #fff;
-}
-.text-bg-primary {
-    background-color: var(--drmc-primary) !important;
-    color: #fff !important;
-}
-
-.btn-drmc {
-    --bs-btn-color: #fff;
-    --bs-btn-bg: var(--drmc-primary);
-    --bs-btn-border-color: var(--drmc-primary);
-    --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: var(--drmc-primary-dark);
-    --bs-btn-hover-border-color: var(--drmc-primary-dark);
-    --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: var(--drmc-primary-deep);
-    --bs-btn-active-border-color: var(--drmc-primary-deep);
-    --bs-btn-disabled-color: #fff;
-    --bs-btn-disabled-bg: var(--drmc-primary);
-    --bs-btn-disabled-border-color: var(--drmc-primary);
-    --bs-btn-focus-shadow-rgb: 13, 78, 134;
-}
-.btn-outline-drmc {
-    --bs-btn-color: var(--drmc-primary);
-    --bs-btn-border-color: var(--drmc-primary);
-    --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: var(--drmc-primary);
-    --bs-btn-hover-border-color: var(--drmc-primary);
-    --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: var(--drmc-primary-deep);
-    --bs-btn-active-border-color: var(--drmc-primary-deep);
-}
-
-/* ============================================================================
-   Hero (Landing)
-   ========================================================================== */
-.hero {
-    background: linear-gradient(160deg, var(--drmc-primary) 0%, var(--drmc-primary-deep) 100%);
-    color: #fff;
-    padding: 4rem 0;
-}
-.hero h1 {
-    font-weight: 700;
-    font-size: clamp(1.9rem, 4vw, 3rem);
-    letter-spacing: -0.01em;
-}
-.hero .lead {
-    color: #e6eef7;
-    font-size: clamp(1.05rem, 2vw, 1.3rem);
-    max-width: 60ch;
-}
-.hero .hero-fact {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.25rem 2rem;
-    margin-top: 1.75rem;
-}
-.hero .hero-fact .fact {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.6rem;
-    font-size: 0.98rem;
-}
-.hero .hero-fact .fact svg {
-    flex: 0 0 auto;
-    color: #cfe0f0;
-    margin-top: 0.1rem;
-}
-
-/* ============================================================================
-   Sections and cards
-   ========================================================================== */
-.section {
-    padding: 3.5rem 0;
-}
-.section-title {
-    font-weight: 700;
-    color: var(--drmc-primary);
-    letter-spacing: -0.01em;
-    margin-bottom: 0.25rem;
-}
-.section-subtitle {
-    color: #6c757d;
-    margin-bottom: 1.75rem;
-}
-
-.card {
-    border: 1px solid var(--drmc-border);
-    border-radius: 0.5rem;
-    transition: box-shadow 0.18s ease, transform 0.18s ease;
-}
-.card:hover {
-    box-shadow: 0 0.5rem 1.25rem rgba(13, 78, 134, 0.12);
-    transform: translateY(-2px);
-}
-.card .card-title {
-    font-weight: 700;
-    color: var(--drmc-primary);
-}
-.card .card-text {
-    color: #495057;
-}
-.card-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 0.5rem;
-    background-color: rgba(13, 78, 134, 0.1);
+.card-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, #e4f0fa 0%, #d0e4f5 100%);
     color: var(--drmc-primary);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 0.75rem;
-}
-.department-card .card-icon {
-    background-color: rgba(13, 78, 134, 0.08);
-}
-
-/* Dashboard summary cards */
-.summary-card {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    background-color: #fff;
-}
-.summary-card .card-body {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-}
-.summary-card .card-value {
-    font-size: 2.1rem;
-    font-weight: 700;
-    color: var(--drmc-primary);
-    line-height: 1.1;
-}
-.summary-card .card-footer {
-    margin-top: auto;
-    background: none;
-    border-top: 1px solid var(--drmc-border);
-    padding: 0.75rem 1rem 1rem;
-}
-.summary-card a {
-    color: var(--drmc-primary);
-    font-weight: 600;
-    text-decoration: none;
-}
-.summary-card a:hover {
-    text-decoration: underline;
 }
 
 /* ============================================================================
-   Forms (Register / Login)
+   Dashboard Summary Cards & Hero
+   ========================================================================== */
+.dashboard-hero {
+    background: linear-gradient(135deg, #0e4e87 0%, #062846 100%);
+    padding: 2.25rem 0;
+}
+.dashboard-avatar {
+    width: 76px;
+    height: 76px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+    flex-shrink: 0;
+}
+.dashboard-avatar i {
+    font-size: 2.75rem;
+    color: var(--drmc-accent-gold, #f2b32a);
+    line-height: 1;
+}
+.summary-card {
+    background-color: #ffffff;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.summary-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(14, 78, 135, 0.06) !important;
+}
+
+/* ============================================================================
+   Forms & Authentication Cards (Register / Login)
    ========================================================================== */
 .auth-page {
-    background-color: var(--drmc-band);
-    padding: 3rem 0;
-    min-height: 70vh;
+    background-color: #f1f5f9;
+    padding: 3.5rem 0;
+    min-height: 75vh;
 }
 .auth-card {
-    max-width: 460px;
+    max-width: 480px;
     margin: 0 auto;
-    background: #fff;
+    background: #ffffff;
     border: 1px solid var(--drmc-border);
-    border-radius: 0.6rem;
-    padding: 2rem 2rem 1.5rem;
-    box-shadow: 0 0.5rem 1.5rem rgba(13, 78, 134, 0.08);
+    border-radius: 1rem;
+    padding: 2.25rem 2rem;
+    box-shadow: 0 10px 30px rgba(14, 78, 135, 0.06);
 }
-.auth-card h2 {
-    font-weight: 700;
-    color: var(--drmc-primary);
-    margin-bottom: 0.25rem;
-}
-.auth-card .auth-subtitle {
-    color: #6c757d;
-    margin-bottom: 1.5rem;
+.auth-card-wide {
+    max-width: 700px;
 }
 .form-label {
     font-weight: 600;
-    color: #212529;
+    color: #1e293b;
+    font-size: 0.88rem;
+    margin-bottom: 0.35rem;
 }
 .form-control,
 .form-select {
-    padding: 0.6rem 0.75rem;
-    border-radius: 0.4rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 0.5rem;
+    border-color: #cbd5e1;
+    font-size: 0.95rem;
 }
-.input-validation-error {
-    border-color: #b02a37 !important;
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--drmc-primary);
+    box-shadow: 0 0 0 0.2rem rgba(14, 78, 135, 0.15);
+}
+.input-group-text {
+    border-color: #cbd5e1;
+}
+.pw-toggle {
+    border-color: #cbd5e1;
+    color: #64748b;
+}
+.pw-toggle:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
 }
 .field-validation-error {
-    color: #b02a37;
-    font-size: 0.88rem;
+    color: #dc2626;
+    font-size: 0.82rem;
     display: block;
-    margin-top: 0.25rem;
+    margin-top: 0.3rem;
+    font-weight: 500;
 }
-.text-danger {
-    color: #b02a37 !important;
+.input-validation-error {
+    border-color: #dc2626 !important;
+}
+.auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: #94a3b8;
+}
+.auth-divider::before,
+.auth-divider::after {
+    content: "";
+    flex: 1;
+    border-top: 1px solid #e2e8f0;
 }
 
-/* ============================================================================
-   Auth layout accents
-   ========================================================================== */
-.auth-brandbar {
-    background-color: var(--drmc-primary);
-    color: #fff;
-    padding: 1.25rem 0;
+/* Identity Manage UI Styling */
+.nav-pills .nav-link {
+    color: #334155;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    padding: 0.65rem 1rem;
+    margin-bottom: 0.25rem;
 }
-.auth-brandbar .auth-logo {
-    height: 56px;
-    width: auto;
+.nav-pills .nav-link:hover {
+    background-color: #f1f5f9;
+    color: var(--drmc-primary);
+}
+.nav-pills .nav-link.active {
+    background-color: var(--drmc-primary);
+    color: #ffffff;
 }
 
 /* ============================================================================
@@ -457,16 +380,37 @@ textarea:focus-visible,
     margin-bottom: 0.75rem;
 }
 
-/* Utility */
+/* Utility Classes */
 .text-primary-drmc { color: var(--drmc-primary) !important; }
 .bg-primary-drmc { background-color: var(--drmc-primary) !important; }
-.bg-band { background-color: var(--drmc-band) !important; }
-.rounded-4 { border-radius: 0.75rem !important; }
+.btn-drmc {
+    background-color: var(--drmc-primary);
+    border-color: var(--drmc-primary);
+    color: #ffffff;
+    font-weight: 600;
+    transition: all 0.15s ease;
+}
+.btn-drmc:hover,
+.btn-drmc:focus {
+    background-color: var(--drmc-primary-dark);
+    border-color: var(--drmc-primary-dark);
+    color: #ffffff;
+}
+.btn-outline-drmc {
+    color: var(--drmc-primary);
+    border-color: var(--drmc-primary);
+    font-weight: 600;
+    transition: all 0.15s ease;
+}
+.btn-outline-drmc:hover,
+.btn-outline-drmc:focus {
+    background-color: var(--drmc-primary);
+    color: #ffffff;
+}
 
 @media (max-width: 767.98px) {
-    .masthead .masthead-seal { height: 64px; }
-    .masthead .masthead-wordmark { max-height: 44px; }
-    .hero { padding: 2.5rem 0; }
-    .section { padding: 2.5rem 0; }
-    .govph-bar .container { flex-wrap: wrap; }
+    .masthead .masthead-lockup { max-height: 52px; }
+    .hero-section { padding: 2rem 0; }
+    .auth-card-wide { padding: 1.5rem 1.25rem; }
+    .govph-bar .container { flex-direction: column; align-items: flex-start; }
 }

@@ -2,147 +2,280 @@
 @{
     ViewData["Title"] = "My Dashboard";
     var firstName = string.IsNullOrWhiteSpace(Model.FullName)
-        ? "there"
+        ? "Patient"
         : Model.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).First();
 }
 
-<!-- Dashboard header -->
-<section class="hero">
+<!-- Dashboard Header Banner -->
+<section class="dashboard-hero py-4 bg-primary-drmc text-white shadow-sm">
     <div class="container">
-        <h1 class="h2">Welcome, @firstName</h1>
-        <p class="lead mb-0">Here is a summary of your care at Davao Regional Medical Center.</p>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="dashboard-avatar">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    <h1 class="display-6 fw-bold mb-0">Welcome, @firstName!</h1>
+                    <span class="badge bg-success-subtle text-success px-3 py-1 fs-6 rounded-pill fw-semibold border border-success border-opacity-25">Active Patient</span>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <a asp-area="Identity" asp-page="/Account/Manage/Index" class="btn btn-outline-light d-inline-flex align-items-center gap-2 px-3 py-2 rounded-3 fw-semibold shadow-sm">
+                    <i class="bi bi-person-gear fs-6"></i> Account Settings
+                </a>
+            </div>
+        </div>
     </div>
 </section>
 
-<section class="section">
+<!-- Dashboard Main Cards Grid -->
+<section class="section py-5 bg-light">
     <div class="container">
         <div class="row g-4">
 
-            <!-- Next Appointment -->
+            <!-- Next Appointment Card -->
             <div class="col-md-6 col-lg-4">
-                <div class="card summary-card">
-                    <div class="card-body">
-                        <span class="card-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1A1.5 1.5 0 0 1 15 2.5v11A1.5 1.5 0 0 1 13.5 15h-11A1.5 1.5 0 0 1 1 13.5v-11A1.5 1.5 0 0 1 2.5 1h1V.5A.5.5 0 0 1 3.5 0zM1 5v8.5A.5.5 0 0 0 1.5 14h13a.5.5 0 0 0 .5-.5V5H1zm3-1.5h.5v1a.5.5 0 0 0 1 0v-1H10v1a.5.5 0 0 0 1 0v-1h.5V5H4v-1.5z"/></svg>
-                        </span>
-                        <h2 class="h6 card-title">Next Appointment</h2>
+                <div class="card summary-card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="card-icon bg-primary-subtle text-primary-drmc rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
+                                <i class="bi bi-calendar-event fs-5"></i>
+                            </span>
+                            @if (Model.NextAppointment is not null)
+                            {
+                                <span class="badge @(Model.NextAppointment.Status == "Confirmed" ? "bg-success-subtle text-success border border-success border-opacity-25" : "bg-warning-subtle text-warning-emphasis border border-warning border-opacity-25") px-3 py-1 rounded-pill fw-semibold">
+                                    @Model.NextAppointment.Status
+                                </span>
+                            }
+                        </div>
+
+                        <h2 class="h6 fw-bold text-dark mb-2">Next Appointment</h2>
+
                         @if (Model.NextAppointment is not null)
                         {
                             var appt = Model.NextAppointment;
-                            <p class="card-text mb-1">
-                                <strong class="text-primary-drmc">@appt.Department</strong><br />
-                                @appt.ScheduledAt.ToString("ddd, MMM d, yyyy") at @appt.ScheduledAt.ToString("h:mm tt")<br />
-                                <span class="small">@appt.ProviderName</span>
-                            </p>
-                            <span class="badge bg-primary-drmc rounded-pill">@appt.Status</span>
+                            <div class="p-3 bg-light rounded-3 mb-3 border">
+                                <span class="d-block fw-bold text-primary-drmc fs-6 mb-1">@appt.Department</span>
+                                <div class="small text-dark mb-1">
+                                    <i class="bi bi-clock me-1 text-muted"></i>
+                                    <strong>@appt.ScheduledAt.ToString("ddd, MMM d, yyyy")</strong> at @appt.ScheduledAt.ToString("h:mm tt")
+                                </div>
+                                <div class="small text-muted">
+                                    <i class="bi bi-person-badge me-1"></i> Attending: <span class="text-dark fw-medium">@appt.ProviderName</span>
+                                </div>
+                            </div>
                         }
                         else
                         {
-                            <p class="card-text">You have no upcoming appointments.</p>
+                            <div class="p-4 text-center text-muted bg-light rounded-3 mb-3">
+                                <i class="bi bi-calendar-x fs-3 d-block mb-1 text-secondary"></i>
+                                <span class="small">No upcoming appointments scheduled.</span>
+                            </div>
                         }
-                    </div>
-                    <div class="card-footer">
-                        <span class="small text-muted">Appointment booking is coming to this portal.</span>
+
+                        <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between">
+                            <span class="small text-muted">
+                                <i class="bi bi-info-circle me-1"></i> Online booking coming soon
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Recent Lab Results -->
+            <!-- Recent Lab Results Card -->
             <div class="col-md-6 col-lg-4">
-                <div class="card summary-card">
-                    <div class="card-body">
-                        <span class="card-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16"><path d="M5 1a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2h2a1 1 0 0 1 1 1v1H2V4a1 1 0 0 1 1-1h2V1zM2 7h12v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7zm5 1v2.5a.5.5 0 0 0 1 0V8h1a.5.5 0 0 0 0-1H7V6.5a.5.5 0 0 0-1 0V7H5.5a.5.5 0 0 0 0 1H7z"/></svg>
-                        </span>
-                        <h2 class="h6 card-title">Recent Lab Work</h2>
+                <div class="card summary-card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="card-icon bg-info-subtle text-info-emphasis rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
+                                <i class="bi bi-file-earmark-medical fs-5"></i>
+                            </span>
+                            <span class="badge bg-secondary-subtle text-secondary px-2 py-1 rounded-pill small">
+                                Diagnostics
+                            </span>
+                        </div>
+
+                        <h2 class="h6 fw-bold text-dark mb-2">Recent Lab Work</h2>
+
                         @if (Model.LabResults.Count > 0)
                         {
-                            @foreach (var lab in Model.LabResults.Take(2))
-                            {
-                                <p class="card-text mb-2">
-                                    <span class="fw-semibold">@lab.TestName</span><br />
-                                    <span class="small text-muted">@lab.CollectedAt.ToString("MMM d, yyyy")</span><br />
-                                    <span class="badge @(lab.Status == "Available" ? "bg-primary-drmc" : "bg-secondary") rounded-pill">@lab.Status</span>
-                                    <span class="small text-muted">— @lab.ResultSummary</span>
-                                </p>
-                            }
+                            <div class="d-flex flex-column gap-2 mb-3">
+                                @foreach (var lab in Model.LabResults.Take(2))
+                                {
+                                    <div class="p-2 rounded-3 bg-light border">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <strong class="small text-dark">@lab.TestName</strong>
+                                            <span class="badge @(lab.Status == "Available" ? "bg-success-subtle text-success" : "bg-warning-subtle text-warning-emphasis") rounded-pill small">
+                                                @lab.Status
+                                            </span>
+                                        </div>
+                                        <div class="small text-muted" style="font-size:0.8rem;">
+                                            Collected: @lab.CollectedAt.ToString("MMM d, yyyy") &middot; @lab.ResultSummary
+                                        </div>
+                                    </div>
+                                }
+                            </div>
                         }
                         else
                         {
-                            <p class="card-text">No recent lab results.</p>
+                            <div class="p-4 text-center text-muted bg-light rounded-3 mb-3">
+                                <i class="bi bi-folder-x fs-3 d-block mb-1 text-secondary"></i>
+                                <span class="small">No recent laboratory records found.</span>
+                            </div>
                         }
-                    </div>
-                    <div class="card-footer">
-                        <span class="small text-muted">Full results will be available soon.</span>
+
+                        <div class="mt-auto pt-3 border-top">
+                            <span class="small text-muted">
+                                <i class="bi bi-shield-lock me-1"></i> Full PDF lab reports coming soon
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Messages -->
+            <!-- Messages Card -->
             <div class="col-md-6 col-lg-4">
-                <div class="card summary-card">
-                    <div class="card-body">
-                        <span class="card-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16"><path d="M0 3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3zm2-.5a.5.5 0 0 0-.5.5v.2L8 7 14.5 3.2V3a.5.5 0 0 0-.5-.5H2zM14.5 5.2 8.5 8.6a.5.5 0 0 1-1 0L1.5 5.2V13a.5.5 0 0 0 .5.5h12a.5.5 0 0 0 .5-.5V5.2z"/></svg>
-                        </span>
-                        <h2 class="h6 card-title">Messages</h2>
-                        <div class="card-value mb-2">@Model.UnreadMessages</div>
-                        <p class="card-text small">
-                            @(Model.UnreadMessages == 1 ? "unread message" : "unread messages")
+                <div class="card summary-card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="card-icon bg-warning-subtle text-warning-emphasis rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
+                                <i class="bi bi-chat-dots fs-5"></i>
+                            </span>
+                            @if (Model.UnreadMessages > 0)
+                            {
+                                <span class="badge bg-danger rounded-pill px-2 py-1 small">
+                                    @Model.UnreadMessages New
+                                </span>
+                            }
+                        </div>
+
+                        <h2 class="h6 fw-bold text-dark mb-2">Messages &amp; Advisories</h2>
+
+                        <div class="p-3 bg-light rounded-3 mb-3 border">
+                            <div class="d-flex align-items-baseline gap-2 mb-2">
+                                <span class="display-6 fw-bold text-primary-drmc">@Model.UnreadMessages</span>
+                                <span class="text-muted small">@(Model.UnreadMessages == 1 ? "unread notification" : "unread notifications")</span>
+                            </div>
+                            <p class="small text-muted mb-0">
+                                You have active notifications regarding clinical schedules and DRMC patient guidelines.
+                            </p>
+                        </div>
+
+                        <div class="mt-auto pt-3 border-top">
+                            <span class="small text-muted">
+                                <i class="bi bi-lock me-1"></i> Direct doctor messaging coming soon
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patient Profile Card -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card summary-card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="card-icon bg-primary-subtle text-primary-drmc rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
+                                <i class="bi bi-person-vcard fs-5"></i>
+                            </span>
+                            <span class="badge bg-light text-dark border px-2 py-1 rounded-pill small">
+                                Verified
+                            </span>
+                        </div>
+
+                        <h2 class="h6 fw-bold text-dark mb-2">Patient Profile</h2>
+
+                        <div class="mb-3">
+                            <h3 class="h6 fw-bold text-primary-drmc mb-1">@Model.FullName</h3>
+                            <div class="small text-muted mb-1">
+                                <i class="bi bi-envelope me-1"></i> @Model.Email
+                            </div>
+                            <div class="small text-muted mb-1">
+                                <i class="bi bi-telephone me-1"></i> @Model.ContactNumber
+                            </div>
+                            <div class="small text-muted">
+                                <i class="bi bi-calendar3 me-1"></i> Member since @Model.CreatedAt.ToString("MMMM yyyy")
+                            </div>
+                        </div>
+
+                        <div class="mt-auto pt-3 border-top">
+                            <a class="btn btn-sm btn-outline-drmc w-100 fw-semibold" asp-area="Identity" asp-page="/Account/Manage/Index">
+                                Manage Account Settings <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clinical Departments Directory Card -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card summary-card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="card-icon bg-success-subtle text-success rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
+                                <i class="bi bi-building fs-5"></i>
+                            </span>
+                            <span class="badge bg-light text-dark border px-2 py-1 rounded-pill small">
+                                8 Specialties
+                            </span>
+                        </div>
+
+                        <h2 class="h6 fw-bold text-dark mb-2">Hospital Departments</h2>
+                        <p class="small text-muted mb-3">
+                            Explore available specialized outpatient departments and services at Davao Regional Medical Center.
                         </p>
-                    </div>
-                    <div class="card-footer">
-                        <span class="small text-muted">Messaging will be available soon.</span>
+
+                        <div class="d-flex flex-wrap gap-1 mb-3">
+                            @foreach (var dept in Model.Departments.Take(4))
+                            {
+                                <span class="badge bg-light text-secondary border small px-2 py-1">@dept.Name</span>
+                            }
+                            <span class="badge bg-light text-muted border small px-2 py-1">+@(Model.Departments.Count - 4) more</span>
+                        </div>
+
+                        <div class="mt-auto pt-3 border-top">
+                            <a class="btn btn-sm btn-outline-drmc w-100 fw-semibold" asp-controller="Home" asp-action="Index" asp-fragment="departments">
+                                View All Departments <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- My Profile -->
+            <!-- Hospital Advisory & Announcements Card -->
             <div class="col-md-6 col-lg-4">
-                <div class="card summary-card">
-                    <div class="card-body">
-                        <span class="card-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16"><path d="M8 1a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM3 9.5A1.5 1.5 0 0 1 4.5 8h7A1.5 1.5 0 0 1 13 9.5c0 2.5-1.5 4.5-5 4.5S3 12 3 9.5z"/></svg>
-                        </span>
-                        <h2 class="h6 card-title">My Profile</h2>
-                        <p class="card-text mb-2"><strong>@Model.FullName</strong><br />@Model.Email<br /><span class="small text-muted">@Model.ContactNumber</span></p>
-                        <span class="small text-muted">Member since @Model.CreatedAt.ToString("MMM yyyy")</span>
-                    </div>
-                    <div class="card-footer">
-                        <a class="fw-semibold" asp-area="Identity" asp-page="/Account/Manage/Index">Manage profile &rarr;</a>
-                    </div>
-                </div>
-            </div>
+                <div class="card summary-card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="card-icon bg-danger-subtle text-danger rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
+                                <i class="bi bi-megaphone fs-5"></i>
+                            </span>
+                            <span class="badge bg-danger-subtle text-danger px-2 py-1 rounded-pill small">
+                                Advisory
+                            </span>
+                        </div>
 
-            <!-- Clinical Departments (reuses Landing content) -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card summary-card">
-                    <div class="card-body">
-                        <span class="card-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zM8 2.5A1.5 1.5 0 0 1 9.5 1h3A1.5 1.5 0 0 1 14 2.5v3A1.5 1.5 0 0 1 12.5 7h-3A1.5 1.5 0 0 1 8 5.5v-3zM1 8.5A1.5 1.5 0 0 1 2.5 7h3A1.5 1.5 0 0 1 7 8.5v3A1.5 1.5 0 0 1 5.5 13h-3A1.5 1.5 0 0 1 1 11.5v-3zM8 8.5A1.5 1.5 0 0 1 9.5 7h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 8 11.5v-3z"/></svg>
-                        </span>
-                        <h2 class="h6 card-title">Clinical Departments</h2>
-                        <p class="card-text small mb-0">
-                            @Model.Departments.Count departments: @string.Join(", ", Model.Departments.Select(d => d.Name))
-                        </p>
-                    </div>
-                    <div class="card-footer">
-                        <a class="fw-semibold" asp-controller="Home" asp-action="Index" asp-fragment="departments">View departments &rarr;</a>
-                    </div>
-                </div>
-            </div>
+                        <h2 class="h6 fw-bold text-dark mb-2">Patient Advisory</h2>
 
-            <!-- Announcements -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card summary-card">
-                    <div class="card-body">
-                        <span class="card-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16"><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm4 0v8h8V4H4z"/></svg>
-                        </span>
-                        <h2 class="h6 card-title">Announcements</h2>
-                        <p class="card-text small mb-0">
-                            Please arrive 15 minutes before your appointment and bring a valid ID and any referral letter.
-                        </p>
+                        <div class="p-3 bg-light rounded-3 mb-3 border">
+                            <ul class="list-unstyled small text-muted mb-0 d-flex flex-column gap-2">
+                                <li class="d-flex align-items-start gap-2">
+                                    <i class="bi bi-check-circle-fill text-success mt-1"></i>
+                                    <span>Please arrive <strong>15 minutes</strong> prior to your scheduled clinic appointment.</span>
+                                </li>
+                                <li class="d-flex align-items-start gap-2">
+                                    <i class="bi bi-check-circle-fill text-success mt-1"></i>
+                                    <span>Present a valid government ID (PhilSys / PhilHealth) at the triage desk.</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="mt-auto pt-3 border-top">
+                            <a href="tel:1555" class="small text-primary-drmc fw-semibold text-decoration-none">
+                                <i class="bi bi-telephone-fill me-1"></i> DOH Helpline: 1555
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

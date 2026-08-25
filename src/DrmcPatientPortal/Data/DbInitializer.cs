@@ -22,21 +22,28 @@ public static class DbInitializer
             return;
         }
 
-        var seededUsers = new List<(string email, string password, string fullName, string contact)>
+        var seededUsers = new List<(string email, string password, string firstName, string? middleName, string lastName, string contact, string idType, string idNumber)>
         {
-            ("patient@drmc.doh.gov.ph", "P@tient2026", "Maria Clara D. Santos", "0917 123 4567"),
-            ("juan@drmc.doh.gov.ph", "J@uan2026",     "Juan Miguel A. Dela Cruz", "0918 765 4321"),
+            ("patient@drmc.doh.gov.ph", "P@tient2026", "Maria Clara", "D.", "Santos", "0917 123 4567", "Philippine National ID (PhilSys)", "1234-5678-9012-3456"),
+            ("juan@drmc.doh.gov.ph", "J@uan2026",     "Juan Miguel",  "A.", "Dela Cruz", "0918 765 4321", "PhilHealth ID", "12-345678901-2"),
         };
 
-        foreach (var (email, password, fullName, contact) in seededUsers)
+        foreach (var (email, password, firstName, middleName, lastName, contact, idType, idNumber) in seededUsers)
         {
             var user = new ApplicationUser
             {
                 UserName = email,
                 Email = email,
                 EmailConfirmed = true,
-                FullName = fullName,
+                FirstName = firstName,
+                MiddleName = middleName,
+                LastName = lastName,
+                FullName = string.IsNullOrWhiteSpace(middleName) ? $"{firstName} {lastName}" : $"{firstName} {middleName} {lastName}",
                 ContactNumber = contact,
+                PhoneNumber = contact,
+                IdType = idType,
+                IdNumber = idNumber,
+                PrivacyConsent = true,
                 CreatedAt = DateTime.UtcNow,
             };
 

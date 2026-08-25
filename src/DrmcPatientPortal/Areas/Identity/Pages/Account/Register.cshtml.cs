@@ -46,77 +46,64 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             _emailSender = emailSender;
         }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         [BindProperty]
         public InputModel Input { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         public string ReturnUrl { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         public IList<AuthenticationScheme> ExternalLogins { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         public class InputModel
         {
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
-            [Required]
-            [EmailAddress]
-            [Display(Name = "Email")]
+            [Required(ErrorMessage = "Enter your first name.")]
+            [StringLength(60, ErrorMessage = "The {0} must be at most {1} characters long.")]
+            [Display(Name = "First name")]
+            public string FirstName { get; set; }
+
+            [StringLength(60, ErrorMessage = "The {0} must be at most {1} characters long.")]
+            [Display(Name = "Middle name (optional)")]
+            public string MiddleName { get; set; }
+
+            [Required(ErrorMessage = "Enter your last name.")]
+            [StringLength(60, ErrorMessage = "The {0} must be at most {1} characters long.")]
+            [Display(Name = "Last name")]
+            public string LastName { get; set; }
+
+            [Required(ErrorMessage = "Enter your email address.")]
+            [EmailAddress(ErrorMessage = "Enter a valid email address.")]
+            [Display(Name = "Email address")]
             public string Email { get; set; }
 
-            /// <summary>
-            ///     DRMC patient profile: full legal name.
-            /// </summary>
-            [Required]
-            [StringLength(120, ErrorMessage = "The {0} must be at most {1} characters long.")]
-            [Display(Name = "Full name")]
-            public string FullName { get; set; }
+            [Required(ErrorMessage = "Enter your mobile number.")]
+            [RegularExpression(@"^9\d{9}$", ErrorMessage = "Enter a 10-digit mobile number starting with 9.")]
+            [Display(Name = "Mobile number")]
+            public string Mobile { get; set; }
 
-            /// <summary>
-            ///     DRMC patient profile: contact number.
-            /// </summary>
-            [Required]
-            [StringLength(20, ErrorMessage = "The {0} must be at most {1} characters long.")]
-            [DataType(DataType.PhoneNumber)]
-            [Display(Name = "Contact number")]
-            public string ContactNumber { get; set; }
+            [Required(ErrorMessage = "Select your valid government ID.")]
+            [Display(Name = "Valid government ID")]
+            public string IdType { get; set; }
 
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
-            [Required]
-            [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+            [Required(ErrorMessage = "Enter your ID number.")]
+            [StringLength(40, ErrorMessage = "The {0} must be at most {1} characters long.")]
+            [Display(Name = "ID number")]
+            public string IdNumber { get; set; }
+
+            [Required(ErrorMessage = "Create a password.")]
+            [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 8)]
             [DataType(DataType.Password)]
             [Display(Name = "Password")]
             public string Password { get; set; }
 
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
+            [Required(ErrorMessage = "Confirm your password.")]
             [DataType(DataType.Password)]
             [Display(Name = "Confirm password")]
-            [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+            [Compare("Password", ErrorMessage = "Passwords do not match.")]
             public string ConfirmPassword { get; set; }
-        }
 
+            [Range(typeof(bool), "true", "true", ErrorMessage = "You must agree to the Data Privacy Consent to continue.")]
+            [Display(Name = "Data Privacy Consent (RA 10173)")]
+            public bool PrivacyConsent { get; set; }
+        }
 
         public async Task OnGetAsync(string returnUrl = null)
         {
@@ -132,8 +119,17 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             if (ModelState.IsValid)
             {
                 var user = CreateUser();
-                user.FullName = Input.FullName;
-                user.ContactNumber = Input.ContactNumber;
+                user.FirstName = Input.FirstName?.Trim() ?? string.Empty;
+                user.MiddleName = string.IsNullOrWhiteSpace(Input.MiddleName) ? null : Input.MiddleName.Trim();
+                user.LastName = Input.LastName?.Trim() ?? string.Empty;
+                user.FullName = string.IsNullOrWhiteSpace(user.MiddleName)
+                    ? $"{user.FirstName} {user.LastName}"
+                    : $"{user.FirstName} {user.MiddleName} {user.LastName}";
+                user.ContactNumber = $"+63 {Input.Mobile?.Trim()}";
+                user.PhoneNumber = Input.Mobile?.Trim();
+                user.IdType = Input.IdType?.Trim() ?? string.Empty;
+                user.IdNumber = Input.IdNumber?.Trim() ?? string.Empty;
+                user.PrivacyConsent = Input.PrivacyConsent;
 
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);

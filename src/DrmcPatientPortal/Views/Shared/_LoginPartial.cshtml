@@ -2,29 +2,48 @@
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 
-<ul class="navbar-nav">
+<ul class="navbar-nav align-items-lg-center gap-2">
     @if (SignInManager.IsSignedIn(User))
     {
         var user = await UserManager.GetUserAsync(User);
+        var displayName = user?.FullName;
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            displayName = User.Identity?.Name;
+        }
+
         <li class="nav-item">
-            <a class="nav-link" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">
-                Hello, @(user?.FullName ?? User.Identity?.Name)!
+            <a class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-2 px-3 py-1 text-primary-drmc fw-semibold bg-white border-primary-subtle"
+               asp-controller="Patient" asp-action="Home" title="Patient Dashboard">
+                <i class="bi bi-person-circle fs-6"></i>
+                <span class="d-inline-block text-truncate" style="max-width: 180px;">@displayName</span>
             </a>
         </li>
         <li class="nav-item">
-            <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout"
+            <a class="nav-link text-muted small px-2" asp-area="Identity" asp-page="/Account/Manage/Index" title="Account Settings">
+                <i class="bi bi-gear me-1"></i>Settings
+            </a>
+        </li>
+        <li class="nav-item">
+            <form class="d-inline" asp-area="Identity" asp-page="/Account/Logout"
                   asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-                <button type="submit" class="nav-link btn btn-link">Sign out</button>
+                <button type="submit" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1 px-3 py-1">
+                    <i class="bi bi-box-arrow-right"></i> Sign out
+                </button>
             </form>
         </li>
     }
     else
     {
         <li class="nav-item">
-            <a class="nav-link" asp-area="Identity" asp-page="/Account/Register">Register</a>
+            <a class="btn btn-sm btn-outline-drmc px-3" asp-area="Identity" asp-page="/Account/Register">
+                <i class="bi bi-person-plus me-1"></i>Register
+            </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" asp-area="Identity" asp-page="/Account/Login">Log in</a>
+            <a class="btn btn-sm btn-drmc px-3 text-white" asp-area="Identity" asp-page="/Account/Login">
+                <i class="bi bi-box-arrow-in-right me-1"></i>Log in
+            </a>
         </li>
     }
 </ul>

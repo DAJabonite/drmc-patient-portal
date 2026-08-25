@@ -5,9 +5,21 @@ namespace DrmcPatientPortal.Models;
 // Extended Identity user carrying real patient profile fields.
 public class ApplicationUser : IdentityUser
 {
+    public string FirstName { get; set; } = string.Empty;
+
+    public string? MiddleName { get; set; }
+
+    public string LastName { get; set; } = string.Empty;
+
     public string FullName { get; set; } = string.Empty;
 
     public string ContactNumber { get; set; } = string.Empty;
+
+    public string IdType { get; set; } = string.Empty;
+
+    public string IdNumber { get; set; } = string.Empty;
+
+    public bool PrivacyConsent { get; set; } = true;
 
     // Optional: patient can store a preferred department for reference (not a booking).
     public string? PreferredDepartment { get; set; }

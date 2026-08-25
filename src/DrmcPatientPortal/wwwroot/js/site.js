@@ -1,5 +1,5 @@
 // DRMC Patient Portal — client behaviors.
-// Philippine Standard Time (UTC+8) clock for the GOVPH utility bar.
+// Philippine Standard Time (UTC+8) clock.
 
 (function () {
     "use strict";
@@ -18,9 +18,17 @@
             "July", "August", "September", "October", "November", "December"];
         var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-        var date = days[pst.getDay()] + ", " + months[pst.getMonth()] + " " + pst.getDate() + ", " + pst.getFullYear();
-        var time = pad(pst.getHours()) + ":" + pad(pst.getMinutes()) + ":" + pad(pst.getSeconds());
-        el.textContent = date + "  " + time;
+        var hours = pst.getHours();
+        var minutes = pad(pst.getMinutes());
+        var seconds = pad(pst.getSeconds());
+        var ampm = hours >= 12 ? "PM" : "AM";
+        hours = hours % 12;
+        hours = hours ? hours : 12; // 0 becomes 12
+
+        var dateStr = days[pst.getDay()] + ", " + months[pst.getMonth()] + " " + pst.getDate() + ", " + pst.getFullYear();
+        var timeStr = hours + ":" + minutes + ":" + seconds + " " + ampm;
+
+        el.textContent = dateStr + ", " + timeStr;
     }
 
     updateClock();
