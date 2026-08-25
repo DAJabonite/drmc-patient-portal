@@ -76,6 +76,19 @@ Format: `piece | round | verdict | biggest gap named | status`
 | (phase 1 reference material) | 0 | n/a | n/a | DONE (docs/critique-rubric.md) |
 | (phase 2 product spec) | 0 | n/a | n/a | DONE (embedded) |
 | (phase 3 design system) | 0 | n/a | n/a | DONE (docs/design.md, docs/ux-notes.md, real seals/masthead extracted; departments verified against live site) |
+| Landing | 1 | FAIL | Masthead duplicated: real lockup already contains seals/metadata; page showed doubled logo + floating seal (Critical) | FIXED |
+| Landing | 2 | FAIL | Mobile GOVPH clock overflow + secondary-nav wrapping (Major) | FIXED |
+| Landing | 3 | PASS | No Critical/Major; header reflows cleanly on mobile | CONVERGED |
+| Register | 1 | PASS | Clean form, all profile fields, e2e register->dashboard verified | CONVERGED |
+| Login | 1 | PASS | Clean form, invalid-login error accessible, e2e login->dashboard verified | CONVERGED |
+| Dashboard | 1 | FAIL | "Clinical Departments" card linked to dashboard itself; Identity manage page unthemed (stock blue) (Major) | FIXED |
+| Dashboard | 2 | PASS | Departments card -> /#departments; manage page branded; all 6 cards seeded | CONVERGED |
+| Smoothing | 1 | PASS | Header/masthead/footer identical across all four screens (only auth-state nav differs, expected) | CONVERGED |
+| Integration | 1 | PASS | 10/10 e2e checks pass (auth gate, register/login->dashboard, seed data, no forbidden UI words) | CONVERGED |
+
+## Final convergence note
+
+All four pieces (Landing, Register, Login, Home/Dashboard) individually converged with no Critical or Major gaps. One smoothing pass confirmed cross-page consistency. Full integration verified. No piece was capped. Final status: **CONVERGED**.
 
 ---
 

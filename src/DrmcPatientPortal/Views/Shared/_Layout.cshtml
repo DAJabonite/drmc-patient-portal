@@ -19,29 +19,20 @@
 
     <!-- GOVPH utility bar -->
     <div class="govph-bar">
-        <div class="container d-flex justify-content-between align-items-center">
+        <div class="container d-flex justify-content-between align-items-center gap-2 flex-wrap">
             <div><a href="https://www.gov.ph/" target="_blank" rel="noopener">GOVPH</a></div>
-            <div class="govph-time" aria-live="polite">Philippine Standard Time: <span id="govphClock">--</span></div>
+            <div class="govph-time small" aria-live="polite"><span class="d-none d-sm-inline">Philippine Standard Time: </span><span id="govphClock">--</span></div>
         </div>
     </div>
 
-    <!-- Masthead -->
+    <!-- Masthead: the real DRMC lockup (DRMC seal + chrome wordmark + DOH seal + metadata) -->
     <header class="masthead">
-        <div class="container d-flex align-items-center gap-4">
-            <a class="masthead-brand d-inline-flex align-items-center gap-3" asp-area="" asp-controller="Home" asp-action="Index" aria-label="Davao Regional Medical Center home">
-                <img class="masthead-seal" src="~/images/drmc-seal.png" alt="Davao Regional Medical Center seal" />
-                <span>
-                    <span class="masthead-meta d-block">Republic of the Philippines<br />Department of Health</span>
-                    <img class="masthead-wordmark" src="~/images/drmc-masthead.png" alt="Davao Regional Medical Center" />
-                    <span class="masthead-location d-block">Brgy. Apokon, Tagum City, Davao del Norte</span>
-                </span>
+        <div class="container">
+            <a class="d-inline-block" asp-area="" asp-controller="Home" asp-action="Index" aria-label="Davao Regional Medical Center home">
+                <img class="masthead-lockup" src="~/images/drmc-masthead.png"
+                     alt="Davao Regional Medical Center, Republic of the Philippines, Department of Health, Brgy. Apokon, Tagum City, Davao del Norte" />
             </a>
-            <span class="ms-auto d-none d-lg-flex flex-column align-items-end">
-                <img class="masthead-seal" src="~/images/doh-seal.png" alt="Department of Health seal" />
-            </span>
-        </div>
-        <div class="container mt-1 d-lg-none">
-            <div class="masthead-tagline">Caring for Life, Changing Lives.</div>
+            <div class="masthead-tagline mt-1">Caring for Life, Changing Lives.</div>
         </div>
     </header>
 

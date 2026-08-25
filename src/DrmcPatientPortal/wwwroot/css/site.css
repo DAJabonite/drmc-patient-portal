@@ -88,7 +88,8 @@ textarea:focus-visible,
     text-decoration: underline;
 }
 .govph-bar .govph-time {
-    white-space: nowrap;
+    min-width: 0;
+    text-align: right;
 }
 
 /* ============================================================================
@@ -97,37 +98,17 @@ textarea:focus-visible,
 .masthead {
     background-color: var(--drmc-primary);
     color: #fff;
-    padding: 1rem 0;
+    padding: 1.25rem 0;
 }
-.masthead .masthead-seal {
-    height: 88px;              /* <=100px per GWTD */
-    width: auto;
-    max-width: 100%;
-}
-.masthead .masthead-brand {
-    color: #fff;
-    text-decoration: none;
-    display: inline-flex;
-    flex-direction: column;
-}
-.masthead .masthead-meta {
-    font-size: 0.8rem;
-    font-weight: 600;
-    line-height: 1.25;
-    letter-spacing: 0.01em;
-    color: #dbe6f2;
-}
-.masthead .masthead-wordmark {
+/* The complete real DRMC lockup: DRMC seal + chrome wordmark + DOH seal + metadata. */
+.masthead .masthead-lockup {
     display: block;
-    max-width: 100%;
+    width: 100%;
+    max-width: 1190px;
     height: auto;
-    max-height: 64px;
-    margin: 0.25rem 0 0;
-}
-.masthead .masthead-location {
-    font-size: 0.78rem;
-    color: #cfe0f0;
-    line-height: 1.2;
+    /* keep within GWTD 100px logo height, but let it breathe */
+    max-height: 96px;
+    object-fit: contain;
 }
 .masthead .masthead-tagline {
     font-size: 0.9rem;
@@ -147,6 +128,7 @@ textarea:focus-visible,
     color: #212529;
     font-weight: 500;
     padding: 0.75rem 1rem;
+    white-space: nowrap;
 }
 .navbar-drmc .nav-link:hover {
     color: var(--drmc-primary);
@@ -174,6 +156,7 @@ textarea:focus-visible,
     font-size: 0.9rem;
     padding: 0.7rem 0.9rem;
     font-weight: 500;
+    white-space: nowrap;
 }
 .secondary-nav .nav-link:hover {
     color: var(--drmc-primary);
@@ -189,6 +172,43 @@ textarea:focus-visible,
 /* ============================================================================
    Buttons
    ========================================================================== */
+/* Bootstrap 5.3 bakes default component colors at compile time, so overrides
+   of --bs-primary do NOT retheme .btn-primary / .nav-pills. We retheme them
+   explicitly so every reachable page (incl. Identity manage screens) matches. */
+.btn-primary {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--drmc-primary);
+    --bs-btn-border-color: var(--drmc-primary);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--drmc-primary-dark);
+    --bs-btn-hover-border-color: var(--drmc-primary-dark);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--drmc-primary-deep);
+    --bs-btn-active-border-color: var(--drmc-primary-deep);
+    --bs-btn-disabled-color: #fff;
+    --bs-btn-disabled-bg: var(--drmc-primary);
+    --bs-btn-disabled-border-color: var(--drmc-primary);
+    --bs-btn-focus-shadow-rgb: 13, 78, 134;
+}
+.btn-outline-primary {
+    --bs-btn-color: var(--drmc-primary);
+    --bs-btn-border-color: var(--drmc-primary);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--drmc-primary);
+    --bs-btn-hover-border-color: var(--drmc-primary);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--drmc-primary-deep);
+    --bs-btn-active-border-color: var(--drmc-primary-deep);
+}
+.nav-pills {
+    --bs-nav-pills-link-active-bg: var(--drmc-primary);
+    --bs-nav-pills-link-active-color: #fff;
+}
+.text-bg-primary {
+    background-color: var(--drmc-primary) !important;
+    color: #fff !important;
+}
+
 .btn-drmc {
     --bs-btn-color: #fff;
     --bs-btn-bg: var(--drmc-primary);

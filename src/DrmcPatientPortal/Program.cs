@@ -1,6 +1,8 @@
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,6 +28,10 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     options.Password.RequireDigit = true;
 })
     .AddEntityFrameworkStores<ApplicationDbContext>();
+
+// No SMTP configured: in Development, Identity "email" (e.g. password-reset links)
+// is logged to console/output so the flow can be exercised. Documented in README.
+builder.Services.AddSingleton<IEmailSender, ConsoleEmailSender>();
 
 builder.Services.AddControllersWithViews();
 
