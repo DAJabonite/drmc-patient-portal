@@ -1,0 +1,167 @@
+@model LabPrintReportViewModel
+@{
+    ViewData["Title"] = $"Print — {Model.LabResult.AccessionNumber}";
+    Layout = "_Layout";
+    var lab = Model.LabResult;
+}
+
+<section class="py-3 bg-light d-print-none border-bottom">
+    <div class="container d-flex justify-content-between align-items-center">
+        <a asp-action="Details" asp-route-id="@lab.Id" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+            <i class="bi bi-arrow-left me-1"></i> Return to Report View
+        </a>
+        <button onclick="window.print();" class="btn btn-sm btn-primary-drmc rounded-pill px-4 fw-semibold shadow-xs">
+            <i class="bi bi-printer-fill me-1"></i> Print / Save as PDF
+        </button>
+    </div>
+</section>
+
+<div class="container py-4" style="max-width: 860px;">
+    <div class="card border p-4 p-md-5 bg-white print-container shadow-xs">
+        
+        <!-- Official Hospital Header -->
+        <div class="text-center pb-3 mb-4 border-bottom position-relative">
+            <div class="d-flex align-items-center justify-content-center gap-3 mb-2">
+                <img src="~/images/drmc-seal.png" alt="DRMC Seal" style="height: 64px; width: auto;" />
+                <div>
+                    <h1 class="h5 fw-bold text-uppercase mb-0 text-primary-drmc">Republic of the Philippines &middot; Department of Health</h1>
+                    <h2 class="h4 fw-bolder mb-0 text-dark">Davao Regional Medical Center</h2>
+                    <span class="small text-muted d-block">Center of Excellence in Specialized Tertiary Healthcare &middot; Tagum City, Davao del Norte</span>
+                </div>
+                <img src="~/images/doh-seal.png" alt="DOH Seal" style="height: 64px; width: auto;" />
+            </div>
+            <div class="badge bg-light text-dark border px-3 py-1 text-uppercase fw-bold" style="letter-spacing: 1px;">
+                Official Clinical Diagnostic Laboratory Examination Report
+            </div>
+        </div>
+
+        <!-- Patient & Specimen Demographics Box -->
+        <div class="p-3 bg-light rounded-3 border mb-4 small">
+            <div class="row g-2">
+                <div class="col-sm-6">
+                    <span class="text-muted">Patient Name:</span>
+                    <strong class="text-dark d-block">@Model.Patient.FullName</strong>
+                </div>
+                <div class="col-sm-3">
+                    <span class="text-muted">Patient Contact:</span>
+                    <strong class="text-dark d-block">@Model.Patient.ContactNumber</strong>
+                </div>
+                <div class="col-sm-3">
+                    <span class="text-muted">PhilHealth / ID:</span>
+                    <strong class="text-dark d-block">@(string.IsNullOrEmpty(Model.Patient.IdNumber) ? "N/A" : Model.Patient.IdNumber)</strong>
+                </div>
+                <div class="col-sm-6">
+                    <span class="text-muted">Examination Panel:</span>
+                    <strong class="text-primary-drmc d-block">@lab.TestName</strong>
+                </div>
+                <div class="col-sm-3">
+                    <span class="text-muted">Accession No:</span>
+                    <strong class="text-dark d-block">@lab.AccessionNumber</strong>
+                </div>
+                <div class="col-sm-3">
+                    <span class="text-muted">Date Collected:</span>
+                    <strong class="text-dark d-block">@lab.CollectedAt.ToString("MMM d, yyyy")</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Table -->
+        <div class="mb-4">
+            <table class="table table-bordered table-sm align-middle mb-0 small">
+                <thead class="table-light text-uppercase">
+                    <tr>
+                        <th>Analyte Parameter</th>
+                        <th class="text-center">Result</th>
+                        <th class="text-center">Unit</th>
+                        <th class="text-center">Biological Reference Range</th>
+                        <th class="text-center">Diagnostic Flag</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in lab.Items)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@item.ParameterName</td>
+                            <td class="text-center fw-bold @(item.Flag == LabFlag.High ? "text-danger" : item.Flag == LabFlag.Low ? "text-primary" : "")">
+                                @item.Value
+                            </td>
+                            <td class="text-center text-muted">@item.Unit</td>
+                            <td class="text-center text-muted">@item.ReferenceRange</td>
+                            <td class="text-center">
+                                @if (item.Flag == LabFlag.Normal)
+                                {
+                                    <span class="text-success fw-semibold">NORMAL</span>
+                                }
+                                else if (item.Flag == LabFlag.High)
+                                {
+                                    <span class="text-danger fw-bold">HIGH</span>
+                                }
+                                else if (item.Flag == LabFlag.Low)
+                                {
+                                    <span class="text-primary fw-bold">LOW</span>
+                                }
+                                else
+                                {
+                                    <span class="text-danger fw-bolder">CRITICAL</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Clinical Notes -->
+        <div class="p-3 bg-light rounded-3 border mb-5 small">
+            <strong class="d-block mb-1 text-dark">Diagnostic Summary &amp; Pathologist Interpretation:</strong>
+            <p class="text-muted mb-0">@(string.IsNullOrEmpty(lab.ClinicalNotes) ? lab.ResultSummary : lab.ClinicalNotes)</p>
+        </div>
+
+        <!-- Signatures Footer -->
+        <div class="row pt-4 text-center small">
+            <div class="col-4">
+                <div class="border-top pt-2">
+                    <strong class="d-block text-dark">Medical Technologist</strong>
+                    <span class="text-muted" style="font-size: 0.75rem;">Registered Medical Technologist</span>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="border-top pt-2">
+                    <strong class="d-block text-dark">@lab.PathologistName</strong>
+                    <span class="text-muted" style="font-size: 0.75rem;">Clinical Pathologist &middot; PRC Verified</span>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="border-top pt-2">
+                    <strong class="d-block text-dark">@lab.OrderingPhysician</strong>
+                    <span class="text-muted" style="font-size: 0.75rem;">Requesting Physician</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center pt-4 mt-3 border-top text-muted" style="font-size: 0.7rem;">
+            This is an authenticated laboratory report generated from the Davao Regional Medical Center Laboratory Information System. Report Date: @Model.PrintedAt.ToString("MMMM d, yyyy h:mm tt").
+        </div>
+
+    </div>
+</div>
+
+<style>
+    @@media print {
+        body * {
+            visibility: hidden;
+        }
+        .print-container, .print-container * {
+            visibility: visible;
+        }
+        .print-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+        }
+    }
+</style>

@@ -39,6 +39,18 @@ builder.Services.AddSingleton<ISmsSender, ConsoleSmsSender>();
 // In-process QR code generator for appointment check-in slips (SVG / PNG data URLs)
 builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
 
+// PHI and security access audit logging service
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+
+// Session state for active caregiver/proxy profile switching
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
@@ -66,6 +78,7 @@ else
 
 app.UseHttpsRedirection();
 app.UseRouting();
+app.UseSession();
 
 app.UseAuthentication();
 app.UseAuthorization();

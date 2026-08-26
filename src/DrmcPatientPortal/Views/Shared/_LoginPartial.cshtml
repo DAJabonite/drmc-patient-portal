@@ -12,25 +12,59 @@
             displayName = User.Identity?.Name;
         }
 
-        <li class="nav-item">
-            <a class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-2 px-3 py-1 text-primary-drmc fw-semibold bg-white border-primary-subtle"
-               asp-controller="Patient" asp-action="Home" title="Patient Dashboard">
+        <li class="nav-item dropdown">
+            <a class="btn btn-sm btn-outline-primary dropdown-toggle d-inline-flex align-items-center gap-2 px-3 py-1 text-primary-drmc fw-semibold bg-white border-primary-subtle"
+               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-person-circle fs-6"></i>
                 <span class="d-inline-block text-truncate" style="max-width: 180px;">@displayName</span>
             </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link text-muted small px-2" asp-area="Identity" asp-page="/Account/Manage/Index" title="Account Settings">
-                <i class="bi bi-gear me-1"></i>Settings
-            </a>
-        </li>
-        <li class="nav-item">
-            <form class="d-inline" asp-area="Identity" asp-page="/Account/Logout"
-                  asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-                <button type="submit" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1 px-3 py-1">
-                    <i class="bi bi-box-arrow-right"></i> Sign out
-                </button>
-            </form>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm rounded-3 border-0 small mt-2">
+                <li>
+                    <a class="dropdown-item fw-semibold text-primary-drmc py-2" asp-controller="Patient" asp-action="Home">
+                        <i class="bi bi-speedometer2 me-2"></i> Patient Dashboard
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider my-1"></li>
+                <li>
+                    <a class="dropdown-item py-1" asp-controller="LabResults" asp-action="Index">
+                        <i class="bi bi-file-earmark-medical me-2 text-info-emphasis"></i> Laboratory Results
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item py-1" asp-controller="Medications" asp-action="Index">
+                        <i class="bi bi-capsule me-2 text-success"></i> Active Prescriptions
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item py-1" asp-controller="Encounters" asp-action="Index">
+                        <i class="bi bi-journal-medical me-2 text-primary"></i> Clinical Visit Notes
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item py-1" asp-controller="Messages" asp-action="Index">
+                        <i class="bi bi-chat-dots me-2 text-warning-emphasis"></i> Care Messages
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item py-1" asp-controller="Proxy" asp-action="Index">
+                        <i class="bi bi-people me-2 text-secondary"></i> Family &amp; Dependents
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider my-1"></li>
+                <li>
+                    <a class="dropdown-item py-1" asp-area="Identity" asp-page="/Account/Manage/Index">
+                        <i class="bi bi-gear me-2 text-muted"></i> Account Settings
+                    </a>
+                </li>
+                <li>
+                    <form class="d-inline" asp-area="Identity" asp-page="/Account/Logout"
+                          asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+                        <button type="submit" class="dropdown-item text-danger py-1">
+                            <i class="bi bi-box-arrow-right me-2"></i> Sign out
+                        </button>
+                    </form>
+                </li>
+            </ul>
         </li>
     }
     else

@@ -541,46 +541,334 @@ public static class DbInitializer
 
             if (!db.LabResults.Any(l => l.PatientUserId == primary.Id))
             {
-                db.LabResults.AddRange(
-                    new LabResult
-                    {
-                        PatientUserId = primary.Id,
-                        TestName = "Complete Blood Count (CBC)",
-                        CollectedAt = DateTime.Now.AddDays(-6),
-                        Status = "Available",
-                        ResultSummary = "Your results are ready to review.",
-                    },
-                    new LabResult
-                    {
-                        PatientUserId = primary.Id,
-                        TestName = "Fasting Blood Sugar (FBS)",
-                        CollectedAt = DateTime.Now.AddDays(-2),
-                        Status = "In progress",
-                        ResultSummary = "Your test is still being processed.",
-                    });
+                var cbc = new LabResult
+                {
+                    PatientUserId = primary.Id,
+                    AccessionNumber = "DRMC-LAB-2026-0814",
+                    TestName = "Complete Blood Count (CBC) with Platelet Count",
+                    Category = LabCategory.Hematology,
+                    CollectedAt = DateTime.UtcNow.AddDays(-6),
+                    ReleasedAt = DateTime.UtcNow.AddDays(-5),
+                    Status = "Available",
+                    ResultSummary = "Hematology parameters within standard diagnostic limits. No acute cytopenia.",
+                    OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP",
+                    PathologistName = "Dr. Manuel Santos, MD, FPSP",
+                    PerformingUnit = "DRMC Central Clinical Diagnostic Laboratory",
+                    ClinicalNotes = "Routine pre-consultation baseline workup."
+                };
+
+                cbc.Items.Add(new LabResultItem { ParameterName = "Hemoglobin", Value = "13.8", Unit = "g/dL", ReferenceRange = "12.0 - 16.0", Flag = LabFlag.Normal });
+                cbc.Items.Add(new LabResultItem { ParameterName = "Hematocrit", Value = "41.2", Unit = "%", ReferenceRange = "37.0 - 48.0", Flag = LabFlag.Normal });
+                cbc.Items.Add(new LabResultItem { ParameterName = "White Blood Cells (WBC)", Value = "7.5", Unit = "x10^9/L", ReferenceRange = "4.5 - 11.0", Flag = LabFlag.Normal });
+                cbc.Items.Add(new LabResultItem { ParameterName = "Platelet Count", Value = "280", Unit = "x10^9/L", ReferenceRange = "150 - 450", Flag = LabFlag.Normal });
+                cbc.Items.Add(new LabResultItem { ParameterName = "Segmenters (Neutrophils)", Value = "60", Unit = "%", ReferenceRange = "50 - 70", Flag = LabFlag.Normal });
+                cbc.Items.Add(new LabResultItem { ParameterName = "Lymphocytes", Value = "32", Unit = "%", ReferenceRange = "20 - 40", Flag = LabFlag.Normal });
+                cbc.Items.Add(new LabResultItem { ParameterName = "Monocytes", Value = "4", Unit = "%", ReferenceRange = "2 - 8", Flag = LabFlag.Normal });
+                cbc.Items.Add(new LabResultItem { ParameterName = "Eosinophils", Value = "4", Unit = "%", ReferenceRange = "1 - 4", Flag = LabFlag.Normal });
+
+                var fbs = new LabResult
+                {
+                    PatientUserId = primary.Id,
+                    AccessionNumber = "DRMC-LAB-2026-0815",
+                    TestName = "Fasting Blood Sugar (FBS)",
+                    Category = LabCategory.ClinicalChemistry,
+                    CollectedAt = DateTime.UtcNow.AddDays(-6),
+                    ReleasedAt = DateTime.UtcNow.AddDays(-5),
+                    Status = "Available",
+                    ResultSummary = "Elevated fasting blood glucose. Consistent with impaired fasting glycemia / DM monitoring.",
+                    OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP",
+                    PathologistName = "Dr. Manuel Santos, MD, FPSP",
+                    PerformingUnit = "DRMC Clinical Chemistry Section",
+                    ClinicalNotes = "Patient confirmed 10-hour overnight fasting."
+                };
+
+                fbs.Items.Add(new LabResultItem { ParameterName = "Fasting Blood Glucose", Value = "112", Unit = "mg/dL", ReferenceRange = "70 - 99", Flag = LabFlag.High });
+
+                var lipid = new LabResult
+                {
+                    PatientUserId = primary.Id,
+                    AccessionNumber = "DRMC-LAB-2026-0790",
+                    TestName = "Lipid Profile Panel",
+                    Category = LabCategory.ClinicalChemistry,
+                    CollectedAt = DateTime.UtcNow.AddDays(-20),
+                    ReleasedAt = DateTime.UtcNow.AddDays(-19),
+                    Status = "Available",
+                    ResultSummary = "Lipid parameters within acceptable cardiovascular risk limits.",
+                    OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP",
+                    PathologistName = "Dr. Manuel Santos, MD, FPSP",
+                    PerformingUnit = "DRMC Clinical Chemistry Section"
+                };
+
+                lipid.Items.Add(new LabResultItem { ParameterName = "Total Cholesterol", Value = "195", Unit = "mg/dL", ReferenceRange = "< 200", Flag = LabFlag.Normal });
+                lipid.Items.Add(new LabResultItem { ParameterName = "Triglycerides", Value = "140", Unit = "mg/dL", ReferenceRange = "< 150", Flag = LabFlag.Normal });
+                lipid.Items.Add(new LabResultItem { ParameterName = "HDL Cholesterol", Value = "48", Unit = "mg/dL", ReferenceRange = "> 40", Flag = LabFlag.Normal });
+                lipid.Items.Add(new LabResultItem { ParameterName = "LDL Cholesterol", Value = "119", Unit = "mg/dL", ReferenceRange = "< 130", Flag = LabFlag.Normal });
+
+                var hba1c = new LabResult
+                {
+                    PatientUserId = primary.Id,
+                    AccessionNumber = "DRMC-LAB-2026-0922",
+                    TestName = "HbA1c (Glycated Hemoglobin)",
+                    Category = LabCategory.SpecialDiagnostics,
+                    CollectedAt = DateTime.UtcNow.AddDays(-2),
+                    Status = "In progress",
+                    ResultSummary = "Specimen received by laboratory. Analysis currently in progress.",
+                    OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP",
+                    PerformingUnit = "DRMC Central Clinical Diagnostic Laboratory"
+                };
+
+                db.LabResults.AddRange(cbc, fbs, lipid, hba1c);
             }
 
-            if (!db.Messages.Any(m => m.PatientUserId == primary.Id))
+            if (!db.ClinicalEncounters.Any(e => e.PatientUserId == primary.Id))
             {
-                db.Messages.AddRange(
-                    new Message
+                db.ClinicalEncounters.AddRange(
+                    new ClinicalEncounter
                     {
                         PatientUserId = primary.Id,
-                        RecipientUserId = primary.Id,
-                        Subject = "Reminder: Upcoming appointment",
-                        Body = "You have an appointment at Internal Medicine on your scheduled date. Please arrive 15 minutes early.",
-                        SentAt = DateTime.Now.AddDays(-1),
-                        IsRead = false,
+                        EncounterReference = "DRMC-ENC-2026-0412",
+                        EncounterDate = DateTime.UtcNow.AddDays(-18),
+                        Department = "Internal Medicine",
+                        AttendingPhysician = "Dr. Arthur Llanos, MD, FPCP",
+                        Type = EncounterType.OpdConsultation,
+                        ChiefComplaint = "3-month routine follow-up for chronic blood sugar and blood pressure management.",
+                        PrimaryDiagnosis = "Essential (Primary) Hypertension (ICD-10 I10)",
+                        SecondaryDiagnosis = "Type 2 Diabetes Mellitus without complications (ICD-10 E11.9)",
+                        ClinicalSummary = "Patient is asymptomatic. No chest pain, shortness of breath, or blurring of vision. Home blood pressure logs average 125/80 mmHg. Good medication adherence reported.",
+                        CarePlanAndInstructions = "1. Maintain low-sodium, low-glycemic diet.\n2. Regular aerobic exercise (30 mins daily brisk walking).\n3. Continue Losartan 50mg OD morning and Metformin 500mg BID with meals.\n4. Repeat Fasting Blood Sugar and HbA1c in 3 months.",
+                        VitalSignsRecorded = "BP: 128/82 mmHg | HR: 76 bpm | Temp: 36.5 C | Wt: 64.0 kg | Height: 158 cm | BMI: 25.6",
+                        FollowUpDate = DateTime.UtcNow.AddMonths(3),
+                        FollowUpNotes = "Follow-up consultation at Internal Medicine OPD Room 201."
                     },
-                    new Message
+                    new ClinicalEncounter
                     {
                         PatientUserId = primary.Id,
-                        RecipientUserId = primary.Id,
-                        Subject = "Welcome",
-                        Body = "Welcome to the DRMC patient portal.",
-                        SentAt = DateTime.Now.AddDays(-10),
-                        IsRead = true,
+                        EncounterReference = "DRMC-ENC-2025-1089",
+                        EncounterDate = DateTime.UtcNow.AddMonths(-6),
+                        Department = "Family & Community Medicine",
+                        AttendingPhysician = "Dr. Cristina Ramos, MD, FPAFP",
+                        Type = EncounterType.OpdConsultation,
+                        ChiefComplaint = "Annual wellness physical checkup.",
+                        PrimaryDiagnosis = "General Adult Medical Examination (ICD-10 Z00.0)",
+                        ClinicalSummary = "Complete physical examination unremarkable. Cardiac auscultation normal, lungs clear. Screening mammography and cervical smear updated.",
+                        CarePlanAndInstructions = "Promote continued healthy lifestyle and routine seasonal influenza vaccination.",
+                        VitalSignsRecorded = "BP: 120/78 mmHg | HR: 72 bpm | Temp: 36.6 C | Wt: 63.5 kg"
+                    }
+                );
+            }
+
+            if (!db.Prescriptions.Any(p => p.PatientUserId == primary.Id))
+            {
+                var rx1 = new Prescription
+                {
+                    PatientUserId = primary.Id,
+                    RxNumber = "DRMC-RX-2026-3819",
+                    GenericName = "Metformin Hydrochloride",
+                    BrandName = "Glucophage",
+                    Dosage = "500 mg",
+                    DosageForm = "Film-coated Tablet",
+                    Frequency = "Twice daily with meals (8:00 AM, 6:00 PM)",
+                    Instructions = "Take with or immediately after breakfast and dinner to minimize gastrointestinal discomfort.",
+                    PrescribingDoctor = "Dr. Arthur Llanos, MD, FPCP",
+                    Department = "Internal Medicine",
+                    PrescribedAt = DateTime.UtcNow.AddDays(-18),
+                    ValidUntil = DateTime.UtcNow.AddMonths(6),
+                    Status = PrescriptionStatus.Active,
+                    RefillsTotal = 3,
+                    RefillsRemaining = 2,
+                    LastRefillDate = DateTime.UtcNow.AddDays(-18)
+                };
+
+                var rx2 = new Prescription
+                {
+                    PatientUserId = primary.Id,
+                    RxNumber = "DRMC-RX-2026-3820",
+                    GenericName = "Losartan Potassium",
+                    BrandName = "Cozaar",
+                    Dosage = "50 mg",
+                    DosageForm = "Film-coated Tablet",
+                    Frequency = "Once daily every morning (8:00 AM)",
+                    Instructions = "Take consistently every morning with or without food. Do not discontinue without physician advice.",
+                    PrescribingDoctor = "Dr. Arthur Llanos, MD, FPCP",
+                    Department = "Internal Medicine",
+                    PrescribedAt = DateTime.UtcNow.AddDays(-18),
+                    ValidUntil = DateTime.UtcNow.AddMonths(6),
+                    Status = PrescriptionStatus.Active,
+                    RefillsTotal = 3,
+                    RefillsRemaining = 1,
+                    LastRefillDate = DateTime.UtcNow.AddDays(-2)
+                };
+
+                rx2.RefillRequests.Add(new RefillRequest
+                {
+                    PatientUserId = primary.Id,
+                    RequestedAt = DateTime.UtcNow.AddDays(-2),
+                    Status = RefillStatus.ReadyForPickup,
+                    PharmacyNotes = "Approved and packaged. Ready for claiming at DRMC OPD Pharmacy Window 2.",
+                    EstimatedPickupDate = DateTime.UtcNow.AddDays(1)
+                });
+
+                var rx3 = new Prescription
+                {
+                    PatientUserId = primary.Id,
+                    RxNumber = "DRMC-RX-2026-2104",
+                    GenericName = "Ascorbic Acid + Zinc",
+                    BrandName = "Cecon Plus",
+                    Dosage = "500 mg / 10 mg",
+                    DosageForm = "Capsule",
+                    Frequency = "Once daily after breakfast",
+                    Instructions = "Daily nutritional immune support supplement.",
+                    PrescribingDoctor = "Dr. Cristina Ramos, MD, FPAFP",
+                    Department = "Family & Community Medicine",
+                    PrescribedAt = DateTime.UtcNow.AddMonths(-1),
+                    ValidUntil = DateTime.UtcNow.AddMonths(5),
+                    Status = PrescriptionStatus.Active,
+                    RefillsTotal = 3,
+                    RefillsRemaining = 3
+                };
+
+                db.Prescriptions.AddRange(rx1, rx2, rx3);
+            }
+
+            if (!db.PatientAllergies.Any(a => a.PatientUserId == primary.Id))
+            {
+                db.PatientAllergies.Add(new PatientAllergy
+                {
+                    PatientUserId = primary.Id,
+                    Allergen = "Penicillin & Beta-lactam Antibiotics",
+                    Reaction = "Urticarial skin rash, facial itching, and mild lip swelling.",
+                    Severity = AllergySeverity.Moderate,
+                    RecordedAt = DateTime.UtcNow.AddYears(-2)
+                });
+            }
+
+            if (!db.TriageIntakes.Any(t => t.PatientUserId == primary.Id))
+            {
+                var appt = db.Appointments.FirstOrDefault(a => a.PatientUserId == primary.Id);
+                if (appt is not null)
+                {
+                    db.TriageIntakes.Add(new TriageIntake
+                    {
+                        AppointmentId = appt.Id,
+                        PatientUserId = primary.Id,
+                        SubmittedAt = DateTime.UtcNow.AddDays(-1),
+                        ChiefComplaint = "Routine 3-month follow-up for blood pressure and diabetes monitoring.",
+                        SymptomDurationDays = 5,
+                        PainScale = 0,
+                        SymptomsJson = "[\"Mild Fatigue\", \"Occasional dry mouth\"]",
+                        HasEmergencyRedFlags = false,
+                        ReportedBloodPressure = "125/80 mmHg",
+                        ReportedTemperature = "36.6 C",
+                        ReportedHeartRate = "72 bpm",
+                        ReportedWeightKg = "64.0",
+                        ReportedBloodSugar = "110 mg/dL",
+                        ComorbiditiesJson = "[\"Hypertension\", \"Type 2 Diabetes Mellitus\"]",
+                        CurrentMedicationsSummary = "Metformin 500mg BID, Losartan 50mg OD",
+                        AcuityLevel = TriageAcuity.Routine,
+                        TriageNotes = "Patient pre-screened digitally. Stable vital signs self-reported. No acute distress."
                     });
+                }
+            }
+
+            if (!db.MessageThreads.Any(t => t.PatientUserId == primary.Id))
+            {
+                var thread1 = new MessageThread
+                {
+                    PatientUserId = primary.Id,
+                    Department = "Internal Medicine",
+                    Subject = "Clarification on Fasting Blood Sugar Lab Schedule",
+                    Category = MessageCategory.LabResultClarification,
+                    Status = ThreadStatus.Resolved,
+                    CreatedAt = DateTime.UtcNow.AddDays(-8),
+                    LastMessageAt = DateTime.UtcNow.AddDays(-7)
+                };
+
+                thread1.Messages.Add(new Message
+                {
+                    SenderUserId = primary.Id,
+                    SenderName = primary.FullName,
+                    SenderRole = MessageSenderRole.Patient,
+                    Body = "Good day, do I need to fast for 10 hours or 12 hours for my upcoming Fasting Blood Sugar laboratory test?",
+                    SentAt = DateTime.UtcNow.AddDays(-8),
+                    IsRead = true,
+                    ReadAt = DateTime.UtcNow.AddDays(-8).AddHours(2)
+                });
+
+                thread1.Messages.Add(new Message
+                {
+                    SenderUserId = "staff-internal-med",
+                    SenderName = "Nurse Christine Cruz, RN (OPD Coordinator)",
+                    SenderRole = MessageSenderRole.CareTeam,
+                    Body = "Hello Ma'am Maria. For Fasting Blood Sugar, a 10-to-12 hour overnight fast is standard. You may drink plain water. Please proceed directly to Room 102 at 7:30 AM with your lab request slip.",
+                    SentAt = DateTime.UtcNow.AddDays(-8).AddHours(3),
+                    IsRead = true,
+                    ReadAt = DateTime.UtcNow.AddDays(-7)
+                });
+
+                thread1.Messages.Add(new Message
+                {
+                    SenderUserId = primary.Id,
+                    SenderName = primary.FullName,
+                    SenderRole = MessageSenderRole.Patient,
+                    Body = "Thank you for the clear instructions Nurse Christine!",
+                    SentAt = DateTime.UtcNow.AddDays(-7),
+                    IsRead = true
+                });
+
+                var thread2 = new MessageThread
+                {
+                    PatientUserId = primary.Id,
+                    Department = "OPD Pharmacy",
+                    Subject = "Prescription Refill Voucher Ready",
+                    Category = MessageCategory.MedicationQuestion,
+                    Status = ThreadStatus.Open,
+                    CreatedAt = DateTime.UtcNow.AddDays(-1),
+                    LastMessageAt = DateTime.UtcNow.AddHours(-3)
+                };
+
+                thread2.Messages.Add(new Message
+                {
+                    SenderUserId = "staff-pharmacy",
+                    SenderName = "Pharmacist Mark Reyes, RPh",
+                    SenderRole = MessageSenderRole.CareTeam,
+                    Body = "Good day Ma'am Maria. Your refill request for Losartan 50mg (Rx #DRMC-RX-2026-3820) has been approved by Dr. Llanos and is ready for claiming at OPD Pharmacy Window 2. Please bring your Senior/Patient ID.",
+                    SentAt = DateTime.UtcNow.AddHours(-3),
+                    IsRead = false // Leaves 1 unread message for dashboard counter
+                });
+
+                db.MessageThreads.AddRange(thread1, thread2);
+            }
+
+            if (!db.DependentProfiles.Any(d => d.GuardianUserId == primary.Id))
+            {
+                db.DependentProfiles.AddRange(
+                    new DependentProfile
+                    {
+                        GuardianUserId = primary.Id,
+                        FullName = "Joshua D. Santos",
+                        DateOfBirth = DateTime.UtcNow.AddYears(-8),
+                        Gender = "Male",
+                        Relationship = RelationshipType.Child,
+                        PhilHealthNumber = "19-203948571-3",
+                        IdType = "PSA Birth Certificate",
+                        IdNumber = "PSA-2018-091823",
+                        StatutoryConsentAgreed = true,
+                        CreatedAt = DateTime.UtcNow.AddMonths(-4)
+                    },
+                    new DependentProfile
+                    {
+                        GuardianUserId = primary.Id,
+                        FullName = "Corazon Delos Santos",
+                        DateOfBirth = new DateTime(1958, 9, 20),
+                        Gender = "Female",
+                        Relationship = RelationshipType.Parent,
+                        PhilHealthNumber = "04-928173456-1",
+                        IdType = "OSCA Senior Citizen ID",
+                        IdNumber = "OSCA-TAGUM-2018-4410",
+                        StatutoryConsentAgreed = true,
+                        CreatedAt = DateTime.UtcNow.AddMonths(-2)
+                    }
+                );
             }
 
             db.SaveChanges();

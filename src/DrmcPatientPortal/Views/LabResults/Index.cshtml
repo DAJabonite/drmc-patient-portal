@@ -1,0 +1,137 @@
+@model LabResultsIndexViewModel
+@{
+    ViewData["Title"] = "Diagnostic & Laboratory Results";
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-white text-primary-drmc fw-bold px-3 py-1 rounded-pill small">
+                        <i class="bi bi-file-earmark-medical-fill me-1"></i> Patient Health Records
+                    </span>
+                    <span class="small text-white text-opacity-75">Central Diagnostic Laboratory</span>
+                </div>
+                <h1 class="display-6 fw-bold mb-0">Laboratory &amp; Diagnostic Results</h1>
+            </div>
+
+            <div class="d-flex gap-2">
+                <a asp-action="Trends" class="btn btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-graph-up me-1"></i> View Biomarker Trends
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Filter & Search Bar -->
+<section class="py-3 bg-white border-bottom sticky-top shadow-xs" style="z-index: 1020;">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-1 overflow-x-auto pb-1" style="max-width: 100%;">
+                <a asp-action="Index" asp-route-search="@Model.SearchTerm"
+                   class="btn btn-sm @(!Model.SelectedCategory.HasValue ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                    All Tests (@Model.LabResults.Count)
+                </a>
+                <a asp-action="Index" asp-route-category="@LabCategory.Hematology" asp-route-search="@Model.SearchTerm"
+                   class="btn btn-sm @(Model.SelectedCategory == LabCategory.Hematology ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                    Hematology
+                </a>
+                <a asp-action="Index" asp-route-category="@LabCategory.ClinicalChemistry" asp-route-search="@Model.SearchTerm"
+                   class="btn btn-sm @(Model.SelectedCategory == LabCategory.ClinicalChemistry ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                    Clinical Chemistry
+                </a>
+                <a asp-action="Index" asp-route-category="@LabCategory.SpecialDiagnostics" asp-route-search="@Model.SearchTerm"
+                   class="btn btn-sm @(Model.SelectedCategory == LabCategory.SpecialDiagnostics ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                    Special Diagnostics
+                </a>
+            </div>
+
+            <form asp-action="Index" method="get" class="d-flex gap-2">
+                @if (Model.SelectedCategory.HasValue)
+                {
+                    <input type="hidden" name="category" value="@Model.SelectedCategory.Value" />
+                }
+                <input type="text" name="search" value="@Model.SearchTerm" class="form-control form-control-sm"
+                       placeholder="Search test name or accession..." style="width: 240px;" />
+                <button type="submit" class="btn btn-sm btn-primary-drmc px-3 fw-semibold">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container">
+        @if (Model.LabResults.Count == 0)
+        {
+            <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
+                <i class="bi bi-file-earmark-x fs-1 text-muted mb-2"></i>
+                <h3 class="h5 fw-bold text-dark">No laboratory results found</h3>
+                <p class="text-muted small mb-3">No diagnostic records matched your selected criteria.</p>
+                <a asp-action="Index" class="btn btn-primary-drmc btn-sm rounded-pill px-4 fw-semibold mx-auto">
+                    View All Results
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex flex-column gap-3">
+                @foreach (var lab in Model.LabResults)
+                {
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white hover-shadow-sm transition">
+                        <div class="row align-items-center g-3">
+                            <div class="col-md-7">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="badge @(lab.Status == "Available" ? "bg-success-subtle text-success" : "bg-warning-subtle text-warning-emphasis") rounded-pill small">
+                                        <i class="bi @(lab.Status == "Available" ? "bi-check-circle" : "bi-clock") me-1"></i> @lab.Status
+                                    </span>
+                                    <span class="badge bg-light text-secondary border rounded-pill small">
+                                        @lab.Category
+                                    </span>
+                                    <span class="small text-muted" style="font-size: 0.75rem;">
+                                        Accession: <strong>@lab.AccessionNumber</strong>
+                                    </span>
+                                </div>
+
+                                <h2 class="h5 fw-bold text-primary-drmc mb-1">@lab.TestName</h2>
+                                <p class="small text-muted mb-2">@lab.ResultSummary</p>
+
+                                <div class="small text-muted d-flex flex-wrap gap-3" style="font-size: 0.8rem;">
+                                    <span><i class="bi bi-calendar3 me-1"></i> Collected: @lab.CollectedAt.ToString("MMM d, yyyy")</span>
+                                    @if (!string.IsNullOrEmpty(lab.OrderingPhysician))
+                                    {
+                                        <span><i class="bi bi-person-badge me-1"></i> Ordered by: @lab.OrderingPhysician</span>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="col-md-5 text-md-end">
+                                @if (lab.Status == "Available")
+                                {
+                                    <div class="d-flex gap-2 justify-content-md-end">
+                                        <a asp-action="Details" asp-route-id="@lab.Id" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold shadow-xs">
+                                            <i class="bi bi-file-earmark-text me-1"></i> View Full Report
+                                        </a>
+                                        <a asp-action="Print" asp-route-id="@lab.Id" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold">
+                                            <i class="bi bi-printer"></i>
+                                        </a>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small d-inline-flex align-items-center gap-1">
+                                        <span class="spinner-border spinner-border-sm text-warning" role="status"></span>
+                                        Processing in Laboratory
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</section>

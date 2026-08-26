@@ -1,6 +1,6 @@
 @model PatientDashboardViewModel
 @{
-    ViewData["Title"] = "My Dashboard";
+    ViewData["Title"] = "My Patient Dashboard";
     var firstName = string.IsNullOrWhiteSpace(Model.FullName)
         ? "Patient"
         : Model.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).First();
@@ -11,18 +11,35 @@
     <div class="container">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
             <div class="d-flex align-items-center gap-3">
-                <div class="dashboard-avatar">
-                    <i class="bi bi-person-fill"></i>
+                <div class="dashboard-avatar bg-white text-primary-drmc rounded-circle p-3 d-flex align-items-center justify-content-center shadow-xs" style="width: 56px; height: 56px;">
+                    <i class="bi bi-person-fill fs-3"></i>
                 </div>
-                <div class="d-flex align-items-center flex-wrap gap-2">
-                    <h1 class="display-6 fw-bold mb-0">Welcome, @firstName!</h1>
-                    <span class="badge bg-success-subtle text-success px-3 py-1 fs-6 rounded-pill fw-semibold border border-success border-opacity-25">Active Patient</span>
+                <div>
+                    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                        <h1 class="display-6 fw-bold mb-0">Welcome, @firstName!</h1>
+                        @if (Model.ActiveDependentId.HasValue)
+                        {
+                            <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fw-semibold">
+                                <i class="bi bi-person-badge-fill me-1"></i> Managing: @Model.ActiveDependentName
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill fw-semibold border border-success border-opacity-25">
+                                Verified Patient
+                            </span>
+                        }
+                    </div>
+                    <span class="small text-white text-opacity-75">Davao Regional Medical Center &middot; Patient Portal</span>
                 </div>
             </div>
 
-            <div class="d-flex align-items-center gap-2">
-                <a asp-area="Identity" asp-page="/Account/Manage/Index" class="btn btn-outline-light d-inline-flex align-items-center gap-2 px-3 py-2 rounded-3 fw-semibold shadow-sm">
-                    <i class="bi bi-person-gear fs-6"></i> Account Settings
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a asp-controller="Proxy" asp-action="Index" class="btn btn-outline-light d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill fw-semibold shadow-xs btn-sm">
+                    <i class="bi bi-people-fill"></i> Family &amp; Dependents (@Model.DependentsCount)
+                </a>
+                <a asp-area="Identity" asp-page="/Account/Manage/Index" class="btn btn-outline-light d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill fw-semibold shadow-xs btn-sm">
+                    <i class="bi bi-person-gear"></i> Settings
                 </a>
             </div>
         </div>
@@ -32,11 +49,19 @@
 <!-- Dashboard Main Cards Grid -->
 <section class="section py-5 bg-light">
     <div class="container">
+        
+        @if (TempData["SuccessMessage"] is not null)
+        {
+            <div class="alert alert-success rounded-4 mb-4 shadow-sm">
+                <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            </div>
+        }
+
         <div class="row g-4">
 
-            <!-- Next Appointment Card -->
+            <!-- 1. Next Appointment & Pre-Consultation Triage Card -->
             <div class="col-md-6 col-lg-4">
-                <div class="card summary-card border-0 shadow-sm rounded-4 h-100">
+                <div class="card summary-card border-0 shadow-sm rounded-4 h-100 bg-white hover-shadow-sm transition">
                     <div class="card-body p-4 d-flex flex-column">
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <span class="card-icon bg-primary-subtle text-primary-drmc rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
@@ -50,7 +75,7 @@
                             }
                         </div>
 
-                        <h2 class="h6 fw-bold text-dark mb-2">Next Appointment</h2>
+                        <h2 class="h6 fw-bold text-dark mb-2">Upcoming Appointment</h2>
 
                         @if (Model.NextAppointment is not null)
                         {
@@ -61,9 +86,22 @@
                                     <i class="bi bi-clock me-1 text-muted"></i>
                                     <strong>@appt.ScheduledAt.ToString("ddd, MMM d, yyyy")</strong> at @appt.ScheduledAt.ToString("h:mm tt")
                                 </div>
-                                <div class="small text-muted">
-                                    <i class="bi bi-person-badge me-1"></i> Attending: <span class="text-dark fw-medium">@appt.ProviderName</span>
+                                <div class="small text-muted mb-2">
+                                    <i class="bi bi-person-badge me-1"></i> Provider: <span class="text-dark fw-medium">@appt.DoctorName</span>
                                 </div>
+
+                                @if (Model.HasTriageForNextAppointment)
+                                {
+                                    <div class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill small">
+                                        <i class="bi bi-check2-circle me-1"></i> Pre-Triage Completed
+                                    </div>
+                                }
+                                else
+                                {
+                                    <a asp-controller="Triage" asp-action="Start" asp-route-appointmentId="@appt.Id" class="btn btn-sm btn-outline-drmc rounded-pill px-3 fw-semibold w-100">
+                                        <i class="bi bi-clipboard-pulse me-1"></i> Complete Pre-Triage Intake
+                                    </a>
+                                }
                             </div>
                         }
                         else
@@ -76,7 +114,7 @@
 
                         <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between">
                             <a asp-controller="Appointments" asp-action="Book" class="small text-primary-drmc fw-semibold text-decoration-none">
-                                <i class="bi bi-calendar-plus me-1"></i> Book New Appointment
+                                <i class="bi bi-calendar-plus me-1"></i> Book Appointment
                             </a>
                             <a asp-controller="Queue" asp-action="Index" class="small text-muted text-decoration-none">
                                 <i class="bi bi-broadcast me-1"></i> Live Queue
@@ -86,37 +124,37 @@
                 </div>
             </div>
 
-            <!-- Recent Lab Results Card -->
+            <!-- 2. Diagnostic & Laboratory Results Card -->
             <div class="col-md-6 col-lg-4">
-                <div class="card summary-card border-0 shadow-sm rounded-4 h-100">
+                <div class="card summary-card border-0 shadow-sm rounded-4 h-100 bg-white hover-shadow-sm transition">
                     <div class="card-body p-4 d-flex flex-column">
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <span class="card-icon bg-info-subtle text-info-emphasis rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
                                 <i class="bi bi-file-earmark-medical fs-5"></i>
                             </span>
-                            <span class="badge bg-secondary-subtle text-secondary px-2 py-1 rounded-pill small">
-                                Diagnostics
+                            <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill small fw-semibold">
+                                @Model.LabResults.Count Records
                             </span>
                         </div>
 
-                        <h2 class="h6 fw-bold text-dark mb-2">Recent Lab Work</h2>
+                        <h2 class="h6 fw-bold text-dark mb-2">Diagnostic &amp; Lab Reports</h2>
 
                         @if (Model.LabResults.Count > 0)
                         {
                             <div class="d-flex flex-column gap-2 mb-3">
                                 @foreach (var lab in Model.LabResults.Take(2))
                                 {
-                                    <div class="p-2 rounded-3 bg-light border">
+                                    <a asp-controller="LabResults" asp-action="Details" asp-route-id="@lab.Id" class="p-2 rounded-3 bg-light border text-decoration-none text-dark hover-shadow-xs transition">
                                         <div class="d-flex align-items-center justify-content-between mb-1">
-                                            <strong class="small text-dark">@lab.TestName</strong>
+                                            <strong class="small text-primary-drmc">@lab.TestName</strong>
                                             <span class="badge @(lab.Status == "Available" ? "bg-success-subtle text-success" : "bg-warning-subtle text-warning-emphasis") rounded-pill small">
                                                 @lab.Status
                                             </span>
                                         </div>
-                                        <div class="small text-muted" style="font-size:0.8rem;">
-                                            Collected: @lab.CollectedAt.ToString("MMM d, yyyy") &middot; @lab.ResultSummary
+                                        <div class="small text-muted" style="font-size:0.75rem;">
+                                            Collected: @lab.CollectedAt.ToString("MMM d, yyyy") &middot; @lab.AccessionNumber
                                         </div>
-                                    </div>
+                                    </a>
                                 }
                             </div>
                         }
@@ -128,18 +166,86 @@
                             </div>
                         }
 
-                        <div class="mt-auto pt-3 border-top">
-                            <span class="small text-muted">
-                                <i class="bi bi-shield-lock me-1"></i> Full PDF lab reports coming soon
-                            </span>
+                        <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                            <a asp-controller="LabResults" asp-action="Index" class="small text-primary-drmc fw-semibold text-decoration-none">
+                                View All Lab Reports &rarr;
+                            </a>
+                            <a asp-controller="LabResults" asp-action="Trends" class="small text-muted text-decoration-none">
+                                <i class="bi bi-graph-up me-1"></i> Trends
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Messages Card -->
+            <!-- 3. Prescriptions & Medications Card -->
             <div class="col-md-6 col-lg-4">
-                <div class="card summary-card border-0 shadow-sm rounded-4 h-100">
+                <div class="card summary-card border-0 shadow-sm rounded-4 h-100 bg-white hover-shadow-sm transition">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="card-icon bg-success-subtle text-success rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
+                                <i class="bi bi-capsule fs-5"></i>
+                            </span>
+                            <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill small fw-semibold">
+                                @Model.ActivePrescriptionsCount Active
+                            </span>
+                        </div>
+
+                        <h2 class="h6 fw-bold text-dark mb-2">Prescriptions &amp; Pharmacy</h2>
+
+                        <div class="p-3 bg-light rounded-3 mb-3 border">
+                            <div class="d-flex align-items-baseline gap-2 mb-2">
+                                <span class="display-6 fw-bold text-primary-drmc">@Model.ActivePrescriptionsCount</span>
+                                <span class="text-muted small">active drug prescriptions</span>
+                            </div>
+                            <p class="small text-muted mb-0">
+                                View your daily dosage schedule, drug safety instructions, and request outpatient pharmacy refills.
+                            </p>
+                        </div>
+
+                        <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                            <a asp-controller="Medications" asp-action="Index" class="small text-primary-drmc fw-semibold text-decoration-none">
+                                Medication Tracker &rarr;
+                            </a>
+                            <span class="small text-muted">OPD Pharmacy</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. After-Visit Summaries & Clinical Encounters Card -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card summary-card border-0 shadow-sm rounded-4 h-100 bg-white hover-shadow-sm transition">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="card-icon bg-primary-subtle text-primary-drmc rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
+                                <i class="bi bi-journal-medical fs-5"></i>
+                            </span>
+                            <span class="badge bg-secondary-subtle text-secondary px-3 py-1 rounded-pill small">
+                                @Model.ClinicalEncountersCount Encounters
+                            </span>
+                        </div>
+
+                        <h2 class="h6 fw-bold text-dark mb-2">After-Visit Summaries</h2>
+
+                        <div class="p-3 bg-light rounded-3 mb-3 border">
+                            <p class="small text-muted mb-0">
+                                Review official physician progress notes, ICD-10 clinical diagnoses, recorded vitals, and physician home care instructions.
+                            </p>
+                        </div>
+
+                        <div class="mt-auto pt-3 border-top">
+                            <a asp-controller="Encounters" asp-action="Index" class="small text-primary-drmc fw-semibold text-decoration-none">
+                                View Clinical Notes &rarr;
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Messages & Care Team Communication Card -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card summary-card border-0 shadow-sm rounded-4 h-100 bg-white hover-shadow-sm transition">
                     <div class="card-body p-4 d-flex flex-column">
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <span class="card-icon bg-warning-subtle text-warning-emphasis rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
@@ -153,133 +259,57 @@
                             }
                         </div>
 
-                        <h2 class="h6 fw-bold text-dark mb-2">Messages &amp; Advisories</h2>
+                        <h2 class="h6 fw-bold text-dark mb-2">Care Team Messaging</h2>
 
                         <div class="p-3 bg-light rounded-3 mb-3 border">
                             <div class="d-flex align-items-baseline gap-2 mb-2">
                                 <span class="display-6 fw-bold text-primary-drmc">@Model.UnreadMessages</span>
-                                <span class="text-muted small">@(Model.UnreadMessages == 1 ? "unread notification" : "unread notifications")</span>
+                                <span class="text-muted small">unread clinical replies</span>
                             </div>
                             <p class="small text-muted mb-0">
-                                You have active notifications regarding clinical schedules and DRMC patient guidelines.
+                                Send non-urgent questions to clinic coordinators regarding lab tests, appointments, or prescriptions.
                             </p>
                         </div>
 
-                        <div class="mt-auto pt-3 border-top">
-                            <span class="small text-muted">
-                                <i class="bi bi-lock me-1"></i> Direct doctor messaging coming soon
-                            </span>
+                        <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                            <a asp-controller="Messages" asp-action="Index" class="small text-primary-drmc fw-semibold text-decoration-none">
+                                Open Inbox &rarr;
+                            </a>
+                            <a asp-controller="Messages" asp-action="New" class="small text-muted text-decoration-none">
+                                <i class="bi bi-pencil-square me-1"></i> Compose
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Patient Profile Card -->
+            <!-- 6. Caregiver & Dependent Profiles Card -->
             <div class="col-md-6 col-lg-4">
-                <div class="card summary-card border-0 shadow-sm rounded-4 h-100">
+                <div class="card summary-card border-0 shadow-sm rounded-4 h-100 bg-white hover-shadow-sm transition">
                     <div class="card-body p-4 d-flex flex-column">
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <span class="card-icon bg-primary-subtle text-primary-drmc rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
-                                <i class="bi bi-person-vcard fs-5"></i>
+                                <i class="bi bi-people fs-5"></i>
                             </span>
-                            <span class="badge bg-light text-dark border px-2 py-1 rounded-pill small">
-                                Verified
-                            </span>
-                        </div>
-
-                        <h2 class="h6 fw-bold text-dark mb-2">Patient Profile</h2>
-
-                        <div class="mb-3">
-                            <h3 class="h6 fw-bold text-primary-drmc mb-1">@Model.FullName</h3>
-                            <div class="small text-muted mb-1">
-                                <i class="bi bi-envelope me-1"></i> @Model.Email
-                            </div>
-                            <div class="small text-muted mb-1">
-                                <i class="bi bi-telephone me-1"></i> @Model.ContactNumber
-                            </div>
-                            <div class="small text-muted">
-                                <i class="bi bi-calendar3 me-1"></i> Member since @Model.CreatedAt.ToString("MMMM yyyy")
-                            </div>
-                        </div>
-
-                        <div class="mt-auto pt-3 border-top">
-                            <a class="btn btn-sm btn-outline-drmc w-100 fw-semibold" asp-area="Identity" asp-page="/Account/Manage/Index">
-                                Manage Account Settings <i class="bi bi-arrow-right ms-1"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Clinical Departments Directory Card -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card summary-card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-body p-4 d-flex flex-column">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <span class="card-icon bg-success-subtle text-success rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
-                                <i class="bi bi-building fs-5"></i>
-                            </span>
-                            <span class="badge bg-light text-dark border px-2 py-1 rounded-pill small">
-                                8 Specialties
+                            <span class="badge bg-light text-dark border px-3 py-1 rounded-pill small">
+                                @Model.DependentsCount Profiles
                             </span>
                         </div>
 
-                        <h2 class="h6 fw-bold text-dark mb-2">Hospital Departments</h2>
-                        <p class="small text-muted mb-3">
-                            Explore available specialized outpatient departments and services at Davao Regional Medical Center.
-                        </p>
-
-                        <div class="d-flex flex-wrap gap-1 mb-3">
-                            @foreach (var dept in Model.Departments.Take(4))
-                            {
-                                <span class="badge bg-light text-secondary border small px-2 py-1">@dept.Name</span>
-                            }
-                            <span class="badge bg-light text-muted border small px-2 py-1">+@(Model.Departments.Count - 4) more</span>
-                        </div>
-
-                        <div class="mt-auto pt-3 border-top">
-                            <a class="btn btn-sm btn-outline-drmc w-100 fw-semibold" asp-controller="Directory" asp-action="Index">
-                                Find Doctors &amp; Clinics <i class="bi bi-arrow-right ms-1"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Hospital Advisory & Announcements Card -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card summary-card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-body p-4 d-flex flex-column">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <span class="card-icon bg-danger-subtle text-danger rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
-                                <i class="bi bi-megaphone fs-5"></i>
-                            </span>
-                            <span class="badge bg-danger-subtle text-danger px-2 py-1 rounded-pill small">
-                                Advisory
-                            </span>
-                        </div>
-
-                        <h2 class="h6 fw-bold text-dark mb-2">Patient Advisory</h2>
+                        <h2 class="h6 fw-bold text-dark mb-2">Family &amp; Dependent Proxy</h2>
 
                         <div class="p-3 bg-light rounded-3 mb-3 border">
-                            <ul class="list-unstyled small text-muted mb-0 d-flex flex-column gap-2">
-                                <li class="d-flex align-items-start gap-2">
-                                    <i class="bi bi-check-circle-fill text-success mt-1"></i>
-                                    <span>Please arrive <strong>15 minutes</strong> prior to your scheduled clinic appointment.</span>
-                                </li>
-                                <li class="d-flex align-items-start gap-2">
-                                    <i class="bi bi-check-circle-fill text-success mt-1"></i>
-                                    <span>Present a valid government ID (PhilSys / PhilHealth) at the triage desk.</span>
-                                </li>
-                            </ul>
+                            <p class="small text-muted mb-0">
+                                Manage outpatient appointments, diagnostic lab results, and medication refills for minor children and senior parents.
+                            </p>
                         </div>
 
-                        <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between">
-                            <a asp-controller="Advisories" asp-action="Index" class="small text-primary-drmc fw-semibold text-decoration-none">
-                                View Health Advisories &rarr;
+                        <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                            <a asp-controller="Proxy" asp-action="Index" class="small text-primary-drmc fw-semibold text-decoration-none">
+                                Manage Dependents &rarr;
                             </a>
-                            <a href="tel:1555" class="small text-muted text-decoration-none">
-                                <i class="bi bi-telephone-fill me-1 text-danger"></i> DOH: 1555
+                            <a asp-controller="Proxy" asp-action="Add" class="small text-muted text-decoration-none">
+                                <i class="bi bi-person-plus me-1"></i> Add
                             </a>
                         </div>
                     </div>

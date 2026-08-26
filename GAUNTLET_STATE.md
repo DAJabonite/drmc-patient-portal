@@ -110,9 +110,19 @@ Format: `piece | round | verdict | biggest gap named | status`
 | Phase 3.1: Malasakit Navigator | 1 | PASS | RA 11463 statutory programs, interactive 3-step questionnaire, printable document checklist | CONVERGED |
 | Phase 3.1: Health Advisories | 1 | PASS | Bulletin feed, pinned urgent alert banner, category filters, real-time view tracking | CONVERGED |
 | Phase 3.1: Navigation & Integration | 1 | PASS | Header navbar & landing cards wired to all 5 features; 15/15 endpoints return HTTP 200; zero forbidden words | CONVERGED |
+| Phase 3.2: Lab Results Viewer | 1 | FAIL | View lookup failed due to sub-directory path convention (Major) | FIXED (Standardized view folder locations to `/Views/<ControllerName>/`) |
+| Phase 3.2: Lab Results Viewer | 2 | PASS | CBC, FBS, Lipid, HbA1c full analyte breakdown, flags, printable report, biomarker trends | CONVERGED |
+| Phase 3.2: After-Visit Summaries | 1 | PASS | Consultation timeline, primary/secondary ICD-10 diagnoses, vitals, care plan, printable slip | CONVERGED |
+| Phase 3.2: Prescription Tracker | 1 | PASS | Allergy alert banner, dosing visualizer, active Rx list, 1-click refill order, duplicate protection | CONVERGED |
+| Phase 3.2: Digital Self-Triage | 1 | PASS | 3-step intake, pain scale, self-reported vitals, comorbidities, emergency red-flag safeguards | CONVERGED |
+| Phase 3.2: Care Team Messaging | 1 | PASS | Threaded messaging, department routing, unread badge counter sync, real-time reply stream | CONVERGED |
+| Phase 3.2: Caregiver & Proxy Access | 1 | PASS | Dependent profiles (child/senior parent), statutory consent, in-session context switching & audit logging | CONVERGED |
+| Phase 3.2: Security Boundaries & Audit | 1 | PASS | `docs/SECURITY_REVIEW_TODO.md` + matching in-code comments across all 4 PHI boundaries; audit logging service | CONVERGED |
+| Phase 3.2: Automated Test Suite | 1 | PASS | 6 xUnit/Moq unit & integration tests covering all 6 controllers passing cleanly (0 failures) | CONVERGED |
 
 ---
 
-## Phase 3.1 Convergence Note
+## Phase 3.2 Convergence Note
 
-All 5 public homepage features and navigation integrations are fully implemented, DB-backed with EF Core SQLite, styled using the authentic DRMC design system tokens, and verified end-to-end with zero errors and zero warnings. Final milestone status: **CONVERGED**.
+All 6 authenticated clinical platform features are fully implemented, DB-backed with EF Core SQLite, verified with authenticated browser automation subagents, backed by 6 unit/integration tests, and tracked in `docs/SECURITY_REVIEW_TODO.md` with corresponding in-code boundary markers. Final milestone status: **CONVERGED**.
+

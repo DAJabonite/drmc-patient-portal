@@ -1,0 +1,182 @@
+@model MedicationsIndexViewModel
+@{
+    ViewData["Title"] = "Prescription & Medication Tracker";
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-white text-primary-drmc fw-bold px-3 py-1 rounded-pill small">
+                        <i class="bi bi-capsule me-1"></i> Pharmacy Health Record
+                    </span>
+                    <span class="small text-white text-opacity-75">DRMC Outpatient Pharmacy</span>
+                </div>
+                <h1 class="display-6 fw-bold mb-0">Active Prescriptions &amp; Medications</h1>
+            </div>
+
+            <div>
+                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold fs-6">
+                    <i class="bi bi-check2-circle me-1"></i> @Model.ActiveCount Active Prescriptions
+                </span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container" style="max-width: 960px;">
+        
+        <!-- Allergy Alert Banner -->
+        @if (Model.Allergies.Count > 0)
+        {
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-danger text-white mb-4 position-relative overflow-hidden">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="p-2 rounded-circle bg-white text-danger d-inline-flex" style="flex-shrink:0;">
+                        <i class="bi bi-exclamation-octagon-fill fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-white text-danger fw-bold rounded-pill small">PATIENT SAFETY ALERT</span>
+                            <span class="small text-white text-opacity-85">Documented Drug Allergies</span>
+                        </div>
+                        <h2 class="h6 fw-bold mb-2">Known Clinical Allergies Recorded:</h2>
+                        <ul class="mb-0 small ps-3">
+                            @foreach (var a in Model.Allergies)
+                            {
+                                <li>
+                                    <strong>@a.Allergen</strong> &mdash; <span>Reaction: @a.Reaction</span> (Severity: <em>@a.Severity</em>)
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Daily Medication Schedule Guide -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+            <h2 class="h6 fw-bold text-primary-drmc mb-3">
+                <i class="bi bi-clock-history me-1"></i> Daily Dosing Schedule Visualizer
+            </h2>
+
+            <div class="row g-3">
+                <div class="col-sm-6 col-md-3">
+                    <div class="p-3 bg-light rounded-3 border h-100">
+                        <div class="d-flex align-items-center gap-2 mb-2 text-warning-emphasis">
+                            <i class="bi bi-sun-fill fs-5 text-warning"></i>
+                            <strong class="small">Morning (8:00 AM)</strong>
+                        </div>
+                        <ul class="list-unstyled small text-dark mb-0 ps-1">
+                            <li>&bull; Losartan 50mg (OD)</li>
+                            <li>&bull; Metformin 500mg (BID)</li>
+                            <li>&bull; Ascorbic Acid + Zinc</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-md-3">
+                    <div class="p-3 bg-light rounded-3 border h-100">
+                        <div class="d-flex align-items-center gap-2 mb-2 text-info-emphasis">
+                            <i class="bi bi-brightness-high-fill fs-5 text-info"></i>
+                            <strong class="small">Noon (12:00 PM)</strong>
+                        </div>
+                        <span class="small text-muted">No scheduled noon medications.</span>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-md-3">
+                    <div class="p-3 bg-light rounded-3 border h-100">
+                        <div class="d-flex align-items-center gap-2 mb-2 text-primary-drmc">
+                            <i class="bi bi-sunset-fill fs-5 text-primary"></i>
+                            <strong class="small">Evening (6:00 PM)</strong>
+                        </div>
+                        <ul class="list-unstyled small text-dark mb-0 ps-1">
+                            <li>&bull; Metformin 500mg (BID)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-md-3">
+                    <div class="p-3 bg-light rounded-3 border h-100">
+                        <div class="d-flex align-items-center gap-2 mb-2 text-secondary">
+                            <i class="bi bi-moon-stars-fill fs-5 text-secondary"></i>
+                            <strong class="small">Bedtime (9:00 PM)</strong>
+                        </div>
+                        <span class="small text-muted">No bedtime doses.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prescriptions List -->
+        <div class="mb-3 d-flex align-items-center justify-content-between">
+            <h2 class="h5 fw-bold text-primary-drmc mb-0">Active Medication Orders (@Model.Prescriptions.Count)</h2>
+            <span class="small text-muted">Managed by DRMC OPD Pharmacy</span>
+        </div>
+
+        <div class="d-flex flex-column gap-3">
+            @foreach (var rx in Model.Prescriptions)
+            {
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                    <div class="row align-items-center g-3">
+                        <div class="col-md-7">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge @(rx.Status == PrescriptionStatus.Active ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary") rounded-pill small">
+                                    @rx.Status
+                                </span>
+                                <span class="small text-muted" style="font-size: 0.75rem;">
+                                    Rx Number: <strong>@rx.RxNumber</strong>
+                                </span>
+                            </div>
+
+                            <h3 class="h5 fw-bold text-dark mb-1">
+                                @rx.GenericName
+                                @if (!string.IsNullOrEmpty(rx.BrandName))
+                                {
+                                    <span class="text-muted fw-normal fs-6">(@rx.BrandName)</span>
+                                }
+                            </h3>
+
+                            <div class="small text-primary-drmc fw-semibold mb-2">
+                                <i class="bi bi-prescription2 me-1"></i> @rx.Dosage &middot; @rx.DosageForm &middot; @rx.Frequency
+                            </div>
+
+                            <p class="small text-muted mb-2">@rx.Instructions</p>
+
+                            <div class="small text-muted d-flex flex-wrap gap-3" style="font-size: 0.8rem;">
+                                <span><i class="bi bi-person-badge me-1"></i> Prescriber: @rx.PrescribingDoctor</span>
+                                <span><i class="bi bi-calendar3 me-1"></i> Valid Until: @rx.ValidUntil.ToString("MMM d, yyyy")</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-5 text-md-end">
+                            <div class="mb-3">
+                                <span class="badge @(rx.RefillsRemaining > 0 ? "bg-primary-subtle text-primary-drmc" : "bg-danger-subtle text-danger") px-3 py-1 rounded-pill small">
+                                    @rx.RefillsRemaining / @rx.RefillsTotal Refills Remaining
+                                </span>
+                            </div>
+
+                            <div class="d-flex gap-2 justify-content-md-end">
+                                <a asp-action="Details" asp-route-id="@rx.Id" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold btn-sm">
+                                    Details
+                                </a>
+                                @if (rx.Status == PrescriptionStatus.Active && rx.RefillsRemaining > 0)
+                                {
+                                    <form asp-action="RequestRefill" method="post" class="d-inline">
+                                        <input type="hidden" name="prescriptionId" value="@rx.Id" />
+                                        <button type="submit" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold btn-sm shadow-xs">
+                                            <i class="bi bi-arrow-repeat me-1"></i> Order Refill
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+    </div>
+</section>
