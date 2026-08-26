@@ -127,24 +127,88 @@
                             </div>
 
                             <div class="col-md-5 text-md-end">
-                                @if (isCurrent)
-                                {
-                                    <span class="badge bg-success px-4 py-2 rounded-pill fw-bold">
-                                        <i class="bi bi-check2 me-1"></i> Active Record
-                                    </span>
-                                }
-                                else
-                                {
-                                    <form asp-action="SwitchProfile" asp-route-id="@dep.Id" method="post" class="d-inline">
-                                        <button type="submit" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold btn-sm shadow-xs">
-                                            <i class="bi bi-box-arrow-in-right me-1"></i> Switch to This Profile
+                                <div class="d-flex gap-2 justify-content-md-end align-items-center">
+                                    @if (isCurrent)
+                                    {
+                                        <span class="badge bg-success px-4 py-2 rounded-pill fw-bold">
+                                            <i class="bi bi-check2 me-1"></i> Active Record
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="SwitchProfile" asp-route-id="@dep.Id" method="post" class="d-inline">
+                                            <button type="submit" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold btn-sm shadow-xs">
+                                                <i class="bi bi-box-arrow-in-right me-1"></i> Switch View
+                                            </button>
+                                        </form>
+                                    }
+
+                                    <form asp-action="Revoke" asp-route-id="@dep.Id" method="post" class="d-inline"
+                                          onsubmit="return confirm('Are you sure you want to revoke caregiver authorization for @dep.FullName?');">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3" title="Revoke Proxy Access">
+                                            <i class="bi bi-trash3"></i>
                                         </button>
                                     </form>
-                                }
+                                </div>
                             </div>
                         </div>
                     </div>
                 }
+            </div>
+        }
+
+        <!-- Statutory Consent Audit Trail -->
+        @if (Model.ConsentLogs.Count > 0)
+        {
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                <h3 class="h6 fw-bold text-primary-drmc mb-3">
+                    <i class="bi bi-journal-check me-1"></i> Statutory Consent &amp; Delegation Audit Trail
+                </h3>
+
+                <div class="table-responsive rounded-3 border">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead class="table-light text-uppercase" style="font-size: 0.75rem;">
+                            <tr>
+                                <th>Date &amp; Time (PST)</th>
+                                <th>Dependent</th>
+                                <th>Consent Event</th>
+                                <th>Statutory Terms Declaration</th>
+                                <th>Origin IP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in Model.ConsentLogs)
+                            {
+                                <tr>
+                                    <td class="text-muted text-nowrap">@log.Timestamp.ToString("MMM d, yyyy h:mm tt")</td>
+                                    <td class="fw-semibold text-dark">@log.DependentName</td>
+                                    <td>
+                                        @if (log.EventType == ConsentEventType.Granted)
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-2">
+                                                Consent Granted
+                                            </span>
+                                        }
+                                        else if (log.EventType == ConsentEventType.Revoked)
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger border border-danger border-opacity-25 rounded-pill px-2">
+                                                Consent Revoked
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-primary-subtle text-primary-drmc rounded-pill px-2">
+                                                Context Switched
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="text-muted" style="max-width: 320px;">@log.ConsentDeclarationText</td>
+                                    <td class="text-muted small">@log.IpAddress</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             </div>
         }
 
@@ -154,7 +218,7 @@
                 <i class="bi bi-shield-lock me-1 text-primary-drmc"></i> Caregiver Authorization &amp; Privacy Notice:
             </h4>
             <p class="mb-0 leading-relaxed">
-                Under the Philippine Data Privacy Act of 2012 (RA 10173) and DOH Administrative Orders, parents and legal guardians may access healthcare records of minor dependents below 18 years old. For adult dependents and senior citizens, access is granted under statutory familial consent for outpatient care coordination. All proxy switches and health record views are logged in the DRMC security audit register.
+                Under the Philippine Data Privacy Act of 2012 (RA 10173) and DOH Administrative Orders, parents and legal guardians may access healthcare records of minor dependents below 18 years old. For adult dependents and senior citizens, access is granted under statutory familial consent for outpatient care coordination. All proxy switches, grant declarations, and health record views are logged in the DRMC security audit register.
             </p>
         </div>
 

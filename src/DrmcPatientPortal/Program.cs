@@ -1,8 +1,11 @@
+using System.Globalization;
+using DrmcPatientPortal;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,8 +17,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-// Use the extended ApplicationUser. Email confirmation is not required for this build
-// (no SMTP provider is wired), so a fresh registration can sign in immediately.
+// Localization: Trilingual support for English (en), Filipino (fil), and Cebuano (ceb)
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+
+// Extended ApplicationUser with Identity & 2FA support
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
@@ -26,17 +31,17 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     options.Password.RequireUppercase = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireDigit = true;
+    options.Tokens.AuthenticatorTokenProvider = TokenOptions.DefaultAuthenticatorProvider;
 })
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// No SMTP configured: in Development, Identity "email" (e.g. password-reset links, appointment notifications)
-// is logged to console/output so the flow can be exercised. Documented in README.
+// In Development, Identity emails and 2FA tokens are logged to console. Documented in README.
 builder.Services.AddSingleton<IEmailSender, ConsoleEmailSender>();
 
-// No physical telco SMS gateway configured: in Development, SMS confirmations are logged to console.
+// In Development, SMS confirmations and OTP codes are logged to console.
 builder.Services.AddSingleton<ISmsSender, ConsoleSmsSender>();
 
-// In-process QR code generator for appointment check-in slips (SVG / PNG data URLs)
+// In-process vector QR code generator for appointment check-in slips
 builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
 
 // PHI and security access audit logging service
@@ -51,12 +56,17 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddViewLocalization()
+    .AddDataAnnotationsLocalization(options =>
+    {
+        options.DataAnnotationLocalizerProvider = (type, factory) =>
+            factory.Create(typeof(SharedResource));
+    });
 
 var app = builder.Build();
 
 // Seed the database with development/review patient data (safe: only in Development).
-// Seed credentials are documented in README.md; nothing seed-like appears in the UI.
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
@@ -78,6 +88,23 @@ else
 
 app.UseHttpsRedirection();
 app.UseRouting();
+
+// Request Localization: en (Default), fil, ceb
+var supportedCultures = new[] { "en", "fil", "ceb" };
+var localizationOptions = new RequestLocalizationOptions()
+    .SetDefaultCulture("en")
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures);
+
+localizationOptions.RequestCultureProviders = new List<IRequestCultureProvider>
+{
+    new CookieRequestCultureProvider(),
+    new QueryStringRequestCultureProvider(),
+    new AcceptLanguageHeaderRequestCultureProvider()
+};
+
+app.UseRequestLocalization(localizationOptions);
+
 app.UseSession();
 
 app.UseAuthentication();

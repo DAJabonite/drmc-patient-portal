@@ -25,6 +25,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<DependentProfile> DependentProfiles => Set<DependentProfile>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<ConsentLogEntry> ConsentLogEntries => Set<ConsentLogEntry>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -181,6 +182,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<AuditLog>(e =>
         {
             e.HasIndex(x => x.UserId);
+            e.HasIndex(x => x.Timestamp);
+        });
+
+        builder.Entity<ConsentLogEntry>(e =>
+        {
+            e.HasOne(x => x.Guardian)
+                .WithMany(u => u.ConsentLogEntries)
+                .HasForeignKey(x => x.GuardianUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasIndex(x => x.GuardianUserId);
             e.HasIndex(x => x.Timestamp);
         });
     }

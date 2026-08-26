@@ -36,4 +36,5 @@ public class ApplicationUser : IdentityUser
     public ICollection<TriageIntake> TriageIntakes { get; set; } = new List<TriageIntake>();
     public ICollection<MessageThread> MessageThreads { get; set; } = new List<MessageThread>();
     public ICollection<DependentProfile> DependentProfiles { get; set; } = new List<DependentProfile>();
+    public ICollection<ConsentLogEntry> ConsentLogEntries { get; set; } = new List<ConsentLogEntry>();
 }

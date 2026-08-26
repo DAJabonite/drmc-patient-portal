@@ -78,6 +78,32 @@ public class PatientController : Controller
 
         return View(model);
     }
+
+    // GET /Patient/Audit
+    [HttpGet("Patient/Audit")]
+    public async Task<IActionResult> Audit()
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user is null)
+        {
+            return Challenge();
+        }
+
+        var logs = await _db.AuditLogs
+            .Where(a => a.UserId == user.Id)
+            .OrderByDescending(a => a.Timestamp)
+            .Take(50)
+            .ToListAsync();
+
+        var model = new PatientAuditViewModel
+        {
+            PatientName = user.FullName,
+            Email = user.Email ?? string.Empty,
+            Logs = logs
+        };
+
+        return View(model);
+    }
 }
 
 public class PatientDashboardViewModel
@@ -96,4 +122,11 @@ public class PatientDashboardViewModel
     public int? ActiveDependentId { get; set; }
     public string? ActiveDependentName { get; set; }
     public IReadOnlyList<ClinicalDepartment> Departments { get; set; } = Array.Empty<ClinicalDepartment>();
+}
+
+public class PatientAuditViewModel
+{
+    public string PatientName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public IReadOnlyList<AuditLog> Logs { get; set; } = Array.Empty<AuditLog>();
 }

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="0" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- Navigation -->
+  <data name="Nav_Home"><value>Tahanan</value></data>
+  <data name="Nav_Queue"><value>Pila sa OPD</value></data>
+  <data name="Nav_Appointments"><value>Magpa-Appointment</value></data>
+  <data name="Nav_Directory"><value>Mga Doktor at Klinika</value></data>
+  <data name="Nav_Malasakit"><value>Malasakit Center</value></data>
+  <data name="Nav_Advisories"><value>Mga Anunsyo sa Kalusugan</value></data>
+  <data name="Nav_Dashboard"><value>Dashboard ng Pasyente</value></data>
+  <data name="Nav_LabResults"><value>Resulta ng Laboratoryo</value></data>
+  <data name="Nav_Medications"><value>Mga Aktibong Reseta</value></data>
+  <data name="Nav_Encounters"><value>Tala ng Konsultasyon</value></data>
+  <data name="Nav_Messages"><value>Mensahe sa Klinika</value></data>
+  <data name="Nav_Proxy"><value>Pamilya at Dependents</value></data>
+  <data name="Nav_Audit"><value>Kasaysayan ng Pag-access</value></data>
+  <data name="Nav_Settings"><value>Mga Setting ng Account</value></data>
+  <data name="Nav_SignOut"><value>Mag-logout</value></data>
+  <data name="Nav_LogIn"><value>Mag-login</value></data>
+  <data name="Nav_Register"><value>Magparehistro</value></data>
+  <data name="Nav_Language"><value>Wika</value></data>
+
+  <!-- Common Actions & Buttons -->
+  <data name="Action_Search"><value>Maghanap</value></data>
+  <data name="Action_Filter"><value>Salain</value></data>
+  <data name="Action_Print"><value>I-print / I-save bilang PDF</value></data>
+  <data name="Action_ViewDetails"><value>Tingnan ang Detalye</value></data>
+  <data name="Action_ReturnDashboard"><value>Bumalik sa Dashboard</value></data>
+  <data name="Action_Cancel"><value>Kanselahin</value></data>
+  <data name="Action_Submit"><value>Isumite</value></data>
+  <data name="Action_Back"><value>Bumalik</value></data>
+
+  <!-- Dashboard & Headers -->
+  <data name="Header_Tagline"><value>Pagkalinga sa Buhay, Pagbabago ng Kinabukasan.</value></data>
+  <data name="Header_HospitalName"><value>Davao Regional Medical Center</value></data>
+  <data name="Header_SubTitle"><value>Republika ng Pilipinas · Kagawaran ng Kalusugan</value></data>
+  <data name="Dashboard_Welcome"><value>Maligayang pagdating</value></data>
+  <data name="Dashboard_UpcomingAppt"><value>Paparating na Appointment</value></data>
+  <data name="Dashboard_LabResults"><value>Mga Ulat sa Laboratoryo</value></data>
+  <data name="Dashboard_Prescriptions"><value>Mga Reseta at Botika</value></data>
+  <data name="Dashboard_Encounters"><value>Buod ng Pagbisita sa Doktor</value></data>
+  <data name="Dashboard_Messaging"><value>Komunikasyon sa Care Team</value></data>
+  <data name="Dashboard_Proxy"><value>Pamamahala ng Pamilya at Dependent</value></data>
+
+  <!-- Lay Medical Terminology -->
+  <data name="Med_BloodPressure"><value>Presyon ng Dugo</value></data>
+  <data name="Med_HeartRate"><value>Bilis ng Tibok ng Puso</value></data>
+  <data name="Med_Temperature"><value>Temperatura ng Katawan</value></data>
+  <data name="Med_BloodSugar"><value>Antas ng Asukal sa Dugo</value></data>
+  <data name="Med_FastingBloodSugar"><value>Pagsusuri sa Asukal sa Dugo (FBS)</value></data>
+  <data name="Med_CompleteBloodCount"><value>Kumpletong Bilang ng Dugo (CBC)</value></data>
+  <data name="Med_LipidProfile"><value>Pagsusuri sa Kolesterol at Taba sa Dugo</value></data>
+  <data name="Med_Allergy"><value>Nakatala na Alerhiya sa Gamot</value></data>
+  <data name="Med_RefillsRemaining"><value>Natitirang Refill ng Reseta</value></data>
+  <data name="Med_OrderRefill"><value>Humingi ng Refill sa Botika</value></data>
+  <data name="Med_PharmacyPickup"><value>Kuhanan sa OPD Pharmacy Window 2</value></data>
+  <data name="Med_EmergencyWarning"><value>Para sa mga emerhensiya, magtungo agad sa DRMC Emergency Room o tumawag sa 1555.</value></data>
+</root>

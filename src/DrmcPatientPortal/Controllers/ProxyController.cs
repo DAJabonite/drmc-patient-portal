@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DrmcPatientPortal.Controllers;
 
 // SECURITY REVIEW TODO (Item #2): Caregiver & Proxy Access Trust Model
-// BOUNDARY NOTE: Guardian linking and in-session profile switching are fully built in code.
+// BOUNDARY NOTE: Guardian linking, consent lifecycle tracking, and in-session profile switching are fully built in code.
 // Production hardening requirements:
 // 1. Formal identity verification & PSA birth certificate validation before proxy activation.
 // 2. Automated access expiration or re-consent when minor dependents reach age of majority (18 years old in the Philippines).
@@ -48,6 +48,12 @@ public class ProxyController : Controller
             .OrderBy(d => d.DateOfBirth)
             .ToListAsync();
 
+        var consentLogs = await _db.ConsentLogEntries
+            .Where(c => c.GuardianUserId == user.Id)
+            .OrderByDescending(c => c.Timestamp)
+            .Take(10)
+            .ToListAsync();
+
         var activeDepId = HttpContext.Session.GetInt32(SessionActiveDependentId);
         var activeDepName = HttpContext.Session.GetString(SessionActiveDependentName);
 
@@ -56,7 +62,8 @@ public class ProxyController : Controller
             GuardianName = user.FullName,
             ActiveDependentId = activeDepId,
             ActiveDependentName = activeDepName,
-            Dependents = dependents
+            Dependents = dependents,
+            ConsentLogs = consentLogs
         };
 
         return View(model);
@@ -106,6 +113,21 @@ public class ProxyController : Controller
         await _db.SaveChangesAsync();
 
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+
+        // Record statutory consent log entry
+        var consentLog = new ConsentLogEntry
+        {
+            GuardianUserId = user.Id,
+            DependentId = profile.Id,
+            DependentName = profile.FullName,
+            EventType = ConsentEventType.Granted,
+            ConsentDeclarationText = $"Caregiver Statutory Declaration agreed under RA 10173 and DOH Hospital Guidelines. Relationship: {profile.Relationship}. ID Type: {profile.IdType}.",
+            IpAddress = ip,
+            Timestamp = DateTime.UtcNow
+        };
+        _db.ConsentLogEntries.Add(consentLog);
+        await _db.SaveChangesAsync();
+
         await _auditLog.LogAsync(user.Id, "ADD_DEPENDENT_PROFILE", $"DependentProfile/{profile.Id}", $"Added dependent profile for {profile.FullName} ({profile.Relationship})", ip);
 
         TempData["SuccessMessage"] = $"Dependent profile for {profile.FullName} was registered successfully.";
@@ -132,6 +154,20 @@ public class ProxyController : Controller
         HttpContext.Session.SetString(SessionActiveDependentName, dependent.FullName);
 
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+        
+        var consentLog = new ConsentLogEntry
+        {
+            GuardianUserId = user.Id,
+            DependentId = dependent.Id,
+            DependentName = dependent.FullName,
+            EventType = ConsentEventType.ProfileSwitched,
+            ConsentDeclarationText = $"Active view switched to dependent {dependent.FullName} ({dependent.Relationship})",
+            IpAddress = ip,
+            Timestamp = DateTime.UtcNow
+        };
+        _db.ConsentLogEntries.Add(consentLog);
+        await _db.SaveChangesAsync();
+
         await _auditLog.LogAsync(user.Id, "PROXY_SWITCH", $"DependentProfile/{id}", $"Switched portal view context to dependent {dependent.FullName}", ip);
 
         TempData["SuccessMessage"] = $"You are now managing health records for {dependent.FullName}.";
@@ -155,6 +191,57 @@ public class ProxyController : Controller
         TempData["SuccessMessage"] = "Switched back to your personal health record.";
         return RedirectToAction("Home", "Patient");
     }
+
+    // POST /Patient/Proxy/Revoke/{id}
+    [HttpPost("Revoke/{id:int}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Revoke(int id)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user is null) return Challenge();
+
+        var dependent = await _db.DependentProfiles
+            .FirstOrDefaultAsync(d => d.Id == id && d.GuardianUserId == user.Id);
+
+        if (dependent is null)
+        {
+            return NotFound();
+        }
+
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+
+        // Log consent revocation before removing profile
+        var consentLog = new ConsentLogEntry
+        {
+            GuardianUserId = user.Id,
+            DependentId = dependent.Id,
+            DependentName = dependent.FullName,
+            EventType = ConsentEventType.Revoked,
+            ConsentDeclarationText = $"Statutory caregiver authorization revoked for {dependent.FullName} ({dependent.Relationship}).",
+            IpAddress = ip,
+            Timestamp = DateTime.UtcNow
+        };
+        _db.ConsentLogEntries.Add(consentLog);
+
+        // Clear session if active
+        if (HttpContext.Features.Get<Microsoft.AspNetCore.Http.Features.ISessionFeature>()?.Session != null)
+        {
+            var activeId = HttpContext.Session.GetInt32(SessionActiveDependentId);
+            if (activeId == id)
+            {
+                HttpContext.Session.Remove(SessionActiveDependentId);
+                HttpContext.Session.Remove(SessionActiveDependentName);
+            }
+        }
+
+        _db.DependentProfiles.Remove(dependent);
+        await _db.SaveChangesAsync();
+
+        await _auditLog.LogAsync(user.Id, "REVOKE_PROXY_CONSENT", $"DependentProfile/{id}", $"Revoked dependent profile for {dependent.FullName}", ip);
+
+        TempData["SuccessMessage"] = $"Caregiver access for {dependent.FullName} has been revoked.";
+        return RedirectToAction(nameof(Index));
+    }
 }
 
 public class ProxyIndexViewModel
@@ -163,6 +250,7 @@ public class ProxyIndexViewModel
     public int? ActiveDependentId { get; set; }
     public string? ActiveDependentName { get; set; }
     public IReadOnlyList<DependentProfile> Dependents { get; set; } = Array.Empty<DependentProfile>();
+    public IReadOnlyList<ConsentLogEntry> ConsentLogs { get; set; } = Array.Empty<ConsentLogEntry>();
 }
 
 public class AddDependentViewModel

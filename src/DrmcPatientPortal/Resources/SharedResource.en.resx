@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="0" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- Navigation -->
+  <data name="Nav_Home"><value>Home</value></data>
+  <data name="Nav_Queue"><value>OPD Queue</value></data>
+  <data name="Nav_Appointments"><value>Book Appointment</value></data>
+  <data name="Nav_Directory"><value>Doctors &amp; Clinics</value></data>
+  <data name="Nav_Malasakit"><value>Malasakit Center</value></data>
+  <data name="Nav_Advisories"><value>Advisories</value></data>
+  <data name="Nav_Dashboard"><value>Patient Dashboard</value></data>
+  <data name="Nav_LabResults"><value>Laboratory Results</value></data>
+  <data name="Nav_Medications"><value>Active Prescriptions</value></data>
+  <data name="Nav_Encounters"><value>Clinical Visit Notes</value></data>
+  <data name="Nav_Messages"><value>Care Messages</value></data>
+  <data name="Nav_Proxy"><value>Family &amp; Dependents</value></data>
+  <data name="Nav_Audit"><value>Access Audit History</value></data>
+  <data name="Nav_Settings"><value>Account Settings</value></data>
+  <data name="Nav_SignOut"><value>Sign out</value></data>
+  <data name="Nav_LogIn"><value>Log in</value></data>
+  <data name="Nav_Register"><value>Register</value></data>
+  <data name="Nav_Language"><value>Language</value></data>
+
+  <!-- Common Actions & Buttons -->
+  <data name="Action_Search"><value>Search</value></data>
+  <data name="Action_Filter"><value>Filter</value></data>
+  <data name="Action_Print"><value>Print / Save as PDF</value></data>
+  <data name="Action_ViewDetails"><value>View Details</value></data>
+  <data name="Action_ReturnDashboard"><value>Return to Dashboard</value></data>
+  <data name="Action_Cancel"><value>Cancel</value></data>
+  <data name="Action_Submit"><value>Submit</value></data>
+  <data name="Action_Back"><value>Back</value></data>
+
+  <!-- Dashboard & Headers -->
+  <data name="Header_Tagline"><value>Caring for Life, Changing Lives.</value></data>
+  <data name="Header_HospitalName"><value>Davao Regional Medical Center</value></data>
+  <data name="Header_SubTitle"><value>Republic of the Philippines · Department of Health</value></data>
+  <data name="Dashboard_Welcome"><value>Welcome</value></data>
+  <data name="Dashboard_UpcomingAppt"><value>Upcoming Appointment</value></data>
+  <data name="Dashboard_LabResults"><value>Diagnostic &amp; Lab Reports</value></data>
+  <data name="Dashboard_Prescriptions"><value>Prescriptions &amp; Pharmacy</value></data>
+  <data name="Dashboard_Encounters"><value>After-Visit Summaries</value></data>
+  <data name="Dashboard_Messaging"><value>Care Team Messaging</value></data>
+  <data name="Dashboard_Proxy"><value>Family &amp; Dependent Proxy</value></data>
+
+  <!-- Lay Medical Terminology -->
+  <data name="Med_BloodPressure"><value>Blood Pressure</value></data>
+  <data name="Med_HeartRate"><value>Heart Rate / Pulse</value></data>
+  <data name="Med_Temperature"><value>Body Temperature</value></data>
+  <data name="Med_BloodSugar"><value>Blood Sugar Level</value></data>
+  <data name="Med_FastingBloodSugar"><value>Fasting Blood Sugar Test</value></data>
+  <data name="Med_CompleteBloodCount"><value>Complete Blood Count (CBC)</value></data>
+  <data name="Med_LipidProfile"><value>Cholesterol &amp; Lipid Panel</value></data>
+  <data name="Med_Allergy"><value>Known Clinical Allergies</value></data>
+  <data name="Med_RefillsRemaining"><value>Refills Remaining</value></data>
+  <data name="Med_OrderRefill"><value>Order Medication Refill</value></data>
+  <data name="Med_PharmacyPickup"><value>OPD Pharmacy Pick-Up Window 2</value></data>
+  <data name="Med_EmergencyWarning"><value>For medical emergencies, proceed immediately to the DRMC Emergency Department or call 1555.</value></data>
+</root>

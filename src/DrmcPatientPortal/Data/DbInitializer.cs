@@ -841,32 +841,99 @@ public static class DbInitializer
 
             if (!db.DependentProfiles.Any(d => d.GuardianUserId == primary.Id))
             {
-                db.DependentProfiles.AddRange(
-                    new DependentProfile
+                var dep1 = new DependentProfile
+                {
+                    GuardianUserId = primary.Id,
+                    FullName = "Joshua D. Santos",
+                    DateOfBirth = DateTime.UtcNow.AddYears(-8),
+                    Gender = "Male",
+                    Relationship = RelationshipType.Child,
+                    PhilHealthNumber = "19-203948571-3",
+                    IdType = "PSA Birth Certificate",
+                    IdNumber = "PSA-2018-091823",
+                    StatutoryConsentAgreed = true,
+                    CreatedAt = DateTime.UtcNow.AddMonths(-4)
+                };
+
+                var dep2 = new DependentProfile
+                {
+                    GuardianUserId = primary.Id,
+                    FullName = "Corazon Delos Santos",
+                    DateOfBirth = new DateTime(1958, 9, 20),
+                    Gender = "Female",
+                    Relationship = RelationshipType.Parent,
+                    PhilHealthNumber = "04-928173456-1",
+                    IdType = "OSCA Senior Citizen ID",
+                    IdNumber = "OSCA-TAGUM-2018-4410",
+                    StatutoryConsentAgreed = true,
+                    CreatedAt = DateTime.UtcNow.AddMonths(-2)
+                };
+
+                db.DependentProfiles.AddRange(dep1, dep2);
+                db.SaveChanges();
+
+                db.ConsentLogEntries.AddRange(
+                    new ConsentLogEntry
                     {
                         GuardianUserId = primary.Id,
-                        FullName = "Joshua D. Santos",
-                        DateOfBirth = DateTime.UtcNow.AddYears(-8),
-                        Gender = "Male",
-                        Relationship = RelationshipType.Child,
-                        PhilHealthNumber = "19-203948571-3",
-                        IdType = "PSA Birth Certificate",
-                        IdNumber = "PSA-2018-091823",
-                        StatutoryConsentAgreed = true,
-                        CreatedAt = DateTime.UtcNow.AddMonths(-4)
+                        DependentId = dep1.Id,
+                        DependentName = dep1.FullName,
+                        EventType = ConsentEventType.Granted,
+                        ConsentDeclarationText = "Caregiver Statutory Declaration agreed under RA 10173 and DOH Hospital Guidelines. Relationship: Child.",
+                        IpAddress = "127.0.0.1",
+                        Timestamp = DateTime.UtcNow.AddMonths(-4)
                     },
-                    new DependentProfile
+                    new ConsentLogEntry
                     {
                         GuardianUserId = primary.Id,
-                        FullName = "Corazon Delos Santos",
-                        DateOfBirth = new DateTime(1958, 9, 20),
-                        Gender = "Female",
-                        Relationship = RelationshipType.Parent,
-                        PhilHealthNumber = "04-928173456-1",
-                        IdType = "OSCA Senior Citizen ID",
-                        IdNumber = "OSCA-TAGUM-2018-4410",
-                        StatutoryConsentAgreed = true,
-                        CreatedAt = DateTime.UtcNow.AddMonths(-2)
+                        DependentId = dep2.Id,
+                        DependentName = dep2.FullName,
+                        EventType = ConsentEventType.Granted,
+                        ConsentDeclarationText = "Caregiver Statutory Declaration agreed under RA 10173 and DOH Hospital Guidelines. Relationship: Parent.",
+                        IpAddress = "127.0.0.1",
+                        Timestamp = DateTime.UtcNow.AddMonths(-2)
+                    }
+                );
+            }
+
+            if (!db.AuditLogs.Any(a => a.UserId == primary.Id))
+            {
+                db.AuditLogs.AddRange(
+                    new AuditLog
+                    {
+                        UserId = primary.Id,
+                        Action = "VIEW_LAB_REPORT",
+                        Resource = "LabResult/1",
+                        Details = "Viewed CBC Diagnostic Examination Report (Accession DRMC-LAB-2026-0814)",
+                        IpAddress = "127.0.0.1",
+                        Timestamp = DateTime.UtcNow.AddDays(-5)
+                    },
+                    new AuditLog
+                    {
+                        UserId = primary.Id,
+                        Action = "VIEW_ENCOUNTER_SUMMARY",
+                        Resource = "ClinicalEncounter/1",
+                        Details = "Viewed Internal Medicine After-Visit Summary (DRMC-ENC-2026-0412)",
+                        IpAddress = "127.0.0.1",
+                        Timestamp = DateTime.UtcNow.AddDays(-18)
+                    },
+                    new AuditLog
+                    {
+                        UserId = primary.Id,
+                        Action = "REQUEST_REFILL",
+                        Resource = "Prescription/2",
+                        Details = "Requested prescription refill voucher for Losartan 50mg (Rx DRMC-RX-2026-3820)",
+                        IpAddress = "127.0.0.1",
+                        Timestamp = DateTime.UtcNow.AddDays(-2)
+                    },
+                    new AuditLog
+                    {
+                        UserId = primary.Id,
+                        Action = "SUBMIT_TRIAGE_INTAKE",
+                        Resource = "TriageIntake/1",
+                        Details = "Submitted pre-consultation digital self-triage for appointment",
+                        IpAddress = "127.0.0.1",
+                        Timestamp = DateTime.UtcNow.AddDays(-1)
                     }
                 );
             }

@@ -1,0 +1,44 @@
+@{
+    Layout = "/Views/Shared/_Layout.cshtml";
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-white text-primary-drmc fw-bold px-3 py-1 rounded-pill small">
+                        <i class="bi bi-shield-lock me-1"></i> Patient Account Security
+                    </span>
+                </div>
+                <h1 class="display-6 fw-bold mb-0">Account &amp; Privacy Settings</h1>
+            </div>
+            <div>
+                <a asp-controller="Patient" asp-action="Home" class="btn btn-outline-light rounded-pill px-4 fw-semibold shadow-xs">
+                    <i class="bi bi-arrow-left me-1"></i> Return to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-4 col-lg-3">
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-4">
+                    <partial name="_ManageNav" />
+                </div>
+            </div>
+            <div class="col-md-8 col-lg-9">
+                <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+                    @RenderBody()
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    @RenderSection("Scripts", required: false)
+}

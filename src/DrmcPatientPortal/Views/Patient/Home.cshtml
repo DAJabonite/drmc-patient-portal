@@ -38,6 +38,9 @@
                 <a asp-controller="Proxy" asp-action="Index" class="btn btn-outline-light d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill fw-semibold shadow-xs btn-sm">
                     <i class="bi bi-people-fill"></i> Family &amp; Dependents (@Model.DependentsCount)
                 </a>
+                <a asp-action="Audit" class="btn btn-outline-light d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill fw-semibold shadow-xs btn-sm">
+                    <i class="bi bi-shield-check"></i> Access History
+                </a>
                 <a asp-area="Identity" asp-page="/Account/Manage/Index" class="btn btn-outline-light d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill fw-semibold shadow-xs btn-sm">
                     <i class="bi bi-person-gear"></i> Settings
                 </a>
