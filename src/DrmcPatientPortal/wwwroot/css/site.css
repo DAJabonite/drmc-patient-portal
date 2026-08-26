@@ -84,6 +84,8 @@ textarea:focus-visible,
    Masthead Header with Integrated PST Clock
    ========================================================================== */
 .masthead {
+    position: relative;
+    z-index: 1040;
     background-color: #0e4e87;
     color: #fff;
     padding: 1.1rem 0;
@@ -111,9 +113,11 @@ textarea:focus-visible,
 }
 
 /* ============================================================================
-   Primary Navbar
+   Primary Navbar & Dropdown Stacking
    ========================================================================== */
 .navbar-drmc {
+    position: relative;
+    z-index: 1030;
     background-color: #ffffff;
     border-bottom: 2px solid #e2e8f0;
     padding: 0.6rem 0;
@@ -141,6 +145,14 @@ textarea:focus-visible,
     color: var(--drmc-primary);
     font-weight: 700;
     font-size: 1.2rem;
+}
+
+/* High-priority elevation for all dropdown menus (above sticky toolbars & hero banners) */
+.dropdown-menu {
+    --bs-dropdown-zindex: 1060;
+    z-index: 1060 !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14), 0 4px 10px rgba(0, 0, 0, 0.06) !important;
 }
 
 /* ============================================================================
