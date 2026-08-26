@@ -16,6 +16,20 @@ public class HomeController : Controller
         });
     }
 
+    // GET /Home/OpdGuide (or /OpdGuide via routing)
+    [HttpGet]
+    [Route("OpdGuide")]
+    [Route("Home/OpdGuide")]
+    public IActionResult OpdGuide()
+    {
+        return View(new OpdGuideViewModel
+        {
+            Steps = OpdGuideSteps.All,
+            IntroLine = OpdGuideSteps.IntroLine,
+            KioskReferralLine = OpdGuideSteps.KioskReferralLine
+        });
+    }
+
     public IActionResult Privacy()
     {
         return View();
@@ -57,4 +71,11 @@ public class LandingViewModel
     public IReadOnlyList<ClinicalDepartment> Departments { get; set; } = Array.Empty<ClinicalDepartment>();
     public string DepartmentHeading { get; set; } = string.Empty;
     public string DepartmentSubheading { get; set; } = string.Empty;
+}
+
+public class OpdGuideViewModel
+{
+    public IReadOnlyList<OpdGuideStep> Steps { get; set; } = Array.Empty<OpdGuideStep>();
+    public string IntroLine { get; set; } = string.Empty;
+    public string KioskReferralLine { get; set; } = string.Empty;
 }

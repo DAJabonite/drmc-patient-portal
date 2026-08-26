@@ -32,6 +32,7 @@
 
   <!-- Navigation -->
   <data name="Nav_Home"><value>Panid</value></data>
+  <data name="Nav_OpdGuide"><value>Giya sa OPD</value></data>
   <data name="Nav_Queue"><value>Linya sa OPD</value></data>
   <data name="Nav_Appointments"><value>Pagpa-iskedyul</value></data>
   <data name="Nav_Directory"><value>Mga Doktor ug Klinika</value></data>

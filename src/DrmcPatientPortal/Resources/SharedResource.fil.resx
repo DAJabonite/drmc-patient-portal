@@ -32,6 +32,7 @@
 
   <!-- Navigation -->
   <data name="Nav_Home"><value>Tahanan</value></data>
+  <data name="Nav_OpdGuide"><value>Gabay sa OPD</value></data>
   <data name="Nav_Queue"><value>Pila sa OPD</value></data>
   <data name="Nav_Appointments"><value>Magpa-Appointment</value></data>
   <data name="Nav_Directory"><value>Mga Doktor at Klinika</value></data>

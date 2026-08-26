@@ -126,11 +126,14 @@ Format: `piece | round | verdict | biggest gap named | status`
 | Phase 3.3: PHI Access Audit Register | 1 | PASS | Patient-facing `/Patient/Audit` access history view, timestamped security event tracking | CONVERGED |
 | Phase 3.3: Proxy Consent Audit Logs | 1 | PASS | `ConsentLogEntry` entity & migration, statutory consent trail in `/Patient/Proxy`, grant/revoke lifecycle | CONVERGED |
 | Phase 3.3: Compliance & Security Reconcile | 1 | PASS | `docs/COMPLIANCE_REPORT.md` certified, `docs/SECURITY_REVIEW_TODO.md` reconciled, 10/10 tests pass | CONVERGED |
+| OPD Guide (Unauthenticated Wayfinding) | 1 | PASS | Linear visual stepper (6 verified Citizen's Charter steps), horizontal desktop & vertical mobile reflow, kiosk referral, top-level nav link, trilingual resources | CONVERGED |
 
 ---
 
-## Phase 3.3 Convergence Note
+## Convergence Status
 
-The entire Phase 3 milestone across all 11 features, 4 core screens, and 4 governance domains is fully implemented, verified in automated browser testing, backed by 10 passing unit/integration tests, certified in `docs/COMPLIANCE_REPORT.md`, and reconciled in `docs/SECURITY_REVIEW_TODO.md`. Final milestone status: **CONVERGED**.
+- **Core & Authenticated Milestone (Phases 1–3.3):** CONVERGED
+- **OPD Guide Feature:** CONVERGED (11/11 automated tests pass; browser verified at 1280px, 390px, and 320px with zero horizontal scroll; unauthenticated & authenticated access verified; zero forbidden words).
+
 
 

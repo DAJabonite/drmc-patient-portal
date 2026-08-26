@@ -173,4 +173,19 @@ public class Phase3GovernanceTests
         Assert.Single(model.Logs);
         Assert.Equal("LabResult/1", model.Logs[0].Resource);
     }
+
+    [Fact]
+    public void HomeController_OpdGuide_ReturnsAllStepsAndMetadata()
+    {
+        var controller = new HomeController();
+        var result = controller.OpdGuide() as ViewResult;
+        Assert.NotNull(result);
+
+        var model = Assert.IsType<OpdGuideViewModel>(result.Model);
+        Assert.Equal(6, model.Steps.Count);
+        Assert.Equal("OPD Triage & Screening Desk", model.Steps[0].Title);
+        Assert.Equal("OPD Pharmacy Dispensing Window", model.Steps[5].Title);
+        Assert.False(string.IsNullOrWhiteSpace(model.IntroLine));
+        Assert.False(string.IsNullOrWhiteSpace(model.KioskReferralLine));
+    }
 }

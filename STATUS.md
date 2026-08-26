@@ -18,6 +18,7 @@ The platform reproduces DRMC's **authentic brand identity**: the brand-blue mast
 | Screen / Feature | Route | Status | Notes |
 |---|---|---|---|
 | Landing | `GET /` | Public | Hero, real department overview, service quick-links, and auth CTAs. |
+| OPD Guide | `GET /OpdGuide` | Public | Linear visual stepper orienting patients through the 6-step OPD consultation sequence; refers to lobby kiosk. |
 | Register | `POST /Identity/Account/Register` | Public | Persists `ApplicationUser` with PhilSys/contact fields, automatic sign-in. |
 | Login | `POST /Identity/Account/Login` | Public | `SignInManager` password auth, 2FA challenge redirect, lockout protection. |
 | Live OPD Queue | `GET /Queue` | Public | Real-time queue board across all 8 clinical departments; highlights currently called tickets. |

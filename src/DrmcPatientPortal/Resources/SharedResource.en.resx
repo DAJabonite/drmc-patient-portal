@@ -32,6 +32,7 @@
 
   <!-- Navigation -->
   <data name="Nav_Home"><value>Home</value></data>
+  <data name="Nav_OpdGuide"><value>OPD Guide</value></data>
   <data name="Nav_Queue"><value>OPD Queue</value></data>
   <data name="Nav_Appointments"><value>Book Appointment</value></data>
   <data name="Nav_Directory"><value>Doctors &amp; Clinics</value></data>
