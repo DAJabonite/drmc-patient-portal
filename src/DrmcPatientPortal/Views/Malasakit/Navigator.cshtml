@@ -1,0 +1,151 @@
+@model MalasakitAssessmentInput
+@{
+    ViewData["Title"] = "Malasakit Eligibility & Document Navigator";
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm">
+    <div class="container">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <a asp-action="Index" class="text-white text-opacity-75 text-decoration-none small">
+                <i class="bi bi-arrow-left"></i> Malasakit Center
+            </a>
+            <span class="text-white text-opacity-50">/</span>
+            <span class="small text-white text-opacity-75">Document Navigator</span>
+        </div>
+        <h1 class="display-6 fw-bold mb-1">Malasakit Eligibility Navigator</h1>
+        <p class="text-white text-opacity-90 mb-0">Generate a personalized requirements checklist tailored to your medical need.</p>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container" style="max-width: 800px;">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+            
+            <form asp-action="Assess" method="post">
+                <div class="mb-4">
+                    <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-semibold mb-2">
+                        Questionnaire &middot; Step 1 of 3
+                    </span>
+                    <h2 class="h5 fw-bold text-dark mb-1">1. Patient Socio-Economic Classification</h2>
+                    <p class="small text-muted mb-3">Select the category that best matches the patient's household income status.</p>
+
+                    <div class="d-flex flex-column gap-2">
+                        <div class="form-check p-3 rounded-3 border">
+                            <input class="form-check-input ms-0 me-2" type="radio" asp-for="PatientCategory" value="Indigent" id="catIndigent" checked />
+                            <label class="form-check-label fw-bold text-dark d-inline" for="catIndigent">
+                                Indigent / 4Ps Household
+                                <span class="small text-muted fw-normal d-block">No fixed income, holder of Barangay Certificate of Indigency, or 4Ps beneficiary.</span>
+                            </label>
+                        </div>
+                        <div class="form-check p-3 rounded-3 border">
+                            <input class="form-check-input ms-0 me-2" type="radio" asp-for="PatientCategory" value="LowIncome" id="catLowIncome" />
+                            <label class="form-check-label fw-bold text-dark d-inline" for="catLowIncome">
+                                Low-Income / Minimum Wage Earner
+                                <span class="small text-muted fw-normal d-block">Daily wage earner, informal worker, or small farmer/fisherfolk.</span>
+                            </label>
+                        </div>
+                        <div class="form-check p-3 rounded-3 border">
+                            <input class="form-check-input ms-0 me-2" type="radio" asp-for="PatientCategory" value="SeniorPWD" id="catSenior" />
+                            <label class="form-check-label fw-bold text-dark d-inline" for="catSenior">
+                                Senior Citizen (60+) / Person with Disability (PWD)
+                                <span class="small text-muted fw-normal d-block">Holder of OSCA Senior Citizen ID or PWD ID Card.</span>
+                            </label>
+                        </div>
+                        <div class="form-check p-3 rounded-3 border">
+                            <input class="form-check-input ms-0 me-2" type="radio" asp-for="PatientCategory" value="Employed" id="catEmployed" />
+                            <label class="form-check-label fw-bold text-dark d-inline" for="catEmployed">
+                                Formally Employed / Government Employee
+                                <span class="small text-muted fw-normal d-block">GSIS/SSS contributing member seeking supplemental medical safety-net support.</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4 pt-3 border-top">
+                    <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-semibold mb-2">
+                        Questionnaire &middot; Step 2 of 3
+                    </span>
+                    <h2 class="h5 fw-bold text-dark mb-1">2. What Medical Assistance do you need?</h2>
+                    <p class="small text-muted mb-3">Check all healthcare services that apply to this visit.</p>
+
+                    <div class="row g-2">
+                        <div class="col-sm-6">
+                            <div class="p-3 rounded-3 border bg-light">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" asp-for="NeedsMedicines" id="needMeds" />
+                                    <label class="form-check-label fw-semibold text-dark small" for="needMeds">
+                                        <i class="bi bi-capsule text-primary-drmc me-1"></i> Prescribed Medicines
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-3 rounded-3 border bg-light">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" asp-for="NeedsDiagnostics" id="needLabs" />
+                                    <label class="form-check-label fw-semibold text-dark small" for="needLabs">
+                                        <i class="bi bi-file-earmark-medical text-primary-drmc me-1"></i> Laboratory &amp; Imaging (X-Ray/CT/MRI)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-3 rounded-3 border bg-light">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" asp-for="NeedsHospitalization" id="needHosp" />
+                                    <label class="form-check-label fw-semibold text-dark small" for="needHosp">
+                                        <i class="bi bi-hospital text-primary-drmc me-1"></i> Inpatient Hospitalization / Wards
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-3 rounded-3 border bg-light">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" asp-for="NeedsSpecialtyCare" id="needSpecialty" />
+                                    <label class="form-check-label fw-semibold text-dark small" for="needSpecialty">
+                                        <i class="bi bi-heart-pulse text-danger me-1"></i> Dialysis / Chemotherapy / Implants
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4 pt-3 border-top">
+                    <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-semibold mb-2">
+                        Questionnaire &middot; Step 3 of 3
+                    </span>
+                    <h2 class="h5 fw-bold text-dark mb-1">3. Existing Document &amp; Insurance Status</h2>
+                    <p class="small text-muted mb-3">Tell us what documents or memberships you currently hold.</p>
+
+                    <div class="d-flex flex-column gap-2">
+                        <div class="form-check p-3 rounded-3 border bg-light">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" asp-for="HasPhilHealth" id="hasPhilhealth" />
+                            <label class="form-check-label fw-semibold text-dark small d-inline" for="hasPhilhealth">
+                                I am an active PhilHealth member or registered dependent.
+                            </label>
+                        </div>
+                        <div class="form-check p-3 rounded-3 border bg-light">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" asp-for="HasBarangayIndigency" id="hasBarangay" />
+                            <label class="form-check-label fw-semibold text-dark small d-inline" for="hasBarangay">
+                                I have (or can obtain) a Barangay Certificate of Indigency.
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                    <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary-drmc btn-lg rounded-pill px-5 fw-bold shadow-sm">
+                        <i class="bi bi-magic me-1"></i> Generate My Requirements Checklist
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</section>

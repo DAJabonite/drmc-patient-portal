@@ -1,0 +1,26 @@
+@inject SignInManager<ApplicationUser> SignInManager
+@{
+    var hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
+}
+<ul class="nav nav-pills flex-column gap-2">
+    <li class="nav-item">
+        <a class="nav-link rounded-3 fw-semibold @(ViewContext.RouteData.Values["page"]?.ToString()?.EndsWith("Index") == true ? "active bg-primary-drmc text-white" : "text-dark bg-light")" id="profile" asp-page="./Index">
+            <i class="bi bi-person me-2"></i> Profile Details
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link rounded-3 fw-semibold @(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("TwoFactor") == true || ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Authenticator") == true ? "active bg-primary-drmc text-white" : "text-dark bg-light")" id="two-factor" asp-page="./TwoFactorAuthentication">
+            <i class="bi bi-shield-lock me-2"></i> Two-Factor Auth (2FA)
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link rounded-3 fw-semibold text-dark bg-light" asp-controller="Patient" asp-action="Audit">
+            <i class="bi bi-journal-text me-2"></i> Access Audit Trail
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link rounded-3 fw-semibold text-dark bg-light" asp-controller="Proxy" asp-action="Index">
+            <i class="bi bi-people me-2"></i> Family &amp; Proxy Access
+        </a>
+    </li>
+</ul>

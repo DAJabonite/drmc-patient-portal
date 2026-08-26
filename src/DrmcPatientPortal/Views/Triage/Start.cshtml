@@ -1,0 +1,226 @@
+@model TriageSubmissionViewModel
+@{
+    ViewData["Title"] = "Digital Pre-Consultation Self-Triage";
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm">
+    <div class="container">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <a asp-controller="Patient" asp-action="Home" class="text-white text-opacity-75 text-decoration-none small">
+                <i class="bi bi-arrow-left"></i> Patient Dashboard
+            </a>
+            <span class="text-white text-opacity-50">/</span>
+            <span class="small text-white text-opacity-75">Clinical Triage</span>
+        </div>
+        <h1 class="display-6 fw-bold mb-1">Pre-Consultation Digital Intake</h1>
+        <p class="text-white text-opacity-90 mb-0">Help your attending physician prepare for your visit by sharing your symptoms and vitals in advance.</p>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container" style="max-width: 840px;">
+        
+        <!-- Linked Appointment Notice -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4 border-start border-4 border-primary">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                    <span class="badge bg-primary-subtle text-primary-drmc rounded-pill small fw-semibold">
+                        Linked Appointment: @Model.BookingReference
+                    </span>
+                    <h2 class="h5 fw-bold text-dark mb-0 mt-1">@Model.Department Consultation</h2>
+                    <span class="small text-muted">Attending: @Model.DoctorName &middot; @Model.ScheduledAt.ToString("MMMM d, yyyy")</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+            
+            <form asp-action="Submit" method="post">
+                <input type="hidden" asp-for="AppointmentId" />
+                <input type="hidden" asp-for="BookingReference" />
+                <input type="hidden" asp-for="Department" />
+                <input type="hidden" asp-for="DoctorName" />
+
+                <!-- Emergency Red-Flag Warning Box -->
+                <div class="p-3 bg-danger-subtle border border-danger border-opacity-25 rounded-3 mb-4 text-danger small">
+                    <strong class="d-block mb-1 text-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> Emergency Safeguard Notice:
+                    </strong>
+                    If you are currently experiencing severe chest pressure, sudden numbness or weakness in the face/arms, difficulty breathing, or uncontrolled bleeding, do not wait for an outpatient appointment &mdash; proceed immediately to the <strong>DRMC Emergency Department</strong> or call the <strong>1555 DOH Emergency Hotline</strong>.
+                </div>
+
+                <!-- Section 1: Presenting Symptoms -->
+                <div class="mb-4">
+                    <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-semibold mb-2">Step 1 of 3</span>
+                    <h3 class="h5 fw-bold text-dark mb-1">Presenting Symptoms &amp; Chief Complaint</h3>
+                    <p class="small text-muted mb-3">Describe your symptoms and how long you have been experiencing them.</p>
+
+                    <div class="mb-3">
+                        <label asp-for="ChiefComplaint" class="form-label fw-semibold text-dark small">Primary reason for consultation:</label>
+                        <textarea asp-for="ChiefComplaint" class="form-control" rows="2" placeholder="e.g. Follow-up blood pressure check, persistent dry cough for 4 days..."></textarea>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label asp-for="SymptomDurationDays" class="form-label fw-semibold text-dark small">Duration of symptoms (days):</label>
+                            <input asp-for="SymptomDurationDays" type="number" min="1" max="365" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-sm-6">
+                            <label asp-for="PainScale" class="form-label fw-semibold text-dark small">Pain Level (0 = No Pain, 10 = Severe):</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input asp-for="PainScale" type="range" class="form-range" min="0" max="10" id="painRange"
+                                       oninput="document.getElementById('painVal').innerText = this.value;" />
+                                <span id="painVal" class="badge bg-primary-drmc px-3 py-2 fs-6 fw-bold rounded-pill">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <label class="form-label fw-semibold text-dark small mb-2">Check any associated symptoms:</label>
+                    <div class="row g-2 mb-3">
+                        <div class="col-sm-6 col-md-4">
+                            <div class="p-2 border rounded-3 bg-light">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" asp-for="HasFever" id="sympFever" />
+                                    <label class="form-check-label small text-dark" for="sympFever">Fever / Chills</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <div class="p-2 border rounded-3 bg-light">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" asp-for="HasCough" id="sympCough" />
+                                    <label class="form-check-label small text-dark" for="sympCough">Persistent Cough</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <div class="p-2 border rounded-3 bg-light">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" asp-for="HasHeadache" id="sympHeadache" />
+                                    <label class="form-check-label small text-dark" for="sympHeadache">Headache / Dizziness</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <div class="p-2 border rounded-3 bg-light">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" asp-for="HasFatigue" id="sympFatigue" />
+                                    <label class="form-check-label small text-dark" for="sympFatigue">Fatigue / Weakness</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <div class="p-2 border rounded-3 bg-light">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" asp-for="HasGastrointestinal" id="sympGI" />
+                                    <label class="form-check-label small text-dark" for="sympGI">Nausea / Stomach Ache</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <div class="p-2 border rounded-3 bg-light">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" asp-for="HasJointPain" id="sympJoint" />
+                                    <label class="form-check-label small text-dark" for="sympJoint">Joint / Muscle Pain</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Self-Reported Vitals -->
+                <div class="mb-4 pt-3 border-top">
+                    <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-semibold mb-2">Step 2 of 3</span>
+                    <h3 class="h5 fw-bold text-dark mb-1">Self-Reported Vital Signs (Optional)</h3>
+                    <p class="small text-muted mb-3">If you took recent measurements at home, enter them below.</p>
+
+                    <div class="row g-3">
+                        <div class="col-sm-6 col-md-4">
+                            <label asp-for="ReportedBloodPressure" class="form-label small text-muted">Blood Pressure (mmHg):</label>
+                            <input asp-for="ReportedBloodPressure" class="form-control form-control-sm" placeholder="e.g. 120/80" />
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <label asp-for="ReportedTemperature" class="form-label small text-muted">Body Temperature (&deg;C):</label>
+                            <input asp-for="ReportedTemperature" class="form-control form-control-sm" placeholder="e.g. 36.6" />
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <label asp-for="ReportedHeartRate" class="form-label small text-muted">Heart Rate (bpm):</label>
+                            <input asp-for="ReportedHeartRate" class="form-control form-control-sm" placeholder="e.g. 74" />
+                        </div>
+                        <div class="col-sm-6 col-md-6">
+                            <label asp-for="ReportedWeightKg" class="form-label small text-muted">Weight (kg):</label>
+                            <input asp-for="ReportedWeightKg" class="form-control form-control-sm" placeholder="e.g. 64.0" />
+                        </div>
+                        <div class="col-sm-6 col-md-6">
+                            <label asp-for="ReportedBloodSugar" class="form-label small text-muted">Fasting Blood Sugar (mg/dL):</label>
+                            <input asp-for="ReportedBloodSugar" class="form-control form-control-sm" placeholder="e.g. 110" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Comorbidities & Meds -->
+                <div class="mb-4 pt-3 border-top">
+                    <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-semibold mb-2">Step 3 of 3</span>
+                    <h3 class="h5 fw-bold text-dark mb-1">Existing Medical Conditions &amp; Current Medications</h3>
+                    <p class="small text-muted mb-3">Check all known chronic health conditions.</p>
+
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <div class="form-check p-2 border rounded-3 bg-light">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" asp-for="HasHypertension" id="comorbHTN" />
+                            <label class="form-check-label small text-dark fw-semibold d-inline" for="comorbHTN">Hypertension</label>
+                        </div>
+                        <div class="form-check p-2 border rounded-3 bg-light">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" asp-for="HasDiabetes" id="comorbDM" />
+                            <label class="form-check-label small text-dark fw-semibold d-inline" for="comorbDM">Diabetes</label>
+                        </div>
+                        <div class="form-check p-2 border rounded-3 bg-light">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" asp-for="HasAsthma" id="comorbAsthma" />
+                            <label class="form-check-label small text-dark fw-semibold d-inline" for="comorbAsthma">Asthma / Allergy</label>
+                        </div>
+                        <div class="form-check p-2 border rounded-3 bg-light">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" asp-for="HasHeartDisease" id="comorbHeart" />
+                            <label class="form-check-label small text-dark fw-semibold d-inline" for="comorbHeart">Heart Disease</label>
+                        </div>
+                        <div class="form-check p-2 border rounded-3 bg-light">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" asp-for="HasKidneyDisease" id="comorbKidney" />
+                            <label class="form-check-label small text-dark fw-semibold d-inline" for="comorbKidney">Kidney Disease</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="CurrentMedicationsSummary" class="form-label small fw-semibold text-dark">Current Daily Medications Summary:</label>
+                        <input asp-for="CurrentMedicationsSummary" class="form-control form-control-sm" placeholder="e.g. Metformin 500mg, Losartan 50mg..." />
+                    </div>
+                </div>
+
+                <!-- Emergency Red-Flag Checkboxes -->
+                <div class="p-3 bg-light border rounded-3 mb-4 small">
+                    <strong class="d-block mb-2 text-dark">Emergency Red-Flag Check (Please answer truthfully):</strong>
+                    <div class="form-check mb-1">
+                        <input class="form-check-input" type="checkbox" asp-for="HasChestPain" id="redChest" />
+                        <label class="form-check-label text-danger fw-semibold" for="redChest">I am experiencing sudden crushing chest pain or pressure.</label>
+                    </div>
+                    <div class="form-check mb-1">
+                        <input class="form-check-input" type="checkbox" asp-for="HasSevereBreathingDifficulty" id="redBreathing" />
+                        <label class="form-check-label text-danger fw-semibold" for="redBreathing">I am having severe difficulty breathing or gasping for air.</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" asp-for="HasSuddenNumbness" id="redStroke" />
+                        <label class="form-check-label text-danger fw-semibold" for="redStroke">I have sudden face drooping, arm weakness, or slurred speech.</label>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                    <a asp-controller="Patient" asp-action="Home" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary-drmc btn-lg rounded-pill px-5 fw-bold shadow-xs">
+                        <i class="bi bi-shield-check me-1"></i> Submit Pre-Intake Form
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</section>

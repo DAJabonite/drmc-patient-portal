@@ -1,0 +1,132 @@
+@using System.Text.Json
+@model TriageIntake
+@{
+    ViewData["Title"] = $"Digital Intake Summary — {Model.Appointment.BookingReference}";
+    var symptoms = JsonSerializer.Deserialize<List<string>>(Model.SymptomsJson) ?? new List<string>();
+    var comorbidities = JsonSerializer.Deserialize<List<string>>(Model.ComorbiditiesJson) ?? new List<string>();
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm">
+    <div class="container">
+        <h1 class="display-6 fw-bold mb-1">Digital Intake Summary Pass</h1>
+        <p class="text-white text-opacity-90 mb-0">Pre-Consultation Clinical Triage Record Verified</p>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container" style="max-width: 760px;">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+            
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-3 mb-4 border-bottom">
+                <div>
+                    <span class="badge bg-success px-3 py-1 rounded-pill small mb-1">
+                        Intake Received &amp; Synced
+                    </span>
+                    <h2 class="h5 fw-bold text-dark mb-0">Appointment @Model.Appointment.BookingReference</h2>
+                    <span class="small text-muted">@Model.Appointment.Department &middot; Attending: @Model.Appointment.DoctorName</span>
+                </div>
+                <div class="text-md-end">
+                    <span class="badge @(Model.AcuityLevel == TriageAcuity.Priority ? "bg-warning text-dark" : "bg-primary-subtle text-primary-drmc") px-3 py-1 rounded-pill">
+                        Triage Acuity: @Model.AcuityLevel
+                    </span>
+                    <div class="small text-muted mt-1" style="font-size:0.75rem;">Submitted @Model.SubmittedAt.ToString("MMM d, yyyy h:mm tt")</div>
+                </div>
+            </div>
+
+            <!-- Reported Summary Details -->
+            <div class="p-3 bg-light rounded-3 border mb-4 small">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Presenting Chief Complaint:</span>
+                        <strong class="text-dark">@Model.ChiefComplaint</strong>
+                    </div>
+                    <div class="col-sm-3">
+                        <span class="text-muted d-block">Duration:</span>
+                        <strong class="text-dark">@Model.SymptomDurationDays days</strong>
+                    </div>
+                    <div class="col-sm-3">
+                        <span class="text-muted d-block">Pain Scale:</span>
+                        <strong class="text-primary-drmc">@Model.PainScale / 10</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Symptoms & Comorbidities -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded-3 border h-100">
+                        <strong class="small text-dark d-block mb-2">Reported Symptoms:</strong>
+                        @if (symptoms.Count > 0)
+                        {
+                            <ul class="list-unstyled small text-muted mb-0">
+                                @foreach (var s in symptoms)
+                                {
+                                    <li><i class="bi bi-check2 text-primary-drmc me-1"></i> @s</li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <span class="small text-muted">No acute associated symptoms noted.</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded-3 border h-100">
+                        <strong class="small text-dark d-block mb-2">Known Comorbidities:</strong>
+                        @if (comorbidities.Count > 0)
+                        {
+                            <ul class="list-unstyled small text-muted mb-0">
+                                @foreach (var c in comorbidities)
+                                {
+                                    <li><i class="bi bi-check2 text-primary-drmc me-1"></i> @c</li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <span class="small text-muted">No chronic comorbidities reported.</span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Self Reported Vitals -->
+            @if (!string.IsNullOrEmpty(Model.ReportedBloodPressure) || !string.IsNullOrEmpty(Model.ReportedTemperature) || !string.IsNullOrEmpty(Model.ReportedBloodSugar))
+            {
+                <div class="p-3 bg-light rounded-3 border mb-4 small">
+                    <strong class="text-dark d-block mb-2">Self-Reported Home Vital Signs:</strong>
+                    <div class="d-flex flex-wrap gap-3 text-muted">
+                        @if (!string.IsNullOrEmpty(Model.ReportedBloodPressure))
+                        {
+                            <span>BP: <strong>@Model.ReportedBloodPressure mmHg</strong></span>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ReportedTemperature))
+                        {
+                            <span>Temp: <strong>@Model.ReportedTemperature &deg;C</strong></span>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ReportedHeartRate))
+                        {
+                            <span>HR: <strong>@Model.ReportedHeartRate bpm</strong></span>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ReportedBloodSugar))
+                        {
+                            <span>FBS: <strong>@Model.ReportedBloodSugar mg/dL</strong></span>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                <a asp-controller="Patient" asp-action="Home" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
+                    Return to Dashboard
+                </a>
+                <a asp-controller="Appointments" asp-action="Confirmation" asp-route-reference="@Model.Appointment.BookingReference" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold">
+                    <i class="bi bi-qr-code me-1"></i> View Appointment Slip
+                </a>
+            </div>
+
+        </div>
+    </div>
+</section>

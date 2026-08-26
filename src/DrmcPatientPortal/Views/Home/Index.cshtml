@@ -64,33 +64,42 @@
                         </div>
                     </div>
                     <div class="d-flex flex-column gap-3 mb-4">
-                        <div class="d-flex align-items-start gap-3 p-2 rounded-3 hover-bg-light">
+                        <a asp-controller="Appointments" asp-action="Book" class="d-flex align-items-start gap-3 p-2 rounded-3 hover-bg-light text-decoration-none text-dark">
                             <div class="service-icon-box bg-primary-subtle text-primary-drmc rounded-3 p-2">
                                 <i class="bi bi-calendar-check fs-5"></i>
                             </div>
                             <div>
                                 <strong class="d-block text-dark small">Outpatient Appointments</strong>
-                                <span class="text-muted small">View scheduled clinic visits and doctor consultation times.</span>
+                                <span class="text-muted small">Schedule clinic visits and online doctor consultations with instant QR pass.</span>
                             </div>
-                        </div>
-                        <div class="d-flex align-items-start gap-3 p-2 rounded-3 hover-bg-light">
+                        </a>
+                        <a asp-controller="Queue" asp-action="Index" class="d-flex align-items-start gap-3 p-2 rounded-3 hover-bg-light text-decoration-none text-dark">
                             <div class="service-icon-box bg-info-subtle text-info-emphasis rounded-3 p-2">
-                                <i class="bi bi-file-earmark-medical fs-5"></i>
+                                <i class="bi bi-broadcast fs-5"></i>
                             </div>
                             <div>
-                                <strong class="d-block text-dark small">Diagnostic &amp; Lab Status</strong>
-                                <span class="text-muted small">Check real-time processing status of your laboratory tests.</span>
+                                <strong class="d-block text-dark small">Live OPD Queue Tracker</strong>
+                                <span class="text-muted small">Check real-time ticket numbers currently being called across clinics.</span>
                             </div>
-                        </div>
-                        <div class="d-flex align-items-start gap-3 p-2 rounded-3 hover-bg-light">
+                        </a>
+                        <a asp-controller="Malasakit" asp-action="Index" class="d-flex align-items-start gap-3 p-2 rounded-3 hover-bg-light text-decoration-none text-dark">
+                            <div class="service-icon-box bg-warning-subtle text-warning-emphasis rounded-3 p-2">
+                                <i class="bi bi-shield-heart fs-5"></i>
+                            </div>
+                            <div>
+                                <strong class="d-block text-dark small">Malasakit Center Navigator</strong>
+                                <span class="text-muted small">Step-by-step statutory eligibility and document checklist guide.</span>
+                            </div>
+                        </a>
+                        <a asp-controller="Advisories" asp-action="Index" class="d-flex align-items-start gap-3 p-2 rounded-3 hover-bg-light text-decoration-none text-dark">
                             <div class="service-icon-box bg-success-subtle text-success rounded-3 p-2">
-                                <i class="bi bi-bell fs-5"></i>
+                                <i class="bi bi-megaphone fs-5"></i>
                             </div>
                             <div>
-                                <strong class="d-block text-dark small">Clinical Notices &amp; Reminders</strong>
-                                <span class="text-muted small">Receive important hospital advisories and preparation instructions.</span>
+                                <strong class="d-block text-dark small">Health Advisories &amp; Bulletins</strong>
+                                <span class="text-muted small">Receive official disease alerts, vaccination drives, and notices.</span>
                             </div>
-                        </div>
+                        </a>
                     </div>
                     <div class="bg-light p-3 rounded-3 text-center">
                         <span class="small text-muted d-block mb-2">Need immediate assistance?</span>
@@ -117,20 +126,20 @@
             @foreach (var dept in Model.Departments)
             {
                 <div class="col-sm-6 col-md-4 col-lg-3">
-                    <div class="card department-card border-0 shadow-sm rounded-4 h-100 p-3">
-                        <div class="card-body d-flex flex-column">
+                    <a asp-controller="Directory" asp-action="Department" asp-route-name="@dept.Name" class="card department-card border-0 shadow-sm rounded-4 h-100 p-3 text-decoration-none text-dark d-block">
+                        <div class="card-body d-flex flex-column h-100 p-0">
                             <div class="card-icon-wrapper mb-3">
                                 <partial name="_DepartmentIcon" model="dept.Icon" />
                             </div>
                             <h3 class="h6 card-title fw-bold text-primary-drmc mb-2">@dept.Name</h3>
                             <p class="card-text small text-muted mb-3 flex-grow-1">@dept.Description</p>
-                            <div class="pt-2 border-top">
+                            <div class="pt-2 border-top mt-auto">
                                 <span class="small text-primary-drmc fw-semibold d-inline-flex align-items-center gap-1">
-                                    Specialized Care <i class="bi bi-arrow-right small"></i>
+                                    Specialized Care &amp; Doctors <i class="bi bi-arrow-right small"></i>
                                 </span>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
             }
         </div>

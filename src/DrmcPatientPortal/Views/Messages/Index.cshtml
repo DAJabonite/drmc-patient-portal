@@ -1,0 +1,117 @@
+@model MessagesIndexViewModel
+@{
+    ViewData["Title"] = "Care Team Messaging";
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-white text-primary-drmc fw-bold px-3 py-1 rounded-pill small">
+                        <i class="bi bi-chat-heart me-1"></i> Asynchronous Care Coordination
+                    </span>
+                    <span class="small text-white text-opacity-75">Clinical Inbox</span>
+                </div>
+                <h1 class="display-6 fw-bold mb-0">Messages &amp; Care Guidance</h1>
+            </div>
+
+            <div>
+                <a asp-action="New" class="btn btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-pencil-square me-1"></i> Send New Message
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Category Filter -->
+<section class="py-3 bg-white border-bottom sticky-top shadow-xs" style="z-index: 1020;">
+    <div class="container">
+        <div class="d-flex align-items-center gap-1 overflow-x-auto pb-1" style="max-width: 100%;">
+            <a asp-action="Index"
+               class="btn btn-sm @(!Model.SelectedCategory.HasValue ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                All Threads (@Model.Threads.Count)
+            </a>
+            <a asp-action="Index" asp-route-category="@MessageCategory.LabResultClarification"
+               class="btn btn-sm @(Model.SelectedCategory == MessageCategory.LabResultClarification ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                Lab Clarifications
+            </a>
+            <a asp-action="Index" asp-route-category="@MessageCategory.MedicationQuestion"
+               class="btn btn-sm @(Model.SelectedCategory == MessageCategory.MedicationQuestion ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                Medication Inquiries
+            </a>
+            <a asp-action="Index" asp-route-category="@MessageCategory.GeneralInquiry"
+               class="btn btn-sm @(Model.SelectedCategory == MessageCategory.GeneralInquiry ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                General Inquiries
+            </a>
+        </div>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container" style="max-width: 900px;">
+        
+        <!-- Safety Alert -->
+        <div class="p-3 bg-white border rounded-4 mb-4 small text-muted d-flex align-items-center gap-3">
+            <i class="bi bi-info-circle-fill fs-4 text-primary-drmc"></i>
+            <div>
+                <strong>Non-Emergency Communication Channel:</strong> This messaging service is for non-urgent clinic questions, lab schedule clarifications, and prescription inquiries. Clinic staff respond within 1 business day. For emergencies, visit the DRMC Emergency Department immediately.
+            </div>
+        </div>
+
+        @if (Model.Threads.Count == 0)
+        {
+            <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
+                <i class="bi bi-chat-dots fs-1 text-muted mb-2"></i>
+                <h3 class="h5 fw-bold text-dark">No conversation threads found</h3>
+                <p class="text-muted small mb-3">You have no active message exchanges matching your filter.</p>
+                <a asp-action="New" class="btn btn-primary-drmc btn-sm rounded-pill px-4 fw-semibold mx-auto">
+                    Compose Message
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex flex-column gap-3">
+                @foreach (var thread in Model.Threads)
+                {
+                    var hasUnread = thread.Messages.Any(m => !m.IsRead && m.SenderRole != MessageSenderRole.Patient);
+                    var lastMessage = thread.Messages.OrderByDescending(m => m.SentAt).FirstOrDefault();
+
+                    <a asp-action="Thread" asp-route-id="@thread.Id"
+                       class="card border-0 shadow-sm rounded-4 p-4 bg-white text-decoration-none hover-shadow-sm transition @(hasUnread ? "border-start border-4 border-warning" : "")">
+                        <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-primary-subtle text-primary-drmc rounded-pill small fw-semibold">
+                                    @thread.Department
+                                </span>
+                                <span class="badge bg-light text-secondary border rounded-pill small">
+                                    @thread.Category
+                                </span>
+                                @if (hasUnread)
+                                {
+                                    <span class="badge bg-warning text-dark rounded-pill fw-bold small">
+                                        <i class="bi bi-envelope-fill me-1"></i> New Reply
+                                    </span>
+                                }
+                            </div>
+                            <span class="small text-muted" style="font-size: 0.75rem;">
+                                Last active: @thread.LastMessageAt.ToString("MMM d, yyyy h:mm tt")
+                            </span>
+                        </div>
+
+                        <h2 class="h5 fw-bold text-dark mb-1">@thread.Subject</h2>
+                        
+                        @if (lastMessage is not null)
+                        {
+                            <p class="small text-muted mb-0 text-truncate" style="max-width: 100%;">
+                                <strong class="text-dark">@lastMessage.SenderName:</strong> @lastMessage.Body
+                            </p>
+                        }
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</section>

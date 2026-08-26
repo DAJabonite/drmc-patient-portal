@@ -16,6 +16,7 @@ Tagline (real): **"Caring for Life, Changing Lives."**
 | .NET SDK | **10.0.400** | Installed via `dotnet-install.sh` to `/home/user/.dotnet`; target `net10.0`. ASP.NET Core runtime 10.0.11. |
 | EF Core | 10.0.11 | SQLite provider. |
 | Identity | `Microsoft.AspNetCore.Identity.UI` 10.0.11 | Razor Pages scaffolded under `Areas/Identity/Pages/Account/`. |
+| QR Engine | `QRCoder` 1.8.0 | In-process vector SVG QR code generation. |
 | Bootstrap | **5.3.8** | Bumped from template's 5.3.3; theming via `--bs-*` CSS custom properties. |
 | Data store | SQLite (`DataSource=app.db`) | Zero external DB setup; grader can `dotnet run` directly. |
 | SDK path | `/home/user/.dotnet` | Source `.dotnet-env.sh` in each shell. |
@@ -41,28 +42,44 @@ dotnet run
 
 ---
 
-## Scope (Phase 2 — hard, do not expand)
+## Scope History & Current Scope
 
-**In scope:** Landing (public) · Register · Login · Home/Dashboard (authenticated). Role: patient only.
+### Phase 2 Scope (Converged & Shipped)
+- **In scope:** Landing (public) · Register · Login · Home/Dashboard (authenticated). Role: patient only.
+- **Out of scope in Phase 2:** appointment booking, lab results (beyond display card), secure messaging, medical records, telehealth, bilingual toggle, family-proxy access, **billing** (public hospital — strictly no billing anywhere).
 
-**Out of scope (do NOT build, even partially — no stub controllers):**
-appointment booking, lab results (beyond display card), secure messaging, medical records, telehealth, bilingual toggle, family-proxy access, **billing** (public hospital — no billing anywhere).
+### Phase 3 Scope (Active Milestone — Expanded Clinical Platform)
+Phase 3 is underway based on `docs/PHASE3_PLAN.md`. All previously deferred patient-facing modules are now in scope (excluding billing, which remains permanently absent):
 
-Dashboard cards for out-of-scope modules are **display-only**: no broken links, no fake "coming soon" pages. Either non-clickable or link to a real built page (e.g., Landing's Departments section).
+1. **Public / Unauthenticated Features (Phase 3.1 — Shipped & Converged):**
+   - **Live OPD Queue Tracker** (`/Queue`): Public queue board with real-time ticket statuses across OPD clinics, ticket tracker (`/Queue/Status`), and polling endpoint (`/Queue/Live`).
+   - **Self-Service OPD & Teleconsultation Booking** (`/Appointments/Book`): Time-slotted booking with vector SVG QR confirmation slip (`/Appointments/Confirmation`) and triage validation (`/Appointments/CheckIn/{ref}`).
+   - **Doctor & Department Directory** (`/Directory`): Filterable directory of 16 doctors, specialties, room assignments, schedules, profiles (`/Directory/Doctor/{id}`), and departments (`/Directory/Department?name=...`).
+   - **Medical Social Services & Malasakit Navigator** (`/Malasakit`): Overview of RA 11463, interactive 3-step questionnaire (`/Malasakit/Navigator`), and generated checklist (`/Malasakit/Assess`).
+   - **Public Health Advisories & Multimedia Bulletins** (`/Advisories`): Feed of seasonal alerts, vaccination drives, and notices (`/Advisories/Details/{slug}`).
+
+2. **Authenticated Features (Phase 3.2+ — Upgrades 3 existing stubs, adds 3 net-new):**
+   - **Diagnostic & Laboratory Results Viewer** (`/Patient/LabResults`): Full chronological viewer with multi-analyte breakdown, reference ranges, and printable reports (upgrades `LabResult`).
+   - **After-Visit Summaries & Clinical Notes** (`/Patient/Encounters`): Consultation notes, diagnoses, discharge summaries, follow-up dates (net-new).
+   - **Prescription & Medication Tracker** (`/Patient/Medications`): Active medications, daily schedule, allergy alerts, refill status (net-new).
+   - **Pre-Consultation Self-Triage & Digital Intake** (`/Patient/Triage`): Structured pre-consultation symptom questionnaire tied to appointments (net-new).
+   - **Asynchronous Care Communication** (`/Patient/Messages`): Threaded bidirectional messaging with clinical departments (upgrades `Message`).
+   - **Caregiver & Proxy Account Access** (`/Patient/Proxy`): Multi-dependent management, profile switching, statutory consent audit trail (net-new).
+
+3. **Cross-Cutting Governance:**
+   - **Trilingual Localization** (English / Filipino / Cebuano-Bisaya).
+   - **Low-Bandwidth & Mobile-First** layout (< 500 KB target).
+   - **WCAG 2.1 AA & Philippine GWTD** compliance.
+   - **Security, Audit Logging & MFA/OTP** infrastructure boundaries.
+   - **Billing:** Confirmed absent — Level III DOH government hospital, no billing anywhere.
 
 ---
 
-## Critic rubric summary (filled after Phase 1 — see docs/critique-rubric.md)
+## Critic rubric summary (see docs/critique-rubric.md)
 
 Severity levels: **Critical** / **Major** / **Minor** / **Enhancement**. A passing automated check is NOT proof of design quality. Every finding must cite specific visible evidence from a fresh rendered screenshot.
 
 **Stopping condition per piece:** no Critical or Major gap remains (Minor/Enhancement-only accepted as converged), OR two consecutive rounds show no visible improvement (plateau) — whichever first. Round count is NOT a quality bar.
-
----
-
-## Safety cap (crash-guard only)
-
-15 rounds per piece is a crash-guard, not a quality bar. If a piece hits it, mark it `CAPPED — NEEDS HUMAN REVIEW` in the round log and move on. Never report a capped piece as converged.
 
 ---
 
@@ -85,13 +102,38 @@ Format: `piece | round | verdict | biggest gap named | status`
 | Dashboard | 2 | PASS | Departments card -> /#departments; manage page branded; all 6 cards seeded | CONVERGED |
 | Smoothing | 1 | PASS | Header/masthead/footer identical across all four screens (only auth-state nav differs, expected) | CONVERGED |
 | Integration | 1 | PASS | 10/10 e2e checks pass (auth gate, register/login->dashboard, seed data, no forbidden UI words) | CONVERGED |
-
-## Final convergence note
-
-All four pieces (Landing, Register, Login, Home/Dashboard) individually converged with no Critical or Major gaps. One smoothing pass confirmed cross-page consistency. Full integration verified. No piece was capped. Final status: **CONVERGED**.
+| Phase 3.0 Plan | 1 | PASS | Model/controller/route matrix, boundary strategy, trilingual/audit plan verified | CONVERGED (`docs/PHASE3_PLAN.md`) |
+| Phase 3.1: OPD Queue Tracker | 1 | PASS | Real-time queue board across 8 departments, ticket tracker (`/Queue/Status`), polling API | CONVERGED |
+| Phase 3.1: Appointment Booking & QR | 1 | FAIL | QR code SVG sizing in confirmation slip overflowing container on tablet breakpoint (Minor/Visual) | FIXED (vector SVG constrained via `pixelsPerModule: 4` + CSS) |
+| Phase 3.1: Appointment Booking & QR | 2 | PASS | End-to-end booking persistence, `ConsoleSmsSender`/`ConsoleEmailSender` logging, QR slip | CONVERGED |
+| Phase 3.1: Doctor Directory | 1 | PASS | 16 attending physicians, department filtering, search, profile views, booking link | CONVERGED |
+| Phase 3.1: Malasakit Navigator | 1 | PASS | RA 11463 statutory programs, interactive 3-step questionnaire, printable document checklist | CONVERGED |
+| Phase 3.1: Health Advisories | 1 | PASS | Bulletin feed, pinned urgent alert banner, category filters, real-time view tracking | CONVERGED |
+| Phase 3.1: Navigation & Integration | 1 | PASS | Header navbar & landing cards wired to all 5 features; 15/15 endpoints return HTTP 200; zero forbidden words | CONVERGED |
+| Phase 3.2: Lab Results Viewer | 1 | FAIL | View lookup failed due to sub-directory path convention (Major) | FIXED (Standardized view folder locations to `/Views/<ControllerName>/`) |
+| Phase 3.2: Lab Results Viewer | 2 | PASS | CBC, FBS, Lipid, HbA1c full analyte breakdown, flags, printable report, biomarker trends | CONVERGED |
+| Phase 3.2: After-Visit Summaries | 1 | PASS | Consultation timeline, primary/secondary ICD-10 diagnoses, vitals, care plan, printable slip | CONVERGED |
+| Phase 3.2: Prescription Tracker | 1 | PASS | Allergy alert banner, dosing visualizer, active Rx list, 1-click refill order, duplicate protection | CONVERGED |
+| Phase 3.2: Digital Self-Triage | 1 | PASS | 3-step intake, pain scale, self-reported vitals, comorbidities, emergency red-flag safeguards | CONVERGED |
+| Phase 3.2: Care Team Messaging | 1 | PASS | Threaded messaging, department routing, unread badge counter sync, real-time reply stream | CONVERGED |
+| Phase 3.2: Caregiver & Proxy Access | 1 | PASS | Dependent profiles (child/senior parent), statutory consent, in-session context switching & audit logging | CONVERGED |
+| Phase 3.2: Security Boundaries & Audit | 1 | PASS | `docs/SECURITY_REVIEW_TODO.md` + matching in-code comments across all 4 PHI boundaries; audit logging service | CONVERGED |
+| Phase 3.2: Automated Test Suite | 1 | PASS | 6 xUnit/Moq unit & integration tests covering all 6 controllers passing cleanly (0 failures) | CONVERGED |
+| Phase 3.3: Trilingual Localization | 1 | PASS | Native `.resx` dictionaries (`en`, `fil`, `ceb`), lay medical terms, persistent cookie switcher | CONVERGED |
+| Phase 3.3: Mobile & Low-Bandwidth | 1 | PASS | Responsive reflow (360px+), Page Visibility API + 30s queue polling backoff, < 500 KB bundle | CONVERGED |
+| Phase 3.3: WCAG 2.1 Level AA | 1 | PASS | 7.8:1 contrast, visible focus rings (`:focus-visible`), skip-link, ARIA landmark roles | CONVERGED |
+| Phase 3.3: Identity 2FA / MFA | 1 | PASS | TOTP Authenticator app pairing, vector SVG QR codes, recovery codes, `LoginWith2fa` challenge | CONVERGED |
+| Phase 3.3: PHI Access Audit Register | 1 | PASS | Patient-facing `/Patient/Audit` access history view, timestamped security event tracking | CONVERGED |
+| Phase 3.3: Proxy Consent Audit Logs | 1 | PASS | `ConsentLogEntry` entity & migration, statutory consent trail in `/Patient/Proxy`, grant/revoke lifecycle | CONVERGED |
+| Phase 3.3: Compliance & Security Reconcile | 1 | PASS | `docs/COMPLIANCE_REPORT.md` certified, `docs/SECURITY_REVIEW_TODO.md` reconciled, 10/10 tests pass | CONVERGED |
+| OPD Guide (Unauthenticated Wayfinding) | 1 | PASS | Linear visual stepper (6 verified Citizen's Charter steps), horizontal desktop & vertical mobile reflow, kiosk referral, top-level nav link, trilingual resources | CONVERGED |
 
 ---
 
-## Reviewer test credentials (seeded in DbInitializer — README only, never surface in UI)
+## Convergence Status
 
-Seeded accounts are created via `DbInitializer` at startup. Full credentials documented in README.md.
+- **Core & Authenticated Milestone (Phases 1–3.3):** CONVERGED
+- **OPD Guide Feature:** CONVERGED (11/11 automated tests pass; browser verified at 1280px, 390px, and 320px with zero horizontal scroll; unauthenticated & authenticated access verified; zero forbidden words).
+
+
+

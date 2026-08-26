@@ -1,0 +1,83 @@
+@page
+@model TwoFactorAuthenticationModel
+@{
+    ViewData["Title"] = "Two-Factor Authentication (2FA)";
+    ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
+}
+
+<h2 class="h5 fw-bold text-primary-drmc mb-3">@ViewData["Title"]</h2>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-success rounded-4 mb-4 shadow-sm" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @Model.StatusMessage
+    </div>
+}
+
+<div class="card border-0 bg-light rounded-4 p-4 mb-4">
+    <div class="d-flex align-items-start gap-3">
+        <div class="p-3 rounded-circle bg-primary-subtle text-primary-drmc">
+            <i class="bi bi-shield-check fs-3"></i>
+        </div>
+        <div>
+            <h3 class="h6 fw-bold text-dark mb-1">Protect Your Protected Health Information (PHI)</h3>
+            <p class="small text-muted mb-0 leading-relaxed">
+                Two-Factor Authentication (2FA) adds a vital extra layer of security to your medical records, diagnostic lab results, and family caregiver profile. When enabled, signing in requires both your password and a one-time verification passcode from your authenticator app or OTP code.
+            </p>
+        </div>
+    </div>
+</div>
+
+@if (Model.Is2faEnabled)
+{
+    <div class="alert alert-success rounded-4 mb-4 shadow-sm d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <strong>2FA is actively protecting your patient portal account.</strong>
+        </div>
+        <form method="post" asp-page-handler="Disable2fa" class="d-inline"
+              onsubmit="return confirm('Are you sure you want to disable 2FA security?');">
+            <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">Disable 2FA</button>
+        </form>
+    </div>
+
+    @if (Model.IsMachineRemembered)
+    {
+        <form method="post" asp-page-handler="ForgetMachine" class="d-inline mb-4 d-block">
+            <button type="submit" class="btn btn-outline-secondary btn-sm rounded-pill px-4">
+                <i class="bi bi-laptop me-1"></i> Forget this browser for 2FA
+            </button>
+        </form>
+    }
+}
+else
+{
+    <div class="alert alert-warning rounded-4 mb-4 shadow-sm">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>2FA is currently disabled.</strong> We strongly recommend enabling Two-Factor Authentication to safeguard your sensitive health data.
+    </div>
+}
+
+<h4 class="h6 fw-bold text-dark mb-3">Authenticator App Configuration</h4>
+
+@if (!Model.HasAuthenticator)
+{
+    <a id="enable-authenticator" asp-page="./EnableAuthenticator" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold shadow-xs">
+        <i class="bi bi-phone me-1"></i> Set up Authenticator App (Google Authenticator / Microsoft Authenticator)
+    </a>
+}
+else
+{
+    <div class="d-flex gap-2 flex-wrap">
+        <a id="enable-authenticator" asp-page="./EnableAuthenticator" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold shadow-xs btn-sm">
+            <i class="bi bi-arrow-repeat me-1"></i> Re-configure Authenticator App
+        </a>
+        <a id="reset-authenticator" asp-page="./ResetAuthenticator" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold btn-sm">
+            Reset Authenticator Key
+        </a>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

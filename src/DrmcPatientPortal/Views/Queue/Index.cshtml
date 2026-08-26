@@ -1,0 +1,221 @@
+@model QueueBoardViewModel
+@{
+    ViewData["Title"] = "Live OPD Queue Tracker";
+}
+
+<!-- Hero Section -->
+<section class="py-4 bg-primary-drmc text-white shadow-sm">
+    <div class="container">
+        <div class="row align-items-center g-3">
+            <div class="col-lg-8">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill">
+                        <i class="bi bi-broadcast me-1"></i> Live Real-Time Feed
+                    </span>
+                    <span class="small text-white text-opacity-75" id="liveTimestamp">
+                        Updated at @Model.LastUpdated.ToString("h:mm:ss tt")
+                    </span>
+                </div>
+                <h1 class="display-6 fw-bold mb-2">Outpatient Clinic Queue Tracker</h1>
+                <p class="lead text-white text-opacity-90 mb-0 fs-6" style="max-width: 680px;">
+                    Monitor live ticket numbers currently called and serving across Davao Regional Medical Center outpatient clinics and diagnostic units.
+                </p>
+            </div>
+            <div class="col-lg-4">
+                <!-- Direct Ticket Lookup Card -->
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-dark">
+                    <h2 class="h6 fw-bold text-primary-drmc mb-2">
+                        <i class="bi bi-search me-1"></i> Track Your Ticket
+                    </h2>
+                    <form asp-action="Status" method="get" class="d-flex gap-2">
+                        <input type="text" name="ticketNumber" class="form-control form-control-sm text-uppercase fw-bold"
+                               placeholder="e.g. IM-105, PED-018" required aria-label="Enter Ticket Number" />
+                        <button type="submit" class="btn btn-sm btn-primary-drmc px-3 fw-semibold text-nowrap">
+                            Check
+                        </button>
+                    </form>
+                    <span class="small text-muted mt-1" style="font-size: 0.75rem;">
+                        <i class="bi bi-info-circle me-1"></i> Enter the ticket number on your clinic pass.
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Filter Navigation -->
+<section class="py-3 bg-white border-bottom sticky-top shadow-xs" style="z-index: 1020;">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-1 overflow-x-auto pb-1" style="max-width: 100%;">
+                <a asp-action="Index" class="btn btn-sm @(string.IsNullOrEmpty(Model.SelectedDepartment) ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                    All Clinics
+                </a>
+                @foreach (var dept in Model.Departments)
+                {
+                    <a asp-action="Index" asp-route-department="@dept"
+                       class="btn btn-sm @(Model.SelectedDepartment == dept ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                        @dept
+                    </a>
+                }
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button id="refreshQueueBtn" class="btn btn-sm btn-outline-drmc d-inline-flex align-items-center gap-1 rounded-pill px-3 fw-semibold">
+                    <i class="bi bi-arrow-clockwise" id="refreshIcon"></i> Refresh Board
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Main Queue Board Cards -->
+<section class="section py-4 bg-light">
+    <div class="container">
+        <div class="row g-4" id="queueCardsGrid">
+            @foreach (var item in Model.DepartmentSummaries)
+            {
+                <div class="col-md-6 col-lg-4 queue-card-item" data-department="@item.Department">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white">
+                        <div class="card-body d-flex flex-column p-2">
+                            <!-- Department Header -->
+                            <div class="d-flex align-items-start justify-content-between mb-3 pb-2 border-bottom">
+                                <div>
+                                    <h3 class="h6 fw-bold text-primary-drmc mb-0">@item.Department</h3>
+                                    <span class="small text-muted">
+                                        <i class="bi bi-geo-alt me-1"></i> @item.ClinicRoom
+                                    </span>
+                                </div>
+                                <span class="badge bg-light text-secondary border px-2 py-1 rounded-pill small">
+                                    @(item.WaitingCount) Waiting
+                                </span>
+                            </div>
+
+                            <!-- Serving Block -->
+                            <div class="p-3 rounded-3 bg-primary-subtle border border-primary border-opacity-25 mb-3 text-center">
+                                <span class="small fw-semibold text-primary-drmc text-uppercase tracking-wider d-block mb-1">
+                                    Now Serving
+                                </span>
+                                @if (item.ServingTicket is not null)
+                                {
+                                    <div class="display-5 fw-bolder text-primary-drmc mb-1" style="letter-spacing: 1px;">
+                                        @item.ServingTicket.TicketNumber
+                                    </div>
+                                    <span class="small text-dark fw-medium">
+                                        @if (item.ServingTicket.IsPriority)
+                                        {
+                                            <span class="badge bg-warning text-dark me-1"><i class="bi bi-star-fill"></i> Priority</span>
+                                        }
+                                        Serving in @item.ServingTicket.ClinicRoom
+                                    </span>
+                                }
+                                else
+                                {
+                                    <div class="display-6 fw-bold text-muted my-1">
+                                        --
+                                    </div>
+                                    <span class="small text-muted">Awaiting Next Patient</span>
+                                }
+                            </div>
+
+                            <!-- Next Called & Waiting Info -->
+                            <div class="row g-2 text-center mb-3">
+                                <div class="col-6">
+                                    <div class="p-2 rounded-3 bg-light border">
+                                        <span class="small text-muted d-block" style="font-size: 0.75rem;">Next Called</span>
+                                        <strong class="fs-6 text-dark">
+                                            @(item.CalledTicket?.TicketNumber ?? "--")
+                                        </strong>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-2 rounded-3 bg-light border">
+                                        <span class="small text-muted d-block" style="font-size: 0.75rem;">In Queue</span>
+                                        <strong class="fs-6 text-dark">
+                                            @item.WaitingCount Patients
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action & Status -->
+                            <div class="mt-auto pt-2 border-top d-flex align-items-center justify-content-between">
+                                <a asp-controller="Appointments" asp-action="Book" asp-route-department="@item.Department"
+                                   class="small text-primary-drmc fw-semibold text-decoration-none">
+                                    <i class="bi bi-calendar-plus me-1"></i> Book for this Clinic
+                                </a>
+                                <span class="small text-muted" style="font-size: 0.75rem;">
+                                    Live OPD
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- Queue Guidelines Notice -->
+<section class="py-4 bg-white border-top">
+    <div class="container">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-8">
+                <h4 class="h6 fw-bold text-dark mb-1">
+                    <i class="bi bi-info-circle-fill text-primary-drmc me-1"></i> Patient Queue Guidelines
+                </h4>
+                <p class="small text-muted mb-0">
+                    Ticket numbers are called in sequential order at the clinic room entrance. Senior citizens, pregnant women, and PWDs are prioritized through designated priority counters. Please be present within 5 minutes of your number being called.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a asp-controller="Appointments" asp-action="Book" class="btn btn-outline-drmc btn-sm fw-semibold rounded-pill px-3">
+                    <i class="bi bi-calendar-check me-1"></i> Book an Appointment
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const refreshBtn = document.getElementById("refreshQueueBtn");
+        const refreshIcon = document.getElementById("refreshIcon");
+        const liveTimestamp = document.getElementById("liveTimestamp");
+
+        async function fetchLiveQueue() {
+            if (refreshIcon) refreshIcon.classList.add("spin-animation");
+            try {
+                const response = await fetch("/Queue/Live");
+                if (response.ok) {
+                    const data = await response.json();
+                    if (liveTimestamp) {
+                        liveTimestamp.textContent = "Updated at " + data.timestamp;
+                    }
+                }
+            } catch (err) {
+                console.log("Queue poll status:", err);
+            } finally {
+                if (refreshIcon) {
+                    setTimeout(() => refreshIcon.classList.remove("spin-animation"), 500);
+                }
+            }
+        }
+
+        // Low-bandwidth conscious auto-poll: only poll when tab is visible every 30 seconds
+        setInterval(function () {
+            if (!document.hidden) {
+                fetchLiveQueue();
+            }
+        }, 30000);
+    });
+</script>
+<style>
+    .spin-animation {
+        animation: spin 0.6s linear infinite;
+    }
+    @@keyframes spin {
+        100% { transform: rotate(360deg); }
+    }
+</style>
+}

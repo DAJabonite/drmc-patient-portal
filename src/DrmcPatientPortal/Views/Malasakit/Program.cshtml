@@ -1,0 +1,108 @@
+@using System.Text.Json
+@model AssistanceProgram
+@{
+    ViewData["Title"] = $"{Model.Title} — Malasakit Program Guide";
+    var docs = JsonSerializer.Deserialize<List<string>>(Model.RequiredDocumentsJson) ?? new List<string>();
+    var steps = JsonSerializer.Deserialize<List<string>>(Model.StepByStepProcedureJson) ?? new List<string>();
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm">
+    <div class="container">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <a asp-action="Index" class="text-white text-opacity-75 text-decoration-none small">
+                <i class="bi bi-arrow-left"></i> Malasakit Center
+            </a>
+            <span class="text-white text-opacity-50">/</span>
+            <span class="small text-white text-opacity-75">Program Guide</span>
+        </div>
+        <h1 class="display-6 fw-bold mb-1">@Model.Title</h1>
+        <p class="text-white text-opacity-90 mb-0">Managing Agency: <strong>@Model.ManagingAgency</strong> &middot; Code: <strong>@Model.Code</strong></p>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container" style="max-width: 860px;">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+            
+            <div class="mb-4 pb-3 border-bottom">
+                <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-semibold mb-2">
+                    @Model.ManagingAgency Safety-Net
+                </span>
+                <h2 class="h4 fw-bold text-dark mb-2">About the Program</h2>
+                <p class="text-muted small leading-relaxed mb-3">@Model.Description</p>
+
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <span class="small text-muted d-block" style="font-size:0.75rem;">Coverage Scope</span>
+                            <strong class="small text-dark">@Model.CoverageScope</strong>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <span class="small text-muted d-block" style="font-size:0.75rem;">Eligible Patients</span>
+                            <strong class="small text-dark">@Model.EligibilitySummary</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Required Documents -->
+            <div class="mb-4 pb-3 border-bottom">
+                <h3 class="h6 fw-bold text-primary-drmc mb-3">
+                    <i class="bi bi-folder-check me-1"></i> Documentary Requirements
+                </h3>
+                <div class="d-flex flex-column gap-2">
+                    @foreach (var d in docs)
+                    {
+                        <div class="p-2 px-3 rounded-3 bg-light border small text-dark d-flex align-items-center gap-2">
+                            <i class="bi bi-file-earmark-check text-primary-drmc"></i>
+                            <span>@d</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Step by Step Procedure -->
+            <div class="mb-4 pb-3 border-bottom">
+                <h3 class="h6 fw-bold text-primary-drmc mb-3">
+                    <i class="bi bi-list-ol me-1"></i> Step-by-Step Application Procedure
+                </h3>
+                <div class="d-flex flex-column gap-2">
+                    @foreach (var s in steps)
+                    {
+                        <div class="p-3 rounded-3 bg-light border small text-dark">
+                            @s
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Location & Hours -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded-3 border">
+                        <span class="small text-muted d-block" style="font-size:0.75rem;">Office Location</span>
+                        <strong class="small text-dark">@Model.OfficeLocation</strong>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded-3 border">
+                        <span class="small text-muted d-block" style="font-size:0.75rem;">Operating Hours</span>
+                        <strong class="small text-dark">@Model.OperatingHours</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Malasakit Hub
+                </a>
+                <a asp-action="Navigator" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold">
+                    <i class="bi bi-compass me-1"></i> Launch Navigator
+                </a>
+            </div>
+
+        </div>
+    </div>
+</section>

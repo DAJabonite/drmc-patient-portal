@@ -1,0 +1,127 @@
+@model DepartmentDetailViewModel
+@{
+    ViewData["Title"] = $"Department of {Model.Department.Name}";
+    var dept = Model.Department;
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm">
+    <div class="container">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <a asp-action="Index" class="text-white text-opacity-75 text-decoration-none small">
+                <i class="bi bi-arrow-left"></i> Medical Directory
+            </a>
+            <span class="text-white text-opacity-50">/</span>
+            <span class="small text-white text-opacity-75">Clinical Departments</span>
+        </div>
+        <h1 class="display-6 fw-bold mb-1">Department of @dept.Name</h1>
+        <p class="text-white text-opacity-90 mb-0">Davao Regional Medical Center Tertiary Clinical Division</p>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container">
+        <div class="row g-4">
+            
+            <!-- Department Overview Sidebar -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white sticky-lg-top" style="top: 80px;">
+                    <div class="mb-3">
+                        <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-semibold">
+                            Clinical Division
+                        </span>
+                    </div>
+                    
+                    <h2 class="h5 fw-bold text-primary-drmc mb-2">@dept.Name</h2>
+                    <p class="text-muted small mb-4">@dept.Description</p>
+
+                    <div class="d-flex flex-column gap-3 mb-4">
+                        <div class="p-2 rounded-3 bg-light border">
+                            <span class="small text-muted d-block" style="font-size:0.75rem;">Department Chairperson</span>
+                            <strong class="small text-dark">@dept.HeadOfDepartment</strong>
+                        </div>
+                        <div class="p-2 rounded-3 bg-light border">
+                            <span class="small text-muted d-block" style="font-size:0.75rem;">Location</span>
+                            <strong class="small text-dark">@dept.Location</strong>
+                        </div>
+                        <div class="p-2 rounded-3 bg-light border">
+                            <span class="small text-muted d-block" style="font-size:0.75rem;">Hospital Phone Extension</span>
+                            <strong class="small text-dark">@dept.LocalExtension</strong>
+                        </div>
+                    </div>
+
+                    @if (dept.ServicesOffered is not null && dept.ServicesOffered.Count > 0)
+                    {
+                        <div class="mb-4">
+                            <h3 class="h6 fw-bold text-dark mb-2">Clinical Services &amp; Subspecialties</h3>
+                            <ul class="list-unstyled small text-muted d-flex flex-column gap-1 mb-0">
+                                @foreach (var s in dept.ServicesOffered)
+                                {
+                                    <li class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-check2 text-primary-drmc"></i>
+                                        <span>@s</span>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+
+                    <a asp-controller="Appointments" asp-action="Book" asp-route-department="@dept.Name"
+                       class="btn btn-primary-drmc w-100 rounded-pill fw-semibold shadow-sm">
+                        <i class="bi bi-calendar-plus me-1"></i> Book for this Department
+                    </a>
+                </div>
+            </div>
+
+            <!-- Affiliated Medical Specialists -->
+            <div class="col-lg-8">
+                <div class="mb-3 d-flex align-items-center justify-content-between">
+                    <h2 class="h5 fw-bold text-primary-drmc mb-0">
+                        Attending Physicians &amp; Consultants (@Model.Doctors.Count)
+                    </h2>
+                    <a asp-controller="Queue" asp-action="Index" asp-route-department="@dept.Name" class="btn btn-sm btn-outline-drmc rounded-pill px-3 fw-semibold">
+                        <i class="bi bi-broadcast me-1"></i> View Department Queue
+                    </a>
+                </div>
+
+                <div class="row g-3">
+                    @foreach (var doc in Model.Doctors)
+                    {
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                                <div class="d-flex align-items-start gap-3 mb-2">
+                                    <div class="doctor-avatar bg-primary-subtle text-primary-drmc rounded-circle d-flex align-items-center justify-content-center fw-bold fs-5"
+                                         style="width: 48px; height: 48px; flex-shrink: 0;">
+                                        @string.Join("", doc.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).TakeLast(2).Select(s => s[0]))
+                                    </div>
+                                    <div>
+                                        <h3 class="h6 fw-bold text-dark mb-0">@doc.FullName</h3>
+                                        <span class="small text-muted d-block" style="font-size:0.8rem;">@doc.Title</span>
+                                        <span class="badge bg-info-subtle text-info-emphasis rounded-pill small" style="font-size:0.7rem;">
+                                            @doc.SubSpecialty
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="small text-muted mb-3 flex-grow-1">
+                                    <div class="mb-1"><i class="bi bi-geo-alt me-1"></i> @doc.ClinicRoom</div>
+                                    <div><i class="bi bi-clock me-1"></i> @doc.ScheduleSummary</div>
+                                </div>
+
+                                <div class="d-flex gap-2 pt-2 border-top">
+                                    <a asp-action="Doctor" asp-route-id="@doc.Id" class="btn btn-sm btn-outline-secondary flex-fill rounded-pill fw-semibold">
+                                        Profile
+                                    </a>
+                                    <a asp-controller="Appointments" asp-action="Book" asp-route-department="@doc.Department" asp-route-doctorId="@doc.Id"
+                                       class="btn btn-sm btn-primary-drmc flex-fill rounded-pill fw-semibold">
+                                        Book
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>

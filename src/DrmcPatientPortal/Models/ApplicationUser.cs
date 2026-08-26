@@ -21,13 +21,20 @@ public class ApplicationUser : IdentityUser
 
     public bool PrivacyConsent { get; set; } = true;
 
-    // Optional: patient can store a preferred department for reference (not a booking).
+    // Optional: patient can store a preferred department for reference.
     public string? PreferredDepartment { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // Navigation collections for seeded dashboard data (kept small, display-only).
-    public ICollection<NextAppointment> Appointments { get; set; } = new List<NextAppointment>();
+    // Navigation collections
+    public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+    public ICollection<QueueTicket> QueueTickets { get; set; } = new List<QueueTicket>();
     public ICollection<LabResult> LabResults { get; set; } = new List<LabResult>();
-    public ICollection<Message> Messages { get; set; } = new List<Message>();
+    public ICollection<ClinicalEncounter> Encounters { get; set; } = new List<ClinicalEncounter>();
+    public ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();
+    public ICollection<PatientAllergy> Allergies { get; set; } = new List<PatientAllergy>();
+    public ICollection<TriageIntake> TriageIntakes { get; set; } = new List<TriageIntake>();
+    public ICollection<MessageThread> MessageThreads { get; set; } = new List<MessageThread>();
+    public ICollection<DependentProfile> DependentProfiles { get; set; } = new List<DependentProfile>();
+    public ICollection<ConsentLogEntry> ConsentLogEntries { get; set; } = new List<ConsentLogEntry>();
 }

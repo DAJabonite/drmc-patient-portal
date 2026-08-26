@@ -1,0 +1,62 @@
+@model Appointment
+@{
+    ViewData["Title"] = $"Triage Check-In Verification — {Model.BookingReference}";
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm">
+    <div class="container">
+        <h1 class="display-6 fw-bold mb-1">Clinic Check-In Verification</h1>
+        <p class="text-white text-opacity-90 mb-0">DRMC Outpatient Triage Validation Desk</p>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container" style="max-width: 640px;">
+        <div class="card border-0 shadow-sm rounded-4 p-4 text-center bg-white">
+            
+            <div class="p-3 rounded-circle bg-success-subtle text-success d-inline-flex mx-auto mb-3">
+                <i class="bi bi-shield-check fs-1"></i>
+            </div>
+
+            <span class="badge bg-success px-3 py-1 rounded-pill mb-2 d-inline-block mx-auto">
+                Valid Confirmed Appointment
+            </span>
+
+            <h2 class="h4 fw-bold text-primary-drmc mb-1">@Model.BookingReference</h2>
+            <p class="text-muted small mb-4">Official DRMC Outpatient Record Authenticated</p>
+
+            <div class="p-3 bg-light rounded-3 text-start mb-4 border">
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted small">Patient Name:</span>
+                    <strong class="text-dark small">@Model.PatientName</strong>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted small">Department:</span>
+                    <strong class="text-primary-drmc small">@Model.Department</strong>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted small">Attending Specialist:</span>
+                    <strong class="text-dark small">@Model.DoctorName</strong>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted small">Consultation Date:</span>
+                    <strong class="text-dark small">@Model.ScheduledAt.ToString("MMMM d, yyyy") (@Model.TimeSlot)</strong>
+                </div>
+                <div class="d-flex justify-content-between py-2">
+                    <span class="text-muted small">Contact Number:</span>
+                    <strong class="text-dark small">@Model.ContactNumber</strong>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 justify-content-center">
+                <a asp-action="Confirmation" asp-route-reference="@Model.BookingReference" class="btn btn-primary-drmc fw-semibold rounded-pill px-4">
+                    <i class="bi bi-file-earmark-text me-1"></i> View Full Pass
+                </a>
+                <a asp-controller="Queue" asp-action="Index" class="btn btn-outline-secondary fw-semibold rounded-pill px-4">
+                    <i class="bi bi-broadcast me-1"></i> View Live Queue
+                </a>
+            </div>
+
+        </div>
+    </div>
+</section>

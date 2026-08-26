@@ -1,0 +1,131 @@
+@model PatientAuditViewModel
+@{
+    ViewData["Title"] = "Health Record Access History & Audit Trail";
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-white text-primary-drmc fw-bold px-3 py-1 rounded-pill small">
+                        <i class="bi bi-shield-check me-1"></i> Data Privacy &amp; Security
+                    </span>
+                    <span class="small text-white text-opacity-75">RA 10173 Access Transparency</span>
+                </div>
+                <h1 class="display-6 fw-bold mb-0">Record Access Audit Register</h1>
+            </div>
+
+            <div>
+                <a asp-action="Home" class="btn btn-outline-light rounded-pill px-4 fw-semibold shadow-xs">
+                    <i class="bi bi-arrow-left me-1"></i> Return to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container" style="max-width: 960px;">
+        
+        <!-- Privacy Notice Banner -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4 border-start border-4 border-primary">
+            <div class="d-flex align-items-start gap-3">
+                <div class="p-2 rounded-circle bg-primary-subtle text-primary-drmc d-inline-flex" style="flex-shrink:0;">
+                    <i class="bi bi-shield-lock-fill fs-3"></i>
+                </div>
+                <div>
+                    <h2 class="h6 fw-bold text-dark mb-1">Patient Access Transparency Guarantee</h2>
+                    <p class="small text-muted mb-0 leading-relaxed">
+                        Under the Philippine Data Privacy Act of 2012 (RA 10173) and DRMC Health Information Management Department (HIMD) regulations, every interaction with your electronic health record is timestamped and logged. Below is the chronological record of all activities, including diagnostic report views, prescription refill orders, and clinical consultations.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-3 mb-4 border-bottom">
+                <div>
+                    <span class="small text-muted d-block" style="font-size: 0.75rem;">AUTHENTICATED ACCOUNT:</span>
+                    <h3 class="h5 fw-bold text-dark mb-0">@Model.PatientName</h3>
+                    <span class="small text-muted">@Model.Email</span>
+                </div>
+                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill small">
+                    Showing @Model.Logs.Count Security Events
+                </span>
+            </div>
+
+            @if (Model.Logs.Count == 0)
+            {
+                <div class="p-5 text-center text-muted">
+                    <i class="bi bi-journal-x fs-1 d-block mb-2"></i>
+                    <span>No security audit events recorded for this account yet.</span>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive rounded-3 border">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead class="table-light text-uppercase" style="font-size: 0.75rem;">
+                            <tr>
+                                <th>Date &amp; Time (PST)</th>
+                                <th>Security Action</th>
+                                <th>Target Resource</th>
+                                <th>Event Details</th>
+                                <th>IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in Model.Logs)
+                            {
+                                <tr>
+                                    <td class="text-muted text-nowrap">@log.Timestamp.ToString("MMM d, yyyy h:mm tt")</td>
+                                    <td>
+                                        @if (log.Action.Contains("VIEW"))
+                                        {
+                                            <span class="badge bg-info-subtle text-info-emphasis rounded-pill px-2">
+                                                <i class="bi bi-eye me-1"></i> @log.Action
+                                            </span>
+                                        }
+                                        else if (log.Action.Contains("REFILL") || log.Action.Contains("SUBMIT"))
+                                        {
+                                            <span class="badge bg-success-subtle text-success rounded-pill px-2">
+                                                <i class="bi bi-check2-circle me-1"></i> @log.Action
+                                            </span>
+                                        }
+                                        else if (log.Action.Contains("PROXY"))
+                                        {
+                                            <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-2">
+                                                <i class="bi bi-people me-1"></i> @log.Action
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2">
+                                                @log.Action
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="text-dark fw-semibold">@log.Resource</td>
+                                    <td class="text-muted">@log.Details</td>
+                                    <td class="text-muted small">@log.IpAddress</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <div class="d-flex justify-content-between align-items-center pt-4 mt-3 border-top">
+                <a asp-action="Home" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+                </a>
+                <button onclick="window.print();" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold shadow-xs">
+                    <i class="bi bi-printer me-1"></i> Print Access Log
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+</section>

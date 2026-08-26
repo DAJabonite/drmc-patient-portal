@@ -1,0 +1,47 @@
+@page
+@model LoginWith2faModel
+@{
+    ViewData["Title"] = "Two-Factor Verification";
+}
+
+<div class="row justify-content-center py-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+            <div class="text-center mb-4">
+                <div class="p-3 rounded-circle bg-primary-subtle text-primary-drmc d-inline-flex mb-3">
+                    <i class="bi bi-shield-lock-fill fs-2"></i>
+                </div>
+                <h1 class="h4 fw-bold text-dark mb-1">Two-Factor Authentication</h1>
+                <p class="small text-muted mb-0">
+                    Your account is protected by 2FA. Enter the 6-digit security code from your authenticator app below.
+                </p>
+            </div>
+
+            <form method="post" asp-route-returnUrl="@Model.ReturnUrl">
+                <input asp-for="RememberMe" type="hidden" />
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3 small p-3" role="alert"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Input.TwoFactorCode" class="form-label small fw-semibold text-dark"></label>
+                    <input asp-for="Input.TwoFactorCode" class="form-control form-control-lg text-center fw-bold letter-spacing-2 rounded-3" autocomplete="off" placeholder="000000" maxlength="7" autofocus />
+                    <span asp-validation-for="Input.TwoFactorCode" class="text-danger small"></span>
+                </div>
+
+                <div class="form-check mb-4">
+                    <input asp-for="Input.RememberMachine" class="form-check-input" />
+                    <label asp-for="Input.RememberMachine" class="form-check-label small text-muted">
+                        Remember this device for 30 days
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary-drmc w-100 rounded-pill py-2 fw-semibold shadow-xs">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Verify &amp; Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

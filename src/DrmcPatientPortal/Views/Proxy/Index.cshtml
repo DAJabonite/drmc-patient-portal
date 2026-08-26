@@ -1,0 +1,226 @@
+@model ProxyIndexViewModel
+@{
+    ViewData["Title"] = "Caregiver & Family Proxy Access";
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-white text-primary-drmc fw-bold px-3 py-1 rounded-pill small">
+                        <i class="bi bi-people-fill me-1"></i> Caregiver &amp; Family Access
+                    </span>
+                    <span class="small text-white text-opacity-75">Statutory Proxy Authorization</span>
+                </div>
+                <h1 class="display-6 fw-bold mb-0">Family &amp; Dependent Profiles</h1>
+            </div>
+
+            <div>
+                <a asp-action="Add" class="btn btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-person-plus-fill me-1"></i> Add Family Member / Dependent
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container" style="max-width: 920px;">
+        
+        @if (TempData["SuccessMessage"] is not null)
+        {
+            <div class="alert alert-success rounded-4 mb-4 shadow-sm">
+                <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            </div>
+        }
+
+        <!-- Active Context Alert Banner -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white border-start border-4 @(Model.ActiveDependentId.HasValue ? "border-warning" : "border-primary")">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 rounded-circle @(Model.ActiveDependentId.HasValue ? "bg-warning-subtle text-warning-emphasis" : "bg-primary-subtle text-primary-drmc")">
+                        <i class="bi @(Model.ActiveDependentId.HasValue ? "bi-person-badge-fill" : "bi-person-check-fill") fs-3"></i>
+                    </div>
+                    <div>
+                        <span class="small text-muted d-block" style="font-size: 0.75rem;">CURRENT ACTIVE PORTAL VIEW:</span>
+                        @if (Model.ActiveDependentId.HasValue)
+                        {
+                            <h2 class="h5 fw-bold text-dark mb-0">
+                                Managing for: <span class="text-primary-drmc">@Model.ActiveDependentName</span>
+                            </h2>
+                            <span class="small text-muted">You are viewing health records on behalf of your dependent.</span>
+                        }
+                        else
+                        {
+                            <h2 class="h5 fw-bold text-dark mb-0">
+                                Personal Account: <span class="text-primary-drmc">@Model.GuardianName</span>
+                            </h2>
+                            <span class="small text-muted">Viewing your own direct medical appointments and clinical records.</span>
+                        }
+                    </div>
+                </div>
+
+                @if (Model.ActiveDependentId.HasValue)
+                {
+                    <form asp-action="SwitchToSelf" method="post">
+                        <button type="submit" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold btn-sm">
+                            <i class="bi bi-arrow-return-left me-1"></i> Return to My Own Records
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <!-- Dependents List -->
+        <div class="mb-3 d-flex align-items-center justify-content-between">
+            <h2 class="h5 fw-bold text-primary-drmc mb-0">Authorized Family Profiles (@Model.Dependents.Count)</h2>
+            <span class="small text-muted">RA 10173 Data Privacy Compliant</span>
+        </div>
+
+        @if (Model.Dependents.Count == 0)
+        {
+            <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
+                <i class="bi bi-people fs-1 text-muted mb-2"></i>
+                <h3 class="h5 fw-bold text-dark">No dependent profiles registered</h3>
+                <p class="text-muted small mb-3">Add minor children or senior parents to manage their appointments, lab reports, and medication refills.</p>
+                <a asp-action="Add" class="btn btn-primary-drmc btn-sm rounded-pill px-4 fw-semibold mx-auto">
+                    Add First Dependent
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex flex-column gap-3 mb-5">
+                @foreach (var dep in Model.Dependents)
+                {
+                    var isCurrent = Model.ActiveDependentId == dep.Id;
+
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white @(isCurrent ? "border border-2 border-primary" : "")">
+                        <div class="row align-items-center g-3">
+                            <div class="col-md-7">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="badge bg-primary-subtle text-primary-drmc rounded-pill small fw-semibold">
+                                        @dep.Relationship
+                                    </span>
+                                    <span class="small text-muted" style="font-size: 0.75rem;">
+                                        DOB: @dep.DateOfBirth.ToString("MMMM d, yyyy") &middot; @dep.Gender
+                                    </span>
+                                </div>
+
+                                <h3 class="h5 fw-bold text-dark mb-1">@dep.FullName</h3>
+
+                                <div class="small text-muted d-flex flex-wrap gap-3" style="font-size: 0.8rem;">
+                                    @if (!string.IsNullOrEmpty(dep.PhilHealthNumber))
+                                    {
+                                        <span><i class="bi bi-credit-card-2-front me-1"></i> PhilHealth: @dep.PhilHealthNumber</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(dep.IdType))
+                                    {
+                                        <span><i class="bi bi-file-earmark-person me-1"></i> @dep.IdType: @dep.IdNumber</span>
+                                    }
+                                </div>
+
+                                <div class="small text-success mt-2" style="font-size: 0.75rem;">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Statutory Parental / Caregiver Consent Verified
+                                </div>
+                            </div>
+
+                            <div class="col-md-5 text-md-end">
+                                <div class="d-flex gap-2 justify-content-md-end align-items-center">
+                                    @if (isCurrent)
+                                    {
+                                        <span class="badge bg-success px-4 py-2 rounded-pill fw-bold">
+                                            <i class="bi bi-check2 me-1"></i> Active Record
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="SwitchProfile" asp-route-id="@dep.Id" method="post" class="d-inline">
+                                            <button type="submit" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold btn-sm shadow-xs">
+                                                <i class="bi bi-box-arrow-in-right me-1"></i> Switch View
+                                            </button>
+                                        </form>
+                                    }
+
+                                    <form asp-action="Revoke" asp-route-id="@dep.Id" method="post" class="d-inline"
+                                          onsubmit="return confirm('Are you sure you want to revoke caregiver authorization for @dep.FullName?');">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3" title="Revoke Proxy Access">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Statutory Consent Audit Trail -->
+        @if (Model.ConsentLogs.Count > 0)
+        {
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                <h3 class="h6 fw-bold text-primary-drmc mb-3">
+                    <i class="bi bi-journal-check me-1"></i> Statutory Consent &amp; Delegation Audit Trail
+                </h3>
+
+                <div class="table-responsive rounded-3 border">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead class="table-light text-uppercase" style="font-size: 0.75rem;">
+                            <tr>
+                                <th>Date &amp; Time (PST)</th>
+                                <th>Dependent</th>
+                                <th>Consent Event</th>
+                                <th>Statutory Terms Declaration</th>
+                                <th>Origin IP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in Model.ConsentLogs)
+                            {
+                                <tr>
+                                    <td class="text-muted text-nowrap">@log.Timestamp.ToString("MMM d, yyyy h:mm tt")</td>
+                                    <td class="fw-semibold text-dark">@log.DependentName</td>
+                                    <td>
+                                        @if (log.EventType == ConsentEventType.Granted)
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-2">
+                                                Consent Granted
+                                            </span>
+                                        }
+                                        else if (log.EventType == ConsentEventType.Revoked)
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger border border-danger border-opacity-25 rounded-pill px-2">
+                                                Consent Revoked
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-primary-subtle text-primary-drmc rounded-pill px-2">
+                                                Context Switched
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="text-muted" style="max-width: 320px;">@log.ConsentDeclarationText</td>
+                                    <td class="text-muted small">@log.IpAddress</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <!-- Data Privacy Compliance Guidelines -->
+        <div class="card border-0 rounded-4 p-4 bg-white shadow-xs small text-muted">
+            <h4 class="h6 fw-bold text-dark mb-2">
+                <i class="bi bi-shield-lock me-1 text-primary-drmc"></i> Caregiver Authorization &amp; Privacy Notice:
+            </h4>
+            <p class="mb-0 leading-relaxed">
+                Under the Philippine Data Privacy Act of 2012 (RA 10173) and DOH Administrative Orders, parents and legal guardians may access healthcare records of minor dependents below 18 years old. For adult dependents and senior citizens, access is granted under statutory familial consent for outpatient care coordination. All proxy switches, grant declarations, and health record views are logged in the DRMC security audit register.
+            </p>
+        </div>
+
+    </div>
+</section>

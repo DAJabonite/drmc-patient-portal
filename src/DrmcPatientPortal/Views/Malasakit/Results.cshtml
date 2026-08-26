@@ -1,0 +1,98 @@
+@model MalasakitAssessmentResult
+@{
+    ViewData["Title"] = "Your Malasakit Checklist & Guidance";
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm d-print-none">
+    <div class="container">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge bg-success text-white fw-bold px-3 py-1 rounded-pill">
+                <i class="bi bi-check-circle-fill me-1"></i> Assessment Complete
+            </span>
+            <span class="small text-white text-opacity-75">Personalized Social Services Guide</span>
+        </div>
+        <h1 class="display-6 fw-bold mb-1">Your Document Checklist &amp; Program Matches</h1>
+        <p class="text-white text-opacity-90 mb-0">Prepare these documents before heading to the DRMC Malasakit Center desk.</p>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container" style="max-width: 860px;">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white print-container">
+            
+            <!-- Header for Print -->
+            <div class="text-center pb-4 mb-4 border-bottom">
+                <img src="~/images/drmc-seal.png" alt="DRMC Seal" style="height: 60px; width: auto;" class="mb-2" />
+                <h2 class="h5 fw-bold text-primary-drmc mb-0">Davao Regional Medical Center &middot; Malasakit Center</h2>
+                <span class="small text-muted d-block">Republic Act No. 11463 &middot; Patient Medical Assistance Document Checklist</span>
+            </div>
+
+            <!-- Matched Programs Banner -->
+            <div class="p-3 bg-primary-subtle border border-primary border-opacity-25 rounded-3 mb-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                    <span class="small fw-bold text-primary-drmc text-uppercase tracking-wider">
+                        Matched Safety-Net Programs (@Model.MatchedPrograms.Count)
+                    </span>
+                    <span class="badge bg-primary-drmc text-white px-3 py-1 rounded-pill small">
+                        @Model.EstimatedCoverage
+                    </span>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var p in Model.MatchedPrograms)
+                    {
+                        <span class="badge bg-white text-dark border px-3 py-1 rounded-pill small fw-semibold">
+                            <i class="bi bi-check2-circle text-success me-1"></i> @p.Title (@p.ManagingAgency)
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <!-- Unified Required Documents Checklist -->
+            <div class="mb-4">
+                <h3 class="h6 fw-bold text-dark mb-3">
+                    <i class="bi bi-folder-check text-primary-drmc me-1"></i> Required Documents to Prepare (Original + 2 Photocopies)
+                </h3>
+                
+                <div class="d-flex flex-column gap-2">
+                    @foreach (var doc in Model.RequiredDocuments)
+                    {
+                        <div class="p-3 rounded-3 bg-light border d-flex align-items-start gap-3">
+                            <input class="form-check-input mt-1" type="checkbox" checked disabled />
+                            <div class="flex-grow-1">
+                                <strong class="small text-dark d-block">@doc</strong>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Next Action Steps at DRMC -->
+            <div class="p-3 bg-light rounded-3 border mb-4">
+                <h4 class="h6 fw-bold text-dark mb-2">
+                    <i class="bi bi-geo-alt-fill text-primary-drmc me-1"></i> Where to Proceed at DRMC
+                </h4>
+                <ol class="small text-muted mb-0 ps-3">
+                    <li>Proceed to <strong>Malasakit Center, Ground Floor, DRMC Main Hospital Building</strong>.</li>
+                    <li>Drop your envelope containing the required documents into the designated triage queue.</li>
+                    <li>Wait for your name to be called by the Social Welfare Officer for intake profiling and voucher release.</li>
+                </ol>
+            </div>
+
+            <!-- Actions -->
+            <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center pt-3 border-top d-print-none">
+                <button onclick="window.print();" class="btn btn-outline-drmc rounded-pill px-4 fw-semibold">
+                    <i class="bi bi-printer-fill me-1"></i> Print Checklist
+                </button>
+                <div class="d-flex gap-2">
+                    <a asp-action="Navigator" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold">
+                        Recalculate
+                    </a>
+                    <a asp-action="Index" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold">
+                        Malasakit Overview
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>

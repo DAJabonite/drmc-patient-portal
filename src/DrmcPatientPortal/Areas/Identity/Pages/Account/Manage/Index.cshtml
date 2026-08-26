@@ -1,0 +1,64 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Patient Profile Details";
+    ViewData["ActivePage"] = ManageNavPages.Index;
+}
+
+<h2 class="h5 fw-bold text-primary-drmc mb-3">@ViewData["Title"]</h2>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-success rounded-4 mb-4 shadow-sm" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @Model.StatusMessage
+    </div>
+}
+
+<form id="profile-form" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger small mb-3" role="alert"></div>
+
+    <div class="mb-3">
+        <label asp-for="Username" class="form-label small fw-semibold text-muted"></label>
+        <input asp-for="Username" class="form-control form-control-lg bg-light" disabled />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Input.FullName" class="form-label small fw-semibold text-dark"></label>
+        <input asp-for="Input.FullName" class="form-control form-control-lg rounded-3" placeholder="First Name, Middle Name, Last Name" />
+        <span asp-validation-for="Input.FullName" class="text-danger small"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Input.PhoneNumber" class="form-label small fw-semibold text-dark"></label>
+        <input asp-for="Input.PhoneNumber" class="form-control form-control-lg rounded-3" placeholder="+63 9XX XXX XXXX" />
+        <span asp-validation-for="Input.PhoneNumber" class="text-danger small"></span>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <label asp-for="Input.IdType" class="form-label small fw-semibold text-dark"></label>
+            <select asp-for="Input.IdType" class="form-select form-select-lg rounded-3">
+                <option value="Philippine National ID (PhilSys)">Philippine National ID (PhilSys)</option>
+                <option value="PhilHealth ID">PhilHealth ID</option>
+                <option value="SSS / GSIS UMID">SSS / GSIS UMID</option>
+                <option value="Driver's License">Driver's License</option>
+                <option value="Passport">Philippine Passport</option>
+                <option value="Barangay Certificate with Photo">Barangay Certificate with Photo</option>
+            </select>
+            <span asp-validation-for="Input.IdType" class="text-danger small"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Input.IdNumber" class="form-label small fw-semibold text-dark"></label>
+            <input asp-for="Input.IdNumber" class="form-control form-control-lg rounded-3" placeholder="ID or Certificate Reference Number" />
+            <span asp-validation-for="Input.IdNumber" class="text-danger small"></span>
+        </div>
+    </div>
+
+    <button id="update-profile-button" type="submit" class="btn btn-primary-drmc rounded-pill px-5 py-2 fw-semibold shadow-xs">
+        <i class="bi bi-check2 me-1"></i> Save Changes
+    </button>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

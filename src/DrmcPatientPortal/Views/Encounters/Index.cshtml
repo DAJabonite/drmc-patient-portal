@@ -1,0 +1,117 @@
+@model EncountersIndexViewModel
+@{
+    ViewData["Title"] = "After-Visit Summaries & Clinical Notes";
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-white text-primary-drmc fw-bold px-3 py-1 rounded-pill small">
+                        <i class="bi bi-journal-medical me-1"></i> Electronic Medical Record
+                    </span>
+                    <span class="small text-white text-opacity-75">Outpatient &amp; Clinical Encounters</span>
+                </div>
+                <h1 class="display-6 fw-bold mb-0">After-Visit Summaries &amp; Care Notes</h1>
+            </div>
+
+            <div>
+                <a asp-controller="Appointments" asp-action="Book" class="btn btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-calendar-plus me-1"></i> Book Follow-Up
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Department Filter Bar -->
+<section class="py-3 bg-white border-bottom sticky-top shadow-xs" style="z-index: 1020;">
+    <div class="container">
+        <div class="d-flex align-items-center gap-1 overflow-x-auto pb-1" style="max-width: 100%;">
+            <a asp-action="Index"
+               class="btn btn-sm @(string.IsNullOrEmpty(Model.SelectedDepartment) ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                All Departments (@Model.Encounters.Count)
+            </a>
+            @foreach (var dept in Model.Departments)
+            {
+                <a asp-action="Index" asp-route-department="@dept.Name"
+                   class="btn btn-sm @(Model.SelectedDepartment == dept.Name ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                    @dept.Name
+                </a>
+            }
+        </div>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container">
+        @if (Model.Encounters.Count == 0)
+        {
+            <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
+                <i class="bi bi-journal-x fs-1 text-muted mb-2"></i>
+                <h3 class="h5 fw-bold text-dark">No consultation encounters recorded</h3>
+                <p class="text-muted small mb-3">No medical encounters match your selected clinical department.</p>
+                <a asp-action="Index" class="btn btn-primary-drmc btn-sm rounded-pill px-4 fw-semibold mx-auto">
+                    View All Encounters
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex flex-column gap-3">
+                @foreach (var enc in Model.Encounters)
+                {
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white hover-shadow-sm transition">
+                        <div class="row align-items-center g-3">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="badge bg-primary-subtle text-primary-drmc rounded-pill small fw-semibold">
+                                        @enc.Department
+                                    </span>
+                                    <span class="badge bg-light text-secondary border rounded-pill small">
+                                        @enc.Type
+                                    </span>
+                                    <span class="small text-muted" style="font-size: 0.75rem;">
+                                        Reference: <strong>@enc.EncounterReference</strong>
+                                    </span>
+                                </div>
+
+                                <h2 class="h5 fw-bold text-dark mb-1">@enc.PrimaryDiagnosis</h2>
+                                
+                                @if (!string.IsNullOrEmpty(enc.SecondaryDiagnosis))
+                                {
+                                    <span class="small text-muted d-block mb-2">Secondary: @enc.SecondaryDiagnosis</span>
+                                }
+
+                                <p class="small text-muted mb-2">@enc.ClinicalSummary</p>
+
+                                <div class="small text-muted d-flex flex-wrap gap-3" style="font-size: 0.8rem;">
+                                    <span><i class="bi bi-calendar3 me-1"></i> Visit Date: @enc.EncounterDate.ToString("MMMM d, yyyy")</span>
+                                    <span><i class="bi bi-person-badge me-1"></i> Attending: @enc.AttendingPhysician</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 text-md-end">
+                                <div class="d-flex gap-2 justify-content-md-end">
+                                    <a asp-action="Details" asp-route-id="@enc.Id" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold shadow-xs">
+                                        <i class="bi bi-file-earmark-text me-1"></i> View Summary
+                                    </a>
+                                    <a asp-action="Print" asp-route-id="@enc.Id" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold">
+                                        <i class="bi bi-printer"></i>
+                                    </a>
+                                </div>
+                                @if (enc.FollowUpDate.HasValue)
+                                {
+                                    <span class="small text-primary-drmc fw-semibold d-block mt-2" style="font-size: 0.75rem;">
+                                        <i class="bi bi-arrow-repeat me-1"></i> Follow-Up: @enc.FollowUpDate.Value.ToString("MMM d, yyyy")
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</section>

@@ -1,0 +1,204 @@
+@model AppointmentConfirmationViewModel
+@{
+    ViewData["Title"] = $"Appointment Confirmed — {Model.Appointment.BookingReference}";
+    var appt = Model.Appointment;
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm d-print-none">
+    <div class="container">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge bg-success text-white fw-bold px-3 py-1 rounded-pill">
+                <i class="bi bi-check2-circle me-1"></i> Booking Confirmed
+            </span>
+            <span class="small text-white text-opacity-75">Reference: @appt.BookingReference</span>
+        </div>
+        <h1 class="display-6 fw-bold mb-1">Official Appointment Slip</h1>
+        <p class="text-white text-opacity-90 mb-0">Present this QR code pass at the clinic triage reception on your consultation day.</p>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container" style="max-width: 760px;">
+
+        <!-- Printable Official Pass Card -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white print-container">
+            
+            <!-- Hospital Header on Print Pass -->
+            <div class="text-center pb-4 mb-4 border-bottom">
+                <img src="~/images/drmc-seal.png" alt="DRMC Seal" style="height: 64px; width: auto;" class="mb-2" />
+                <h2 class="h5 fw-bold text-primary-drmc mb-0">Davao Regional Medical Center</h2>
+                <span class="small text-muted d-block">Republic of the Philippines &middot; Department of Health &middot; Center for Health Development XI</span>
+                <span class="small text-muted d-block">Brgy. Apokon, Tagum City, Davao del Norte</span>
+                <div class="mt-2">
+                    <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-bold">
+                        OUTPATIENT CLINIC APPOINTMENT PASS
+                    </span>
+                </div>
+            </div>
+
+            <!-- Booking Reference & QR Block -->
+            <div class="row align-items-center g-4 mb-4 pb-4 border-bottom">
+                <div class="col-md-7">
+                    <span class="small text-muted text-uppercase tracking-wider d-block">Booking Reference</span>
+                    <h3 class="display-6 fw-bolder text-primary-drmc mb-2">@appt.BookingReference</h3>
+                    
+                    <div class="mb-2">
+                        <span class="badge @(appt.Type == "Teleconsultation" ? "bg-info-subtle text-info-emphasis" : "bg-success-subtle text-success") px-3 py-1 rounded-pill fw-semibold">
+                            <i class="bi @(appt.Type == "Teleconsultation" ? "bi-camera-video" : "bi-hospital") me-1"></i> @appt.Type
+                        </span>
+                        <span class="badge bg-success px-3 py-1 rounded-pill fw-semibold ms-1">
+                            @appt.Status
+                        </span>
+                    </div>
+
+                    <div class="small text-muted">
+                        Booked on @appt.CreatedAt.ToLocalTime().ToString("MMMM d, yyyy 'at' h:mm tt")
+                    </div>
+                </div>
+
+                <div class="col-md-5 text-center">
+                    <div class="p-3 bg-white rounded-3 border d-inline-block shadow-xs">
+                        <div class="qr-code-wrapper" style="width: 160px; height: 160px; margin: 0 auto;">
+                            @Html.Raw(Model.QrCodeSvg)
+                        </div>
+                        <span class="small text-muted d-block mt-2" style="font-size: 0.75rem;">
+                            Scan at DRMC Triage
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Appointment Details Table -->
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6">
+                    <div class="p-3 bg-light rounded-3 border h-100">
+                        <span class="small text-muted d-block mb-1">Patient Name</span>
+                        <strong class="h6 fw-bold text-dark mb-0">@appt.PatientName</strong>
+                        <div class="small text-muted mt-1">
+                            <i class="bi bi-telephone me-1"></i> @appt.ContactNumber
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6">
+                    <div class="p-3 bg-light rounded-3 border h-100">
+                        <span class="small text-muted d-block mb-1">Clinical Department</span>
+                        <strong class="h6 fw-bold text-primary-drmc mb-0">@appt.Department</strong>
+                        <div class="small text-muted mt-1">
+                            <i class="bi bi-person-badge me-1"></i> Attending: <span class="text-dark fw-medium">@appt.DoctorName</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6">
+                    <div class="p-3 bg-light rounded-3 border h-100">
+                        <span class="small text-muted d-block mb-1">Scheduled Date &amp; Time</span>
+                        <strong class="h6 fw-bold text-dark mb-0">@appt.ScheduledAt.ToString("dddd, MMMM d, yyyy")</strong>
+                        <div class="small text-primary-drmc fw-semibold mt-1">
+                            <i class="bi bi-clock me-1"></i> @appt.TimeSlot
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6">
+                    <div class="p-3 bg-light rounded-3 border h-100">
+                        <span class="small text-muted d-block mb-1">PhilHealth / Coverage</span>
+                        <strong class="h6 fw-bold text-dark mb-0">
+                            @(string.IsNullOrWhiteSpace(appt.PhilHealthNumber) ? "Direct Consultation" : $"PhilHealth ID: {appt.PhilHealthNumber}")
+                        </strong>
+                        <div class="small text-muted mt-1">
+                            Universal Health Care Primary Care
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (appt.Type == "Teleconsultation" && !string.IsNullOrWhiteSpace(appt.TeleconsultMeetingUrl))
+            {
+                <div class="alert alert-success border-0 rounded-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div>
+                        <strong class="d-block text-success-emphasis">
+                            <i class="bi bi-camera-video-fill me-1"></i> Teleconsultation Video Room Link
+                        </strong>
+                        <span class="small text-muted">Join the secure DOH virtual consultation room at your scheduled time.</span>
+                    </div>
+                    <a href="@appt.TeleconsultMeetingUrl" target="_blank" rel="noopener" class="btn btn-sm btn-success rounded-pill px-3 fw-semibold">
+                        Enter Telehealth Room <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                </div>
+            }
+
+            <!-- Chief Complaint -->
+            <div class="p-3 bg-light rounded-3 border mb-4">
+                <span class="small text-muted d-block mb-1">Reason for Visit / Symptoms:</span>
+                <p class="small text-dark mb-0 fst-italic">"@appt.ChiefComplaint"</p>
+            </div>
+
+            <!-- Patient Preparation Instructions -->
+            <div class="p-3 bg-light rounded-3 border mb-4">
+                <h4 class="h6 fw-bold text-dark mb-2">
+                    <i class="bi bi-info-circle-fill text-primary-drmc me-1"></i> Hospital Check-In Instructions
+                </h4>
+                <ul class="small text-muted mb-0 ps-3">
+                    <li>Please arrive at DRMC Tagum City <strong>15 minutes prior</strong> to your scheduled time slot.</li>
+                    <li>Present this digital or printed pass along with a valid government ID (PhilSys, PhilHealth, or Senior/PWD ID) at the OPD Triage Desk.</li>
+                    <li>If you are scheduled for laboratory fasting tests (e.g. Fasting Blood Sugar), maintain a 10-12 hour fast prior to your appointment.</li>
+                </ul>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center pt-3 border-top d-print-none">
+                <div class="d-flex gap-2">
+                    <button onclick="window.print();" class="btn btn-outline-drmc fw-semibold rounded-pill px-4">
+                        <i class="bi bi-printer-fill me-1"></i> Print / Save Pass
+                    </button>
+                    <a asp-action="CheckIn" asp-route-reference="@appt.BookingReference" class="btn btn-outline-secondary fw-semibold rounded-pill px-3">
+                        <i class="bi bi-qr-code-scan me-1"></i> Verify Check-in
+                    </a>
+                </div>
+                
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a asp-controller="Patient" asp-action="Home" class="btn btn-primary-drmc fw-semibold rounded-pill px-4">
+                        Go to Dashboard <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                }
+                else
+                {
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-primary-drmc fw-semibold rounded-pill px-4">
+                        Return to Home <i class="bi bi-house ms-1"></i>
+                    </a>
+                }
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<style>
+    .qr-code-wrapper svg {
+        width: 100%;
+        height: 100%;
+        max-width: 160px;
+        max-height: 160px;
+        display: block;
+        margin: 0 auto;
+    }
+    @@media print {
+        body * {
+            visibility: hidden;
+        }
+        .print-container, .print-container * {
+            visibility: visible;
+        }
+        .print-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+        }
+    }
+</style>

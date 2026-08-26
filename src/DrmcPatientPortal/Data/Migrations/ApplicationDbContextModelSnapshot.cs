@@ -117,17 +117,422 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.Appointment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("BookingReference")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ChiefComplaint")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContactNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("DoctorId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DoctorName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PatientName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PatientUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PhilHealthNumber")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("QrCodePayload")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ScheduledAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TeleconsultMeetingUrl")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TimeSlot")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingReference")
+                        .IsUnique();
+
+                    b.HasIndex("DoctorId");
+
+                    b.HasIndex("PatientUserId");
+
+                    b.ToTable("Appointments");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.AssistanceProgram", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CoverageScope")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EligibilitySummary")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ManagingAgency")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OfficeLocation")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OperatingHours")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequiredDocumentsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StepByStepProcedureJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("AssistancePrograms");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.AuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IpAddress")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Resource")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Timestamp");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AuditLogs");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.ClinicalEncounter", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AttendingPhysician")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CarePlanAndInstructions")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ChiefComplaint")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ClinicalSummary")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("EncounterDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EncounterReference")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("FollowUpDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FollowUpNotes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PatientUserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PrimaryDiagnosis")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SecondaryDiagnosis")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("VitalSignsRecorded")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EncounterReference")
+                        .IsUnique();
+
+                    b.HasIndex("PatientUserId");
+
+                    b.ToTable("ClinicalEncounters");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.ConsentLogEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ConsentDeclarationText")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("DependentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DependentName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EventType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("GuardianUserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IpAddress")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuardianUserId");
+
+                    b.HasIndex("Timestamp");
+
+                    b.ToTable("ConsentLogEntries");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.DependentProfile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DateOfBirth")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Gender")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("GuardianUserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IdNumber")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IdType")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PhilHealthNumber")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Relationship")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("StatutoryConsentAgreed")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuardianUserId");
+
+                    b.ToTable("DependentProfiles");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.Doctor", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Biography")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ClinicRoom")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("OffersTeleconsult")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PrcLicenseMasked")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ScheduleSummary")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SubSpecialty")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Department");
+
+                    b.ToTable("Doctors");
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.LabResult", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("AccessionNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ClinicalNotes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CollectedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OrderingPhysician")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PathologistName")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PatientUserId")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PerformingUnit")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ReleasedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ResultSummary")
@@ -144,9 +549,46 @@ namespace DrmcPatientPortal.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AccessionNumber");
+
                     b.HasIndex("PatientUserId");
 
                     b.ToTable("LabResults");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.LabResultItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Flag")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("LabResultId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ParameterName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReferenceRange")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LabResultId");
+
+                    b.ToTable("LabResultItems");
                 });
 
             modelBuilder.Entity("DrmcPatientPortal.Models.Message", b =>
@@ -162,16 +604,58 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Property<bool>("IsRead")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("PatientUserId")
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SenderName")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("RecipientUserId")
+                    b.Property<int>("SenderRole")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SenderUserId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("SentAt")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("ThreadId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ThreadId");
+
+                    b.ToTable("Messages");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.MessageThread", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("LastMessageAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PatientUserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Subject")
                         .IsRequired()
@@ -181,16 +665,16 @@ namespace DrmcPatientPortal.Data.Migrations
 
                     b.HasIndex("PatientUserId");
 
-                    b.ToTable("Messages");
+                    b.ToTable("MessageThreads");
                 });
 
-            modelBuilder.Entity("DrmcPatientPortal.Models.NextAppointment", b =>
+            modelBuilder.Entity("DrmcPatientPortal.Models.PatientAllergy", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Department")
+                    b.Property<string>("Allergen")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -198,22 +682,305 @@ namespace DrmcPatientPortal.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("ProviderName")
+                    b.Property<string>("Reaction")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("ScheduledAt")
+                    b.Property<DateTime>("RecordedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Status")
+                    b.Property<int>("Severity")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PatientUserId");
+
+                    b.ToTable("PatientAllergies");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.Prescription", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("BrandName")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Department")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Dosage")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DosageForm")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Frequency")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("GenericName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Instructions")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastRefillDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PatientUserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("PrescribedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PrescribingDoctor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RefillsRemaining")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RefillsTotal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RxNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("ValidUntil")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
                     b.HasIndex("PatientUserId");
 
-                    b.ToTable("NextAppointments");
+                    b.HasIndex("RxNumber")
+                        .IsUnique();
+
+                    b.ToTable("Prescriptions");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.PublicAdvisory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ContentHtml")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("EffectiveUntil")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsPinned")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("IssuingUnit")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("PublishedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ViewCount")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("PublicAdvisories");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.QueueTicket", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("CalledAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ClinicRoom")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EstimatedWaitMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsPriority")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("IssuedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PatientUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ServedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("TicketNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Department");
+
+                    b.HasIndex("PatientUserId");
+
+                    b.HasIndex("TicketNumber");
+
+                    b.ToTable("QueueTickets");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.RefillRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("EstimatedPickupDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PatientUserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PharmacyNotes")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PrescriptionId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PatientUserId");
+
+                    b.HasIndex("PrescriptionId");
+
+                    b.ToTable("RefillRequests");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.TriageIntake", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("AcuityLevel")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("AppointmentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ChiefComplaint")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ComorbiditiesJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CurrentMedicationsSummary")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("HasEmergencyRedFlags")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PainScale")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PatientUserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReportedBloodPressure")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReportedBloodSugar")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReportedHeartRate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReportedTemperature")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReportedWeightKg")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SymptomDurationDays")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SymptomsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriageNotes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentId");
+
+                    b.HasIndex("PatientUserId");
+
+                    b.ToTable("TriageIntakes");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -348,6 +1115,56 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.Appointment", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.Doctor", "Doctor")
+                        .WithMany("Appointments")
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "Patient")
+                        .WithMany("Appointments")
+                        .HasForeignKey("PatientUserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Doctor");
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.ClinicalEncounter", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "Patient")
+                        .WithMany("Encounters")
+                        .HasForeignKey("PatientUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.ConsentLogEntry", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "Guardian")
+                        .WithMany("ConsentLogEntries")
+                        .HasForeignKey("GuardianUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Guardian");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.DependentProfile", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "Guardian")
+                        .WithMany("DependentProfiles")
+                        .HasForeignKey("GuardianUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Guardian");
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.LabResult", b =>
                 {
                     b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "Patient")
@@ -359,10 +1176,32 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Navigation("Patient");
                 });
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.LabResultItem", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.LabResult", "LabResult")
+                        .WithMany("Items")
+                        .HasForeignKey("LabResultId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LabResult");
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.Message", b =>
                 {
-                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "Patient")
+                    b.HasOne("DrmcPatientPortal.Models.MessageThread", "Thread")
                         .WithMany("Messages")
+                        .HasForeignKey("ThreadId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Thread");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.MessageThread", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "Patient")
+                        .WithMany("MessageThreads")
                         .HasForeignKey("PatientUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -370,13 +1209,64 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Navigation("Patient");
                 });
 
-            modelBuilder.Entity("DrmcPatientPortal.Models.NextAppointment", b =>
+            modelBuilder.Entity("DrmcPatientPortal.Models.PatientAllergy", b =>
                 {
                     b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "Patient")
-                        .WithMany("Appointments")
+                        .WithMany("Allergies")
                         .HasForeignKey("PatientUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.Prescription", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "Patient")
+                        .WithMany("Prescriptions")
+                        .HasForeignKey("PatientUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.QueueTicket", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "Patient")
+                        .WithMany("QueueTickets")
+                        .HasForeignKey("PatientUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.RefillRequest", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.Prescription", "Prescription")
+                        .WithMany("RefillRequests")
+                        .HasForeignKey("PrescriptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Prescription");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.TriageIntake", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.Appointment", "Appointment")
+                        .WithMany()
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "Patient")
+                        .WithMany("TriageIntakes")
+                        .HasForeignKey("PatientUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Appointment");
 
                     b.Navigation("Patient");
                 });
@@ -434,11 +1324,45 @@ namespace DrmcPatientPortal.Data.Migrations
 
             modelBuilder.Entity("DrmcPatientPortal.Models.ApplicationUser", b =>
                 {
+                    b.Navigation("Allergies");
+
                     b.Navigation("Appointments");
+
+                    b.Navigation("ConsentLogEntries");
+
+                    b.Navigation("DependentProfiles");
+
+                    b.Navigation("Encounters");
 
                     b.Navigation("LabResults");
 
+                    b.Navigation("MessageThreads");
+
+                    b.Navigation("Prescriptions");
+
+                    b.Navigation("QueueTickets");
+
+                    b.Navigation("TriageIntakes");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.Doctor", b =>
+                {
+                    b.Navigation("Appointments");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.LabResult", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.MessageThread", b =>
+                {
                     b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.Prescription", b =>
+                {
+                    b.Navigation("RefillRequests");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,0 +1,178 @@
+@model DirectoryIndexViewModel
+@{
+    ViewData["Title"] = "Doctor & Department Directory";
+}
+
+<!-- Hero Section -->
+<section class="py-4 bg-primary-drmc text-white shadow-sm">
+    <div class="container">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-7">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill">
+                        <i class="bi bi-person-badge-fill me-1"></i> Medical Staff Directory
+                    </span>
+                    <span class="small text-white text-opacity-75">8 Clinical Specialties</span>
+                </div>
+                <h1 class="display-6 fw-bold mb-2">Find a Doctor &amp; Specialty Clinic</h1>
+                <p class="lead text-white text-opacity-90 mb-0 fs-6" style="max-width: 640px;">
+                    Search DRMC attending physicians, sub-specialty clinical domains, weekly outpatient schedules, and clinic room locations.
+                </p>
+            </div>
+            
+            <div class="col-lg-5">
+                <form asp-action="Index" method="get" class="card border-0 shadow-sm rounded-4 p-3 bg-white text-dark">
+                    <label class="form-label fw-bold text-primary-drmc small mb-2">
+                        <i class="bi bi-search me-1"></i> Search Physicians &amp; Sub-Specialties
+                    </label>
+                    <div class="input-group mb-2">
+                        <input type="text" name="search" value="@Model.SearchTerm" class="form-control form-control-sm"
+                               placeholder="e.g. Oncology, Cardiology, Dr. Llanos" aria-label="Search" />
+                        <button type="submit" class="btn btn-sm btn-primary-drmc px-3 fw-semibold">
+                            Search
+                        </button>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" name="teleconsultOnly" value="true" id="teleconsultSwitch"
+                                   @(Model.TeleconsultOnly ? "checked" : "") onchange="this.form.submit()" />
+                            <label class="form-check-label small text-muted" for="teleconsultSwitch">
+                                Teleconsult Available Only
+                            </label>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.SearchTerm) || Model.TeleconsultOnly || !string.IsNullOrEmpty(Model.SelectedDepartment))
+                        {
+                            <a asp-action="Index" class="small text-danger text-decoration-none fw-semibold">
+                                <i class="bi bi-x-circle"></i> Clear Filters
+                            </a>
+                        }
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Department Filter Bar -->
+<section class="py-3 bg-white border-bottom sticky-top shadow-xs" style="z-index: 1020;">
+    <div class="container">
+        <div class="d-flex align-items-center gap-1 overflow-x-auto pb-1" style="max-width: 100%;">
+            <a asp-action="Index" asp-route-search="@Model.SearchTerm" asp-route-teleconsultOnly="@Model.TeleconsultOnly"
+               class="btn btn-sm @(string.IsNullOrEmpty(Model.SelectedDepartment) ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                All Departments (@Model.Doctors.Count)
+            </a>
+            @foreach (var dept in Model.Departments)
+            {
+                <a asp-action="Index" asp-route-department="@dept.Name" asp-route-search="@Model.SearchTerm" asp-route-teleconsultOnly="@Model.TeleconsultOnly"
+                   class="btn btn-sm @(Model.SelectedDepartment == dept.Name ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                    @dept.Name
+                </a>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- Doctor Cards Grid -->
+<section class="section py-5 bg-light">
+    <div class="container">
+        @if (Model.Doctors.Count == 0)
+        {
+            <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
+                <i class="bi bi-person-x fs-1 text-muted mb-2"></i>
+                <h3 class="h5 fw-bold text-dark">No physicians found matching your search criteria</h3>
+                <p class="text-muted small mb-3">Try adjusting your keywords or clearing the department filter.</p>
+                <a asp-action="Index" class="btn btn-primary-drmc btn-sm rounded-pill px-4 fw-semibold mx-auto">
+                    View All Doctors
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (var doctor in Model.Doctors)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white doctor-card">
+                            <div class="card-body d-flex flex-column p-2">
+                                
+                                <div class="d-flex align-items-start gap-3 mb-3">
+                                    <div class="doctor-avatar bg-primary-subtle text-primary-drmc rounded-circle d-flex align-items-center justify-content-center fw-bold fs-5 shadow-xs"
+                                         style="width: 52px; height: 52px; flex-shrink: 0;">
+                                        @string.Join("", doctor.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).TakeLast(2).Select(s => s[0]))
+                                    </div>
+                                    <div>
+                                        <h3 class="h6 fw-bold text-dark mb-0">@doctor.FullName</h3>
+                                        <span class="small text-muted d-block mb-1">@doctor.Title</span>
+                                        <span class="badge bg-primary-subtle text-primary-drmc rounded-pill small">
+                                            @doctor.Department
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3 flex-grow-1">
+                                    <div class="small fw-semibold text-dark mb-1">
+                                        <i class="bi bi-award text-primary-drmc me-1"></i> @doctor.SubSpecialty
+                                    </div>
+                                    <div class="small text-muted mb-1">
+                                        <i class="bi bi-geo-alt text-secondary me-1"></i> @doctor.ClinicRoom
+                                    </div>
+                                    <div class="small text-muted">
+                                        <i class="bi bi-clock text-secondary me-1"></i> @doctor.ScheduleSummary
+                                    </div>
+                                </div>
+
+                                <div class="d-flex align-items-center gap-1 mb-3">
+                                    @if (doctor.OffersTeleconsult)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill small">
+                                            <i class="bi bi-camera-video me-1"></i> Teleconsult
+                                        </span>
+                                    }
+                                    <span class="badge bg-secondary-subtle text-secondary rounded-pill small">
+                                        <i class="bi bi-hospital me-1"></i> OPD Clinic
+                                    </span>
+                                </div>
+
+                                <div class="mt-auto pt-3 border-top d-flex gap-2">
+                                    <a asp-action="Doctor" asp-route-id="@doctor.Id" class="btn btn-sm btn-outline-secondary flex-fill rounded-pill fw-semibold">
+                                        Profile
+                                    </a>
+                                    <a asp-controller="Appointments" asp-action="Book" asp-route-department="@doctor.Department" asp-route-doctorId="@doctor.Id"
+                                       class="btn btn-sm btn-primary-drmc flex-fill rounded-pill fw-semibold">
+                                        Book Visit
+                                    </a>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+<!-- Clinical Departments Quick Jump -->
+<section class="py-5 bg-white border-top">
+    <div class="container">
+        <div class="text-center mb-4">
+            <h2 class="h4 fw-bold text-primary-drmc mb-1">Clinical Departments Overview</h2>
+            <p class="text-muted small">Explore specialized medical divisions and clinical facilities at DRMC.</p>
+        </div>
+
+        <div class="row g-3">
+            @foreach (var dept in Model.Departments)
+            {
+                <div class="col-sm-6 col-md-4 col-lg-3">
+                    <a asp-action="Department" asp-route-name="@dept.Name" class="card border-0 shadow-xs rounded-4 p-3 bg-light text-decoration-none h-100 department-mini-card">
+                        <h3 class="h6 fw-bold text-primary-drmc mb-1">@dept.Name</h3>
+                        <span class="small text-muted d-block mb-2">@dept.Location</span>
+                        <span class="small text-primary-drmc fw-semibold mt-auto">
+                            View Department &rarr;
+                        </span>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</section>
