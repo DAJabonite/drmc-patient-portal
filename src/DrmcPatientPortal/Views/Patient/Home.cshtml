@@ -75,9 +75,12 @@
                         }
 
                         <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between">
-                            <span class="small text-muted">
-                                <i class="bi bi-info-circle me-1"></i> Online booking coming soon
-                            </span>
+                            <a asp-controller="Appointments" asp-action="Book" class="small text-primary-drmc fw-semibold text-decoration-none">
+                                <i class="bi bi-calendar-plus me-1"></i> Book New Appointment
+                            </a>
+                            <a asp-controller="Queue" asp-action="Index" class="small text-muted text-decoration-none">
+                                <i class="bi bi-broadcast me-1"></i> Live Queue
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -235,8 +238,8 @@
                         </div>
 
                         <div class="mt-auto pt-3 border-top">
-                            <a class="btn btn-sm btn-outline-drmc w-100 fw-semibold" asp-controller="Home" asp-action="Index" asp-fragment="departments">
-                                View All Departments <i class="bi bi-arrow-right ms-1"></i>
+                            <a class="btn btn-sm btn-outline-drmc w-100 fw-semibold" asp-controller="Directory" asp-action="Index">
+                                Find Doctors &amp; Clinics <i class="bi bi-arrow-right ms-1"></i>
                             </a>
                         </div>
                     </div>
@@ -271,9 +274,12 @@
                             </ul>
                         </div>
 
-                        <div class="mt-auto pt-3 border-top">
-                            <a href="tel:1555" class="small text-primary-drmc fw-semibold text-decoration-none">
-                                <i class="bi bi-telephone-fill me-1"></i> DOH Helpline: 1555
+                        <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between">
+                            <a asp-controller="Advisories" asp-action="Index" class="small text-primary-drmc fw-semibold text-decoration-none">
+                                View Health Advisories &rarr;
+                            </a>
+                            <a href="tel:1555" class="small text-muted text-decoration-none">
+                                <i class="bi bi-telephone-fill me-1 text-danger"></i> DOH: 1555
                             </a>
                         </div>
                     </div>

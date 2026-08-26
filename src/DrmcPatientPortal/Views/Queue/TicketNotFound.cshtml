@@ -1,0 +1,37 @@
+@{
+    ViewData["Title"] = "Ticket Not Found";
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm">
+    <div class="container">
+        <h1 class="display-6 fw-bold mb-1">Ticket Tracker</h1>
+        <p class="text-white text-opacity-90 mb-0">Ticket Search Result</p>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container" style="max-width: 580px;">
+        <div class="card border-0 shadow-sm rounded-4 p-4 text-center bg-white">
+            <div class="p-3 rounded-circle bg-warning-subtle text-warning-emphasis d-inline-flex mx-auto mb-3">
+                <i class="bi bi-ticket-detailed fs-1"></i>
+            </div>
+            <h2 class="h5 fw-bold text-dark mb-2">Ticket Number Not Found</h2>
+            <p class="text-muted small mb-4">
+                We could not find an active queue ticket matching <strong>"@ViewBag.NotFoundNumber"</strong>. Please check your printed clinic ticket or register at the OPD triage desk.
+            </p>
+
+            <form asp-action="Status" method="get" class="mb-4">
+                <div class="input-group">
+                    <input type="text" name="ticketNumber" class="form-control text-uppercase fw-bold" placeholder="e.g. IM-105" required />
+                    <button type="submit" class="btn btn-primary-drmc px-4 fw-semibold">Search Again</button>
+                </div>
+            </form>
+
+            <div class="border-top pt-3">
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                    <i class="bi bi-arrow-left me-1"></i> Return to Live Queue Board
+                </a>
+            </div>
+        </div>
+    </div>
+</section>

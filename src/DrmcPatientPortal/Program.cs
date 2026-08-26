@@ -29,9 +29,15 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 })
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// No SMTP configured: in Development, Identity "email" (e.g. password-reset links)
+// No SMTP configured: in Development, Identity "email" (e.g. password-reset links, appointment notifications)
 // is logged to console/output so the flow can be exercised. Documented in README.
 builder.Services.AddSingleton<IEmailSender, ConsoleEmailSender>();
+
+// No physical telco SMS gateway configured: in Development, SMS confirmations are logged to console.
+builder.Services.AddSingleton<ISmsSender, ConsoleSmsSender>();
+
+// In-process QR code generator for appointment check-in slips (SVG / PNG data URLs)
+builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
 
 builder.Services.AddControllersWithViews();
 

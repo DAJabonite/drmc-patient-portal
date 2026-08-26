@@ -1,0 +1,99 @@
+@model AdvisoryDetailViewModel
+@{
+    ViewData["Title"] = $"{Model.Advisory.Title} — DRMC Advisory";
+    var adv = Model.Advisory;
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm d-print-none">
+    <div class="container">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <a asp-action="Index" class="text-white text-opacity-75 text-decoration-none small">
+                <i class="bi bi-arrow-left"></i> All Advisories
+            </a>
+            <span class="text-white text-opacity-50">/</span>
+            <span class="small text-white text-opacity-75">@adv.Category</span>
+        </div>
+        <h1 class="display-6 fw-bold mb-1">Health Advisory</h1>
+        <p class="text-white text-opacity-90 mb-0">Official Bulletin from Davao Regional Medical Center</p>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container" style="max-width: 860px;">
+        
+        <!-- Article Card -->
+        <article class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4">
+            
+            <div class="mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <span class="badge @(adv.Category == AdvisoryCategory.HealthAlert ? "bg-danger" : "bg-primary-drmc") text-white px-3 py-1 rounded-pill">
+                    @adv.Category
+                </span>
+                <span class="small text-muted">
+                    <i class="bi bi-calendar3 me-1"></i> Published: @adv.PublishedAt.ToString("dddd, MMMM d, yyyy")
+                </span>
+            </div>
+
+            <h1 class="h3 fw-bold text-dark mb-3">@adv.Title</h1>
+            
+            <div class="p-3 bg-light rounded-3 border mb-4">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 text-muted small">
+                    <div>
+                        <i class="bi bi-hospital me-1 text-primary-drmc"></i> Issuing Authority: <strong>@adv.IssuingUnit</strong>
+                    </div>
+                    <div>
+                        <i class="bi bi-eye me-1"></i> @adv.ViewCount Views &middot; Public Distribution
+                    </div>
+                </div>
+            </div>
+
+            <div class="lead fs-6 text-dark mb-4 fw-medium border-start border-4 border-primary ps-3 py-1">
+                @adv.Summary
+            </div>
+
+            <div class="advisory-content text-dark small leading-relaxed mb-4">
+                @Html.Raw(adv.ContentHtml)
+            </div>
+
+            <!-- Verification Footer -->
+            <div class="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between flex-wrap gap-2 mt-4">
+                <div class="d-flex align-items-center gap-2">
+                    <img src="~/images/drmc-seal.png" alt="DRMC Seal" style="height: 36px; width: auto;" />
+                    <div class="small text-muted">
+                        <strong class="text-dark d-block">Official DRMC Public Health Release</strong>
+                        Republic of the Philippines &middot; Department of Health
+                    </div>
+                </div>
+                <button onclick="window.print();" class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-print-none">
+                    <i class="bi bi-printer me-1"></i> Print Advisory
+                </button>
+            </div>
+
+        </article>
+
+        <!-- Related Advisories -->
+        @if (Model.RelatedAdvisories.Count > 0)
+        {
+            <div class="mb-4">
+                <h2 class="h5 fw-bold text-primary-drmc mb-3">Other Recent Hospital Bulletins</h2>
+                <div class="row g-3">
+                    @foreach (var rel in Model.RelatedAdvisories)
+                    {
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-xs rounded-4 p-3 bg-white h-100 d-flex flex-column">
+                                <span class="badge bg-light text-secondary border rounded-pill small mb-2 align-self-start">
+                                    @rel.Category
+                                </span>
+                                <h3 class="h6 fw-bold text-dark mb-2">@rel.Title</h3>
+                                <span class="small text-muted mt-auto" style="font-size:0.75rem;">
+                                    @rel.PublishedAt.ToString("MMM d, yyyy")
+                                </span>
+                                <a asp-action="Details" asp-route-slug="@rel.Slug" class="stretched-link"></a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+    </div>
+</section>

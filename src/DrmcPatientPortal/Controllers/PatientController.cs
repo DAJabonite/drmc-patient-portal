@@ -27,8 +27,8 @@ public class PatientController : Controller
             return Challenge();
         }
 
-        var nextAppointment = await _db.NextAppointments
-            .Where(a => a.PatientUserId == user.Id)
+        var nextAppointment = await _db.Appointments
+            .Where(a => a.PatientUserId == user.Id && a.Status != "Cancelled")
             .OrderBy(a => a.ScheduledAt)
             .FirstOrDefaultAsync();
 
@@ -62,7 +62,7 @@ public class PatientDashboardViewModel
     public string Email { get; set; } = string.Empty;
     public string ContactNumber { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
-    public NextAppointment? NextAppointment { get; set; }
+    public Appointment? NextAppointment { get; set; }
     public IReadOnlyList<LabResult> LabResults { get; set; } = Array.Empty<LabResult>();
     public int UnreadMessages { get; set; }
     public IReadOnlyList<ClinicalDepartment> Departments { get; set; } = Array.Empty<ClinicalDepartment>();

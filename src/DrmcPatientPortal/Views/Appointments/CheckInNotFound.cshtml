@@ -1,0 +1,33 @@
+@{
+    ViewData["Title"] = "Invalid Check-In Pass";
+}
+
+<section class="py-4 bg-primary-drmc text-white shadow-sm">
+    <div class="container">
+        <h1 class="display-6 fw-bold mb-1">Check-In Verification</h1>
+        <p class="text-white text-opacity-90 mb-0">DRMC Outpatient Triage Validation</p>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container" style="max-width: 580px;">
+        <div class="card border-0 shadow-sm rounded-4 p-4 text-center bg-white">
+            <div class="p-3 rounded-circle bg-danger-subtle text-danger d-inline-flex mx-auto mb-3">
+                <i class="bi bi-x-circle fs-1"></i>
+            </div>
+            <h2 class="h5 fw-bold text-dark mb-2">Unrecognized Appointment Reference</h2>
+            <p class="text-muted small mb-4">
+                No active appointment was found matching reference code <strong>"@ViewBag.NotFoundRef"</strong>. Please verify the code or proceed to the main hospital triage desk.
+            </p>
+
+            <div class="d-flex gap-2 justify-content-center">
+                <a asp-action="Book" class="btn btn-primary-drmc fw-semibold rounded-pill px-4">
+                    <i class="bi bi-calendar-plus me-1"></i> Book Appointment
+                </a>
+                <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary fw-semibold rounded-pill px-3">
+                    Return to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</section>

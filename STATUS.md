@@ -1,84 +1,73 @@
 # DRMC Patient Portal — Status Report
 
-Generated at the end of the Gauntlet Loop build.
+Generated following the **Phase 3.1: Public Homepage Features** milestone.
 
 ---
 
 ## Summary
 
-A patient-facing informational website with account access for **Davao Regional Medical Center (DRMC)**, built on **.NET 10** (ASP.NET Core MVC + Identity Razor Pages), **SQLite**, and **Bootstrap 5.3.8**. All four in-scope screens are built and connected end to end.
+A patient-facing informational website with account access and self-service public healthcare utilities for **Davao Regional Medical Center (DRMC)**, built on **.NET 10** (ASP.NET Core MVC + Identity Razor Pages), **SQLite**, and **Bootstrap 5.3.8**.
 
 The design reproduces DRMC's **real brand identity** (extracted from reference screenshots and the live site): the brand-blue masthead with the authentic DRMC lockup, the GOVPH utility bar, and a GOVPH-standard footer.
 
 ---
 
-## Fully functional (real, database-backed)
+## Fully Functional (Real, Database-Backed)
 
-| Screen | Route | Status |
-|--------|-------|--------|
-| Landing | `GET /` | Public; hero, 8 real clinical departments, CTA → Register/Login. |
-| Register | `POST /Identity/Account/Register` | Creates an `ApplicationUser`, persists **Full Name + Contact Number** via EF Core, signs the user in, redirects to dashboard. Verified end-to-end. |
-| Login | `POST /Identity/Account/Login` | `SignInManager.PasswordSignInAsync`; success → dashboard; invalid → accessible "Invalid login attempt." Verified. |
-| Home/Dashboard | `GET /Patient/Home` | `[Authorize]`; reads Next Appointment, Recent Lab Work, Messages, and Profile from the **database** (not hardcoded markup). Verified. |
-| Manage profile | `GET /Identity/Account/Manage` | Identity manage-account page, restyled to brand blue. Verified reachable. |
-| Forgot password | `GET/POST /Identity/Account/ForgotPassword` | Identity token flow; reset link output to console in Development. |
-
-**Verified integration checks (all pass):**
-- Anonymous hit to `/Patient/Home` redirects to the login page (auth gate works).
-- Landing CTAs route to Register / Login.
-- Login (seeded account) → dashboard; dashboard shows seeded appointment/labs/messages.
-- Fresh registration persists and can be logged into in a new session.
-- No patient-facing UI text contains "Demo / Prototype / Sample / Mock / Test" (the only "test" is the clinical phrase "your test is still being processed").
-
----
-
-## Seeded / stubbed (display-only, by design)
-
-These are **not broken** — they are intentionally display-only per the project scope:
-
-- **Next Appointment** card — seeded rows read from DB; display-only (booking is out of scope).
-- **Recent Lab Work** card — seeded rows; display-only (full results viewer out of scope).
-- **Messages** card — seeded unread count; display-only (messaging out of scope).
-- **Clinical Departments** card — real content from Landing; links to `/#departments`.
-- Dashboard "empty states" (new accounts) correctly show "You have no upcoming appointments," "No recent lab results," "0 unread messages."
+| Screen / Feature | Route | Status | Notes |
+|------------------|-------|--------|-------|
+| Landing | `GET /` | Public | Hero, real department overview, service quick-links, and auth CTAs. |
+| Register | `POST /Identity/Account/Register` | Public | Persists `ApplicationUser` with PhilSys/contact fields, automatic sign-in. |
+| Login | `POST /Identity/Account/Login` | Public | `SignInManager` password auth, lockout protection. |
+| Dashboard | `GET /Patient/Home` | `[Authorize]` | Authenticated patient summary displaying active appointments, lab summary, unread messages. |
+| Live OPD Queue | `GET /Queue` | Public | Real-time queue board across all 8 clinical departments; highlights currently called tickets. |
+| Ticket Tracker | `GET /Queue/Status?ticketNumber=...` | Public | Direct ticket lookup showing patient queue position and estimated wait minutes. |
+| Queue Live Polling | `GET /Queue/Live` | Public | JSON endpoint for live ticker polling. |
+| Appointment Booking | `GET/POST /Appointments/Book` | Public / Auth | Multi-step booking wizard, doctor selection, slot protection, SMS + Email confirmation. |
+| Appointment Pass | `GET /Appointments/Confirmation?reference=...` | Public | Printable appointment slip with in-process vector SVG QR pass. |
+| Triage Validation | `GET /Appointments/CheckIn/{reference}` | Public | QR scanning check-in landing page for hospital triage desk. |
+| Doctor Directory | `GET /Directory` | Public | Roster of 16 attending medical specialists, search & teleconsultation filter. |
+| Doctor Profile | `GET /Directory/Doctor/{id}` | Public | Specialist biography, room location, schedule summary, direct booking CTA. |
+| Department Detail | `GET /Directory/Department?name=...` | Public | Specialized care summary, chairperson info, local extension, affiliated doctor cards. |
+| Malasakit Hub | `GET /Malasakit` | Public | Overview of RA 11463, Citizen's Charter, 5 statutory programs (MAIP, PhilHealth, PCSO, DSWD). |
+| Eligibility Navigator | `GET /Malasakit/Navigator` | Public | 3-step citizen assessment questionnaire. |
+| Checklist Results | `POST /Malasakit/Assess` | Public | Generated documentary checklist and safety-net coverage estimator. |
+| Program Detail | `GET /Malasakit/Program/{code}` | Public | Detailed requirements and application steps for individual statutory programs. |
+| Advisories Feed | `GET /Advisories` | Public | Official bulletins, pinned urgent health alerts, category filter pills. |
+| Advisory Details | `GET /Advisories/Details/{slug}` | Public | Full article view with real-time view count tracking and issuing authority seal. |
 
 ---
 
-## Exact versions
+## Verified Integration Checks (All Pass)
+
+- **Auth Gates:** Anonymous hit to `/Patient/Home` redirects to login; authenticated patients see active appointments and queue tickets.
+- **Queue System:** Live queue board lists tickets ordered by call status; direct lookup `IM-105` renders accurate status and countdown.
+- **Booking Flow:** End-to-end booking persists to SQLite `Appointments` table, generates reference code (`DRMC-2026-XX-XXXX`), triggers `ConsoleSmsSender` and `ConsoleEmailSender`, and renders responsive SVG QR pass.
+- **Doctor Directory:** Search by sub-specialty (e.g. `Oncology`) and department filters correctly narrow physician roster.
+- **Malasakit Assessment:** Form submission evaluates criteria and outputs tailored documentary checklist (e.g. Barangay Indigency, Doctor's Abstract).
+- **Public Advisories:** Article view increments view count in database and displays related bulletins.
+- **Vocabulary Compliance:** Zero occurrences of "Demo / Prototype / Sample / Mock / Test" in patient-facing UI.
+- **Strict Compliance:** Zero billing or payment screens anywhere in application.
+
+---
+
+## Exact Versions
 
 | Item | Version |
 |------|---------|
 | .NET SDK | **10.0.400** |
-| ASP.NET Core runtime | **10.0.11** |
-| EF Core (Sqlite, Design, Tools, Identity, Identity.EntityFrameworkCore, UI, Diagnostics.EntityFrameworkCore) | **10.0.11** |
+| ASP.NET Core Runtime | **10.0.11** |
+| EF Core (SQLite) | **10.0.11** |
+| QR Code Engine | **QRCoder 1.8.0** |
 | Bootstrap | **5.3.8** (via LibMan) |
+| Icons | **Bootstrap Icons 1.11.3** |
 | jQuery / jQuery Validation | 3.7.1 / 1.21.0 |
 
 ---
 
-## Out of scope (per spec — deliberately not built, including stubs)
+## Known Boundaries & Limitations (Documented Build Decisions)
 
-Appointment booking · lab-results viewer · secure messaging · medical records · telehealth · bilingual toggle · family/proxy access · **billing** (public hospital — no billing anywhere). Dashboard cards for these are display-only, never broken links.
-
----
-
-## How to run
-
-```bash
-source .dotnet-env.sh
-cd src/DrmcPatientPortal
-dotnet run
-```
-- SQLite file: `src/DrmcPatientPortal/app.db` (gitignored; regenerates via `Migrate()` in Development).
-- Connection string: `DataSource=app.db;Cache=Shared` (`appsettings.json`).
-- Schema and seed run automatically in Development (`DbInitializer`).
-
-**Seeded reviewer logins** (README only, never shown in UI):
-- `patient@drmc.doh.gov.ph` / `P@tient2026`
-- `juan@drmc.doh.gov.ph` / `J@uan2026`
-
----
-
-## Known limitation
-
-Email delivery is not configured (no SMTP). The forgot-password reset link is written to the application log/console in Development via `ConsoleEmailSender`. Register a real `IEmailSender` for production.
+1. **SMS Gateway:** Registered `ISmsSender` is implemented via `ConsoleSmsSender`, logging outgoing notifications to the application console (`[SMS GATEWAY BOUNDARY] Outgoing SMS to {Recipient}: {MessageText}`).
+2. **Email Delivery:** Registered `IEmailSender` is implemented via `ConsoleEmailSender`, logging outgoing emails and reset links to the application console.
+3. **Medical Staff Roster:** Attending doctors (16 specialists across 8 clinical departments) represent realistic clinician personas structured to mirror DRMC's clinical divisions, PRC licensing formats, and clinic room locations.
+4. **QR Code Generator:** Uses `QRCoder` for in-memory SVG generation, executing with zero external cloud dependencies.
