@@ -539,91 +539,14 @@ public static class DbInitializer
                 });
             }
 
-            if (!db.LabResults.Any(l => l.PatientUserId == primary.Id))
+            ClinicalEncounter? encounterIm = db.ClinicalEncounters.FirstOrDefault(e => e.EncounterReference == "DRMC-ENC-2026-0412");
+            ClinicalEncounter? encounterFcm = db.ClinicalEncounters.FirstOrDefault(e => e.EncounterReference == "DRMC-ENC-2025-1089");
+
+            if (encounterIm == null || encounterFcm == null)
             {
-                var cbc = new LabResult
+                if (encounterIm == null)
                 {
-                    PatientUserId = primary.Id,
-                    AccessionNumber = "DRMC-LAB-2026-0814",
-                    TestName = "Complete Blood Count (CBC) with Platelet Count",
-                    Category = LabCategory.Hematology,
-                    CollectedAt = DateTime.UtcNow.AddDays(-6),
-                    ReleasedAt = DateTime.UtcNow.AddDays(-5),
-                    Status = "Available",
-                    ResultSummary = "Hematology parameters within standard diagnostic limits. No acute cytopenia.",
-                    OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP",
-                    PathologistName = "Dr. Manuel Santos, MD, FPSP",
-                    PerformingUnit = "DRMC Central Clinical Diagnostic Laboratory",
-                    ClinicalNotes = "Routine pre-consultation baseline workup."
-                };
-
-                cbc.Items.Add(new LabResultItem { ParameterName = "Hemoglobin", Value = "13.8", Unit = "g/dL", ReferenceRange = "12.0 - 16.0", Flag = LabFlag.Normal });
-                cbc.Items.Add(new LabResultItem { ParameterName = "Hematocrit", Value = "41.2", Unit = "%", ReferenceRange = "37.0 - 48.0", Flag = LabFlag.Normal });
-                cbc.Items.Add(new LabResultItem { ParameterName = "White Blood Cells (WBC)", Value = "7.5", Unit = "x10^9/L", ReferenceRange = "4.5 - 11.0", Flag = LabFlag.Normal });
-                cbc.Items.Add(new LabResultItem { ParameterName = "Platelet Count", Value = "280", Unit = "x10^9/L", ReferenceRange = "150 - 450", Flag = LabFlag.Normal });
-                cbc.Items.Add(new LabResultItem { ParameterName = "Segmenters (Neutrophils)", Value = "60", Unit = "%", ReferenceRange = "50 - 70", Flag = LabFlag.Normal });
-                cbc.Items.Add(new LabResultItem { ParameterName = "Lymphocytes", Value = "32", Unit = "%", ReferenceRange = "20 - 40", Flag = LabFlag.Normal });
-                cbc.Items.Add(new LabResultItem { ParameterName = "Monocytes", Value = "4", Unit = "%", ReferenceRange = "2 - 8", Flag = LabFlag.Normal });
-                cbc.Items.Add(new LabResultItem { ParameterName = "Eosinophils", Value = "4", Unit = "%", ReferenceRange = "1 - 4", Flag = LabFlag.Normal });
-
-                var fbs = new LabResult
-                {
-                    PatientUserId = primary.Id,
-                    AccessionNumber = "DRMC-LAB-2026-0815",
-                    TestName = "Fasting Blood Sugar (FBS)",
-                    Category = LabCategory.ClinicalChemistry,
-                    CollectedAt = DateTime.UtcNow.AddDays(-6),
-                    ReleasedAt = DateTime.UtcNow.AddDays(-5),
-                    Status = "Available",
-                    ResultSummary = "Elevated fasting blood glucose. Consistent with impaired fasting glycemia / DM monitoring.",
-                    OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP",
-                    PathologistName = "Dr. Manuel Santos, MD, FPSP",
-                    PerformingUnit = "DRMC Clinical Chemistry Section",
-                    ClinicalNotes = "Patient confirmed 10-hour overnight fasting."
-                };
-
-                fbs.Items.Add(new LabResultItem { ParameterName = "Fasting Blood Glucose", Value = "112", Unit = "mg/dL", ReferenceRange = "70 - 99", Flag = LabFlag.High });
-
-                var lipid = new LabResult
-                {
-                    PatientUserId = primary.Id,
-                    AccessionNumber = "DRMC-LAB-2026-0790",
-                    TestName = "Lipid Profile Panel",
-                    Category = LabCategory.ClinicalChemistry,
-                    CollectedAt = DateTime.UtcNow.AddDays(-20),
-                    ReleasedAt = DateTime.UtcNow.AddDays(-19),
-                    Status = "Available",
-                    ResultSummary = "Lipid parameters within acceptable cardiovascular risk limits.",
-                    OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP",
-                    PathologistName = "Dr. Manuel Santos, MD, FPSP",
-                    PerformingUnit = "DRMC Clinical Chemistry Section"
-                };
-
-                lipid.Items.Add(new LabResultItem { ParameterName = "Total Cholesterol", Value = "195", Unit = "mg/dL", ReferenceRange = "< 200", Flag = LabFlag.Normal });
-                lipid.Items.Add(new LabResultItem { ParameterName = "Triglycerides", Value = "140", Unit = "mg/dL", ReferenceRange = "< 150", Flag = LabFlag.Normal });
-                lipid.Items.Add(new LabResultItem { ParameterName = "HDL Cholesterol", Value = "48", Unit = "mg/dL", ReferenceRange = "> 40", Flag = LabFlag.Normal });
-                lipid.Items.Add(new LabResultItem { ParameterName = "LDL Cholesterol", Value = "119", Unit = "mg/dL", ReferenceRange = "< 130", Flag = LabFlag.Normal });
-
-                var hba1c = new LabResult
-                {
-                    PatientUserId = primary.Id,
-                    AccessionNumber = "DRMC-LAB-2026-0922",
-                    TestName = "HbA1c (Glycated Hemoglobin)",
-                    Category = LabCategory.SpecialDiagnostics,
-                    CollectedAt = DateTime.UtcNow.AddDays(-2),
-                    Status = "In progress",
-                    ResultSummary = "Specimen received by laboratory. Analysis currently in progress.",
-                    OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP",
-                    PerformingUnit = "DRMC Central Clinical Diagnostic Laboratory"
-                };
-
-                db.LabResults.AddRange(cbc, fbs, lipid, hba1c);
-            }
-
-            if (!db.ClinicalEncounters.Any(e => e.PatientUserId == primary.Id))
-            {
-                db.ClinicalEncounters.AddRange(
-                    new ClinicalEncounter
+                    encounterIm = new ClinicalEncounter
                     {
                         PatientUserId = primary.Id,
                         EncounterReference = "DRMC-ENC-2026-0412",
@@ -639,8 +562,13 @@ public static class DbInitializer
                         VitalSignsRecorded = "BP: 128/82 mmHg | HR: 76 bpm | Temp: 36.5 C | Wt: 64.0 kg | Height: 158 cm | BMI: 25.6",
                         FollowUpDate = DateTime.UtcNow.AddMonths(3),
                         FollowUpNotes = "Follow-up consultation at Internal Medicine OPD Room 201."
-                    },
-                    new ClinicalEncounter
+                    };
+                    db.ClinicalEncounters.Add(encounterIm);
+                }
+
+                if (encounterFcm == null)
+                {
+                    encounterFcm = new ClinicalEncounter
                     {
                         PatientUserId = primary.Id,
                         EncounterReference = "DRMC-ENC-2025-1089",
@@ -653,8 +581,143 @@ public static class DbInitializer
                         ClinicalSummary = "Complete physical examination unremarkable. Cardiac auscultation normal, lungs clear. Screening mammography and cervical smear updated.",
                         CarePlanAndInstructions = "Promote continued healthy lifestyle and routine seasonal influenza vaccination.",
                         VitalSignsRecorded = "BP: 120/78 mmHg | HR: 72 bpm | Temp: 36.6 C | Wt: 63.5 kg"
-                    }
-                );
+                    };
+                    db.ClinicalEncounters.Add(encounterFcm);
+                }
+            }
+
+            if (!db.LabResults.Any(l => l.PatientUserId == primary.Id))
+            {
+                // Encounter 1 (Internal Medicine) Labs
+                var cbc1 = new LabResult
+                {
+                    PatientUserId = primary.Id,
+                    Encounter = encounterIm,
+                    AccessionNumber = "DRMC-LAB-2026-0814",
+                    TestName = "Complete Blood Count (CBC) with Platelet Count",
+                    Category = LabCategory.Hematology,
+                    CollectedAt = DateTime.UtcNow.AddDays(-18),
+                    ReleasedAt = DateTime.UtcNow.AddDays(-17),
+                    Status = "Available",
+                    ResultSummary = "Hematology parameters within standard diagnostic limits. No acute cytopenia.",
+                    OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP",
+                    PathologistName = "Dr. Manuel Santos, MD, FPSP",
+                    PerformingUnit = "DRMC Central Clinical Diagnostic Laboratory",
+                    ClinicalNotes = "Routine pre-consultation baseline workup."
+                };
+
+                cbc1.Items.Add(new LabResultItem { ParameterName = "Hemoglobin", Value = "13.8", Unit = "g/dL", ReferenceRange = "12.0 - 16.0", Flag = LabFlag.Normal });
+                cbc1.Items.Add(new LabResultItem { ParameterName = "Hematocrit", Value = "41.2", Unit = "%", ReferenceRange = "37.0 - 48.0", Flag = LabFlag.Normal });
+                cbc1.Items.Add(new LabResultItem { ParameterName = "White Blood Cells (WBC)", Value = "7.5", Unit = "x10^9/L", ReferenceRange = "4.5 - 11.0", Flag = LabFlag.Normal });
+                cbc1.Items.Add(new LabResultItem { ParameterName = "Platelet Count", Value = "280", Unit = "x10^9/L", ReferenceRange = "150 - 450", Flag = LabFlag.Normal });
+                cbc1.Items.Add(new LabResultItem { ParameterName = "Segmenters (Neutrophils)", Value = "60", Unit = "%", ReferenceRange = "50 - 70", Flag = LabFlag.Normal });
+                cbc1.Items.Add(new LabResultItem { ParameterName = "Lymphocytes", Value = "32", Unit = "%", ReferenceRange = "20 - 40", Flag = LabFlag.Normal });
+                cbc1.Items.Add(new LabResultItem { ParameterName = "Monocytes", Value = "4", Unit = "%", ReferenceRange = "2 - 8", Flag = LabFlag.Normal });
+                cbc1.Items.Add(new LabResultItem { ParameterName = "Eosinophils", Value = "4", Unit = "%", ReferenceRange = "1 - 4", Flag = LabFlag.Normal });
+
+                var fbs = new LabResult
+                {
+                    PatientUserId = primary.Id,
+                    Encounter = encounterIm,
+                    AccessionNumber = "DRMC-LAB-2026-0815",
+                    TestName = "Fasting Blood Sugar (FBS)",
+                    Category = LabCategory.ClinicalChemistry,
+                    CollectedAt = DateTime.UtcNow.AddDays(-18),
+                    ReleasedAt = DateTime.UtcNow.AddDays(-17),
+                    Status = "Available",
+                    ResultSummary = "Elevated fasting blood glucose. Consistent with impaired fasting glycemia / DM monitoring.",
+                    OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP",
+                    PathologistName = "Dr. Manuel Santos, MD, FPSP",
+                    PerformingUnit = "DRMC Clinical Chemistry Section",
+                    ClinicalNotes = "Patient confirmed 10-hour overnight fasting."
+                };
+
+                fbs.Items.Add(new LabResultItem { ParameterName = "Fasting Blood Glucose", Value = "112", Unit = "mg/dL", ReferenceRange = "70 - 99", Flag = LabFlag.High });
+
+                var lipid = new LabResult
+                {
+                    PatientUserId = primary.Id,
+                    Encounter = encounterIm,
+                    AccessionNumber = "DRMC-LAB-2026-0790",
+                    TestName = "Lipid Profile Panel",
+                    Category = LabCategory.ClinicalChemistry,
+                    CollectedAt = DateTime.UtcNow.AddDays(-18),
+                    ReleasedAt = DateTime.UtcNow.AddDays(-17),
+                    Status = "Available",
+                    ResultSummary = "Lipid parameters within acceptable cardiovascular risk limits.",
+                    OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP",
+                    PathologistName = "Dr. Manuel Santos, MD, FPSP",
+                    PerformingUnit = "DRMC Clinical Chemistry Section"
+                };
+
+                lipid.Items.Add(new LabResultItem { ParameterName = "Total Cholesterol", Value = "195", Unit = "mg/dL", ReferenceRange = "< 200", Flag = LabFlag.Normal });
+                lipid.Items.Add(new LabResultItem { ParameterName = "Triglycerides", Value = "140", Unit = "mg/dL", ReferenceRange = "< 150", Flag = LabFlag.Normal });
+                lipid.Items.Add(new LabResultItem { ParameterName = "HDL Cholesterol", Value = "48", Unit = "mg/dL", ReferenceRange = "> 40", Flag = LabFlag.Normal });
+                lipid.Items.Add(new LabResultItem { ParameterName = "LDL Cholesterol", Value = "119", Unit = "mg/dL", ReferenceRange = "< 130", Flag = LabFlag.Normal });
+
+                // Encounter 2 (Family & Community Medicine) Labs
+                var cbc2 = new LabResult
+                {
+                    PatientUserId = primary.Id,
+                    Encounter = encounterFcm,
+                    AccessionNumber = "DRMC-LAB-2025-0451",
+                    TestName = "Complete Blood Count (CBC) with Platelet Count",
+                    Category = LabCategory.Hematology,
+                    CollectedAt = DateTime.UtcNow.AddMonths(-6),
+                    ReleasedAt = DateTime.UtcNow.AddMonths(-6).AddDays(1),
+                    Status = "Available",
+                    ResultSummary = "Normal baseline complete blood count.",
+                    OrderingPhysician = "Dr. Cristina Ramos, MD, FPAFP",
+                    PathologistName = "Dr. Manuel Santos, MD, FPSP",
+                    PerformingUnit = "DRMC Central Clinical Diagnostic Laboratory",
+                    ClinicalNotes = "Annual wellness checkup laboratory panel."
+                };
+
+                cbc2.Items.Add(new LabResultItem { ParameterName = "Hemoglobin", Value = "13.5", Unit = "g/dL", ReferenceRange = "12.0 - 16.0", Flag = LabFlag.Normal });
+                cbc2.Items.Add(new LabResultItem { ParameterName = "Hematocrit", Value = "40.8", Unit = "%", ReferenceRange = "37.0 - 48.0", Flag = LabFlag.Normal });
+                cbc2.Items.Add(new LabResultItem { ParameterName = "White Blood Cells (WBC)", Value = "6.8", Unit = "x10^9/L", ReferenceRange = "4.5 - 11.0", Flag = LabFlag.Normal });
+                cbc2.Items.Add(new LabResultItem { ParameterName = "Platelet Count", Value = "265", Unit = "x10^9/L", ReferenceRange = "150 - 450", Flag = LabFlag.Normal });
+
+                var urinalysis = new LabResult
+                {
+                    PatientUserId = primary.Id,
+                    Encounter = encounterFcm,
+                    AccessionNumber = "DRMC-LAB-2025-0452",
+                    TestName = "Routine Urinalysis",
+                    Category = LabCategory.UrinalysisFecalysis,
+                    CollectedAt = DateTime.UtcNow.AddMonths(-6),
+                    ReleasedAt = DateTime.UtcNow.AddMonths(-6).AddDays(1),
+                    Status = "Available",
+                    ResultSummary = "Urinalysis parameters within normal limits. Negative for proteinuria and glucosuria.",
+                    OrderingPhysician = "Dr. Cristina Ramos, MD, FPAFP",
+                    PathologistName = "Dr. Manuel Santos, MD, FPSP",
+                    PerformingUnit = "DRMC Central Clinical Diagnostic Laboratory",
+                    ClinicalNotes = "Midstream clean catch urine specimen."
+                };
+
+                urinalysis.Items.Add(new LabResultItem { ParameterName = "Color", Value = "Straw / Light Yellow", Unit = "", ReferenceRange = "Straw to Amber", Flag = LabFlag.Normal });
+                urinalysis.Items.Add(new LabResultItem { ParameterName = "Transparency", Value = "Clear", Unit = "", ReferenceRange = "Clear", Flag = LabFlag.Normal });
+                urinalysis.Items.Add(new LabResultItem { ParameterName = "pH", Value = "6.0", Unit = "", ReferenceRange = "4.5 - 8.0", Flag = LabFlag.Normal });
+                urinalysis.Items.Add(new LabResultItem { ParameterName = "Specific Gravity", Value = "1.015", Unit = "", ReferenceRange = "1.005 - 1.030", Flag = LabFlag.Normal });
+                urinalysis.Items.Add(new LabResultItem { ParameterName = "Protein", Value = "Negative", Unit = "", ReferenceRange = "Negative", Flag = LabFlag.Normal });
+                urinalysis.Items.Add(new LabResultItem { ParameterName = "Glucose", Value = "Negative", Unit = "", ReferenceRange = "Negative", Flag = LabFlag.Normal });
+
+                // Unlinked / Standalone Lab Result (ClinicalEncounterId = null)
+                var hba1c = new LabResult
+                {
+                    PatientUserId = primary.Id,
+                    ClinicalEncounterId = null,
+                    AccessionNumber = "DRMC-LAB-2026-0922",
+                    TestName = "HbA1c (Glycated Hemoglobin)",
+                    Category = LabCategory.SpecialDiagnostics,
+                    CollectedAt = DateTime.UtcNow.AddDays(-2),
+                    Status = "In progress",
+                    ResultSummary = "Specimen received by laboratory. Analysis currently in progress.",
+                    OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP",
+                    PerformingUnit = "DRMC Central Clinical Diagnostic Laboratory"
+                };
+
+                db.LabResults.AddRange(cbc1, fbs, lipid, cbc2, urinalysis, hba1c);
             }
 
             if (!db.Prescriptions.Any(p => p.PatientUserId == primary.Id))
