@@ -29,21 +29,21 @@
 <section class="py-3 bg-white border-bottom sticky-top shadow-xs" style="z-index: 1020;">
     <div class="container">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-            <div class="d-flex align-items-center gap-1 overflow-x-auto pb-1" style="max-width: 100%;">
+            <div class="d-flex align-items-center gap-2 overflow-x-auto pb-1" style="max-width: 100%;">
                 <a asp-action="Index" asp-route-search="@Model.SearchTerm"
-                   class="btn btn-sm @(!Model.SelectedCategory.HasValue ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
-                    All Tests (@Model.LabResults.Count)
+                   class="btn btn-sm @(!Model.SelectedCategory.HasValue ? "btn-primary-drmc shadow-xs" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                    All Tests (@Model.TotalCount)
                 </a>
                 <a asp-action="Index" asp-route-category="@LabCategory.Hematology" asp-route-search="@Model.SearchTerm"
-                   class="btn btn-sm @(Model.SelectedCategory == LabCategory.Hematology ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                   class="btn btn-sm @(Model.SelectedCategory == LabCategory.Hematology ? "btn-primary-drmc shadow-xs" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
                     Hematology
                 </a>
                 <a asp-action="Index" asp-route-category="@LabCategory.ClinicalChemistry" asp-route-search="@Model.SearchTerm"
-                   class="btn btn-sm @(Model.SelectedCategory == LabCategory.ClinicalChemistry ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                   class="btn btn-sm @(Model.SelectedCategory == LabCategory.ClinicalChemistry ? "btn-primary-drmc shadow-xs" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
                     Clinical Chemistry
                 </a>
                 <a asp-action="Index" asp-route-category="@LabCategory.SpecialDiagnostics" asp-route-search="@Model.SearchTerm"
-                   class="btn btn-sm @(Model.SelectedCategory == LabCategory.SpecialDiagnostics ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
+                   class="btn btn-sm @(Model.SelectedCategory == LabCategory.SpecialDiagnostics ? "btn-primary-drmc shadow-xs" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
                     Special Diagnostics
                 </a>
             </div>

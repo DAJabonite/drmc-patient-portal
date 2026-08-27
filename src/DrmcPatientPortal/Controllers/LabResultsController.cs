@@ -49,6 +49,8 @@ public class LabResultsController : Controller
             query = query.Where(l => l.TestName.ToLower().Contains(s) || l.AccessionNumber.ToLower().Contains(s));
         }
 
+        var allCount = await _db.LabResults.CountAsync(l => l.PatientUserId == user.Id);
+
         var results = await query
             .OrderByDescending(l => l.CollectedAt)
             .ToListAsync();
@@ -58,6 +60,7 @@ public class LabResultsController : Controller
             SelectedCategory = category,
             SearchTerm = search,
             LabResults = results,
+            TotalCount = allCount,
             TotalAvailable = results.Count(r => r.Status == "Available"),
             TotalInProgress = results.Count(r => r.Status != "Available")
         };
@@ -157,6 +160,7 @@ public class LabResultsIndexViewModel
     public LabCategory? SelectedCategory { get; set; }
     public string? SearchTerm { get; set; }
     public IReadOnlyList<LabResult> LabResults { get; set; } = Array.Empty<LabResult>();
+    public int TotalCount { get; set; }
     public int TotalAvailable { get; set; }
     public int TotalInProgress { get; set; }
 }
