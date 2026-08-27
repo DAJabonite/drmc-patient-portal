@@ -64,6 +64,7 @@ public class EncountersController : Controller
         if (user is null) return Challenge();
 
         var encounter = await _db.ClinicalEncounters
+            .Include(e => e.LabResults)
             .FirstOrDefaultAsync(e => e.Id == id && e.PatientUserId == user.Id);
 
         if (encounter is null)

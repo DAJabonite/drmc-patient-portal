@@ -41,12 +41,12 @@ The platform reproduces DRMC's **authentic brand identity**: the brand-blue mast
 | Screen / Feature | Route | Status | Notes |
 |---|---|---|---|
 | Patient Dashboard | `GET /Patient/Home` | `[Authorize]` | Summary hub with dynamic counters for appointments, lab results, prescriptions, encounters, messages, and proxy context. |
-| Lab Results Catalog | `GET /Patient/LabResults` | `[Authorize]` | Category filtering (Hematology, Clinical Chemistry, Special Diagnostics), accession search, status pills. |
+| Lab Results Catalog | `GET /Patient/LabResults` | `[Authorize]` | Consultation-grouped diagnostic catalog with category filtering (Hematology, Clinical Chemistry, Special Diagnostics), accession search, status badges, and standalone unlinked labs section. |
 | Lab Report Details | `GET /Patient/LabResults/Details/{id}` | `[Authorize]` | Multi-analyte breakdown table, biological reference ranges, diagnostic flags (`Normal`, `High`, `Low`), pathologist signatures, audit logging. |
 | Printable Lab Report | `GET /Patient/LabResults/Print/{id}` | `[Authorize]` | Official DOH-standard printable laboratory examination slip. |
 | Biomarker Trends | `GET /Patient/LabResults/Trends` | `[Authorize]` | Chronological historical trends across test parameters with visual normal reference bounds. |
 | After-Visit Summaries | `GET /Patient/Encounters` | `[Authorize]` | Clinical visit timeline, department filters, primary & secondary ICD-10 diagnoses. |
-| Encounter Details | `GET /Patient/Encounters/Details/{id}` | `[Authorize]` | Complete consultation summary, recorded vitals, physician progress notes, and care plan instructions. |
+| Encounter Details | `GET /Patient/Encounters/Details/{id}` | `[Authorize]` | Complete consultation summary, recorded vitals, physician progress notes, care plan instructions, and linked "Lab Results from this Visit" section. |
 | Printable Visit Slip | `GET /Patient/Encounters/Print/{id}` | `[Authorize]` | Clean consultation and care plan slip for personal health records. |
 | Medication Tracker | `GET /Patient/Medications` | `[Authorize]` | Active prescriptions, prominent allergy alert banner, 4-tier daily dosing schedule visualizer. |
 | Prescription Details | `GET /Patient/Medications/Details/{id}` | `[Authorize]` | Drug strength, dosage form, instructions, refills remaining count, and refill order submission. |

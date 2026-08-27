@@ -396,18 +396,21 @@ textarea:focus-visible,
 /* Utility Classes */
 .text-primary-drmc { color: var(--drmc-primary) !important; }
 .bg-primary-drmc { background-color: var(--drmc-primary) !important; }
-.btn-drmc {
-    background-color: var(--drmc-primary);
-    border-color: var(--drmc-primary);
-    color: #ffffff;
+.btn-drmc,
+.btn-primary-drmc {
+    background-color: var(--drmc-primary) !important;
+    border-color: var(--drmc-primary) !important;
+    color: #ffffff !important;
     font-weight: 600;
     transition: all 0.15s ease;
 }
 .btn-drmc:hover,
-.btn-drmc:focus {
-    background-color: var(--drmc-primary-dark);
-    border-color: var(--drmc-primary-dark);
-    color: #ffffff;
+.btn-drmc:focus,
+.btn-primary-drmc:hover,
+.btn-primary-drmc:focus {
+    background-color: var(--drmc-primary-dark) !important;
+    border-color: var(--drmc-primary-dark) !important;
+    color: #ffffff !important;
 }
 .btn-outline-drmc {
     color: var(--drmc-primary);

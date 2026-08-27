@@ -22,6 +22,8 @@ public class ClinicalEncounter
     public DateTime? FollowUpDate { get; set; }
     public string FollowUpNotes { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public ICollection<LabResult> LabResults { get; set; } = new List<LabResult>();
 }
 
 public enum EncounterType

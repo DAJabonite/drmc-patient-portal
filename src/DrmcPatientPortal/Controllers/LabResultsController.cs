@@ -34,6 +34,7 @@ public class LabResultsController : Controller
         if (user is null) return Challenge();
 
         var query = _db.LabResults
+            .Include(l => l.Encounter)
             .Include(l => l.Items)
             .Where(l => l.PatientUserId == user.Id)
             .AsQueryable();
@@ -49,15 +50,35 @@ public class LabResultsController : Controller
             query = query.Where(l => l.TestName.ToLower().Contains(s) || l.AccessionNumber.ToLower().Contains(s));
         }
 
+        var allCount = await _db.LabResults.CountAsync(l => l.PatientUserId == user.Id);
+
         var results = await query
             .OrderByDescending(l => l.CollectedAt)
             .ToListAsync();
+
+        var encounterGroups = results
+            .Where(l => l.ClinicalEncounterId.HasValue && l.Encounter != null)
+            .GroupBy(l => l.ClinicalEncounterId!.Value)
+            .Select(g => new LabResultEncounterGroup
+            {
+                Encounter = g.First().Encounter!,
+                LabResults = g.OrderByDescending(l => l.CollectedAt).ToList()
+            })
+            .OrderByDescending(g => g.Encounter.EncounterDate)
+            .ToList();
+
+        var unlinkedResults = results
+            .Where(l => !l.ClinicalEncounterId.HasValue || l.Encounter == null)
+            .OrderByDescending(l => l.CollectedAt)
+            .ToList();
 
         var model = new LabResultsIndexViewModel
         {
             SelectedCategory = category,
             SearchTerm = search,
-            LabResults = results,
+            EncounterGroups = encounterGroups,
+            UnlinkedLabResults = unlinkedResults,
+            TotalCount = allCount,
             TotalAvailable = results.Count(r => r.Status == "Available"),
             TotalInProgress = results.Count(r => r.Status != "Available")
         };
@@ -156,9 +177,17 @@ public class LabResultsIndexViewModel
 {
     public LabCategory? SelectedCategory { get; set; }
     public string? SearchTerm { get; set; }
-    public IReadOnlyList<LabResult> LabResults { get; set; } = Array.Empty<LabResult>();
+    public IReadOnlyList<LabResultEncounterGroup> EncounterGroups { get; set; } = Array.Empty<LabResultEncounterGroup>();
+    public IReadOnlyList<LabResult> UnlinkedLabResults { get; set; } = Array.Empty<LabResult>();
+    public int TotalCount { get; set; }
     public int TotalAvailable { get; set; }
     public int TotalInProgress { get; set; }
+}
+
+public class LabResultEncounterGroup
+{
+    public ClinicalEncounter Encounter { get; set; } = null!;
+    public IReadOnlyList<LabResult> LabResults { get; set; } = Array.Empty<LabResult>();
 }
 
 public class LabPrintReportViewModel

@@ -82,6 +82,61 @@
                 </div>
             </div>
 
+            <!-- Lab Results from this Visit -->
+            <div class="mb-4">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <h3 class="h6 fw-bold text-primary-drmc mb-0">
+                        <i class="bi bi-file-earmark-medical me-1"></i> Lab Results from this Visit
+                    </h3>
+                    @if (Model.LabResults.Count > 0)
+                    {
+                        <span class="badge bg-light text-secondary border rounded-pill small">
+                            @Model.LabResults.Count @(Model.LabResults.Count == 1 ? "Result" : "Results")
+                        </span>
+                    }
+                </div>
+
+                @if (Model.LabResults.Count == 0)
+                {
+                    <div class="p-3 bg-light rounded-3 border small text-muted">
+                        <i class="bi bi-info-circle me-1"></i> No lab results were ordered during this visit.
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-column gap-2">
+                        @foreach (var lab in Model.LabResults.OrderByDescending(l => l.CollectedAt))
+                        {
+                            <div class="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <div>
+                                    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                                        <span class="badge @(lab.Status == "Available" ? "bg-success-subtle text-success" : "bg-warning-subtle text-warning-emphasis") rounded-pill small">
+                                            <i class="bi @(lab.Status == "Available" ? "bi-check-circle" : "bi-clock") me-1"></i> @lab.Status
+                                        </span>
+                                        <span class="badge bg-white text-secondary border rounded-pill small">
+                                            @lab.Category
+                                        </span>
+                                        <span class="small text-muted" style="font-size: 0.75rem;">
+                                            Accession: <strong>@lab.AccessionNumber</strong>
+                                        </span>
+                                    </div>
+                                    <strong class="text-dark d-block">@lab.TestName</strong>
+                                    <span class="small text-muted" style="font-size: 0.8rem;">
+                                        <i class="bi bi-calendar3 me-1"></i> Collected: @lab.CollectedAt.ToString("MMM d, yyyy")
+                                    </span>
+                                </div>
+
+                                <div>
+                                    <a asp-controller="LabResults" asp-action="Details" asp-route-id="@lab.Id" class="btn btn-sm btn-outline-drmc rounded-pill px-3 fw-semibold">
+                                        <i class="bi bi-file-earmark-text me-1"></i> View Report
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
             <!-- Scheduled Follow-Up -->
             @if (Model.FollowUpDate.HasValue)
             {

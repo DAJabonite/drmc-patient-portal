@@ -79,7 +79,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(x => x.PatientUserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            e.HasOne(x => x.Encounter)
+                .WithMany(enc => enc.LabResults)
+                .HasForeignKey(x => x.ClinicalEncounterId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             e.HasIndex(x => x.PatientUserId);
+            e.HasIndex(x => x.ClinicalEncounterId);
             e.HasIndex(x => x.AccessionNumber);
         });
 
