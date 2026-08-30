@@ -4,123 +4,383 @@
     ViewData["Title"] = "Create your account";
 }
 
-<div class="auth-page">
-    <div class="container">
-        <div class="auth-card auth-card-wide">
+<div class="auth-page py-4">
+    <div class="container" style="max-width: 860px;">
+        <div class="auth-card auth-card-wide shadow-sm rounded-4 p-4 p-md-5 bg-white border-0">
+            <!-- Header Lockup -->
             <div class="text-center mb-4">
                 <a class="d-inline-flex align-items-center gap-2 mb-2 text-decoration-none" asp-controller="Home" asp-action="Index">
-                    <img src="~/images/drmc-seal.png" alt="DRMC Seal" style="height:46px;width:auto;" />
+                    <img src="~/images/drmc-seal.png" alt="DRMC Seal" style="height:48px;width:auto;" />
                     <span class="fw-bold fs-5 text-primary-drmc">Davao Regional Medical Center</span>
                 </a>
-                <h1 class="h3 fw-bold text-primary-drmc mb-1">Create your account</h1>
-                <p class="text-muted small mb-0">One registration for appointments, care information, and request tracking.</p>
+                <h1 class="h3 fw-bold text-primary-drmc mb-1">Create your patient account</h1>
+                <p class="text-muted small mb-0">Fast, verified registration with Philippine Government ID scan-to-autofill.</p>
             </div>
 
-            <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+            <!-- Stepper Progress Indicator -->
+            <div class="mb-4" id="wizardStepperNav">
+                <div class="d-flex justify-content-between align-items-center position-relative mb-2">
+                    <div class="position-absolute top-50 start-0 translate-middle-y w-100 bg-secondary-subtle" style="height: 3px; z-index: 1;"></div>
+                    <div class="position-absolute top-50 start-0 translate-middle-y bg-primary-drmc" id="wizardProgressLine" style="height: 3px; z-index: 2; width: 0%; transition: width 0.3s ease;"></div>
+                    
+                    <button type="button" class="btn btn-sm rounded-circle fw-bold wizard-step-btn active" id="stepBtn1" style="z-index: 3; width: 36px; height: 36px;" aria-current="step">1</button>
+                    <button type="button" class="btn btn-sm rounded-circle fw-bold wizard-step-btn" id="stepBtn2" style="z-index: 3; width: 36px; height: 36px;">2</button>
+                    <button type="button" class="btn btn-sm rounded-circle fw-bold wizard-step-btn" id="stepBtn3" style="z-index: 3; width: 36px; height: 36px;">3</button>
+                    <button type="button" class="btn btn-sm rounded-circle fw-bold wizard-step-btn" id="stepBtn4" style="z-index: 3; width: 36px; height: 36px;">4</button>
+                </div>
+                <div class="d-flex justify-content-between text-muted small fw-semibold px-1">
+                    <span id="stepLabel1" class="text-primary-drmc">1. ID Selection</span>
+                    <span id="stepLabel2">2. ID Photo</span>
+                    <span id="stepLabel3">3. Review &amp; Edit</span>
+                    <span id="stepLabel4">4. Credentials</span>
+                </div>
+            </div>
 
-                <div class="row g-3">
-                    <!-- Names -->
-                    <div class="col-md-4">
-                        <label asp-for="Input.FirstName" class="form-label">First name</label>
-                        <input asp-for="Input.FirstName" class="form-control" autocomplete="given-name" placeholder="Juan" />
-                        <span asp-validation-for="Input.FirstName" class="field-validation-error"></span>
-                    </div>
-                    <div class="col-md-4">
-                        <label asp-for="Input.MiddleName" class="form-label">Middle <span class="fw-normal text-muted">(opt.)</span></label>
-                        <input asp-for="Input.MiddleName" class="form-control" autocomplete="additional-name" placeholder="Santos" />
-                        <span asp-validation-for="Input.MiddleName" class="field-validation-error"></span>
-                    </div>
-                    <div class="col-md-4">
-                        <label asp-for="Input.LastName" class="form-label">Last name</label>
-                        <input asp-for="Input.LastName" class="form-control" autocomplete="family-name" placeholder="Dela Cruz" />
-                        <span asp-validation-for="Input.LastName" class="field-validation-error"></span>
-                    </div>
+            <!-- Main Multi-Step Form -->
+            <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post" enctype="multipart/form-data">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
 
-                    <!-- Email & Mobile -->
-                    <div class="col-md-6">
-                        <label asp-for="Input.Email" class="form-label">Email address</label>
-                        <input asp-for="Input.Email" class="form-control" type="email" autocomplete="email" placeholder="you@example.com" />
-                        <span asp-validation-for="Input.Email" class="field-validation-error"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="Input.Mobile" class="form-label">Mobile number</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-muted fw-semibold">+63</span>
-                            <input asp-for="Input.Mobile" class="form-control" inputmode="numeric" autocomplete="tel-national" placeholder="9175550123" />
+                <!-- Hidden inputs for token and metadata -->
+                <input type="hidden" asp-for="Input.TempFrontPhotoToken" id="tempFrontToken" />
+                <input type="hidden" asp-for="Input.TempBackPhotoToken" id="tempBackToken" />
+                <input type="hidden" asp-for="Input.OcrConfidence" id="ocrConfidence" value="0" />
+                <input type="hidden" asp-for="Input.IsManualEntry" id="isManualEntry" value="false" />
+
+                <!-- ========================================== -->
+                <!-- STEP 1: ID TYPE PICKER & METHOD SELECTION -->
+                <!-- ========================================== -->
+                <div class="wizard-step" id="wizardStep1">
+                    <div class="mb-4">
+                        <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-semibold mb-2">
+                            Step 1 of 4 &middot; Verification Document
+                        </span>
+                        <h2 class="h5 fw-bold text-dark mb-1">Select your Philippine Government ID</h2>
+                        <p class="small text-muted mb-3">Choose the valid government ID you will use for account verification and autofill.</p>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.IdType" class="form-label fw-semibold">Valid government ID</label>
+                            <select asp-for="Input.IdType" id="selectIdType" class="form-select form-select-lg">
+                                <option value="" disabled selected>Choose your ID type...</option>
+                                <option value="Philippine National ID (PhilSys)" data-back="true">Philippine National ID (PhilSys)</option>
+                                <option value="Driver's License" data-back="false">Driver's License</option>
+                                <option value="Philippine Passport" data-back="false">Philippine Passport</option>
+                                <option value="UMID" data-back="false">UMID</option>
+                                <option value="Postal ID" data-back="false">Postal ID</option>
+                                <option value="PhilHealth ID" data-back="false">PhilHealth ID</option>
+                                <option value="SSS / GSIS ID" data-back="false">SSS / GSIS ID</option>
+                                <option value="PRC ID" data-back="false">PRC ID</option>
+                            </select>
+                            <span asp-validation-for="Input.IdType" class="field-validation-error"></span>
                         </div>
-                        <span asp-validation-for="Input.Mobile" class="field-validation-error"></span>
-                        <div class="form-text small text-muted">10-digit number starting with 9 (e.g. 9171234567).</div>
-                    </div>
 
-                    <!-- Government ID -->
-                    <div class="col-md-6">
-                        <label asp-for="Input.IdType" class="form-label">Valid government ID</label>
-                        <select asp-for="Input.IdType" class="form-select">
-                            <option value="" disabled selected>Choose your ID...</option>
-                            <option value="Philippine National ID (PhilSys)">Philippine National ID (PhilSys)</option>
-                            <option value="PhilHealth ID">PhilHealth ID</option>
-                            <option value="Driver's License">Driver's License</option>
-                            <option value="Philippine Passport">Philippine Passport</option>
-                            <option value="SSS / GSIS ID">SSS / GSIS ID</option>
-                            <option value="UMID">UMID</option>
-                            <option value="PRC ID">PRC ID</option>
-                            <option value="Postal ID">Postal ID</option>
-                        </select>
-                        <span asp-validation-for="Input.IdType" class="field-validation-error"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="Input.IdNumber" class="form-label">ID number</label>
-                        <input asp-for="Input.IdNumber" class="form-control" placeholder="As printed on your ID" />
-                        <span asp-validation-for="Input.IdNumber" class="field-validation-error"></span>
-                    </div>
+                        <!-- Dynamic ID Guidance Notice Card -->
+                        <div id="idGuidanceCard" class="card border-0 bg-light rounded-3 p-3 mb-4 d-none">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="p-2 rounded-circle bg-primary-subtle text-primary-drmc d-inline-flex" style="flex-shrink:0;">
+                                    <i class="bi bi-card-heading fs-4"></i>
+                                </div>
+                                <div>
+                                    <h3 class="h6 fw-bold text-dark mb-1" id="guidanceTitle">ID Guidance</h3>
+                                    <p class="small text-muted mb-1" id="guidanceText">Framing advice will appear here.</p>
+                                    <div class="small text-primary-drmc fw-semibold" id="guidanceSupports"></div>
+                                </div>
+                            </div>
+                        </div>
 
-                    <!-- Passwords -->
-                    <div class="col-md-6">
-                        <label asp-for="Input.Password" class="form-label">Password</label>
-                        <div class="input-group">
-                            <input asp-for="Input.Password" class="form-control" type="password" id="regPassword" autocomplete="new-password" placeholder="At least 8 characters" />
-                            <button class="btn btn-outline-secondary pw-toggle" type="button" aria-controls="regPassword" aria-pressed="false" aria-label="Show password">
-                                <i class="bi bi-eye" aria-hidden="true"></i>
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 pt-3 border-top">
+                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold w-100 w-sm-auto" id="btnManualSkip">
+                                <i class="bi bi-pencil-square me-1"></i> Skip scanning &amp; enter manually
+                            </button>
+                            <button type="button" class="btn btn-primary-drmc btn-lg rounded-pill px-5 fw-bold shadow-sm w-100 w-sm-auto" id="btnGoToCapture" disabled>
+                                Continue to Photo Capture <i class="bi bi-arrow-right ms-1"></i>
                             </button>
                         </div>
-                        <span asp-validation-for="Input.Password" class="field-validation-error"></span>
-                        <div class="form-text small text-muted">Must include uppercase, lowercase, number, and symbol.</div>
                     </div>
-                    <div class="col-md-6">
-                        <label asp-for="Input.ConfirmPassword" class="form-label">Confirm password</label>
-                        <div class="input-group">
-                            <input asp-for="Input.ConfirmPassword" class="form-control" type="password" id="regConfirmPassword" autocomplete="new-password" placeholder="Re-enter your password" />
-                            <button class="btn btn-outline-secondary pw-toggle" type="button" aria-controls="regConfirmPassword" aria-pressed="false" aria-label="Show password">
-                                <i class="bi bi-eye" aria-hidden="true"></i>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- STEP 2: NATIVE CAMERA / FILE CAPTURE       -->
+                <!-- ========================================== -->
+                <div class="wizard-step d-none" id="wizardStep2">
+                    <div class="mb-4">
+                        <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-semibold mb-2">
+                            Step 2 of 4 &middot; Camera Capture
+                        </span>
+                        <h2 class="h5 fw-bold text-dark mb-1">Photograph your ID card</h2>
+                        <p class="small text-muted mb-3">Take a clear photo with your phone camera or upload an existing image. Avoid glare and ensure text is in focus.</p>
+
+                        <!-- Selected ID banner -->
+                        <div class="alert alert-info py-2 px-3 rounded-3 d-flex align-items-center justify-content-between mb-4">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-shield-check fs-5 text-primary-drmc"></i>
+                                <span class="small fw-semibold text-dark" id="displaySelectedId">ID Selected</span>
+                            </div>
+                            <button type="button" class="btn btn-link btn-sm text-decoration-none text-primary-drmc fw-bold p-0" id="btnChangeIdType">Change ID</button>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <!-- Front Photo Card -->
+                            <div class="col-md-6" id="frontCaptureCol">
+                                <div class="card border-2 border-dashed rounded-4 p-3 text-center h-100 bg-light" id="frontDropCard">
+                                    <h3 class="h6 fw-bold text-dark mb-2">Front of ID card</h3>
+                                    
+                                    <!-- Preview Area -->
+                                    <div id="frontPreviewContainer" class="d-none mb-3">
+                                        <img id="frontPreviewImg" src="" alt="Front ID preview" class="img-fluid rounded-3 border shadow-xs" style="max-height: 180px; object-fit: contain;" />
+                                        <div class="mt-2 small text-success fw-semibold">
+                                            <i class="bi bi-check-circle-fill me-1"></i> Photo ready
+                                        </div>
+                                    </div>
+
+                                    <!-- Placeholder / Capture CTA -->
+                                    <div id="frontPlaceholder" class="py-4">
+                                        <div class="p-3 rounded-circle bg-white shadow-xs d-inline-flex text-primary-drmc mb-2">
+                                            <i class="bi bi-camera-fill fs-2"></i>
+                                        </div>
+                                        <p class="small text-muted mb-0">Take photo or browse</p>
+                                    </div>
+
+                                    <div class="mt-auto pt-2">
+                                        <label for="frontPhotoInput" class="btn btn-outline-primary rounded-pill px-3 fw-semibold w-100" id="frontInputLabel">
+                                            <i class="bi bi-camera me-1"></i> Snap / Select Front
+                                        </label>
+                                        <input type="file" id="frontPhotoInput" asp-for="Input.FrontPhoto" accept="image/*" capture="environment" class="d-none" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Back Photo Card (Conditional for PhilSys/back-needed IDs) -->
+                            <div class="col-md-6 d-none" id="backCaptureCol">
+                                <div class="card border-2 border-dashed rounded-4 p-3 text-center h-100 bg-light" id="backDropCard">
+                                    <h3 class="h6 fw-bold text-dark mb-2">Back of ID card</h3>
+                                    
+                                    <!-- Preview Area -->
+                                    <div id="backPreviewContainer" class="d-none mb-3">
+                                        <img id="backPreviewImg" src="" alt="Back ID preview" class="img-fluid rounded-3 border shadow-xs" style="max-height: 180px; object-fit: contain;" />
+                                        <div class="mt-2 small text-success fw-semibold">
+                                            <i class="bi bi-check-circle-fill me-1"></i> Photo ready
+                                        </div>
+                                    </div>
+
+                                    <!-- Placeholder / Capture CTA -->
+                                    <div id="backPlaceholder" class="py-4">
+                                        <div class="p-3 rounded-circle bg-white shadow-xs d-inline-flex text-primary-drmc mb-2">
+                                            <i class="bi bi-camera-fill fs-2"></i>
+                                        </div>
+                                        <p class="small text-muted mb-0">Sex &amp; blood type on back</p>
+                                    </div>
+
+                                    <div class="mt-auto pt-2">
+                                        <label for="backPhotoInput" class="btn btn-outline-primary rounded-pill px-3 fw-semibold w-100" id="backInputLabel">
+                                            <i class="bi bi-camera me-1"></i> Snap / Select Back
+                                        </label>
+                                        <input type="file" id="backPhotoInput" asp-for="Input.BackPhoto" accept="image/*" capture="environment" class="d-none" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- OCR Processing Spinner Area -->
+                        <div id="ocrProcessingState" class="d-none text-center py-4 bg-light rounded-4 my-3">
+                            <div class="spinner-border text-primary-drmc mb-2" role="status">
+                                <span class="visually-hidden">Scanning...</span>
+                            </div>
+                            <h4 class="h6 fw-bold text-dark mb-1">Reading ID Information...</h4>
+                            <p class="small text-muted mb-0">Analyzing structured document fields locally in offline mode.</p>
+                        </div>
+
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 pt-3 border-top">
+                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold w-100 w-sm-auto" id="btnBackToStep1">
+                                <i class="bi bi-arrow-left me-1"></i> Back
+                            </button>
+                            <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-sm-auto">
+                                <button type="button" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold" id="btnManualSkipFromStep2">
+                                    Manual Entry
+                                </button>
+                                <button type="button" class="btn btn-primary-drmc btn-lg rounded-pill px-5 fw-bold shadow-sm" id="btnTriggerOcr" disabled>
+                                    <i class="bi bi-magic me-1"></i> Scan &amp; Auto-Fill
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- STEP 3: REVIEW & EDIT EXTRACTED FIELDS     -->
+                <!-- ========================================== -->
+                <div class="wizard-step d-none" id="wizardStep3">
+                    <div class="mb-4">
+                        <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-semibold mb-2">
+                            Step 3 of 4 &middot; Review Information
+                        </span>
+                        <h2 class="h5 fw-bold text-dark mb-1">Review &amp; confirm extracted details</h2>
+                        <p class="small text-muted mb-3">Please verify every field below. You can freely edit or complete any information before continuing.</p>
+
+                        <!-- Autofill Confirmation Alert -->
+                        <div id="autofillNotice" class="alert alert-success py-2 px-3 rounded-3 d-flex align-items-center gap-2 mb-3">
+                            <i class="bi bi-check2-circle fs-5 text-success"></i>
+                            <span class="small fw-semibold text-dark">Fields have been pre-filled from your document. Please verify each entry for accuracy.</span>
+                        </div>
+
+                        <div class="row g-3">
+                            <!-- Names -->
+                            <div class="col-md-4">
+                                <label asp-for="Input.FirstName" class="form-label fw-semibold">First name</label>
+                                <input asp-for="Input.FirstName" id="txtFirstName" class="form-control" autocomplete="given-name" placeholder="Juan" />
+                                <span asp-validation-for="Input.FirstName" class="field-validation-error"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Input.MiddleName" class="form-label fw-semibold">Middle name <span class="fw-normal text-muted">(optional)</span></label>
+                                <input asp-for="Input.MiddleName" id="txtMiddleName" class="form-control" autocomplete="additional-name" placeholder="Santos" />
+                                <span asp-validation-for="Input.MiddleName" class="field-validation-error"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Input.LastName" class="form-label fw-semibold">Last name</label>
+                                <input asp-for="Input.LastName" id="txtLastName" class="form-control" autocomplete="family-name" placeholder="Dela Cruz" />
+                                <span asp-validation-for="Input.LastName" class="field-validation-error"></span>
+                            </div>
+
+                            <!-- ID Number -->
+                            <div class="col-md-6">
+                                <label asp-for="Input.IdNumber" class="form-label fw-semibold">ID number</label>
+                                <input asp-for="Input.IdNumber" id="txtIdNumber" class="form-control" placeholder="As printed on your card" />
+                                <span asp-validation-for="Input.IdNumber" class="field-validation-error"></span>
+                            </div>
+
+                            <!-- Date of Birth -->
+                            <div class="col-md-6">
+                                <label asp-for="Input.DateOfBirth" class="form-label fw-semibold">Date of birth <span class="fw-normal text-muted">(optional)</span></label>
+                                <input asp-for="Input.DateOfBirth" id="txtDob" type="date" class="form-control" />
+                                <span asp-validation-for="Input.DateOfBirth" class="field-validation-error"></span>
+                            </div>
+
+                            <!-- Sex -->
+                            <div class="col-md-6">
+                                <label asp-for="Input.Sex" class="form-label fw-semibold">Sex <span class="fw-normal text-muted">(optional)</span></label>
+                                <select asp-for="Input.Sex" id="txtSex" class="form-select">
+                                    <option value="">Select sex...</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                </select>
+                                <span asp-validation-for="Input.Sex" class="field-validation-error"></span>
+                            </div>
+
+                            <!-- Blood Type -->
+                            <div class="col-md-6">
+                                <label asp-for="Input.BloodType" class="form-label fw-semibold">Blood type <span class="fw-normal text-muted">(optional)</span></label>
+                                <select asp-for="Input.BloodType" id="txtBloodType" class="form-select">
+                                    <option value="">Select blood type...</option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                </select>
+                                <span asp-validation-for="Input.BloodType" class="field-validation-error"></span>
+                            </div>
+
+                            <!-- Address -->
+                            <div class="col-12">
+                                <label asp-for="Input.Address" class="form-label fw-semibold">Residential address <span class="fw-normal text-muted">(optional)</span></label>
+                                <input asp-for="Input.Address" id="txtAddress" class="form-control" placeholder="House/Unit No., Street, Barangay, City/Municipality, Province" />
+                                <span asp-validation-for="Input.Address" class="field-validation-error"></span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 pt-4 border-top mt-4">
+                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold w-100 w-sm-auto" id="btnBackToStep2">
+                                <i class="bi bi-arrow-left me-1"></i> Retake / Back
+                            </button>
+                            <button type="button" class="btn btn-primary-drmc btn-lg rounded-pill px-5 fw-bold shadow-sm w-100 w-sm-auto" id="btnGoToStep4">
+                                Next: Account Security <i class="bi bi-arrow-right ms-1"></i>
                             </button>
                         </div>
-                        <span asp-validation-for="Input.ConfirmPassword" class="field-validation-error"></span>
                     </div>
+                </div>
 
-                    <!-- Privacy Consent -->
-                    <div class="col-12">
-                        <div class="form-check p-3 rounded-2 bg-light border">
-                            <input asp-for="Input.PrivacyConsent" class="form-check-input ms-0 me-2" type="checkbox" id="regConsent" />
-                            <label class="form-check-label small" for="regConsent">
-                                I consent to the collection and use of my personal information under
-                                <a asp-controller="Home" asp-action="Privacy" target="_blank" class="fw-semibold text-primary-drmc">RA 10173 (Data Privacy Act)</a>.
-                            </label>
+                <!-- ========================================== -->
+                <!-- STEP 4: CREDENTIALS & PRIVACY CONSENT      -->
+                <!-- ========================================== -->
+                <div class="wizard-step d-none" id="wizardStep4">
+                    <div class="mb-4">
+                        <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-semibold mb-2">
+                            Step 4 of 4 &middot; Account Security &amp; Consent
+                        </span>
+                        <h2 class="h5 fw-bold text-dark mb-1">Set up your login credentials</h2>
+                        <p class="small text-muted mb-3">Provide your email address, Philippine mobile number, and a strong password.</p>
+
+                        <div class="row g-3">
+                            <!-- Email & Mobile -->
+                            <div class="col-md-6">
+                                <label asp-for="Input.Email" class="form-label fw-semibold">Email address</label>
+                                <input asp-for="Input.Email" class="form-control" type="email" autocomplete="email" placeholder="you@example.com" />
+                                <span asp-validation-for="Input.Email" class="field-validation-error"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Input.Mobile" class="form-label fw-semibold">Mobile number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted fw-semibold">+63</span>
+                                    <input asp-for="Input.Mobile" class="form-control" inputmode="numeric" autocomplete="tel-national" placeholder="9175550123" />
+                                </div>
+                                <span asp-validation-for="Input.Mobile" class="field-validation-error"></span>
+                                <div class="form-text small text-muted">10-digit number starting with 9 (e.g. 9171234567).</div>
+                            </div>
+
+                            <!-- Passwords -->
+                            <div class="col-md-6">
+                                <label asp-for="Input.Password" class="form-label fw-semibold">Password</label>
+                                <div class="input-group">
+                                    <input asp-for="Input.Password" class="form-control" type="password" id="regPassword" autocomplete="new-password" placeholder="At least 8 characters" />
+                                    <button class="btn btn-outline-secondary pw-toggle" type="button" aria-controls="regPassword" aria-pressed="false" aria-label="Show password">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                <span asp-validation-for="Input.Password" class="field-validation-error"></span>
+                                <div class="form-text small text-muted">Must include uppercase, lowercase, number, and symbol.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Input.ConfirmPassword" class="form-label fw-semibold">Confirm password</label>
+                                <div class="input-group">
+                                    <input asp-for="Input.ConfirmPassword" class="form-control" type="password" id="regConfirmPassword" autocomplete="new-password" placeholder="Re-enter your password" />
+                                    <button class="btn btn-outline-secondary pw-toggle" type="button" aria-controls="regConfirmPassword" aria-pressed="false" aria-label="Show password">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                <span asp-validation-for="Input.ConfirmPassword" class="field-validation-error"></span>
+                            </div>
+
+                            <!-- Privacy & Retention Consent Checkbox -->
+                            <div class="col-12 mt-3">
+                                <div class="form-check p-3 rounded-3 bg-light border">
+                                    <input asp-for="Input.PrivacyConsent" class="form-check-input ms-0 me-2" type="checkbox" id="regConsent" />
+                                    <label class="form-check-label small" for="regConsent">
+                                        I consent to the collection, verification, and processing of my personal health information and the retention of my government ID document for identity verification under
+                                        <a asp-controller="Home" asp-action="Privacy" target="_blank" class="fw-semibold text-primary-drmc">RA 10173 (Data Privacy Act)</a>.
+                                    </label>
+                                </div>
+                                <span asp-validation-for="Input.PrivacyConsent" class="field-validation-error"></span>
+                            </div>
                         </div>
-                        <span asp-validation-for="Input.PrivacyConsent" class="field-validation-error"></span>
-                    </div>
 
-                    <!-- Submit -->
-                    <div class="col-12 mt-4">
-                        <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-drmc fw-bold py-2">Create account</button>
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 pt-4 border-top mt-4">
+                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold w-100 w-sm-auto" id="btnBackToStep3">
+                                <i class="bi bi-arrow-left me-1"></i> Back to Review
+                            </button>
+                            <button id="registerSubmit" type="submit" class="btn btn-drmc btn-lg rounded-pill px-5 fw-bold shadow-sm w-100 w-sm-auto">
+                                <i class="bi bi-check-circle-fill me-1"></i> Create account
+                            </button>
+                        </div>
                     </div>
+                </div>
 
-                    <!-- Sign in link -->
-                    <div class="col-12 text-center mt-3">
-                        <p class="small text-muted mb-0">
-                            Already have an account? <a asp-page="./Login" asp-route-returnUrl="@Url.Content("~/Patient/Home")" class="fw-semibold text-primary-drmc">Sign in</a>
-                        </p>
-                    </div>
+                <!-- Sign in link footer -->
+                <div class="text-center mt-4 pt-2 border-top">
+                    <p class="small text-muted mb-0">
+                        Already have an account? <a asp-page="./Login" asp-route-returnUrl="@Url.Content("~/Patient/Home")" class="fw-semibold text-primary-drmc">Sign in</a>
+                    </p>
                 </div>
             </form>
         </div>
@@ -130,20 +390,332 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        document.querySelectorAll('.pw-toggle').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var targetId = btn.getAttribute('aria-controls');
-                var input = document.getElementById(targetId);
-                if (!input) return;
-                var isPassword = input.getAttribute('type') === 'password';
-                input.setAttribute('type', isPassword ? 'text' : 'password');
-                btn.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
-                btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
-                var icon = btn.querySelector('i');
-                if (icon) {
-                    icon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+        (function () {
+            // Step state tracking
+            let currentStep = 1;
+            let isManualFlow = false;
+
+            const step1 = document.getElementById('wizardStep1');
+            const step2 = document.getElementById('wizardStep2');
+            const step3 = document.getElementById('wizardStep3');
+            const step4 = document.getElementById('wizardStep4');
+
+            const btnStep1 = document.getElementById('stepBtn1');
+            const btnStep2 = document.getElementById('stepBtn2');
+            const btnStep3 = document.getElementById('stepBtn3');
+            const btnStep4 = document.getElementById('stepBtn4');
+
+            const labelStep1 = document.getElementById('stepLabel1');
+            const labelStep2 = document.getElementById('stepLabel2');
+            const labelStep3 = document.getElementById('stepLabel3');
+            const labelStep4 = document.getElementById('stepLabel4');
+
+            const progressLine = document.getElementById('wizardProgressLine');
+
+            const selectIdType = document.getElementById('selectIdType');
+            const idGuidanceCard = document.getElementById('idGuidanceCard');
+            const guidanceTitle = document.getElementById('guidanceTitle');
+            const guidanceText = document.getElementById('guidanceText');
+            const guidanceSupports = document.getElementById('guidanceSupports');
+            const btnGoToCapture = document.getElementById('btnGoToCapture');
+            const displaySelectedId = document.getElementById('displaySelectedId');
+
+            const frontPhotoInput = document.getElementById('frontPhotoInput');
+            const backPhotoInput = document.getElementById('backPhotoInput');
+            const backCaptureCol = document.getElementById('backCaptureCol');
+            const frontCaptureCol = document.getElementById('frontCaptureCol');
+
+            const frontPreviewContainer = document.getElementById('frontPreviewContainer');
+            const frontPreviewImg = document.getElementById('frontPreviewImg');
+            const frontPlaceholder = document.getElementById('frontPlaceholder');
+
+            const backPreviewContainer = document.getElementById('backPreviewContainer');
+            const backPreviewImg = document.getElementById('backPreviewImg');
+            const backPlaceholder = document.getElementById('backPlaceholder');
+
+            const btnTriggerOcr = document.getElementById('btnTriggerOcr');
+            const ocrProcessingState = document.getElementById('ocrProcessingState');
+            const autofillNotice = document.getElementById('autofillNotice');
+
+            const isManualEntryInput = document.getElementById('isManualEntry');
+
+            // ID guidance mapping
+            const idGuidanceMap = {
+                "Philippine National ID (PhilSys)": {
+                    desc: "Position the front of your PhilSys National ID within the frame. You will also be prompted for the back of the card.",
+                    supports: "Extracts: Name, ID number, Date of Birth, Address, Sex (back), Blood type (back)."
+                },
+                "Driver's License": {
+                    desc: "Position your LTO Driver's License within the frame. Ensure printed text is glare-free and legible.",
+                    supports: "Extracts: Name, License number, Date of Birth, Address, Sex, Blood type."
+                },
+                "Philippine Passport": {
+                    desc: "Position the passport biodata page within the frame, ensuring the 2-line Machine Readable Zone (MRZ) at the bottom is clear.",
+                    supports: "Extracts: Full Name, Passport number, Date of Birth, Sex."
+                },
+                "UMID": {
+                    desc: "Position the front of your UMID card within the frame, ensuring the CRN and full name are visible.",
+                    supports: "Extracts: Name, CRN, Date of Birth, Address, Sex."
+                },
+                "Postal ID": {
+                    desc: "Position the front of your PHLPost Postal ID within the frame with all details sharply in focus.",
+                    supports: "Extracts: Name, Postal ID number, Date of Birth, Address."
+                },
+                "PhilHealth ID": {
+                    desc: "Position your PhilHealth Identification Card within the frame, keeping your 12-digit number clear.",
+                    supports: "Extracts: Member Name and 12-digit PhilHealth PIN."
+                },
+                "SSS / GSIS ID": {
+                    desc: "Position your SSS or GSIS member card within the frame with card number clearly legible.",
+                    supports: "Extracts: Member Name and identification number."
+                },
+                "PRC ID": {
+                    desc: "Position your PRC Professional ID within the frame with registration number clearly visible.",
+                    supports: "Extracts: Full Name and PRC registration number."
+                }
+            };
+
+            function updateProgress(step) {
+                currentStep = step;
+                const steps = [step1, step2, step3, step4];
+                const btns = [btnStep1, btnStep2, btnStep3, btnStep4];
+                const labels = [labelStep1, labelStep2, labelStep3, labelStep4];
+
+                steps.forEach((s, idx) => {
+                    if (idx + 1 === step) {
+                        s.classList.remove('d-none');
+                    } else {
+                        s.classList.add('d-none');
+                    }
+                });
+
+                btns.forEach((b, idx) => {
+                    if (idx + 1 < step) {
+                        b.className = 'btn btn-sm rounded-circle fw-bold wizard-step-btn bg-success text-white';
+                        b.innerHTML = '<i class="bi bi-check"></i>';
+                    } else if (idx + 1 === step) {
+                        b.className = 'btn btn-sm rounded-circle fw-bold wizard-step-btn btn-primary-drmc text-white';
+                        b.textContent = (idx + 1).toString();
+                        b.setAttribute('aria-current', 'step');
+                    } else {
+                        b.className = 'btn btn-sm rounded-circle fw-bold wizard-step-btn btn-light border text-muted';
+                        b.textContent = (idx + 1).toString();
+                        b.removeAttribute('aria-current');
+                    }
+                });
+
+                labels.forEach((l, idx) => {
+                    if (idx + 1 === step) {
+                        l.className = 'text-primary-drmc fw-bold';
+                    } else {
+                        l.className = 'text-muted';
+                    }
+                });
+
+                const percent = ((step - 1) / 3) * 100;
+                progressLine.style.width = percent + '%';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            // ID Type selection handler
+            selectIdType.addEventListener('change', function () {
+                const val = selectIdType.value;
+                if (!val) {
+                    idGuidanceCard.classList.add('d-none');
+                    btnGoToCapture.disabled = true;
+                    return;
+                }
+
+                btnGoToCapture.disabled = false;
+                idGuidanceCard.classList.remove('d-none');
+                guidanceTitle.textContent = val;
+
+                const info = idGuidanceMap[val] || { desc: "Position your ID within the frame.", supports: "Extracts available cardholder information." };
+                guidanceText.textContent = info.desc;
+                guidanceSupports.textContent = info.supports;
+
+                const selectedOption = selectIdType.options[selectIdType.selectedIndex];
+                const needsBack = selectedOption.getAttribute('data-back') === 'true';
+                if (needsBack) {
+                    backCaptureCol.classList.remove('d-none');
+                    frontCaptureCol.className = 'col-md-6';
+                } else {
+                    backCaptureCol.classList.add('d-none');
+                    frontCaptureCol.className = 'col-12 col-md-8 mx-auto';
                 }
             });
-        });
+
+            // Nav buttons
+            btnGoToCapture.addEventListener('click', function () {
+                displaySelectedId.textContent = selectIdType.value;
+                updateProgress(2);
+            });
+
+            document.getElementById('btnChangeIdType').addEventListener('click', function () {
+                updateProgress(1);
+            });
+
+            document.getElementById('btnBackToStep1').addEventListener('click', function () {
+                updateProgress(1);
+            });
+
+            document.getElementById('btnBackToStep2').addEventListener('click', function () {
+                updateProgress(2);
+            });
+
+            document.getElementById('btnGoToStep4').addEventListener('click', function () {
+                // Client-side quick check of required fields in step 3
+                const fn = document.getElementById('txtFirstName').value.trim();
+                const ln = document.getElementById('txtLastName').value.trim();
+                const idNum = document.getElementById('txtIdNumber').value.trim();
+
+                if (!fn || !ln || !idNum) {
+                    alert('Please enter your First Name, Last Name, and ID Number to continue.');
+                    return;
+                }
+                updateProgress(4);
+            });
+
+            document.getElementById('btnBackToStep3').addEventListener('click', function () {
+                updateProgress(3);
+            });
+
+            // Manual Skip Handlers
+            function enterManualMode() {
+                isManualFlow = true;
+                isManualEntryInput.value = 'true';
+                autofillNotice.classList.add('d-none');
+                // Ensure an ID type is selected or fallback to default
+                if (!selectIdType.value) {
+                    selectIdType.value = "Philippine National ID (PhilSys)";
+                }
+                updateProgress(3);
+            }
+
+            document.getElementById('btnManualSkip').addEventListener('click', enterManualMode);
+            document.getElementById('btnManualSkipFromStep2').addEventListener('click', enterManualMode);
+
+            // Front photo preview
+            frontPhotoInput.addEventListener('change', function () {
+                if (frontPhotoInput.files && frontPhotoInput.files[0]) {
+                    const file = frontPhotoInput.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        frontPreviewImg.src = e.target.result;
+                        frontPreviewContainer.classList.remove('d-none');
+                        frontPlaceholder.classList.add('d-none');
+                        document.getElementById('frontInputLabel').innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Retake Front';
+                        btnTriggerOcr.disabled = false;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Back photo preview
+            backPhotoInput.addEventListener('change', function () {
+                if (backPhotoInput.files && backPhotoInput.files[0]) {
+                    const file = backPhotoInput.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        backPreviewImg.src = e.target.result;
+                        backPreviewContainer.classList.remove('d-none');
+                        backPlaceholder.classList.add('d-none');
+                        document.getElementById('backInputLabel').innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Retake Back';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Trigger genuine local OCR Extraction
+            btnTriggerOcr.addEventListener('click', async function () {
+                if (!frontPhotoInput.files || !frontPhotoInput.files[0]) {
+                    alert('Please capture or select the front of your ID card first.');
+                    return;
+                }
+
+                btnTriggerOcr.disabled = true;
+                ocrProcessingState.classList.remove('d-none');
+
+                const formData = new FormData();
+                formData.append('idType', selectIdType.value);
+                formData.append('frontPhoto', frontPhotoInput.files[0]);
+                if (backPhotoInput.files && backPhotoInput.files[0]) {
+                    formData.append('backPhoto', backPhotoInput.files[0]);
+                }
+
+                // Append antiforgery token
+                const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (tokenInput) {
+                    formData.append('__RequestVerificationToken', tokenInput.value);
+                }
+
+                try {
+                    const response = await fetch('?handler=ExtractId', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    ocrProcessingState.classList.add('d-none');
+                    btnTriggerOcr.disabled = false;
+
+                    if (data.tempFrontToken) {
+                        document.getElementById('tempFrontToken').value = data.tempFrontToken;
+                    }
+                    if (data.tempBackToken) {
+                        document.getElementById('tempBackToken').value = data.tempBackToken;
+                    }
+                    if (data.meanConfidence) {
+                        document.getElementById('ocrConfidence').value = data.meanConfidence;
+                    }
+
+                    // Populate extracted fields into editable inputs
+                    if (data.firstName) document.getElementById('txtFirstName').value = data.firstName;
+                    if (data.middleName) document.getElementById('txtMiddleName').value = data.middleName;
+                    if (data.lastName) document.getElementById('txtLastName').value = data.lastName;
+                    if (data.idNumber) document.getElementById('txtIdNumber').value = data.idNumber;
+                    if (data.dateOfBirth) document.getElementById('txtDob').value = data.dateOfBirth;
+                    if (data.address) document.getElementById('txtAddress').value = data.address;
+                    if (data.sex) document.getElementById('txtSex').value = data.sex;
+                    if (data.bloodType) document.getElementById('txtBloodType').value = data.bloodType;
+
+                    autofillNotice.classList.remove('d-none');
+                    updateProgress(3);
+                } catch (err) {
+                    console.error(err);
+                    ocrProcessingState.classList.add('d-none');
+                    btnTriggerOcr.disabled = false;
+                    alert('Extraction encountered an issue. Proceeding with manual confirmation.');
+                    updateProgress(3);
+                }
+            });
+
+            // Form submit validation
+            document.getElementById('registerForm').addEventListener('submit', function (e) {
+                const consent = document.getElementById('regConsent');
+                if (!consent.checked) {
+                    e.preventDefault();
+                    alert('Please agree to the Data Privacy Consent to complete your registration.');
+                    return false;
+                }
+            });
+
+            // Password eye toggles
+            document.querySelectorAll('.pw-toggle').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const targetId = btn.getAttribute('aria-controls');
+                    const input = document.getElementById(targetId);
+                    if (!input) return;
+                    const isPassword = input.getAttribute('type') === 'password';
+                    input.setAttribute('type', isPassword ? 'text' : 'password');
+                    btn.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
+                    btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+                    const icon = btn.querySelector('i');
+                    if (icon) {
+                        icon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+                    }
+                });
+            });
+        })();
     </script>
 }

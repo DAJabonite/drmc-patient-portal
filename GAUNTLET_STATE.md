@@ -17,6 +17,7 @@ Tagline (real): **"Caring for Life, Changing Lives."**
 | EF Core | 10.0.11 | SQLite provider. |
 | Identity | `Microsoft.AspNetCore.Identity.UI` 10.0.11 | Razor Pages scaffolded under `Areas/Identity/Pages/Account/`. |
 | QR Engine | `QRCoder` 1.8.0 | In-process vector SVG QR code generation. |
+| OCR Engine | `Tesseract` 5.2.0 + `Tesseract.Data.English` 4.0.0 | Fully local, offline OCR engine with Leptonica native C-runtime bindings and official tessdata dictionary. |
 | Bootstrap | **5.3.8** | Bumped from template's 5.3.3; theming via `--bs-*` CSS custom properties. |
 | Data store | SQLite (`DataSource=app.db`) | Zero external DB setup; grader can `dotnet run` directly. |
 | SDK path | `/home/user/.dotnet` | Source `.dotnet-env.sh` in each shell. |
@@ -127,6 +128,7 @@ Format: `piece | round | verdict | biggest gap named | status`
 | Phase 3.3: Proxy Consent Audit Logs | 1 | PASS | `ConsentLogEntry` entity & migration, statutory consent trail in `/Patient/Proxy`, grant/revoke lifecycle | CONVERGED |
 | Phase 3.3: Compliance & Security Reconcile | 1 | PASS | `docs/COMPLIANCE_REPORT.md` certified, `docs/SECURITY_REVIEW_TODO.md` reconciled, 10/10 tests pass | CONVERGED |
 | OPD Guide (Unauthenticated Wayfinding) | 1 | PASS | Linear visual stepper (6 verified Citizen's Charter steps), horizontal desktop & vertical mobile reflow, kiosk referral, top-level nav link, trilingual resources | CONVERGED |
+| ID Scan-to-Autofill Registration | 1 | PASS | 4-step wizard, 8 PH ID types reference model, Tesseract offline OCR extraction + 2-line passport MRZ, non-wwwroot secure storage & [Authorize] retrieval, accessible manual skip, end-to-end register -> dashboard verified, zero forbidden words | CONVERGED |
 
 ---
 
@@ -134,6 +136,7 @@ Format: `piece | round | verdict | biggest gap named | status`
 
 - **Core & Authenticated Milestone (Phases 1–3.3):** CONVERGED
 - **OPD Guide Feature:** CONVERGED (11/11 automated tests pass; browser verified at 1280px, 390px, and 320px with zero horizontal scroll; unauthenticated & authenticated access verified; zero forbidden words).
+- **ID Scan-to-Autofill Registration Feature:** CONVERGED (24/24 automated tests pass; browser verified at 1280px and 390px; full offline Tesseract OCR extraction and manual skip paths verified; non-wwwroot photo storage with authorized controller action; security boundary item 5 registered; zero forbidden words).
 
 
 

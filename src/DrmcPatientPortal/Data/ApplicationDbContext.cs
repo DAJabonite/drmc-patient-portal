@@ -26,6 +26,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<DependentProfile> DependentProfiles => Set<DependentProfile>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<ConsentLogEntry> ConsentLogEntries => Set<ConsentLogEntry>();
+    public DbSet<PatientIdDocument> PatientIdDocuments => Set<PatientIdDocument>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -200,6 +201,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             e.HasIndex(x => x.GuardianUserId);
             e.HasIndex(x => x.Timestamp);
+        });
+
+        builder.Entity<PatientIdDocument>(e =>
+        {
+            e.HasOne(x => x.Patient)
+                .WithMany(u => u.IdDocuments)
+                .HasForeignKey(x => x.PatientUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasIndex(x => x.PatientUserId);
+            e.HasIndex(x => x.IdType);
+            e.HasIndex(x => x.CapturedAt);
         });
     }
 }

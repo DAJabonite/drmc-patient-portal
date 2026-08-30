@@ -98,6 +98,28 @@ However, deploying with **real Philippine patient data** in a Level III DOH tert
 
 ---
 
+### Item 5: Government ID Photo Storage, Retention & Cryptographic Hardening
+- **Area:** Government ID Verification & Document Storage
+- **In-Code Pointers:**
+  - [`src/DrmcPatientPortal/Models/PatientIdDocument.cs`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Models/PatientIdDocument.cs#L3-L20)
+  - [`src/DrmcPatientPortal/Controllers/PatientDocumentsController.cs`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/PatientDocumentsController.cs#L10-L25)
+  - [`src/DrmcPatientPortal/Services/TesseractIdDocumentExtractionService.cs`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Services/TesseractIdDocumentExtractionService.cs#L8-L30)
+- **What's Real Today:**
+  - Fully local, offline OCR extraction pipeline for 8 Philippine government ID types using Tesseract with label-anchored and MRZ parsers.
+  - Captured front and back ID photos are stored outside `wwwroot` in `App_Data/PatientIdDocuments/{patientId}/`.
+  - Photos are strictly not reachable via public static URLs; accessed exclusively through the authorized endpoint `PatientDocumentsController.IdPhoto` which enforces patient identity ownership and records an access audit event.
+  - Structured extraction metadata and confidence scores are persisted in `PatientIdDocuments`.
+- **Hardening Requirements for Security Engineer / Backend Review:**
+  1. **Storage-Tier Encryption-at-Rest (AES-256-GCM / Envelope Encryption):** Encrypt binary photo payloads before saving to disk storage using envelope keys managed by HSM / Azure Key Vault / AWS KMS, rather than storing unencrypted image files on the local filesystem.
+  2. **NPC / RA 10173 Data Retention & Purge Policy:** Formulate and enforce a Data Protection Officer (DPO)-approved retention schedule where sensitive raw ID images are automatically purged or permanently redacted once hospital records staff complete identity verification, retaining only the audit metadata.
+  3. **Antivirus & Malware Screening Pipeline:** Implement streaming ICAP or ClamAV daemon antivirus inspection on all uploaded multipart photo streams prior to OCR processing or disk persistence.
+  4. **Legal & DPO Consent Language Certification:** Submit the privacy consent copy to DRMC legal counsel and the National Privacy Commission for formal certification regarding biometric data handling and photo retention under Philippine law.
+- **Why It Can't Ship As-Is for Real Patient Data:**
+  - Plaintext disk storage of government identity documents lacks cryptographic envelope encryption and automated NPC-mandated data destruction lifecycles.
+- **Review State:** `TODO`
+
+---
+
 ## Status Summary
 
 | Item # | Title | Scope Area | Current Implementation | Security Review State |
@@ -106,5 +128,6 @@ However, deploying with **real Philippine patient data** in a Level III DOH tert
 | **2** | Caregiver & Proxy Access Trust Model | Identity & Delegation | Operational profile switching & consent | `TODO` |
 | **3** | PHI Access Audit Logging | Security & Compliance | Operational EF Core + ILogger audit trail | `TODO` |
 | **4** | Pre-Consultation Self-Triage Sync | Clinical Workstation | Operational patient intake & acuity engine | `TODO` |
+| **5** | Government ID Photo Storage & Retention | ID Verification & Storage | Secure non-wwwroot storage & authorized access | `TODO` |
 
 *This document must remain active and maintained throughout Phase 3.3 and subsequent production security reviews.*

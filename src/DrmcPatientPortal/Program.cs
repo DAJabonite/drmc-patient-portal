@@ -47,6 +47,9 @@ builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
 // PHI and security access audit logging service
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
+// Offline local OCR ID extraction service
+builder.Services.AddSingleton<IIdDocumentExtractionService, TesseractIdDocumentExtractionService>();
+
 // Session state for active caregiver/proxy profile switching
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
