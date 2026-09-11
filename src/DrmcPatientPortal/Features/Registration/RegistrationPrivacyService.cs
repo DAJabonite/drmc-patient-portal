@@ -15,6 +15,9 @@ public interface IRegistrationPrivacyService
 
 public sealed class RegistrationPrivacyService : IRegistrationPrivacyService
 {
+    private const int MaximumNoticeVersionLength = 40;
+    private const int MaximumPurposeLength = 120;
+
     public void Record(
         ApplicationUser user,
         bool noticeAcknowledged,
@@ -36,15 +39,30 @@ public sealed class RegistrationPrivacyService : IRegistrationPrivacyService
             throw new ArgumentException("Privacy timestamps must be UTC.", nameof(utcNow));
         }
 
-        if (optionalConsentGranted && string.IsNullOrWhiteSpace(optionalConsentPurpose))
+        var normalizedVersion = noticeVersion.Trim();
+        if (normalizedVersion.Length > MaximumNoticeVersionLength)
+        {
+            throw new ArgumentException($"The notice version cannot exceed {MaximumNoticeVersionLength} characters.", nameof(noticeVersion));
+        }
+
+        var normalizedPurpose = string.IsNullOrWhiteSpace(optionalConsentPurpose)
+            ? null
+            : optionalConsentPurpose.Trim();
+
+        if (optionalConsentGranted && normalizedPurpose is null)
         {
             throw new InvalidOperationException("Optional consent requires a specific purpose.");
         }
 
+        if (normalizedPurpose?.Length > MaximumPurposeLength)
+        {
+            throw new ArgumentException($"The optional-consent purpose cannot exceed {MaximumPurposeLength} characters.", nameof(optionalConsentPurpose));
+        }
+
         user.PrivacyNoticeAcknowledgedAtUtc = utcNow;
-        user.PrivacyNoticeVersion = noticeVersion.Trim();
+        user.PrivacyNoticeVersion = normalizedVersion;
         user.OptionalConsentGranted = optionalConsentGranted;
-        user.OptionalConsentPurpose = optionalConsentGranted ? optionalConsentPurpose!.Trim() : null;
+        user.OptionalConsentPurpose = optionalConsentGranted ? normalizedPurpose : null;
         user.OptionalConsentRecordedAtUtc = optionalConsentGranted ? utcNow : null;
     }
 }

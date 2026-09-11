@@ -11,7 +11,6 @@ public class AccountLifecycleFoundationTests
     public void ExistingAccount_DefaultsToActive_ForBackwardCompatibility()
     {
         var user = new ApplicationUser();
-
         Assert.Equal(AccountLifecycleStatus.Active, user.AccountStatus);
         Assert.True(user.CanAccessProtectedPatientData);
     }
@@ -22,10 +21,9 @@ public class AccountLifecycleFoundationTests
         var generator = new RegistrationReferenceGenerator();
         var lifecycle = new AccountLifecycleService();
         var user = new ApplicationUser();
-        var now = DateTime.UtcNow;
         var reference = generator.Create();
 
-        lifecycle.InitializePending(user, reference, now);
+        lifecycle.InitializePending(user, reference, DateTime.UtcNow);
 
         Assert.Equal(AccountLifecycleStatus.PendingVerification, user.AccountStatus);
         Assert.Equal(reference, user.RegistrationReference);
@@ -34,11 +32,18 @@ public class AccountLifecycleFoundationTests
     }
 
     [Fact]
+    public void InitializePending_RejectsPredictableOrMalformedReference()
+    {
+        var lifecycle = new AccountLifecycleService();
+        Assert.Throws<ArgumentException>(() =>
+            lifecycle.InitializePending(new ApplicationUser(), "REG-000001", DateTime.UtcNow));
+    }
+
+    [Fact]
     public void RegistrationReferences_AreNotRepeated_InLargeSample()
     {
         var generator = new RegistrationReferenceGenerator();
         var references = Enumerable.Range(0, 10_000).Select(_ => generator.Create()).ToArray();
-
         Assert.Equal(references.Length, references.Distinct(StringComparer.Ordinal).Count());
     }
 
@@ -50,9 +55,7 @@ public class AccountLifecycleFoundationTests
     {
         var lifecycle = new AccountLifecycleService();
         var user = Pending(lifecycle);
-
         lifecycle.Transition(user, target, "Reviewed", DateTime.UtcNow);
-
         Assert.Equal(target, user.AccountStatus);
         Assert.Equal(target == AccountLifecycleStatus.Active, user.CanAccessProtectedPatientData);
     }
@@ -63,9 +66,16 @@ public class AccountLifecycleFoundationTests
         var lifecycle = new AccountLifecycleService();
         var user = Pending(lifecycle);
         lifecycle.Transition(user, AccountLifecycleStatus.Rejected, "Identity could not be verified.", DateTime.UtcNow);
-
         Assert.Throws<InvalidOperationException>(() =>
             lifecycle.Transition(user, AccountLifecycleStatus.Active, "Override", DateTime.UtcNow));
+    }
+
+    [Fact]
+    public void Lifecycle_RejectsNonUtcTimestamps()
+    {
+        var lifecycle = new AccountLifecycleService();
+        Assert.Throws<ArgumentException>(() =>
+            lifecycle.InitializePending(new ApplicationUser(), new RegistrationReferenceGenerator().Create(), DateTime.Now));
     }
 
     [Fact]
@@ -74,9 +84,7 @@ public class AccountLifecycleFoundationTests
         var privacy = new RegistrationPrivacyService();
         var user = new ApplicationUser();
         var now = DateTime.UtcNow;
-
         privacy.Record(user, true, "2026-09", false, null, now);
-
         Assert.Equal(now, user.PrivacyNoticeAcknowledgedAtUtc);
         Assert.Equal("2026-09", user.PrivacyNoticeVersion);
         Assert.False(user.OptionalConsentGranted);
@@ -88,10 +96,21 @@ public class AccountLifecycleFoundationTests
     public void OptionalConsent_RequiresSpecificPurpose()
     {
         var privacy = new RegistrationPrivacyService();
-        var user = new ApplicationUser();
-
         Assert.Throws<InvalidOperationException>(() =>
-            privacy.Record(user, true, "2026-09", true, null, DateTime.UtcNow));
+            privacy.Record(new ApplicationUser(), true, "2026-09", true, null, DateTime.UtcNow));
+    }
+
+    [Fact]
+    public void OptionalConsent_IsCleared_WhenNotGranted()
+    {
+        var privacy = new RegistrationPrivacyService();
+        var user = new ApplicationUser();
+        var now = DateTime.UtcNow;
+        privacy.Record(user, true, "2026-09", true, "Service improvement research", now);
+        privacy.Record(user, true, "2026-09", false, "ignored", now.AddMinutes(1));
+        Assert.False(user.OptionalConsentGranted);
+        Assert.Null(user.OptionalConsentPurpose);
+        Assert.Null(user.OptionalConsentRecordedAtUtc);
     }
 
     private static ApplicationUser Pending(AccountLifecycleService lifecycle)
