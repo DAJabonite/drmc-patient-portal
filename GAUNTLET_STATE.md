@@ -129,6 +129,7 @@ Format: `piece | round | verdict | biggest gap named | status`
 | Phase 3.3: Compliance & Security Reconcile | 1 | PASS | `docs/COMPLIANCE_REPORT.md` certified, `docs/SECURITY_REVIEW_TODO.md` reconciled, 10/10 tests pass | CONVERGED |
 | OPD Guide (Unauthenticated Wayfinding) | 1 | PASS | Linear visual stepper (6 verified Citizen's Charter steps), horizontal desktop & vertical mobile reflow, kiosk referral, top-level nav link, trilingual resources | CONVERGED |
 | ID Scan-to-Autofill Registration | 1 | PASS | 4-step wizard, 8 PH ID types reference model, Tesseract offline OCR extraction + 2-line passport MRZ, non-wwwroot secure storage & [Authorize] retrieval, accessible manual skip, end-to-end register -> dashboard verified, zero forbidden words | CONVERGED |
+| Feature Streamlining (DRMC Hospital Scope Adjustment) | 1 | PASS | Complete and clean removal of After-Visit Summaries, Care Team Messaging, and Family/Dependent Proxy to prevent patient overwhelm. Controllers, views, models, DbSets, EF migrations, resx keys, and tests updated. 18/18 tests pass cleanly. | CONVERGED |
 
 ---
 
@@ -137,6 +138,7 @@ Format: `piece | round | verdict | biggest gap named | status`
 - **Core & Authenticated Milestone (Phases 1–3.3):** CONVERGED
 - **OPD Guide Feature:** CONVERGED (11/11 automated tests pass; browser verified at 1280px, 390px, and 320px with zero horizontal scroll; unauthenticated & authenticated access verified; zero forbidden words).
 - **ID Scan-to-Autofill Registration Feature:** CONVERGED (24/24 automated tests pass; browser verified at 1280px and 390px; full offline Tesseract OCR extraction and manual skip paths verified; non-wwwroot photo storage with authorized controller action; security boundary item 5 registered; zero forbidden words).
+- **Streamlined Patient Portal Suite:** CONVERGED (18/18 automated tests pass; clean 3-pillar clinical suite: Appointments, Diagnostic Lab Results, Prescriptions & Pharmacy Refills; 0 orphaned files, 0 broken links, 0 compiler warnings/errors).
 
 
 

@@ -17,27 +17,15 @@
                 <div>
                     <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
                         <h1 class="display-6 fw-bold mb-0">Welcome, @firstName!</h1>
-                        @if (Model.ActiveDependentId.HasValue)
-                        {
-                            <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fw-semibold">
-                                <i class="bi bi-person-badge-fill me-1"></i> Managing: @Model.ActiveDependentName
-                            </span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill fw-semibold border border-success border-opacity-25">
-                                Verified Patient
-                            </span>
-                        }
+                        <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill fw-semibold border border-success border-opacity-25">
+                            Verified Patient
+                        </span>
                     </div>
                     <span class="small text-white text-opacity-75">Davao Regional Medical Center &middot; Patient Portal</span>
                 </div>
             </div>
 
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                <a asp-controller="Proxy" asp-action="Index" class="btn btn-outline-light d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill fw-semibold shadow-xs btn-sm">
-                    <i class="bi bi-people-fill"></i> Family &amp; Dependents (@Model.DependentsCount)
-                </a>
                 <a asp-action="Audit" class="btn btn-outline-light d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill fw-semibold shadow-xs btn-sm">
                     <i class="bi bi-shield-check"></i> Access History
                 </a>
@@ -211,109 +199,6 @@
                                 Medication Tracker &rarr;
                             </a>
                             <span class="small text-muted">OPD Pharmacy</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 4. After-Visit Summaries & Clinical Encounters Card -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card summary-card border-0 shadow-sm rounded-4 h-100 bg-white hover-shadow-sm transition">
-                    <div class="card-body p-4 d-flex flex-column">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <span class="card-icon bg-primary-subtle text-primary-drmc rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
-                                <i class="bi bi-journal-medical fs-5"></i>
-                            </span>
-                            <span class="badge bg-secondary-subtle text-secondary px-3 py-1 rounded-pill small">
-                                @Model.ClinicalEncountersCount Encounters
-                            </span>
-                        </div>
-
-                        <h2 class="h6 fw-bold text-dark mb-2">After-Visit Summaries</h2>
-
-                        <div class="p-3 bg-light rounded-3 mb-3 border">
-                            <p class="small text-muted mb-0">
-                                Review official physician progress notes, ICD-10 clinical diagnoses, recorded vitals, and physician home care instructions.
-                            </p>
-                        </div>
-
-                        <div class="mt-auto pt-3 border-top">
-                            <a asp-controller="Encounters" asp-action="Index" class="small text-primary-drmc fw-semibold text-decoration-none">
-                                View Clinical Notes &rarr;
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 5. Messages & Care Team Communication Card -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card summary-card border-0 shadow-sm rounded-4 h-100 bg-white hover-shadow-sm transition">
-                    <div class="card-body p-4 d-flex flex-column">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <span class="card-icon bg-warning-subtle text-warning-emphasis rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
-                                <i class="bi bi-chat-dots fs-5"></i>
-                            </span>
-                            @if (Model.UnreadMessages > 0)
-                            {
-                                <span class="badge bg-danger rounded-pill px-2 py-1 small">
-                                    @Model.UnreadMessages New
-                                </span>
-                            }
-                        </div>
-
-                        <h2 class="h6 fw-bold text-dark mb-2">Care Team Messaging</h2>
-
-                        <div class="p-3 bg-light rounded-3 mb-3 border">
-                            <div class="d-flex align-items-baseline gap-2 mb-2">
-                                <span class="display-6 fw-bold text-primary-drmc">@Model.UnreadMessages</span>
-                                <span class="text-muted small">unread clinical replies</span>
-                            </div>
-                            <p class="small text-muted mb-0">
-                                Send non-urgent questions to clinic coordinators regarding lab tests, appointments, or prescriptions.
-                            </p>
-                        </div>
-
-                        <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
-                            <a asp-controller="Messages" asp-action="Index" class="small text-primary-drmc fw-semibold text-decoration-none">
-                                Open Inbox &rarr;
-                            </a>
-                            <a asp-controller="Messages" asp-action="New" class="small text-muted text-decoration-none">
-                                <i class="bi bi-pencil-square me-1"></i> Compose
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 6. Caregiver & Dependent Profiles Card -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card summary-card border-0 shadow-sm rounded-4 h-100 bg-white hover-shadow-sm transition">
-                    <div class="card-body p-4 d-flex flex-column">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <span class="card-icon bg-primary-subtle text-primary-drmc rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
-                                <i class="bi bi-people fs-5"></i>
-                            </span>
-                            <span class="badge bg-light text-dark border px-3 py-1 rounded-pill small">
-                                @Model.DependentsCount Profiles
-                            </span>
-                        </div>
-
-                        <h2 class="h6 fw-bold text-dark mb-2">Family &amp; Dependent Proxy</h2>
-
-                        <div class="p-3 bg-light rounded-3 mb-3 border">
-                            <p class="small text-muted mb-0">
-                                Manage outpatient appointments, diagnostic lab results, and medication refills for minor children and senior parents.
-                            </p>
-                        </div>
-
-                        <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
-                            <a asp-controller="Proxy" asp-action="Index" class="small text-primary-drmc fw-semibold text-decoration-none">
-                                Manage Dependents &rarr;
-                            </a>
-                            <a asp-controller="Proxy" asp-action="Add" class="small text-muted text-decoration-none">
-                                <i class="bi bi-person-plus me-1"></i> Add
-                            </a>
                         </div>
                     </div>
                 </div>

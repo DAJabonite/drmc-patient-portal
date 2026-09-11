@@ -41,9 +41,6 @@
   <data name="Nav_Dashboard"><value>Dashboard ng Pasyente</value></data>
   <data name="Nav_LabResults"><value>Resulta ng Laboratoryo</value></data>
   <data name="Nav_Medications"><value>Mga Aktibong Reseta</value></data>
-  <data name="Nav_Encounters"><value>Tala ng Konsultasyon</value></data>
-  <data name="Nav_Messages"><value>Mensahe sa Klinika</value></data>
-  <data name="Nav_Proxy"><value>Pamilya at Dependents</value></data>
   <data name="Nav_Audit"><value>Kasaysayan ng Pag-access</value></data>
   <data name="Nav_Settings"><value>Mga Setting ng Account</value></data>
   <data name="Nav_SignOut"><value>Mag-logout</value></data>
@@ -69,9 +66,6 @@
   <data name="Dashboard_UpcomingAppt"><value>Paparating na Appointment</value></data>
   <data name="Dashboard_LabResults"><value>Mga Ulat sa Laboratoryo</value></data>
   <data name="Dashboard_Prescriptions"><value>Mga Reseta at Botika</value></data>
-  <data name="Dashboard_Encounters"><value>Buod ng Pagbisita sa Doktor</value></data>
-  <data name="Dashboard_Messaging"><value>Komunikasyon sa Care Team</value></data>
-  <data name="Dashboard_Proxy"><value>Pamamahala ng Pamilya at Dependent</value></data>
 
   <!-- Lay Medical Terminology -->
   <data name="Med_BloodPressure"><value>Presyon ng Dugo</value></data>

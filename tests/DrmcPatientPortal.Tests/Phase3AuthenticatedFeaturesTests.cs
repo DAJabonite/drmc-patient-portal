@@ -92,19 +92,19 @@ public class Phase3AuthenticatedFeaturesTests
         Assert.NotNull(result);
 
         var model = Assert.IsType<LabResultsIndexViewModel>(result.Model);
-        Assert.Single(model.UnlinkedLabResults);
-        Assert.Equal("CBC", model.UnlinkedLabResults[0].TestName);
+        Assert.Single(model.LabResults);
+        Assert.Equal("CBC", model.LabResults[0].TestName);
     }
 
     [Fact]
-    public async Task LabResultsController_Index_UnlinkedLab_LandsInUnlinkedBucket()
+    public async Task LabResultsController_Index_ReturnsPatientLabResultsWithStatus()
     {
         using var db = CreateInMemoryDbContext();
         var (userManager, user) = CreateMockUserManager(db);
         var auditMock = new Mock<IAuditLogService>();
 
         db.LabResults.Add(
-            new LabResult { PatientUserId = user.Id, TestName = "HbA1c", Category = LabCategory.SpecialDiagnostics, Status = "In progress", AccessionNumber = "A-UNLINKED", ClinicalEncounterId = null }
+            new LabResult { PatientUserId = user.Id, TestName = "HbA1c", Category = LabCategory.SpecialDiagnostics, Status = "In progress", AccessionNumber = "A-INPROG" }
         );
         await db.SaveChangesAsync();
 
@@ -117,43 +117,21 @@ public class Phase3AuthenticatedFeaturesTests
         Assert.NotNull(result);
 
         var model = Assert.IsType<LabResultsIndexViewModel>(result.Model);
-        Assert.Empty(model.EncounterGroups);
-        Assert.Single(model.UnlinkedLabResults);
-        Assert.Equal("HbA1c", model.UnlinkedLabResults[0].TestName);
+        Assert.Single(model.LabResults);
+        Assert.Equal("HbA1c", model.LabResults[0].TestName);
         Assert.Equal(1, model.TotalInProgress);
     }
 
     [Fact]
-    public async Task LabResultsController_Index_EncounterGroup_OnlyShowsLabsBelongingToThatEncounter()
+    public async Task LabResultsController_Index_SearchTerm_FiltersResults()
     {
         using var db = CreateInMemoryDbContext();
         var (userManager, user) = CreateMockUserManager(db);
         var auditMock = new Mock<IAuditLogService>();
 
-        var enc1 = new ClinicalEncounter
-        {
-            PatientUserId = user.Id,
-            EncounterReference = "ENC-IM-01",
-            Department = "Internal Medicine",
-            AttendingPhysician = "Dr. Arthur Llanos",
-            EncounterDate = DateTime.UtcNow.AddDays(-10)
-        };
-        var enc2 = new ClinicalEncounter
-        {
-            PatientUserId = user.Id,
-            EncounterReference = "ENC-FCM-02",
-            Department = "Family & Community Medicine",
-            AttendingPhysician = "Dr. Cristina Ramos",
-            EncounterDate = DateTime.UtcNow.AddMonths(-2)
-        };
-        db.ClinicalEncounters.AddRange(enc1, enc2);
-        await db.SaveChangesAsync();
-
         db.LabResults.AddRange(
-            new LabResult { PatientUserId = user.Id, Encounter = enc1, TestName = "CBC", Category = LabCategory.Hematology, Status = "Available", AccessionNumber = "A10" },
-            new LabResult { PatientUserId = user.Id, Encounter = enc1, TestName = "FBS", Category = LabCategory.ClinicalChemistry, Status = "Available", AccessionNumber = "A11" },
-            new LabResult { PatientUserId = user.Id, Encounter = enc2, TestName = "CBC", Category = LabCategory.Hematology, Status = "Available", AccessionNumber = "A12" },
-            new LabResult { PatientUserId = user.Id, ClinicalEncounterId = null, TestName = "Urinalysis", Category = LabCategory.UrinalysisFecalysis, Status = "Available", AccessionNumber = "A13" }
+            new LabResult { PatientUserId = user.Id, TestName = "Complete Blood Count", Category = LabCategory.Hematology, Status = "Available", AccessionNumber = "A21" },
+            new LabResult { PatientUserId = user.Id, TestName = "Fasting Blood Sugar", Category = LabCategory.ClinicalChemistry, Status = "Available", AccessionNumber = "A22" }
         );
         await db.SaveChangesAsync();
 
@@ -162,55 +140,30 @@ public class Phase3AuthenticatedFeaturesTests
             ControllerContext = CreateControllerContext()
         };
 
-        var result = await controller.Index(null, null) as ViewResult;
+        var result = await controller.Index(null, "Fasting") as ViewResult;
         Assert.NotNull(result);
 
         var model = Assert.IsType<LabResultsIndexViewModel>(result.Model);
-        Assert.Equal(2, model.EncounterGroups.Count);
-        
-        var group1 = model.EncounterGroups.FirstOrDefault(g => g.Encounter.Id == enc1.Id);
-        Assert.NotNull(group1);
-        Assert.Equal(2, group1.LabResults.Count);
-        Assert.Contains(group1.LabResults, l => l.TestName == "CBC");
-        Assert.Contains(group1.LabResults, l => l.TestName == "FBS");
-
-        var group2 = model.EncounterGroups.FirstOrDefault(g => g.Encounter.Id == enc2.Id);
-        Assert.NotNull(group2);
-        Assert.Single(group2.LabResults);
-        Assert.Equal("CBC", group2.LabResults[0].TestName);
-
-        Assert.Single(model.UnlinkedLabResults);
-        Assert.Equal("Urinalysis", model.UnlinkedLabResults[0].TestName);
+        Assert.Single(model.LabResults);
+        Assert.Equal("Fasting Blood Sugar", model.LabResults[0].TestName);
     }
 
     [Fact]
-    public async Task LabResultsController_Index_CategoryFilter_FiltersIndividualLabsAndHidesEmptyGroups()
+    public async Task LabResultsController_Details_ReturnsLabResultAndLogsAudit()
     {
         using var db = CreateInMemoryDbContext();
         var (userManager, user) = CreateMockUserManager(db);
         var auditMock = new Mock<IAuditLogService>();
 
-        var enc1 = new ClinicalEncounter
+        var lab = new LabResult
         {
             PatientUserId = user.Id,
-            EncounterReference = "ENC-01",
-            Department = "Internal Medicine",
-            EncounterDate = DateTime.UtcNow.AddDays(-5)
+            TestName = "Complete Blood Count",
+            Category = LabCategory.Hematology,
+            Status = "Available",
+            AccessionNumber = "LAB-001"
         };
-        var enc2 = new ClinicalEncounter
-        {
-            PatientUserId = user.Id,
-            EncounterReference = "ENC-02",
-            Department = "Family & Community Medicine",
-            EncounterDate = DateTime.UtcNow.AddDays(-10)
-        };
-        db.ClinicalEncounters.AddRange(enc1, enc2);
-        await db.SaveChangesAsync();
-
-        db.LabResults.AddRange(
-            new LabResult { PatientUserId = user.Id, Encounter = enc1, TestName = "CBC", Category = LabCategory.Hematology, Status = "Available", AccessionNumber = "A21" },
-            new LabResult { PatientUserId = user.Id, Encounter = enc2, TestName = "FBS", Category = LabCategory.ClinicalChemistry, Status = "Available", AccessionNumber = "A22" }
-        );
+        db.LabResults.Add(lab);
         await db.SaveChangesAsync();
 
         var controller = new LabResultsController(db, userManager, auditMock.Object)
@@ -218,84 +171,13 @@ public class Phase3AuthenticatedFeaturesTests
             ControllerContext = CreateControllerContext()
         };
 
-        var result = await controller.Index(LabCategory.Hematology, null) as ViewResult;
+        var result = await controller.Details(lab.Id) as ViewResult;
         Assert.NotNull(result);
 
-        var model = Assert.IsType<LabResultsIndexViewModel>(result.Model);
-        Assert.Single(model.EncounterGroups);
-        Assert.Equal(enc1.Id, model.EncounterGroups[0].Encounter.Id);
-        Assert.Single(model.EncounterGroups[0].LabResults);
-        Assert.Equal("CBC", model.EncounterGroups[0].LabResults[0].TestName);
-    }
+        var model = Assert.IsType<LabResult>(result.Model);
+        Assert.Equal("LAB-001", model.AccessionNumber);
 
-    [Fact]
-    public async Task EncountersController_Details_ReturnsEncounterWithLinkedLabs()
-    {
-        using var db = CreateInMemoryDbContext();
-        var (userManager, user) = CreateMockUserManager(db);
-        var auditMock = new Mock<IAuditLogService>();
-
-        var enc = new ClinicalEncounter
-        {
-            PatientUserId = user.Id,
-            EncounterReference = "ENC-LAB-01",
-            Department = "Internal Medicine",
-            PrimaryDiagnosis = "Hypertension",
-            EncounterDate = DateTime.UtcNow
-        };
-        db.ClinicalEncounters.Add(enc);
-        await db.SaveChangesAsync();
-
-        db.LabResults.AddRange(
-            new LabResult { PatientUserId = user.Id, Encounter = enc, TestName = "CBC", Category = LabCategory.Hematology, Status = "Available", AccessionNumber = "L1" },
-            new LabResult { PatientUserId = user.Id, Encounter = enc, TestName = "FBS", Category = LabCategory.ClinicalChemistry, Status = "Available", AccessionNumber = "L2" }
-        );
-        await db.SaveChangesAsync();
-
-        var controller = new EncountersController(db, userManager, auditMock.Object)
-        {
-            ControllerContext = CreateControllerContext()
-        };
-
-        var result = await controller.Details(enc.Id) as ViewResult;
-        Assert.NotNull(result);
-
-        var model = Assert.IsType<ClinicalEncounter>(result.Model);
-        Assert.Equal(2, model.LabResults.Count);
-        Assert.Contains(model.LabResults, l => l.TestName == "CBC");
-        Assert.Contains(model.LabResults, l => l.TestName == "FBS");
-    }
-
-    [Fact]
-    public async Task EncountersController_Details_ReturnsEncounterAndLogsAudit()
-    {
-        using var db = CreateInMemoryDbContext();
-        var (userManager, user) = CreateMockUserManager(db);
-        var auditMock = new Mock<IAuditLogService>();
-
-        var enc = new ClinicalEncounter
-        {
-            PatientUserId = user.Id,
-            EncounterReference = "ENC-001",
-            Department = "Internal Medicine",
-            PrimaryDiagnosis = "Hypertension",
-            EncounterDate = DateTime.UtcNow
-        };
-        db.ClinicalEncounters.Add(enc);
-        await db.SaveChangesAsync();
-
-        var controller = new EncountersController(db, userManager, auditMock.Object)
-        {
-            ControllerContext = CreateControllerContext()
-        };
-
-        var result = await controller.Details(enc.Id) as ViewResult;
-        Assert.NotNull(result);
-
-        var model = Assert.IsType<ClinicalEncounter>(result.Model);
-        Assert.Equal("ENC-001", model.EncounterReference);
-
-        auditMock.Verify(a => a.LogAsync(user.Id, "VIEW_ENCOUNTER_SUMMARY", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        auditMock.Verify(a => a.LogAsync(user.Id, "VIEW_LAB_REPORT", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
     }
 
     [Fact]
@@ -366,69 +248,5 @@ public class Phase3AuthenticatedFeaturesTests
         var actionResult = await controller.Submit(model) as RedirectToActionResult;
         Assert.NotNull(actionResult);
         Assert.Equal(nameof(TriageController.EmergencyWarning), actionResult.ActionName);
-    }
-
-    [Fact]
-    public async Task MessagesController_Create_CreatesThreadAndInitialMessage()
-    {
-        using var db = CreateInMemoryDbContext();
-        var (userManager, user) = CreateMockUserManager(db);
-        var auditMock = new Mock<IAuditLogService>();
-
-        var controller = new MessagesController(db, userManager, auditMock.Object)
-        {
-            ControllerContext = CreateControllerContext(),
-            TempData = new TempDataDictionary(new DefaultHttpContext(), Mock.Of<ITempDataProvider>())
-        };
-
-        var model = new NewMessageViewModel
-        {
-            Department = "Internal Medicine",
-            Category = MessageCategory.LabResultClarification,
-            Subject = "Fasting Instructions",
-            Body = "How long should I fast?"
-        };
-
-        var actionResult = await controller.Create(model) as RedirectToActionResult;
-        Assert.NotNull(actionResult);
-        Assert.Equal(nameof(MessagesController.Thread), actionResult.ActionName);
-
-        var thread = await db.MessageThreads.Include(t => t.Messages).FirstOrDefaultAsync();
-        Assert.NotNull(thread);
-        Assert.Equal("Fasting Instructions", thread.Subject);
-        Assert.Single(thread.Messages);
-        Assert.Equal("How long should I fast?", thread.Messages.First().Body);
-    }
-
-    [Fact]
-    public async Task ProxyController_Add_RegistersDependentProfile()
-    {
-        using var db = CreateInMemoryDbContext();
-        var (userManager, user) = CreateMockUserManager(db);
-        var auditMock = new Mock<IAuditLogService>();
-
-        var controller = new ProxyController(db, userManager, auditMock.Object)
-        {
-            ControllerContext = CreateControllerContext(),
-            TempData = new TempDataDictionary(new DefaultHttpContext(), Mock.Of<ITempDataProvider>())
-        };
-
-        var model = new AddDependentViewModel
-        {
-            FullName = "Joshua D. Santos",
-            DateOfBirth = DateTime.UtcNow.AddYears(-8),
-            Gender = "Male",
-            Relationship = RelationshipType.Child,
-            StatutoryConsentAgreed = true
-        };
-
-        var actionResult = await controller.Add(model) as RedirectToActionResult;
-        Assert.NotNull(actionResult);
-        Assert.Equal(nameof(ProxyController.Index), actionResult.ActionName);
-
-        var dep = await db.DependentProfiles.FirstOrDefaultAsync(d => d.GuardianUserId == user.Id);
-        Assert.NotNull(dep);
-        Assert.Equal("Joshua D. Santos", dep.FullName);
-        Assert.True(dep.StatutoryConsentAgreed);
     }
 }
