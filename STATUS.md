@@ -37,17 +37,14 @@ The platform reproduces DRMC's **authentic brand identity**: the brand-blue mast
 | Advisories Feed | `GET /Advisories` | Public | Official bulletins, pinned urgent health alerts, category filter pills. |
 | Advisory Details | `GET /Advisories/Details/{slug}` | Public | Full article view with real-time view count tracking and issuing authority seal. |
 
-### 2. Authenticated Clinical Features (Phase 3.2)
+### 2. Authenticated Clinical Features (Phase 3.2 - Streamlined Clinical Suite)
 | Screen / Feature | Route | Status | Notes |
 |---|---|---|---|
-| Patient Dashboard | `GET /Patient/Home` | `[Authorize]` | Summary hub with dynamic counters for appointments, lab results, prescriptions, encounters, messages, and proxy context. |
-| Lab Results Catalog | `GET /Patient/LabResults` | `[Authorize]` | Consultation-grouped diagnostic catalog with category filtering (Hematology, Clinical Chemistry, Special Diagnostics), accession search, status badges, and standalone unlinked labs section. |
+| Patient Dashboard | `GET /Patient/Home` | `[Authorize]` | Streamlined 3-pillar clinical hub with dynamic counters for upcoming appointments, diagnostic laboratory results, and active prescriptions. |
+| Lab Results Catalog | `GET /Patient/LabResults` | `[Authorize]` | Diagnostic catalog with category filtering (Hematology, Clinical Chemistry, Special Diagnostics), accession search, status badges (`Available`, `In progress`), and print shortcuts. |
 | Lab Report Details | `GET /Patient/LabResults/Details/{id}` | `[Authorize]` | Multi-analyte breakdown table, biological reference ranges, diagnostic flags (`Normal`, `High`, `Low`), pathologist signatures, audit logging. |
 | Printable Lab Report | `GET /Patient/LabResults/Print/{id}` | `[Authorize]` | Official DOH-standard printable laboratory examination slip. |
 | Biomarker Trends | `GET /Patient/LabResults/Trends` | `[Authorize]` | Chronological historical trends across test parameters with visual normal reference bounds. |
-| After-Visit Summaries | `GET /Patient/Encounters` | `[Authorize]` | Clinical visit timeline, department filters, primary & secondary ICD-10 diagnoses. |
-| Encounter Details | `GET /Patient/Encounters/Details/{id}` | `[Authorize]` | Complete consultation summary, recorded vitals, physician progress notes, care plan instructions, and linked "Lab Results from this Visit" section. |
-| Printable Visit Slip | `GET /Patient/Encounters/Print/{id}` | `[Authorize]` | Clean consultation and care plan slip for personal health records. |
 | Medication Tracker | `GET /Patient/Medications` | `[Authorize]` | Active prescriptions, prominent allergy alert banner, 4-tier daily dosing schedule visualizer. |
 | Prescription Details | `GET /Patient/Medications/Details/{id}` | `[Authorize]` | Drug strength, dosage form, instructions, refills remaining count, and refill order submission. |
 | Refill Request Flow | `POST /Patient/Medications/RequestRefill` | `[Authorize]` | Submits refill request, decrements remaining refills, prevents duplicate pending orders, logs pharmacy event. |
@@ -56,11 +53,6 @@ The platform reproduces DRMC's **authentic brand identity**: the brand-blue mast
 | Triage Submission | `POST /Patient/Triage/Submit` | `[Authorize]` | Evaluates acuity level (`Routine`, `Priority`), emergency red-flag safeguards, logs clinician queue sync. |
 | Intake Summary Pass | `GET /Patient/Triage/Summary/{id}` | `[Authorize]` | Verified digital intake summary slip for triage nurses. |
 | Emergency Alert | `GET /Patient/Triage/EmergencyWarning` | `[Authorize]` | High-contrast emergency guidance page triggered by acute symptoms. |
-| Care Team Messaging | `GET /Patient/Messages` | `[Authorize]` | Threaded conversation inbox, category filter tabs, unread message indicators. |
-| Conversation Thread | `GET /Patient/Messages/Thread/{id}` | `[Authorize]` | Real-time message bubbles, auto-marks staff messages as read (syncs dashboard badge), reply form. |
-| Compose Message | `GET/POST /Patient/Messages/New` | `[Authorize]` | Clinic department selection, category routing, non-emergency timeline guidelines. |
-| Caregiver & Proxy Hub | `GET /Patient/Proxy` | `[Authorize]` | Dependent profile roster (minor child, senior parent), statutory consent trail, in-session profile switching, consent revocation. |
-| Add Dependent Profile | `GET/POST /Patient/Proxy/Add` | `[Authorize]` | Demographics, PSA / OSCA ID reference, statutory consent agreement and audit log entry. |
 
 ### 3. Cross-Cutting Governance, Security & Compliance (Phase 3.3)
 | Screen / Feature | Route | Status | Notes |
@@ -71,7 +63,6 @@ The platform reproduces DRMC's **authentic brand identity**: the brand-blue mast
 | Authenticator App Setup | `GET/POST /Identity/Account/Manage/EnableAuthenticator` | `[Authorize]` | Vector SVG QR code scan and manual setup key pairing for Google / Microsoft Authenticator. |
 | 2FA Login Challenge | `GET/POST /Identity/Account/LoginWith2fa` | Public | 6-digit TOTP verification challenge during sign-in with lockout protection. |
 | PHI Access History | `GET /Patient/Audit` | `[Authorize]` | Patient-facing transparency register under RA 10173 displaying chronological access history. |
-| Statutory Consent History | `GET /Patient/Proxy` (Audit Table) | `[Authorize]` | Immutable log of caregiver consent declarations, switches, and revocations. |
 
 ---
 
@@ -85,17 +76,17 @@ The platform reproduces DRMC's **authentic brand identity**: the brand-blue mast
 | Vector QR Engine | QRCoder | **1.8.0** |
 | Front-End Framework | Bootstrap (via LibMan) | **5.3.8** |
 | Icons | Bootstrap Icons | **1.11.3** |
-| Automated Tests | xUnit / Moq | **2.9.3 / 4.20.72** (10/10 tests passing) |
+| Automated Tests | xUnit / Moq | **2.9.3 / 4.20.72** (18/18 tests passing) |
 
 ---
 
 ## Verified Integration & Automation Checks (All Pass)
 
+- **Streamlined Clinical Architecture:** Per DRMC hospital directive, non-essential and overwhelming secondary modules (After-Visit Summaries, Care Team Messaging, and Family/Dependent Proxy) were completely and cleanly decommissioned to ensure patient ease-of-use and focus on core services.
 - **Trilingual Localization:** English, Filipino, and Cebuano-Bisaya language switching verified across views with lay terminology and zero raw tokens.
-- **Automated Test Suite:** 10 xUnit + Moq unit/integration tests covering all controllers, localization, 2FA, and consent logging pass cleanly (0 errors).
+- **Automated Test Suite:** 18 xUnit + Moq unit/integration tests covering all controllers, registration, ID scanning, triage, medications, lab results, localization, and audit trails pass cleanly (0 errors).
 - **Two-Factor Authentication:** TOTP authenticator setup generates valid in-process SVG QR code and 2FA login challenge protects patient accounts.
 - **Patient Access History:** Complete audit trail visible at `/Patient/Audit` documenting security events and remote IP addresses.
-- **Proxy Consent Audit:** Grant, context switch, and revocation events recorded in `ConsentLogEntries` under RA 10173.
 - **Low-Bandwidth Optimization:** Queue polling auto-throttles when inactive via Page Visibility API.
 - **Zero Commercial Billing:** Absolute compliance with Level III DOH public hospital mandate.
 - **Zero Forbidden Words:** Zero occurrences of "Demo / Prototype / Sample / Mock / Test" across all screens.

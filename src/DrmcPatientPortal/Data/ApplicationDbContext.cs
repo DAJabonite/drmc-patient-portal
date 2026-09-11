@@ -16,16 +16,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     // Authenticated Clinical Features (Phase 3.2)
     public DbSet<LabResult> LabResults => Set<LabResult>();
     public DbSet<LabResultItem> LabResultItems => Set<LabResultItem>();
-    public DbSet<ClinicalEncounter> ClinicalEncounters => Set<ClinicalEncounter>();
     public DbSet<Prescription> Prescriptions => Set<Prescription>();
     public DbSet<PatientAllergy> PatientAllergies => Set<PatientAllergy>();
     public DbSet<RefillRequest> RefillRequests => Set<RefillRequest>();
     public DbSet<TriageIntake> TriageIntakes => Set<TriageIntake>();
-    public DbSet<MessageThread> MessageThreads => Set<MessageThread>();
-    public DbSet<Message> Messages => Set<Message>();
-    public DbSet<DependentProfile> DependentProfiles => Set<DependentProfile>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
-    public DbSet<ConsentLogEntry> ConsentLogEntries => Set<ConsentLogEntry>();
     public DbSet<PatientIdDocument> PatientIdDocuments => Set<PatientIdDocument>();
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -80,13 +75,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(x => x.PatientUserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            e.HasOne(x => x.Encounter)
-                .WithMany(enc => enc.LabResults)
-                .HasForeignKey(x => x.ClinicalEncounterId)
-                .OnDelete(DeleteBehavior.SetNull);
-
             e.HasIndex(x => x.PatientUserId);
-            e.HasIndex(x => x.ClinicalEncounterId);
             e.HasIndex(x => x.AccessionNumber);
         });
 
@@ -96,17 +85,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany(r => r.Items)
                 .HasForeignKey(x => x.LabResultId)
                 .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        builder.Entity<ClinicalEncounter>(e =>
-        {
-            e.HasOne(x => x.Patient)
-                .WithMany(u => u.Encounters)
-                .HasForeignKey(x => x.PatientUserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            e.HasIndex(x => x.PatientUserId);
-            e.HasIndex(x => x.EncounterReference).IsUnique();
         });
 
         builder.Entity<Prescription>(e =>
@@ -156,50 +134,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasIndex(x => x.AppointmentId);
         });
 
-        builder.Entity<MessageThread>(e =>
-        {
-            e.HasOne(x => x.Patient)
-                .WithMany(u => u.MessageThreads)
-                .HasForeignKey(x => x.PatientUserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            e.HasIndex(x => x.PatientUserId);
-        });
-
-        builder.Entity<Message>(e =>
-        {
-            e.HasOne(x => x.Thread)
-                .WithMany(t => t.Messages)
-                .HasForeignKey(x => x.ThreadId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            e.HasIndex(x => x.ThreadId);
-        });
-
-        builder.Entity<DependentProfile>(e =>
-        {
-            e.HasOne(x => x.Guardian)
-                .WithMany(u => u.DependentProfiles)
-                .HasForeignKey(x => x.GuardianUserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            e.HasIndex(x => x.GuardianUserId);
-        });
-
         builder.Entity<AuditLog>(e =>
         {
             e.HasIndex(x => x.UserId);
-            e.HasIndex(x => x.Timestamp);
-        });
-
-        builder.Entity<ConsentLogEntry>(e =>
-        {
-            e.HasOne(x => x.Guardian)
-                .WithMany(u => u.ConsentLogEntries)
-                .HasForeignKey(x => x.GuardianUserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            e.HasIndex(x => x.GuardianUserId);
             e.HasIndex(x => x.Timestamp);
         });
 

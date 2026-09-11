@@ -165,14 +165,11 @@ All authenticated routes require login (`[Authorize]`) and enforce strict patien
 
 | Route | Controller Action | Description |
 |---|---|---|
-| `/Patient/Home` | [`PatientController.Home`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/PatientController.cs) | Unified patient dashboard command center with live badge counters for upcoming appointments, lab results, prescriptions, encounters, unread messages, and proxy status. |
+| `/Patient/Home` | [`PatientController.Home`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/PatientController.cs) | Unified patient dashboard command center with live badge counters for upcoming appointments, diagnostic lab results, and active prescriptions. |
 | `/Patient/LabResults` | [`LabResultsController.Index`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/LabResultsController.cs) | Chronological diagnostic catalog with category filters (Hematology, Clinical Chemistry, Special Diagnostics) and accession search. |
 | `/Patient/LabResults/Details/{id}` | [`LabResultsController.Details`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/LabResultsController.cs) | Multi-analyte breakdown table with biological reference ranges, color-coded diagnostic flags (`Normal`, `High`, `Low`), pathologist signatures, and automated audit logging. |
 | `/Patient/LabResults/Print/{id}` | [`LabResultsController.Print`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/LabResultsController.cs) | Official DOH-standard printable laboratory diagnostic report with print stylesheet. |
 | `/Patient/LabResults/Trends` | [`LabResultsController.Trends`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/LabResultsController.cs) | Longitudinal biomarker trend visualizer showing historical test parameter progression. |
-| `/Patient/Encounters` | [`EncountersController.Index`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/EncountersController.cs) | After-visit summary timeline, clinical department filtering, and ICD-10 diagnosis tagging. |
-| `/Patient/Encounters/Details/{id}` | [`EncountersController.Details`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/EncountersController.cs) | Detailed consultation record, recorded vital signs, attending physician progress notes, and patient home care plans. |
-| `/Patient/Encounters/Print/{id}` | [`EncountersController.Print`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/EncountersController.cs) | Official printable consultation slip for personal health records. |
 | `/Patient/Medications` | [`MedicationsController.Index`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/MedicationsController.cs) | Active medication tracker, red allergy alert banner, and 4-tier daily dosing schedule visualizer (Morning / Noon / Evening / Bedtime). |
 | `/Patient/Medications/Details/{id}` | [`MedicationsController.Details`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/MedicationsController.cs) | Drug details, prescribing physician, remaining refill quota, and refill request submission form. |
 | `POST /Patient/Medications/RequestRefill` | [`MedicationsController.RequestRefill`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/MedicationsController.cs) | Submits 1-click refill request, decrements refill quota, prevents duplicate submissions, and generates pick-up voucher. |
@@ -181,14 +178,6 @@ All authenticated routes require login (`[Authorize]`) and enforce strict patien
 | `POST /Patient/Triage/Submit` | [`TriageController.Submit`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/TriageController.cs) | Processes self-triage intake, calculates acuity level (`Routine`, `Priority`), intercepts emergency red flags, and logs triage entry. |
 | `/Patient/Triage/Summary/{id}` | [`TriageController.Summary`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/TriageController.cs) | Verified digital triage intake slip for presentation to OPD triage nurses. |
 | `/Patient/Triage/EmergencyWarning` | [`TriageController.EmergencyWarning`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/TriageController.cs) | High-contrast emergency safeguard intercept triggered when patient reports critical red flags (chest pain, acute dyspnea, etc.). |
-| `/Patient/Messages` | [`MessagesController.Index`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/MessagesController.cs) | Threaded care team messaging inbox with category filter tabs and unread message indicators. |
-| `/Patient/Messages/Thread/{id}` | [`MessagesController.Thread`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/MessagesController.cs) | Chronological message bubbles, automatic read receipt tracking (syncs dashboard badge), and inline reply composer. |
-| `/Patient/Messages/New` | [`MessagesController.New`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/MessagesController.cs) | Secure message composer with department routing and non-emergency communication guidance. |
-| `/Patient/Proxy` | [`ProxyController.Index`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/ProxyController.cs) | Caregiver & dependent management hub, active proxy status, and statutory consent audit history log. |
-| `/Patient/Proxy/Add` | [`ProxyController.Add`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/ProxyController.cs) | Dependent profile registration form (minor child, senior parent) capturing PSA / OSCA ID reference and RA 10173 statutory consent. |
-| `POST /Patient/Proxy/SwitchProfile/{id}` | [`ProxyController.SwitchProfile`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/ProxyController.cs) | Switches active session context to manage records on behalf of a dependent. Displays amber proxy banner across all screens. |
-| `POST /Patient/Proxy/SwitchToSelf` | [`ProxyController.SwitchToSelf`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/ProxyController.cs) | Clears dependent session state and returns to primary patient profile. |
-| `POST /Patient/Proxy/Revoke/{id}` | [`ProxyController.Revoke`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/ProxyController.cs) | Revokes caregiver authorization, records revocation in `ConsentLogEntry`, and deletes dependent profile. |
 | `/Patient/Audit` | [`PatientController.Audit`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/src/DrmcPatientPortal/Controllers/PatientController.cs) | Patient-facing transparency audit log under RA 10173 displaying historical record accesses, IP addresses, and timestamps. |
 
 ---
@@ -393,22 +382,19 @@ drmc-patient-portal/
 ├── src/
 │   └── DrmcPatientPortal/             # ASP.NET Core 10 Web Application
 │       ├── Areas/Identity/            # ASP.NET Core Identity Razor Pages (Login, 2FA, Manage)
-│       ├── Controllers/               # MVC feature controllers (13 controllers)
+│       ├── Controllers/               # MVC feature controllers (10 controllers)
 │       │   ├── AdvisoriesController.cs
 │       │   ├── AppointmentsController.cs
 │       │   ├── DirectoryController.cs
-│       │   ├── EncountersController.cs
 │       │   ├── HomeController.cs
 │       │   ├── LabResultsController.cs
 │       │   ├── MalasakitController.cs
 │       │   ├── MedicationsController.cs
-│       │   ├── MessagesController.cs
 │       │   ├── PatientController.cs
-│       │   ├── ProxyController.cs
 │       │   ├── QueueController.cs
 │       │   └── TriageController.cs
 │       ├── Data/                      # ApplicationDbContext, DbInitializer, Migrations
-│       ├── Models/                    # Entity models, ViewModels, Enums (20 models)
+│       ├── Models/                    # Entity models, ViewModels, Enums
 │       ├── Resources/                 # Trilingual .resx dictionaries (en, fil, ceb)
 │       ├── Services/                  # Services (QrCodeService, AuditLogService, etc.)
 │       ├── Views/                     # Razor views partitioned by feature controller
@@ -416,6 +402,7 @@ drmc-patient-portal/
 │       └── wwwroot/                   # Static assets (images, css, js, libman packages)
 └── tests/
     └── DrmcPatientPortal.Tests/       # xUnit + Moq unit and integration test suite
+        ├── IdDocumentRegistrationTests.cs
         ├── Phase3AuthenticatedFeaturesTests.cs
         └── Phase3GovernanceTests.cs
 ```
@@ -428,7 +415,6 @@ The application meets all regulatory mandates for Philippine Level III DOH publi
 
 1. **Republic Act No. 10173 (Data Privacy Act of 2012):**
    - Explicit privacy consent on registration.
-   - Immutable caregiver consent log trail (`ConsentLogEntry`).
    - Patient-facing PHI transparency access audit log (`/Patient/Audit`).
 2. **Republic Act No. 11463 (Malasakit Centers Act):**
    - Statutory one-stop-shop navigator covering DOH MAIP, PhilHealth, PCSO IMAP, and DSWD AICS.

@@ -18,10 +18,6 @@ public class LabResult
     public string PathologistName { get; set; } = string.Empty;   // e.g. "Dr. Manuel Santos, MD, FPSP"
     public string PerformingUnit { get; set; } = "DRMC Central Clinical Diagnostic Laboratory";
     public string ClinicalNotes { get; set; } = string.Empty;
-
-    public int? ClinicalEncounterId { get; set; }
-    public ClinicalEncounter? Encounter { get; set; }
-
     public ICollection<LabResultItem> Items { get; set; } = new List<LabResultItem>();
 }
 

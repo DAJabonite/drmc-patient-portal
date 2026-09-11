@@ -32,18 +32,19 @@
 
   <!-- Navigation -->
   <data name="Nav_Home"><value>Home</value></data>
+  <data name="Nav_Encounters"><value>Encounters</value></data>
+  <data name="Nav_Results"><value>Results</value></data>
+  <data name="Nav_Medication"><value>Medication</value></data>
+  <data name="Nav_Malasakit"><value>Malasakit</value></data>
+  <data name="Nav_MoreServices"><value>More Services</value></data>
   <data name="Nav_OpdGuide"><value>OPD Guide</value></data>
   <data name="Nav_Queue"><value>OPD Queue</value></data>
   <data name="Nav_Appointments"><value>Book Appointment</value></data>
   <data name="Nav_Directory"><value>Doctors &amp; Clinics</value></data>
-  <data name="Nav_Malasakit"><value>Malasakit Center</value></data>
   <data name="Nav_Advisories"><value>Advisories</value></data>
   <data name="Nav_Dashboard"><value>Patient Dashboard</value></data>
   <data name="Nav_LabResults"><value>Laboratory Results</value></data>
   <data name="Nav_Medications"><value>Active Prescriptions</value></data>
-  <data name="Nav_Encounters"><value>Clinical Visit Notes</value></data>
-  <data name="Nav_Messages"><value>Care Messages</value></data>
-  <data name="Nav_Proxy"><value>Family &amp; Dependents</value></data>
   <data name="Nav_Audit"><value>Access Audit History</value></data>
   <data name="Nav_Settings"><value>Account Settings</value></data>
   <data name="Nav_SignOut"><value>Sign out</value></data>
@@ -69,9 +70,6 @@
   <data name="Dashboard_UpcomingAppt"><value>Upcoming Appointment</value></data>
   <data name="Dashboard_LabResults"><value>Diagnostic &amp; Lab Reports</value></data>
   <data name="Dashboard_Prescriptions"><value>Prescriptions &amp; Pharmacy</value></data>
-  <data name="Dashboard_Encounters"><value>After-Visit Summaries</value></data>
-  <data name="Dashboard_Messaging"><value>Care Team Messaging</value></data>
-  <data name="Dashboard_Proxy"><value>Family &amp; Dependent Proxy</value></data>
 
   <!-- Lay Medical Terminology -->
   <data name="Med_BloodPressure"><value>Blood Pressure</value></data>

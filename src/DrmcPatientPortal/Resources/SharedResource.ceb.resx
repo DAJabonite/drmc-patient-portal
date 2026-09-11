@@ -32,18 +32,19 @@
 
   <!-- Navigation -->
   <data name="Nav_Home"><value>Panid</value></data>
+  <data name="Nav_Encounters"><value>Mga Konsultasyon</value></data>
+  <data name="Nav_Results"><value>Mga Resulta</value></data>
+  <data name="Nav_Medication"><value>Tambal</value></data>
+  <data name="Nav_Malasakit"><value>Malasakit</value></data>
+  <data name="Nav_MoreServices"><value>Dugang Serbisyo</value></data>
   <data name="Nav_OpdGuide"><value>Giya sa OPD</value></data>
   <data name="Nav_Queue"><value>Linya sa OPD</value></data>
   <data name="Nav_Appointments"><value>Pagpa-iskedyul</value></data>
   <data name="Nav_Directory"><value>Mga Doktor ug Klinika</value></data>
-  <data name="Nav_Malasakit"><value>Malasakit Center</value></data>
   <data name="Nav_Advisories"><value>Mga Pahibalo sa Panglawas</value></data>
   <data name="Nav_Dashboard"><value>Dashboard sa Pasyente</value></data>
   <data name="Nav_LabResults"><value>Resulta sa Laboratoryo</value></data>
   <data name="Nav_Medications"><value>Aktibong mga Reseta</value></data>
-  <data name="Nav_Encounters"><value>Talaan sa Konsultasyon</value></data>
-  <data name="Nav_Messages"><value>Mensahe sa Klinika</value></data>
-  <data name="Nav_Proxy"><value>Pamilya ug Dependents</value></data>
   <data name="Nav_Audit"><value>Kasaysayan sa Pag-abli</value></data>
   <data name="Nav_Settings"><value>Mga Setting sa Account</value></data>
   <data name="Nav_SignOut"><value>Gawas</value></data>
@@ -69,9 +70,6 @@
   <data name="Dashboard_UpcomingAppt"><value>Umaabot nga Konsultasyon</value></data>
   <data name="Dashboard_LabResults"><value>Resulta sa Pagsusi sa Laboratoryo</value></data>
   <data name="Dashboard_Prescriptions"><value>Reseta ug Parmasya</value></data>
-  <data name="Dashboard_Encounters"><value>Mubo nga Sulat sa Pagbisita</value></data>
-  <data name="Dashboard_Messaging"><value>Pakigsulti sa Care Team</value></data>
-  <data name="Dashboard_Proxy"><value>Pagdumala sa Pamilya ug Dependent</value></data>
 
   <!-- Lay Medical Terminology -->
   <data name="Med_BloodPressure"><value>Presyon sa Dugo</value></data>

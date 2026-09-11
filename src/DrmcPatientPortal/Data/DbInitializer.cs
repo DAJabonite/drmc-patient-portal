@@ -539,60 +539,11 @@ public static class DbInitializer
                 });
             }
 
-            ClinicalEncounter? encounterIm = db.ClinicalEncounters.FirstOrDefault(e => e.EncounterReference == "DRMC-ENC-2026-0412");
-            ClinicalEncounter? encounterFcm = db.ClinicalEncounters.FirstOrDefault(e => e.EncounterReference == "DRMC-ENC-2025-1089");
-
-            if (encounterIm == null || encounterFcm == null)
-            {
-                if (encounterIm == null)
-                {
-                    encounterIm = new ClinicalEncounter
-                    {
-                        PatientUserId = primary.Id,
-                        EncounterReference = "DRMC-ENC-2026-0412",
-                        EncounterDate = DateTime.UtcNow.AddDays(-18),
-                        Department = "Internal Medicine",
-                        AttendingPhysician = "Dr. Arthur Llanos, MD, FPCP",
-                        Type = EncounterType.OpdConsultation,
-                        ChiefComplaint = "3-month routine follow-up for chronic blood sugar and blood pressure management.",
-                        PrimaryDiagnosis = "Essential (Primary) Hypertension (ICD-10 I10)",
-                        SecondaryDiagnosis = "Type 2 Diabetes Mellitus without complications (ICD-10 E11.9)",
-                        ClinicalSummary = "Patient is asymptomatic. No chest pain, shortness of breath, or blurring of vision. Home blood pressure logs average 125/80 mmHg. Good medication adherence reported.",
-                        CarePlanAndInstructions = "1. Maintain low-sodium, low-glycemic diet.\n2. Regular aerobic exercise (30 mins daily brisk walking).\n3. Continue Losartan 50mg OD morning and Metformin 500mg BID with meals.\n4. Repeat Fasting Blood Sugar and HbA1c in 3 months.",
-                        VitalSignsRecorded = "BP: 128/82 mmHg | HR: 76 bpm | Temp: 36.5 C | Wt: 64.0 kg | Height: 158 cm | BMI: 25.6",
-                        FollowUpDate = DateTime.UtcNow.AddMonths(3),
-                        FollowUpNotes = "Follow-up consultation at Internal Medicine OPD Room 201."
-                    };
-                    db.ClinicalEncounters.Add(encounterIm);
-                }
-
-                if (encounterFcm == null)
-                {
-                    encounterFcm = new ClinicalEncounter
-                    {
-                        PatientUserId = primary.Id,
-                        EncounterReference = "DRMC-ENC-2025-1089",
-                        EncounterDate = DateTime.UtcNow.AddMonths(-6),
-                        Department = "Family & Community Medicine",
-                        AttendingPhysician = "Dr. Cristina Ramos, MD, FPAFP",
-                        Type = EncounterType.OpdConsultation,
-                        ChiefComplaint = "Annual wellness physical checkup.",
-                        PrimaryDiagnosis = "General Adult Medical Examination (ICD-10 Z00.0)",
-                        ClinicalSummary = "Complete physical examination unremarkable. Cardiac auscultation normal, lungs clear. Screening mammography and cervical smear updated.",
-                        CarePlanAndInstructions = "Promote continued healthy lifestyle and routine seasonal influenza vaccination.",
-                        VitalSignsRecorded = "BP: 120/78 mmHg | HR: 72 bpm | Temp: 36.6 C | Wt: 63.5 kg"
-                    };
-                    db.ClinicalEncounters.Add(encounterFcm);
-                }
-            }
-
             if (!db.LabResults.Any(l => l.PatientUserId == primary.Id))
             {
-                // Encounter 1 (Internal Medicine) Labs
                 var cbc1 = new LabResult
                 {
                     PatientUserId = primary.Id,
-                    Encounter = encounterIm,
                     AccessionNumber = "DRMC-LAB-2026-0814",
                     TestName = "Complete Blood Count (CBC) with Platelet Count",
                     Category = LabCategory.Hematology,
@@ -618,7 +569,6 @@ public static class DbInitializer
                 var fbs = new LabResult
                 {
                     PatientUserId = primary.Id,
-                    Encounter = encounterIm,
                     AccessionNumber = "DRMC-LAB-2026-0815",
                     TestName = "Fasting Blood Sugar (FBS)",
                     Category = LabCategory.ClinicalChemistry,
@@ -637,7 +587,6 @@ public static class DbInitializer
                 var lipid = new LabResult
                 {
                     PatientUserId = primary.Id,
-                    Encounter = encounterIm,
                     AccessionNumber = "DRMC-LAB-2026-0790",
                     TestName = "Lipid Profile Panel",
                     Category = LabCategory.ClinicalChemistry,
@@ -655,11 +604,10 @@ public static class DbInitializer
                 lipid.Items.Add(new LabResultItem { ParameterName = "HDL Cholesterol", Value = "48", Unit = "mg/dL", ReferenceRange = "> 40", Flag = LabFlag.Normal });
                 lipid.Items.Add(new LabResultItem { ParameterName = "LDL Cholesterol", Value = "119", Unit = "mg/dL", ReferenceRange = "< 130", Flag = LabFlag.Normal });
 
-                // Encounter 2 (Family & Community Medicine) Labs
+                // Additional Labs
                 var cbc2 = new LabResult
                 {
                     PatientUserId = primary.Id,
-                    Encounter = encounterFcm,
                     AccessionNumber = "DRMC-LAB-2025-0451",
                     TestName = "Complete Blood Count (CBC) with Platelet Count",
                     Category = LabCategory.Hematology,
@@ -681,7 +629,6 @@ public static class DbInitializer
                 var urinalysis = new LabResult
                 {
                     PatientUserId = primary.Id,
-                    Encounter = encounterFcm,
                     AccessionNumber = "DRMC-LAB-2025-0452",
                     TestName = "Routine Urinalysis",
                     Category = LabCategory.UrinalysisFecalysis,
@@ -702,11 +649,9 @@ public static class DbInitializer
                 urinalysis.Items.Add(new LabResultItem { ParameterName = "Protein", Value = "Negative", Unit = "", ReferenceRange = "Negative", Flag = LabFlag.Normal });
                 urinalysis.Items.Add(new LabResultItem { ParameterName = "Glucose", Value = "Negative", Unit = "", ReferenceRange = "Negative", Flag = LabFlag.Normal });
 
-                // Unlinked / Standalone Lab Result (ClinicalEncounterId = null)
                 var hba1c = new LabResult
                 {
                     PatientUserId = primary.Id,
-                    ClinicalEncounterId = null,
                     AccessionNumber = "DRMC-LAB-2026-0922",
                     TestName = "HbA1c (Glycated Hemoglobin)",
                     Category = LabCategory.SpecialDiagnostics,
@@ -833,132 +778,6 @@ public static class DbInitializer
                 }
             }
 
-            if (!db.MessageThreads.Any(t => t.PatientUserId == primary.Id))
-            {
-                var thread1 = new MessageThread
-                {
-                    PatientUserId = primary.Id,
-                    Department = "Internal Medicine",
-                    Subject = "Clarification on Fasting Blood Sugar Lab Schedule",
-                    Category = MessageCategory.LabResultClarification,
-                    Status = ThreadStatus.Resolved,
-                    CreatedAt = DateTime.UtcNow.AddDays(-8),
-                    LastMessageAt = DateTime.UtcNow.AddDays(-7)
-                };
-
-                thread1.Messages.Add(new Message
-                {
-                    SenderUserId = primary.Id,
-                    SenderName = primary.FullName,
-                    SenderRole = MessageSenderRole.Patient,
-                    Body = "Good day, do I need to fast for 10 hours or 12 hours for my upcoming Fasting Blood Sugar laboratory test?",
-                    SentAt = DateTime.UtcNow.AddDays(-8),
-                    IsRead = true,
-                    ReadAt = DateTime.UtcNow.AddDays(-8).AddHours(2)
-                });
-
-                thread1.Messages.Add(new Message
-                {
-                    SenderUserId = "staff-internal-med",
-                    SenderName = "Nurse Christine Cruz, RN (OPD Coordinator)",
-                    SenderRole = MessageSenderRole.CareTeam,
-                    Body = "Hello Ma'am Maria. For Fasting Blood Sugar, a 10-to-12 hour overnight fast is standard. You may drink plain water. Please proceed directly to Room 102 at 7:30 AM with your lab request slip.",
-                    SentAt = DateTime.UtcNow.AddDays(-8).AddHours(3),
-                    IsRead = true,
-                    ReadAt = DateTime.UtcNow.AddDays(-7)
-                });
-
-                thread1.Messages.Add(new Message
-                {
-                    SenderUserId = primary.Id,
-                    SenderName = primary.FullName,
-                    SenderRole = MessageSenderRole.Patient,
-                    Body = "Thank you for the clear instructions Nurse Christine!",
-                    SentAt = DateTime.UtcNow.AddDays(-7),
-                    IsRead = true
-                });
-
-                var thread2 = new MessageThread
-                {
-                    PatientUserId = primary.Id,
-                    Department = "OPD Pharmacy",
-                    Subject = "Prescription Refill Voucher Ready",
-                    Category = MessageCategory.MedicationQuestion,
-                    Status = ThreadStatus.Open,
-                    CreatedAt = DateTime.UtcNow.AddDays(-1),
-                    LastMessageAt = DateTime.UtcNow.AddHours(-3)
-                };
-
-                thread2.Messages.Add(new Message
-                {
-                    SenderUserId = "staff-pharmacy",
-                    SenderName = "Pharmacist Mark Reyes, RPh",
-                    SenderRole = MessageSenderRole.CareTeam,
-                    Body = "Good day Ma'am Maria. Your refill request for Losartan 50mg (Rx #DRMC-RX-2026-3820) has been approved by Dr. Llanos and is ready for claiming at OPD Pharmacy Window 2. Please bring your Senior/Patient ID.",
-                    SentAt = DateTime.UtcNow.AddHours(-3),
-                    IsRead = false // Leaves 1 unread message for dashboard counter
-                });
-
-                db.MessageThreads.AddRange(thread1, thread2);
-            }
-
-            if (!db.DependentProfiles.Any(d => d.GuardianUserId == primary.Id))
-            {
-                var dep1 = new DependentProfile
-                {
-                    GuardianUserId = primary.Id,
-                    FullName = "Joshua D. Santos",
-                    DateOfBirth = DateTime.UtcNow.AddYears(-8),
-                    Gender = "Male",
-                    Relationship = RelationshipType.Child,
-                    PhilHealthNumber = "19-203948571-3",
-                    IdType = "PSA Birth Certificate",
-                    IdNumber = "PSA-2018-091823",
-                    StatutoryConsentAgreed = true,
-                    CreatedAt = DateTime.UtcNow.AddMonths(-4)
-                };
-
-                var dep2 = new DependentProfile
-                {
-                    GuardianUserId = primary.Id,
-                    FullName = "Corazon Delos Santos",
-                    DateOfBirth = new DateTime(1958, 9, 20),
-                    Gender = "Female",
-                    Relationship = RelationshipType.Parent,
-                    PhilHealthNumber = "04-928173456-1",
-                    IdType = "OSCA Senior Citizen ID",
-                    IdNumber = "OSCA-TAGUM-2018-4410",
-                    StatutoryConsentAgreed = true,
-                    CreatedAt = DateTime.UtcNow.AddMonths(-2)
-                };
-
-                db.DependentProfiles.AddRange(dep1, dep2);
-                db.SaveChanges();
-
-                db.ConsentLogEntries.AddRange(
-                    new ConsentLogEntry
-                    {
-                        GuardianUserId = primary.Id,
-                        DependentId = dep1.Id,
-                        DependentName = dep1.FullName,
-                        EventType = ConsentEventType.Granted,
-                        ConsentDeclarationText = "Caregiver Statutory Declaration agreed under RA 10173 and DOH Hospital Guidelines. Relationship: Child.",
-                        IpAddress = "127.0.0.1",
-                        Timestamp = DateTime.UtcNow.AddMonths(-4)
-                    },
-                    new ConsentLogEntry
-                    {
-                        GuardianUserId = primary.Id,
-                        DependentId = dep2.Id,
-                        DependentName = dep2.FullName,
-                        EventType = ConsentEventType.Granted,
-                        ConsentDeclarationText = "Caregiver Statutory Declaration agreed under RA 10173 and DOH Hospital Guidelines. Relationship: Parent.",
-                        IpAddress = "127.0.0.1",
-                        Timestamp = DateTime.UtcNow.AddMonths(-2)
-                    }
-                );
-            }
-
             if (!db.AuditLogs.Any(a => a.UserId == primary.Id))
             {
                 db.AuditLogs.AddRange(
@@ -970,15 +789,6 @@ public static class DbInitializer
                         Details = "Viewed CBC Diagnostic Examination Report (Accession DRMC-LAB-2026-0814)",
                         IpAddress = "127.0.0.1",
                         Timestamp = DateTime.UtcNow.AddDays(-5)
-                    },
-                    new AuditLog
-                    {
-                        UserId = primary.Id,
-                        Action = "VIEW_ENCOUNTER_SUMMARY",
-                        Resource = "ClinicalEncounter/1",
-                        Details = "Viewed Internal Medicine After-Visit Summary (DRMC-ENC-2026-0412)",
-                        IpAddress = "127.0.0.1",
-                        Timestamp = DateTime.UtcNow.AddDays(-18)
                     },
                     new AuditLog
                     {

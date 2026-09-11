@@ -65,7 +65,7 @@
 
 <section class="section py-5 bg-light">
     <div class="container">
-        @if (Model.EncounterGroups.Count == 0 && Model.UnlinkedLabResults.Count == 0)
+        @if (Model.LabResults.Count == 0)
         {
             <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
                 <i class="bi bi-file-earmark-x fs-1 text-muted mb-2"></i>
@@ -78,119 +78,60 @@
         }
         else
         {
-            @if (Model.EncounterGroups.Count > 0)
-            {
-                <div class="d-flex flex-column gap-3">
-                    @foreach (var group in Model.EncounterGroups)
-                    {
-                        var hasInProgress = group.LabResults.Any(l => l.Status != "Available");
-                        <a asp-controller="Encounters" asp-action="Details" asp-route-id="@group.Encounter.Id"
-                           class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white hover-shadow-sm transition text-decoration-none text-dark d-block">
-                            <div class="row align-items-center g-3">
-                                <div class="col-md-8">
-                                    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
-                                        <span class="badge bg-primary-subtle text-primary-drmc rounded-pill small fw-semibold">
-                                            @group.Encounter.Department
-                                        </span>
-                                        <span class="badge @(hasInProgress ? "bg-warning-subtle text-warning-emphasis" : "bg-success-subtle text-success") rounded-pill small">
-                                            <i class="bi @(hasInProgress ? "bi-clock" : "bi-check-circle") me-1"></i> @(hasInProgress ? "In Progress" : "Available")
-                                        </span>
-                                        <span class="badge bg-light text-secondary border rounded-pill small">
-                                            @group.LabResults.Count @(group.LabResults.Count == 1 ? "Lab Result" : "Lab Results")
-                                        </span>
-                                    </div>
-
-                                    <h2 class="h5 fw-bold text-primary-drmc mb-1">
-                                        Consultation &middot; @group.Encounter.EncounterDate.ToString("MMMM d, yyyy")
-                                    </h2>
-
-                                    <div class="small text-muted d-flex flex-wrap gap-3" style="font-size: 0.825rem;">
-                                        <span><i class="bi bi-person-badge me-1"></i> Attending: <strong>@group.Encounter.AttendingPhysician</strong></span>
-                                        @if (!string.IsNullOrEmpty(group.Encounter.PrimaryDiagnosis))
-                                        {
-                                            <span class="text-truncate d-inline-block" style="max-width: 320px;">
-                                                <i class="bi bi-clipboard2-pulse me-1"></i> @group.Encounter.PrimaryDiagnosis
-                                            </span>
-                                        }
-                                    </div>
-                                </div>
-
-                                <div class="col-md-4 text-md-end">
-                                    <span class="btn btn-sm btn-outline-drmc rounded-pill px-3 fw-semibold">
-                                        View Visit &amp; Labs <i class="bi bi-chevron-right ms-1"></i>
+            <div class="d-flex flex-column gap-3">
+                @foreach (var lab in Model.LabResults)
+                {
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white hover-shadow-sm transition">
+                        <div class="row align-items-center g-3">
+                            <div class="col-md-7">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="badge @(lab.Status == "Available" ? "bg-success-subtle text-success" : "bg-warning-subtle text-warning-emphasis") rounded-pill small">
+                                        <i class="bi @(lab.Status == "Available" ? "bi-check-circle" : "bi-clock") me-1"></i> @lab.Status
+                                    </span>
+                                    <span class="badge bg-light text-secondary border rounded-pill small">
+                                        @lab.Category
+                                    </span>
+                                    <span class="small text-muted" style="font-size: 0.75rem;">
+                                        Accession: <strong>@lab.AccessionNumber</strong>
                                     </span>
                                 </div>
-                            </div>
-                        </a>
-                    }
-                </div>
-            }
 
-            @if (Model.UnlinkedLabResults.Count > 0)
-            {
-                <div class="@(Model.EncounterGroups.Count > 0 ? "mt-4 pt-3" : "")">
-                    @if (Model.EncounterGroups.Count > 0)
-                    {
-                        <h2 class="h6 fw-bold text-muted text-uppercase tracking-wider mb-3">
-                            <i class="bi bi-folder2-open me-2"></i> Other / Not Linked to a Visit
-                        </h2>
-                    }
-                    <div class="d-flex flex-column gap-3">
-                        @foreach (var lab in Model.UnlinkedLabResults)
-                        {
-                            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white hover-shadow-sm transition">
-                                <div class="row align-items-center g-3">
-                                    <div class="col-md-7">
-                                        <div class="d-flex align-items-center gap-2 mb-1">
-                                            <span class="badge @(lab.Status == "Available" ? "bg-success-subtle text-success" : "bg-warning-subtle text-warning-emphasis") rounded-pill small">
-                                                <i class="bi @(lab.Status == "Available" ? "bi-check-circle" : "bi-clock") me-1"></i> @lab.Status
-                                            </span>
-                                            <span class="badge bg-light text-secondary border rounded-pill small">
-                                                @lab.Category
-                                            </span>
-                                            <span class="small text-muted" style="font-size: 0.75rem;">
-                                                Accession: <strong>@lab.AccessionNumber</strong>
-                                            </span>
-                                        </div>
+                                <h2 class="h5 fw-bold text-primary-drmc mb-1">@lab.TestName</h2>
+                                <p class="small text-muted mb-2">@lab.ResultSummary</p>
 
-                                        <h2 class="h5 fw-bold text-primary-drmc mb-1">@lab.TestName</h2>
-                                        <p class="small text-muted mb-2">@lab.ResultSummary</p>
-
-                                        <div class="small text-muted d-flex flex-wrap gap-3" style="font-size: 0.8rem;">
-                                            <span><i class="bi bi-calendar3 me-1"></i> Collected: @lab.CollectedAt.ToString("MMM d, yyyy")</span>
-                                            @if (!string.IsNullOrEmpty(lab.OrderingPhysician))
-                                            {
-                                                <span><i class="bi bi-person-badge me-1"></i> Ordered by: @lab.OrderingPhysician</span>
-                                            }
-                                        </div>
-                                    </div>
-
-                                    <div class="col-md-5 text-md-end">
-                                        @if (lab.Status == "Available")
-                                        {
-                                            <div class="d-flex gap-2 justify-content-md-end">
-                                                <a asp-action="Details" asp-route-id="@lab.Id" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold shadow-xs">
-                                                    <i class="bi bi-file-earmark-text me-1"></i> View Full Report
-                                                </a>
-                                                <a asp-action="Print" asp-route-id="@lab.Id" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold">
-                                                    <i class="bi bi-printer"></i>
-                                                </a>
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted small d-inline-flex align-items-center gap-1">
-                                                <span class="spinner-border spinner-border-sm text-warning" role="status"></span>
-                                                Processing in Laboratory
-                                            </span>
-                                        }
-                                    </div>
+                                <div class="small text-muted d-flex flex-wrap gap-3" style="font-size: 0.8rem;">
+                                    <span><i class="bi bi-calendar3 me-1"></i> Collected: @lab.CollectedAt.ToString("MMM d, yyyy")</span>
+                                    @if (!string.IsNullOrEmpty(lab.OrderingPhysician))
+                                    {
+                                        <span><i class="bi bi-person-badge me-1"></i> Ordered by: @lab.OrderingPhysician</span>
+                                    }
                                 </div>
                             </div>
-                        }
+
+                            <div class="col-md-5 text-md-end">
+                                @if (lab.Status == "Available")
+                                {
+                                    <div class="d-flex gap-2 justify-content-md-end">
+                                        <a asp-action="Details" asp-route-id="@lab.Id" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold shadow-xs">
+                                            <i class="bi bi-file-earmark-text me-1"></i> View Full Report
+                                        </a>
+                                        <a asp-action="Print" asp-route-id="@lab.Id" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold">
+                                            <i class="bi bi-printer"></i>
+                                        </a>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small d-inline-flex align-items-center gap-1">
+                                        <span class="spinner-border spinner-border-sm text-warning" role="status"></span>
+                                        Processing in Laboratory
+                                    </span>
+                                }
+                            </div>
+                        </div>
                     </div>
-                </div>
-            }
+                }
+            </div>
         }
     </div>
 </section>
