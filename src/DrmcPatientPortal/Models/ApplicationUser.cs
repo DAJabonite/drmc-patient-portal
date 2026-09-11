@@ -1,38 +1,56 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace DrmcPatientPortal.Models;
 
-// Extended Identity user carrying real patient profile fields.
+[Index(nameof(RegistrationReference), IsUnique = true)]
 public class ApplicationUser : IdentityUser
 {
     public string FirstName { get; set; } = string.Empty;
-
     public string? MiddleName { get; set; }
-
     public string LastName { get; set; } = string.Empty;
-
     public string FullName { get; set; } = string.Empty;
-
     public string ContactNumber { get; set; } = string.Empty;
-
     public string IdType { get; set; } = string.Empty;
-
     public string IdNumber { get; set; } = string.Empty;
 
+    // Retained during migration so existing records and older code remain readable.
+    // New registration code must use the separate notice and optional-consent fields below.
+    [Obsolete("Use PrivacyNoticeAcknowledgedAtUtc and OptionalConsentGranted.")]
     public bool PrivacyConsent { get; set; } = true;
 
-    // Optional: patient can store a preferred department for reference.
+    public AccountLifecycleStatus AccountStatus { get; internal set; } = AccountLifecycleStatus.Active;
+
+    [MaxLength(64)]
+    public string? RegistrationReference { get; internal set; }
+
+    public DateTime AccountStatusChangedAtUtc { get; internal set; } = DateTime.UtcNow;
+
+    [MaxLength(300)]
+    public string? AccountStatusReason { get; internal set; }
+
+    public DateTime? PrivacyNoticeAcknowledgedAtUtc { get; internal set; }
+
+    [MaxLength(40)]
+    public string? PrivacyNoticeVersion { get; internal set; }
+
+    public bool OptionalConsentGranted { get; internal set; }
+
+    [MaxLength(120)]
+    public string? OptionalConsentPurpose { get; internal set; }
+
+    public DateTime? OptionalConsentRecordedAtUtc { get; internal set; }
+
+    public bool CanAccessProtectedPatientData => AccountStatus == AccountLifecycleStatus.Active;
+
     public string? PreferredDepartment { get; set; }
-
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    // Demographics extracted from ID or provided manually (all nullable/optional)
     public DateTime? DateOfBirth { get; set; }
     public string? Address { get; set; }
     public string? Sex { get; set; }
     public string? BloodType { get; set; }
 
-    // Navigation collections
     public ICollection<PatientIdDocument> IdDocuments { get; set; } = new List<PatientIdDocument>();
     public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
     public ICollection<QueueTicket> QueueTickets { get; set; } = new List<QueueTicket>();
