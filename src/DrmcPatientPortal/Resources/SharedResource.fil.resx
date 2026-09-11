@@ -32,11 +32,15 @@
 
   <!-- Navigation -->
   <data name="Nav_Home"><value>Tahanan</value></data>
+  <data name="Nav_Encounters"><value>Mga Konsultasyon</value></data>
+  <data name="Nav_Results"><value>Mga Resulta</value></data>
+  <data name="Nav_Medication"><value>Gamot</value></data>
+  <data name="Nav_Malasakit"><value>Malasakit</value></data>
+  <data name="Nav_MoreServices"><value>Iba Pang Serbisyo</value></data>
   <data name="Nav_OpdGuide"><value>Gabay sa OPD</value></data>
   <data name="Nav_Queue"><value>Pila sa OPD</value></data>
   <data name="Nav_Appointments"><value>Magpa-Appointment</value></data>
   <data name="Nav_Directory"><value>Mga Doktor at Klinika</value></data>
-  <data name="Nav_Malasakit"><value>Malasakit Center</value></data>
   <data name="Nav_Advisories"><value>Mga Anunsyo sa Kalusugan</value></data>
   <data name="Nav_Dashboard"><value>Dashboard ng Pasyente</value></data>
   <data name="Nav_LabResults"><value>Resulta ng Laboratoryo</value></data>

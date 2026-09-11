@@ -92,12 +92,48 @@
             <div class="collapse navbar-collapse" id="primaryNav">
                 <ul class="navbar-nav me-auto gap-lg-1">
                     <li class="nav-item"><a class="nav-link px-3" asp-controller="Home" asp-action="Index">@Loc["Nav_Home"]</a></li>
-                    <li class="nav-item"><a class="nav-link px-3" asp-controller="Home" asp-action="OpdGuide">@Loc["Nav_OpdGuide"]</a></li>
-                    <li class="nav-item"><a class="nav-link px-3" asp-controller="Queue" asp-action="Index">@Loc["Nav_Queue"]</a></li>
-                    <li class="nav-item"><a class="nav-link px-3" asp-controller="Appointments" asp-action="Book">@Loc["Nav_Appointments"]</a></li>
-                    <li class="nav-item"><a class="nav-link px-3" asp-controller="Directory" asp-action="Index">@Loc["Nav_Directory"]</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" href="#">@Loc["Nav_Encounters"]</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" asp-controller="LabResults" asp-action="Index">@Loc["Nav_Results"]</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" asp-controller="Medications" asp-action="Index">@Loc["Nav_Medication"]</a></li>
                     <li class="nav-item"><a class="nav-link px-3" asp-controller="Malasakit" asp-action="Index">@Loc["Nav_Malasakit"]</a></li>
-                    <li class="nav-item"><a class="nav-link px-3" asp-controller="Advisories" asp-action="Index">@Loc["Nav_Advisories"]</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle px-3" href="#" id="moreServicesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            @Loc["Nav_MoreServices"]
+                        </a>
+                        <ul class="dropdown-menu shadow-sm rounded-3 border-0 small mt-1" aria-labelledby="moreServicesDropdown">
+                            <li>
+                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" asp-controller="Home" asp-action="OpdGuide">
+                                    <i class="bi bi-compass text-primary-drmc"></i>
+                                    <span>@Loc["Nav_OpdGuide"]</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" asp-controller="Queue" asp-action="Index">
+                                    <i class="bi bi-people text-primary-drmc"></i>
+                                    <span>@Loc["Nav_Queue"]</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" asp-controller="Appointments" asp-action="Book">
+                                    <i class="bi bi-calendar-plus text-primary-drmc"></i>
+                                    <span>@Loc["Nav_Appointments"]</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" asp-controller="Directory" asp-action="Index">
+                                    <i class="bi bi-person-badge text-primary-drmc"></i>
+                                    <span>@Loc["Nav_Directory"]</span>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li>
+                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" asp-controller="Advisories" asp-action="Index">
+                                    <i class="bi bi-megaphone text-primary-drmc"></i>
+                                    <span>@Loc["Nav_Advisories"]</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                 </ul>
                 <div class="d-none d-lg-block nav-divider"></div>
                 <div class="d-flex align-items-center pt-2 pt-lg-0">
