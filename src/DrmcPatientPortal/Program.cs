@@ -1,6 +1,8 @@
 using System.Globalization;
 using DrmcPatientPortal;
 using DrmcPatientPortal.Data;
+using DrmcPatientPortal.Infrastructure.EvidenceGates;
+using DrmcPatientPortal.Middleware;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Identity;
@@ -10,12 +12,15 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
+builder.Services.Configure<FeatureApprovalOptions>(
+    builder.Configuration.GetSection(FeatureApprovalOptions.SectionName));
+builder.Services.AddSingleton<IFeatureApprovalService, FeatureApprovalService>();
 
 // Localization: Trilingual support for English (en), Filipino (fil), and Cebuano (ceb)
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
@@ -35,22 +40,12 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 })
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// In Development, Identity emails and 2FA tokens are logged to console. Documented in README.
 builder.Services.AddSingleton<IEmailSender, ConsoleEmailSender>();
-
-// In Development, SMS confirmations and OTP codes are logged to console.
 builder.Services.AddSingleton<ISmsSender, ConsoleSmsSender>();
-
-// In-process vector QR code generator for appointment check-in slips
 builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
-
-// PHI and security access audit logging service
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
-
-// Offline local OCR ID extraction service
 builder.Services.AddSingleton<IIdDocumentExtractionService, TesseractIdDocumentExtractionService>();
 
-// Session state for active caregiver/proxy profile switching
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
@@ -69,7 +64,6 @@ builder.Services.AddControllersWithViews()
 
 var app = builder.Build();
 
-// Seed the database with development/review patient data (safe: only in Development).
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
@@ -78,7 +72,6 @@ if (app.Environment.IsDevelopment())
     DbInitializer.Initialize(db, userManager);
 }
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
@@ -92,7 +85,6 @@ else
 app.UseHttpsRedirection();
 app.UseRouting();
 
-// Request Localization: en (Default), fil, ceb
 var supportedCultures = new[] { "en", "fil", "ceb" };
 var localizationOptions = new RequestLocalizationOptions()
     .SetDefaultCulture("en")
@@ -107,19 +99,19 @@ localizationOptions.RequestCultureProviders = new List<IRequestCultureProvider>
 };
 
 app.UseRequestLocalization(localizationOptions);
-
 app.UseSession();
-
 app.UseAuthentication();
+
+// Prevent browsers and shared intermediaries from retaining authenticated patient content.
+app.UseProtectedResponseCacheControls();
+
 app.UseAuthorization();
 
 app.MapStaticAssets();
-
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
-
 app.MapRazorPages()
    .WithStaticAssets();
 

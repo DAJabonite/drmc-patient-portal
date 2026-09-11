@@ -2,252 +2,190 @@
 
 **Target repository:** `DAJabonite/drmc-patient-portal`  
 **Protected baseline:** `master` at `0a2ff2e847d31e93158a9e1e4401035bde6fa59c`  
-**Implementation branch:** `feature/functional-requirements-implementation`  
+**Integration branch:** `feature/functional-requirements-implementation`  
 **Requirements baseline:** FR-01 through FR-133 and assumptions A-01 through A-26  
-**Plan status:** Ready for staged implementation; approval-dependent behavior remains disabled.
+**Plan status:** Implementation started through small, reviewable phase branches.
 
-## 1. Objective
+## Approved scope amendment
 
-Adapt the existing DRMC Patient Portal to the supplied Functional Requirements while preserving the established ASP.NET Core MVC, Razor, Bootstrap, SQLite/EF Core, DRMC visual language, responsive behavior, and accessible interaction patterns.
+`DEC-2026-09-11-MALASAKIT-001` overrides the restrictive interpretation of FR-73, FR-78, A-12, and A-15 for the Malasakit module. The existing Malasakit assessment must remain available, including program matching, documentary checklists, eligibility guidance, and estimated coverage calculation or promise behavior. This exception does not automatically approve personal financial-assistance status integrations outside Malasakit.
 
-This is not a feature-addition-only release. The requirements explicitly remove or restrict several existing capabilities. Implementation must therefore combine:
+## Objective
 
-1. controlled de-scoping of prohibited functionality;
-2. new verification, privacy, administrative, feedback, Digital ID, and PWA capabilities;
-3. stricter security and data-state handling; and
-4. an evidence gate for DRMC-specific policy, legal, content, and integration decisions.
+Adapt the portal to the supplied requirements while preserving ASP.NET Core MVC, Razor, Bootstrap, EF Core/SQLite, the existing DRMC design language, and the approved Malasakit behavior. Work proceeds in focused pull requests; unapproved institutional behavior remains disabled through evidence gates.
 
-## 2. Non-negotiable branch strategy
+## Branch strategy
 
-- `master` remains the known baseline and must receive no direct implementation commits.
-- All FR work is isolated in `feature/functional-requirements-implementation`.
-- The FR branch starts from the exact current `master` commit.
-- Delivery should occur through reviewed pull requests. Prefer small PRs by phase rather than one large merge.
-- Required checks before merge: build, unit/integration tests, migration validation, security tests, accessibility journeys, responsive checks, and requirements traceability.
-- Any unapproved institutional behavior must remain behind an explicit disabled configuration/evidence gate per FR-133.
+- `master` is protected and remains the known baseline.
+- `feature/functional-requirements-implementation` is the integration branch.
+- Each phase is developed in a dedicated branch and merged into the integration branch only after review.
+- Required checks: build, tests, migration validation, security checks, accessibility journeys, responsive checks, and requirement traceability.
+- No approval may be inferred from seed data, placeholder integrations, or existing UI copy.
 
-## 3. Current-state assessment
+## Baseline assessment
 
-### Reusable baseline
+### Reusable
 
-- .NET 10 ASP.NET Core MVC with Razor and Bootstrap 5.3.8.
-- ASP.NET Core Identity, TOTP 2FA, EF Core, SQLite, localization, anti-forgery protection, and ownership-filtered patient queries.
-- Existing responsive DRMC design, public navigation, OPD guide, queue board, advisories, Malasakit content, encounters, prescriptions, audit records, and ID OCR/manual-entry workflow.
-- Existing English, Filipino, and Cebuano resource structure.
-- Existing xUnit/Moq test projects and migrations.
+- .NET 10 ASP.NET Core MVC, Razor, Bootstrap 5.3.8, Identity, TOTP 2FA, EF Core, SQLite, localization, anti-forgery, and ownership-filtered patient queries.
+- Existing responsive UI, OPD guide, queue board, bulletin/advisory content, Malasakit, encounters, prescriptions, audit records, and ID OCR/manual-entry workflow.
+- Existing English, Filipino, and Cebuano resources and xUnit/Moq test project.
 
-### Major conflicts requiring correction
+### Conflicts to correct
 
 | Existing behavior | Required direction |
 |---|---|
-| Registration requires email and activates/signs in immediately | Email optional; create Pending Verification account; restrict patient records until authorized approval (FR-05, FR-10–15, FR-26–31). |
-| Password minimum is 8 characters | Provisional 12–128-character policy, paste/password-manager support, compromised-password control (FR-07). |
-| Privacy consent is one required checkbox | Separate notice acknowledgment from optional, purpose-specific consent (FR-08, FR-16–20). |
-| ID uploads lack explicit size/type/signature/malware/retention enforcement | Add safe upload pipeline, disclosure, isolation, cleanup, and evidence-gated retention (FR-18–19, FR-62–65). |
-| Portal exposes lab values, analytes, trends, print views, and report details | Remove detailed laboratory findings from every patient-facing page/response/cache; show metadata/status/release instructions only (FR-42, FR-46–53). |
-| Appointment booking, cancellation, teleconsult links are enabled | FR baseline is read-only and A-24 excludes booking/rescheduling/cancellation/teleconsultation unless separately approved. |
-| Medication refill submission is enabled | Prescriptions & Medications becomes read-only; no renewal/refill generation (FR-90–92, A-24). |
-| Proxy/dependent access is enabled | A-24 excludes proxy/dependent accounts from approved scope; disable and preserve code only outside active routes until re-approved. |
-| Queue lookup accepts a predictable token alone and estimates wait time | Require approved restricted proof, throttling, freshness states, and no guaranteed wait estimate (FR-81–87). |
-| Malasakit navigator calculates an estimated coverage outcome | Convert to approved informational guidance; do not imply live eligibility or guaranteed coverage (FR-72–73, FR-78). |
-| Session idle timeout is 30 minutes; no absolute limit or warning | Provisional 15-minute inactivity, 8-hour absolute limit, two-minute warning, session invalidation controls (FR-34–39). |
-| Local audit table is mutable and not comprehensive | Expand event coverage and add tamper-resistant/remote sink boundary (FR-64–65). |
-| No staff verification workflow, privacy request flow, Digital ID, feedback/CSAT, OPD hub, or PWA foundation | Add narrowly scoped modules with least-privilege roles and evidence gates (FR-12–25, FR-60, FR-66–78, FR-93–99, FR-124–133). |
+| Registration requires email and signs users in immediately | Email optional; create Pending Verification accounts; allow only limited registration status until approval. |
+| Password minimum is 8 | Provisional 12–128 characters with approved compromised-password screening. |
+| One required privacy-consent checkbox | Separate notice acknowledgment from optional purpose-specific consent. |
+| ID uploads lack complete type/size/signature/malware/retention controls | Add a safe, isolated upload and cleanup pipeline. |
+| Detailed laboratory values, trends, reports, and downloads are exposed | Replace with approved metadata, status, and physical-release instructions only. |
+| Appointment booking/cancellation/teleconsultation are active | Keep outside the FR baseline unless separately approved. |
+| Medication refill actions are active | Make Prescriptions & Medications read-only. |
+| Proxy/dependent accounts are active | Keep outside approved scope until separately approved. |
+| Queue token lookup is predictable and unrestricted | Add private proof, throttling, freshness, and enumeration protection. |
+| Session idle timeout is 30 minutes | Add provisional 15-minute inactivity, 8-hour absolute lifetime, warning, and invalidation controls. |
+| Audit records are local and incomplete | Expand coverage and provide a tamper-resistant sink boundary. |
 
-## 4. Target architecture
+### Explicitly preserved
+
+The Malasakit assessment, matching rules, documentary checklist, and estimated coverage output remain unchanged unless the repository owner issues a later decision.
+
+## Target architecture
 
 ### Identity and verification
 
-Add account lifecycle states: `PendingVerification`, `CorrectionRequired`, `Active`, `Rejected`, `Suspended`. Store non-predictable registration references and verification decisions separately from Identity credentials. Introduce narrowly scoped policies such as `ActivePatient`, `AccountVerifier`, `RecoveryOfficer`, `PrivacyOfficer`, and `ContentPublisher`.
+Add `PendingVerification`, `CorrectionRequired`, `Active`, `Rejected`, and `Suspended` lifecycle states; non-predictable registration references; separate contact-control verification; and narrowly scoped `ActivePatient`, `AccountVerifier`, `RecoveryOfficer`, `PrivacyOfficer`, and `ContentPublisher` policies.
 
-### Data-source boundary
+### Source-state boundary
 
-Every patient/operational read must return an explicit state: `Loading`, `Available`, `ConfirmedEmpty`, `Stale`, `Unavailable`, `Offline`, or `Error`. Development seed data is never evidence of a production source. Source adapters must expose freshness and approval metadata.
+Patient and operational reads must distinguish `Loading`, `Available`, `ConfirmedEmpty`, `Stale`, `Unavailable`, `Offline`, and `Error`. Seed data never represents a Production source connection.
 
-### Evidence gate
+### Evidence gates
 
-Introduce an `ApprovedFeatureRegistry` or equivalent configuration-backed service containing approval status, evidence reference, effective date, owner, and environment restrictions. Disabled features must fail closed and must not publish placeholder claims.
+Approval records contain an enabled flag, evidence reference, accountable approver, approval timestamp, and boundary notes. Production gates fail closed when evidence is incomplete.
 
 ### Security and privacy
 
-Use ownership authorization at every record query, no-store headers for authenticated responses, masked logs, safe upload validation, server-side throttling, idempotency for submissions, protected notification records, secure session lifecycle, and category-based retention/disposal jobs.
+Apply record ownership authorization, no-store headers, safe logs, upload validation, throttling, idempotency, protected notification records, session controls, and category-based retention/disposal.
 
-## 5. Delivery phases
+## Delivery phases
 
-### Phase 0 — Governance, traceability, and safety rails
+### Phase 0 — Governance and safety rails
 
-**Requirements:** FR-17, FR-60–69, FR-100, FR-114, FR-118–120, FR-133; A-01–A-26.
+**FR coverage:** FR-17, FR-60–69, FR-100, FR-114, FR-118–120, FR-133.
 
-- Add a machine-readable requirements traceability register mapping every FR to implementation, test, evidence dependency, and status.
-- Add approval/evidence gates and production-safe defaults.
-- Add CI checks for build, test, migration drift, dependency audit, secret scanning, formatting, and traceability completeness.
-- Establish protected-response middleware and standardized source-state/view components.
-- Record exact supported browser matrix and dependency versions.
+- Add feature approval/evidence registry with fail-closed Production behavior.
+- Record the Malasakit scope amendment.
+- Add standardized source states.
+- Add no-store controls for authenticated and protected responses.
+- Add CI, traceability, browser matrix, and governance documentation.
 
-**Exit criteria:** Every FR has an owner and test strategy; no unapproved feature can be enabled in Production.
+**Exit:** No unapproved feature can be enabled in Production; protected responses are non-cacheable.
 
 ### Phase 1 — Registration, verification, and recovery
 
-**Requirements:** FR-01–39.
+**FR coverage:** FR-01–39.
 
 - Make email optional and normalize mobile identifiers.
-- Add provisional mobile uniqueness handling with a documented shared-phone decision boundary.
-- Change password policy to 12–128 characters and add compromised-password screening through an approved privacy-preserving adapter.
-- Split privacy notice acknowledgment and optional-purpose consent records.
-- Harden ID upload: extension-independent file signature checks, allowlisted image types, configurable size limits, image decoding, metadata stripping, malware adapter boundary, isolated temporary storage, expiry cleanup, and retention disclosure.
-- Create Pending Verification accounts without protected-record access.
-- Add registration acknowledgment and limited protected status page.
-- Add correction-required/resubmission/rejection workflows without duplicate accounts.
-- Add least-privilege verifier UI and decision audit trail.
-- Add optional mobile/email contact-control verification distinct from identity verification.
-- Add mobile-first recovery and identity-assisted lost-number recovery.
-- Add recent reauthentication for password changes and revoke other sessions.
-- Add rate limiting, generic outward responses, purpose-bound single-use secrets, idle/absolute session controls, and expiry warning.
+- Implement provisional mobile uniqueness behind the shared-phone decision boundary.
+- Apply 12–128-character password policy and approved compromised-password adapter.
+- Separate privacy acknowledgment from optional consent.
+- Harden ID upload and retention disclosure.
+- Create Pending Verification accounts with acknowledgment and limited protected status.
+- Add correction-required, approval, rejection, and resubmission flows.
+- Add least-privilege verification and recovery roles.
+- Add generic responses, throttling, purpose-bound secrets, and session controls.
 
-**Primary schema additions:** account status, registration reference, verification case/decision, privacy acknowledgment, consent record, contact-verification transaction, notification delivery attempt, recovery transaction, session/security stamp metadata.
+**Exit:** Pending accounts cannot retrieve patient records; Active accounts authenticate through approved identifiers.
 
-**Exit criteria:** Pending users can view only registration status; Active users can authenticate by approved mobile/email identifier; enumeration and duplicate-submission tests pass.
+### Phase 2 — Clinical release minimization and navigation
 
-### Phase 2 — Clinical release minimization and protected navigation
-
-**Requirements:** FR-40–71, FR-88–92.
+**FR coverage:** FR-40–71 and FR-88–92.
 
 - Rebuild Home as a read-only summary with explicit source states.
-- Add latest diagnosis only through an approved release-policy service.
-- Replace lab details, values, trends, print/download routes, and analyte payloads with consultation/direct-request metadata, `Available`/`In Progress`, stale/unavailable states, and physical-release instructions.
-- Remove sensitive lab data from HTML, JSON, logs, caches, source maps, and client storage.
-- Keep Encounters reverse chronological and limited; connect to a separate read-only Medical History view without duplicating full records.
-- Make Prescriptions & Medications read-only and remove refill-generation actions.
-- Apply `ActivePatient` policy and no-store cache controls to all protected pages.
-- Align navigation labels exactly with FR-55 and maintain current-page indication across desktop/mobile.
+- Release diagnoses and encounter details only through approved policy.
+- Remove laboratory values, detailed findings, trends, print/download views, images, and previews from all patient-facing responses.
+- Keep Encounters and Medical History read-only and non-duplicative.
+- Make Prescriptions & Medications read-only.
+- Apply `ActivePatient` and record-ownership policies plus no-store controls.
+- Align all destination labels with FR-55.
 
-**Exit criteria:** Automated response inspection finds no detailed lab findings anywhere; direct-ID authorization tests pass for every patient record type.
+**Exit:** Response inspection finds no prohibited laboratory findings; cross-patient identifiers reveal no content.
 
-### Phase 3 — Public service information and queue safety
+### Phase 3 — Public services, Malasakit, and queue safety
 
-**Requirements:** FR-56, FR-68–69, FR-72–87, FR-93–99.
+**FR coverage:** FR-56, FR-68–69, FR-72–87, and FR-93–99, as amended by `DEC-2026-09-11-MALASAKIT-001`.
 
-- Add a public Outpatient Department hub linking to Queue Tracker and OPD Guide.
-- Convert advisories into the approved Bulletin Board information architecture while preserving list/detail behavior.
-- Separate Financial Assistance guidance from Malasakit program guidance; remove eligibility/coverage calculation claims.
-- Add Citizen’s Charter content model with approval, source, review date, effective date, responsible office, fees, channels, and commitment fields.
-- Add public feedback/complaint form, non-predictable acknowledgment reference, protected follow-up, optional anonymous-contact behavior, and voluntary CSAT.
-- Redesign queue lookup around an approved private lookup secret or authenticated access; keep secrets out of URLs/logs/analytics.
-- Add manual refresh, source timestamp/time zone, stale threshold, unavailable state, and rate limiting.
+- Add an Outpatient Department hub for Queue Tracker and OPD Guide.
+- Align Advisories with the Bulletin Board information architecture.
+- Add general Financial Assistance guidance while preserving the existing Malasakit assessment and estimated coverage behavior.
+- Add approved Citizen’s Charter content and review metadata.
+- Add public feedback/complaint submission, protected follow-up, and voluntary CSAT.
+- Add restricted queue proof, manual refresh, source timestamp/time zone, stale state, and rate limiting.
 
-**Exit criteria:** Public pages expose no patient identifiers; observed queue or feedback references alone reveal no private record.
+**Exit:** Public pages expose no patient identifiers; queue and feedback references alone reveal no private record; Malasakit retains its approved calculator.
 
-### Phase 4 — Digital ID and privacy-rights workflows
+### Phase 4 — Digital ID and privacy rights
 
-**Requirements:** FR-66–67, FR-74–76.
+**FR coverage:** FR-66–67 and FR-74–76.
 
-- Add authenticated Digital ID page with approved display name and opaque portal identifier.
-- Generate a minimized QR payload containing only an approved opaque reference.
-- Do not provide public patient-record resolution from QR possession.
-- Add authenticated privacy access/correction/erasure-or-blocking requests plus identity-assisted route.
-- Add protected request status and authorized disposition; never auto-delete medical records.
+- Add an authenticated Digital ID with approved display name and opaque identifier.
+- Limit QR payloads to an approved opaque reference.
+- Require a separately approved verification workflow; QR possession alone discloses nothing.
+- Add authenticated and identity-assisted privacy-rights requests with protected status and disposition.
 
-**Exit criteria:** QR decoding reveals no medical/contact/government-ID data; privacy decisions are role-restricted and auditable.
+**Exit:** QR decoding reveals no medical, contact, address, or full government-ID data.
 
 ### Phase 5 — Accessibility, responsive UX, localization, and performance
 
-**Requirements:** FR-54–55, FR-101–123.
+**FR coverage:** FR-54–55 and FR-101–123.
 
-- Reconcile design tokens to confirmed `#0E4E87`; label unapproved tokens as placeholders.
-- Preserve approved logo aspect ratio and alternatives.
-- Enforce persistent labels, input purposes, keyboard hints, field-level errors, focus management, live-region restraint, reduced motion, and 44×44 primary targets.
-- Test at all named breakpoints and intermediate widths, 320px reflow, 200% text, portrait/landscape, keyboard-only, screen reader, contrast, and mobile keyboard states.
-- Meet activation-count budgets without bypassing safeguards.
-- Provide approved English and Filipino content; keep Cebuano only as an explicitly approved additional locale.
-- Add performance instrumentation subject to privacy approval and distinguish lab from field results.
+- Reconcile tokens to confirmed `#0E4E87` and label placeholders.
+- Enforce persistent labels, field errors, keyboard support, focus management, reduced motion, and 44×44 primary touch targets.
+- Test 320px reflow, 200% text, all named breakpoints, intermediate widths, orientations, keyboard, screen reader, contrast, and mobile keyboard states.
+- Meet interaction budgets without bypassing safeguards.
+- Provide approved English and Filipino; retain Cebuano as an approved additional locale only.
+- Add privacy-reviewed performance measurement.
 
-**Exit criteria:** Manual WCAG 2.2 AA journey evidence exists; core journeys pass responsive and interaction-budget tests.
+**Exit:** Manual WCAG 2.2 AA journey evidence and responsive results are recorded.
 
-### Phase 6 — PWA foundation and shared-device protection
+### Phase 6 — PWA and shared-device protection
 
-**Requirements:** FR-124–132.
+**FR coverage:** FR-124–132.
 
-- Add manifest, approved icons, and optional install guidance.
-- Cache only the shell and explicit allowlisted public guidance.
-- Deny service-worker caching for authenticated pages, APIs, identifiers, medical data, and auth artifacts.
-- Add offline/online truth states; never queue sensitive submissions automatically.
-- Clear app-managed sensitive state on logout/expiry and prevent back/restore from displaying protected content.
-- Defer disruptive service-worker activation during forms and offer explicit safe update.
+- Add manifest, approved icons, optional install guidance, and browser fallback.
+- Cache only the shell and explicit public allowlist.
+- Exclude patient pages, responses, identifiers, medical information, and auth artifacts.
+- Report offline submissions honestly and never silently queue sensitive forms.
+- Clear app-managed sensitive state on logout/expiry.
+- Defer disruptive service-worker updates during forms.
 
-**Exit criteria:** Cache Storage/IndexedDB inspection contains no patient data; logout/back/restore and offline-submission tests pass.
+**Exit:** Browser storage contains no patient data; logout/back/restore and offline-submission tests pass.
 
-### Phase 7 — Release hardening and production evidence
+### Phase 7 — Release hardening
 
-- Run migration rehearsal against a sanitized copy and verify rollback.
-- Complete threat model, privacy review, retention schedule, key-management design, and incident/logging review.
-- Replace console SMS/email with approved providers only after evidence is recorded; delivery failure never rolls back activation.
-- Execute load, abuse, accessibility, security, and disaster-recovery tests.
-- Produce final FR-01–FR-133 traceability report and unresolved-approval register.
+- Rehearse migrations and rollback on sanitized data.
+- Complete threat model, privacy review, retention schedule, key management, audit sink, and incident review.
+- Enable approved notification providers without coupling delivery success to activation.
+- Execute load, abuse, accessibility, security, and recovery tests.
+- Produce final FR-01–FR-133 traceability and unresolved-evidence registers.
 
-## 6. Proposed repository changes
+## Test strategy
 
-```text
-src/DrmcPatientPortal/
-├── Authorization/          # policies and ownership handlers
-├── Features/
-│   ├── RegistrationStatus/
-│   ├── StaffVerification/
-│   ├── PrivacyRequests/
-│   ├── DigitalId/
-│   ├── Feedback/
-│   └── CitizenCharter/
-├── Infrastructure/
-│   ├── EvidenceGates/
-│   ├── Notifications/
-│   ├── RateLimiting/
-│   ├── Retention/
-│   └── SourceStates/
-├── Middleware/             # no-store, session expiry, security headers
-└── wwwroot/
-    ├── manifest.webmanifest
-    └── service-worker.js
+- **Unit:** lifecycle transitions, evidence decisions, source states, minimization, QR payload, retention rules, and normalization.
+- **Integration:** registration-to-activation, correction resubmission, status access, login/recovery, notification failure, ownership boundaries, and cache headers.
+- **Security:** enumeration, CSRF, XSS, IDOR, path traversal, unsafe uploads, brute force, secret reuse, session fixation/revocation, and cache leakage.
+- **Clinical release:** negative assertions that prohibited laboratory findings never reach patient-facing responses or browser-managed storage.
+- **Accessibility:** keyboard/screen-reader journeys, reflow, text resize, contrast, reduced motion, focus restoration, and restrained announcements.
+- **PWA:** cache allowlist, sensitive exclusion, logout clearing, safe update, and no background sensitive submission.
 
-tests/
-├── DrmcPatientPortal.Tests/
-├── DrmcPatientPortal.IntegrationTests/
-├── DrmcPatientPortal.SecurityTests/
-└── DrmcPatientPortal.AccessibilityTests/
+## Approval blockers
 
-docs/
-├── FUNCTIONAL_REQUIREMENTS.md
-├── FR_IMPLEMENTATION_PLAN.md
-├── REQUIREMENTS_TRACEABILITY.csv
-├── APPROVAL_AND_EVIDENCE_REGISTER.md
-├── THREAT_MODEL.md
-└── RELEASE_EVIDENCE/
-```
+Production evidence is still required for identifiers/shared phones, upload limits and retention, staff roles, notification providers, clinical release policy, source systems and freshness, queue proof/rate limits, Citizen’s Charter and public content, Digital ID lifecycle, translations, brand assets, browser matrix, performance measurement, and PWA icons.
 
-## 7. Test strategy
+Malasakit calculation/coverage behavior is not in this blocker list because it has the explicit repository-owner decision `DEC-2026-09-11-MALASAKIT-001`.
 
-- **Unit:** lifecycle transitions, data minimization, source-state mapping, QR payload, retention rules, normalization, policy decisions.
-- **Integration:** registration through activation, correction resubmission, protected status, login/recovery, notification failure, authorization boundaries, no-store headers.
-- **Security:** enumeration, CSRF, XSS, IDOR, path traversal, upload polyglots, oversized files, brute force, secret reuse, session fixation/revocation, cache leakage.
-- **Clinical-release:** negative assertions that detailed laboratory findings never appear in patient-facing responses or browser-managed storage.
-- **Accessibility:** keyboard and screen-reader journeys, 320px reflow, 200% text, contrast, reduced motion, focus restoration, dynamic announcements.
-- **PWA/offline:** cache allowlist, sensitive exclusion, logout clearing, safe update, no background sensitive submission.
-- **Performance:** approved low-end mobile laboratory profile plus privacy-reviewed field metrics.
-
-## 8. Approval blockers
-
-Implementation may proceed behind disabled boundaries, but Production must not enable affected behavior until DRMC supplies approval/evidence for:
-
-- accepted identifiers, shared-phone handling, and email-login ownership;
-- ID types, upload limits, malware controls, retention/disposal, and OCR approval;
-- verifier/recovery/privacy roles and responsible offices;
-- SMS/email providers, retry policy, wording, and service commitments;
-- clinical release rules for diagnoses, encounters, medications, and all laboratory metadata;
-- source systems, patient linkage, freshness thresholds, and outage semantics;
-- queue proof mechanism and rate limits;
-- Citizen’s Charter, Malasakit, financial-assistance, bulletin, feedback, anti-fixer, and contact content;
-- Digital ID identifier, QR lifecycle, and verification workflow;
-- English/Filipino translations, Cebuano scope, brand assets/tokens, browser matrix, performance measurement, and PWA icons.
-
-## 9. Recommended PR sequence
+## Pull-request sequence
 
 1. `FR-000 governance-and-evidence-gates`
 2. `FR-001 registration-lifecycle-and-verification`
@@ -259,4 +197,4 @@ Implementation may proceed behind disabled boundaries, but Production must not e
 8. `FR-007 pwa-cache-and-shared-device-security`
 9. `FR-008 release-evidence-and-production-hardening`
 
-Each PR must update the traceability register and include tests for every mapped requirement. No phase should silently infer approval from development seed data, existing UI copy, or placeholder integrations.
+Every PR updates traceability and tests for its mapped requirements.
