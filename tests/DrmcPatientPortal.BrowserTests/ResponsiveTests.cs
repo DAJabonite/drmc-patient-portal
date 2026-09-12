@@ -84,6 +84,7 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
                 var expectedStatus = route == "/Home/ServiceUnavailable" ? 503 : route.Contains("reference=missing") ? 404 : 200;
                 if (response?.Status != expectedStatus) failures.Add($"{route}: HTTP {response?.Status}, expected {expectedStatus}");
                 if (page.Url.Contains("/Login") && !route.Contains("/Login")) failures.Add($"{route}: unexpected login redirect");
+                if (route == "/Identity/Account/Register") await SignupTests.AcceptNotice(page);
                 var problems = await LayoutProblems(page);
                 failures.AddRange(problems.Select(p => route + ": " + p));
                 routes.Add(route);

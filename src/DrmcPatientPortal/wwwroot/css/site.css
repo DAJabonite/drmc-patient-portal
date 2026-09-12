@@ -1087,12 +1087,80 @@ code,
     min-height: 44px;
 }
 
+.registration-stepper {
+    --wizard-progress: 0%;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    position: relative;
+    padding: 0;
+    list-style: none;
+}
+.registration-stepper::before,
+.registration-stepper::after {
+    content: "";
+    position: absolute;
+    top: 21px;
+    left: 12.5%;
+    width: 75%;
+    height: 3px;
+    background: var(--drmc-border);
+}
+.registration-stepper::after { width: var(--wizard-progress); background: var(--drmc-primary); }
+.registration-stepper li { display: flex; flex-direction: column; align-items: center; gap: .5rem; text-align: center; font-size: .85rem; color: var(--drmc-muted); padding: 0 .2rem; }
 .wizard-step-btn {
-    z-index: 3;
-    width: 44px !important;
-    height: 44px !important;
+    display: grid;
+    place-items: center;
+    position: relative;
+    z-index: 1;
+    width: 44px;
+    height: 44px;
     flex: 0 0 44px;
-    padding: 0 !important;
+    border: 1px solid var(--drmc-border);
+    border-radius: 50%;
+    background: #f5f7fa;
+    font-weight: 700;
+}
+.registration-stepper .is-current { color: var(--drmc-primary); font-weight: 700; }
+.registration-stepper .is-current .wizard-step-btn { background: var(--drmc-primary); border-color: var(--drmc-primary); color: #fff; }
+.registration-stepper .is-complete .wizard-step-btn { background: #146c43; border-color: #146c43; color: #fff; }
+.registration-stepper .is-skipped .wizard-step-btn { border-style: dashed; }
+.registration-actions { display: flex; flex-wrap: wrap; align-items: stretch; justify-content: space-between; gap: .75rem; }
+.registration-actions > .btn,
+.registration-action-group > .btn { min-height: 48px; padding: .65rem 1.1rem; font-size: 1rem; line-height: 1.4; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; }
+.registration-actions .btn i { flex-shrink: 0; }
+.registration-action-group { display: flex; flex-wrap: wrap; gap: .75rem; }
+.registration-page fieldset { min-width: 0; }
+.registration-page .wizard-step h2 { scroll-margin-top: 6rem; }
+.registration-page .btn:disabled,
+.registration-consent .btn:disabled { opacity: 1; background: #edf1f5 !important; color: #536273 !important; border-color: #bdc9d5 !important; box-shadow: none !important; }
+.registration-page .input-validation-error { border: 2px solid #a51d2d; }
+.registration-page label[role=button]:focus-visible { outline: 3px solid var(--drmc-primary); outline-offset: 3px; }
+.registration-consent { z-index: 1060; }
+.registration-consent .modal-content { max-height: calc(100vh - 2rem); max-height: calc(100dvh - 2rem); }
+.registration-consent .modal-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.registration-consent .modal-body:focus-visible { outline: 3px solid var(--drmc-primary); outline-offset: -3px; }
+.registration-consent .modal-header,
+.registration-consent .modal-footer { flex-shrink: 0; }
+.registration-consent .modal-footer > * { margin: 0; }
+.registration-consent .form-check { padding-left: 1.6rem; }
+.registration-consent .form-check-label { cursor: pointer; }
+.registration-consent .form-check-input:disabled ~ .form-check-label { opacity: 1; }
+@media (max-width: 575.98px) {
+    .registration-stepper li { font-size: .72rem; }
+    .registration-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+    .registration-action-group { display: grid; grid-template-columns: minmax(0, 1fr); }
+    .registration-actions .btn { width: 100%; }
+    .registration-consent .modal-header,
+    .registration-consent .modal-footer { padding: .75rem; }
+    .registration-consent .modal-title { font-size: 1.15rem; }
+    .registration-consent .registration-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+    .registration-consent .registration-actions .btn { font-size: .85rem; padding: .5rem; }
+}
+@media (max-height: 500px) {
+    .registration-consent .modal-header { padding: .5rem .75rem; }
+    .registration-consent .modal-footer { padding: .5rem .75rem; }
+    .registration-consent .form-check-label,
+    .registration-consent #consentHint { font-size: .75rem; }
 }
 
 .form-label {

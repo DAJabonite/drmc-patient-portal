@@ -63,6 +63,7 @@ public sealed class WorkflowTests(PortalFixture app)
         await using var context = await browser.NewContextAsync(app.Context(device));
         var page = await context.NewPageAsync();
         await page.GotoAsync("/Identity/Account/Register");
+        await SignupTests.AcceptNotice(page);
         await Expect(page.Locator("#btnGoToCapture")).ToBeDisabledAsync();
         await page.Locator("#selectIdType").SelectOptionAsync("Philippine Passport");
         await page.Locator("#btnGoToCapture").ClickAsync();
@@ -83,8 +84,6 @@ public sealed class WorkflowTests(PortalFixture app)
         await page.Locator("input[name='Input.Mobile']").FillAsync("9175550123");
         await page.Locator("#regPassword").FillAsync("Browser!2026Test");
         await page.Locator("#regConfirmPassword").FillAsync("mismatch");
-        await page.Locator("label[for=regConsent]").ClickAsync();
-        await Expect(page.Locator("#regConsent")).ToBeCheckedAsync();
         await page.Locator("#registerSubmit").ClickAsync();
         await Expect(page.Locator("[data-valmsg-for='Input.ConfirmPassword']")).Not.ToBeEmptyAsync();
         await page.Locator("#regConfirmPassword").FillAsync("Browser!2026Test");
