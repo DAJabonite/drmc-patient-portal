@@ -66,7 +66,7 @@
                             <input asp-for="SymptomDurationDays" type="number" min="1" max="365" class="form-control form-control-sm" />
                         </div>
                         <div class="col-sm-6">
-                            <label asp-for="PainScale" class="form-label fw-semibold text-dark small">Pain Level (0 = No Pain, 10 = Severe):</label>
+                            <label asp-for="PainScale" for="painRange" class="form-label fw-semibold text-dark small">Pain Level (0 = No Pain, 10 = Severe):</label>
                             <div class="d-flex align-items-center gap-2">
                                 <input asp-for="PainScale" type="range" class="form-range" min="0" max="10" id="painRange"
                                        oninput="document.getElementById('painVal').innerText = this.value;" />

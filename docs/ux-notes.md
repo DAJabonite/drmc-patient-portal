@@ -11,7 +11,7 @@ Patients should see the next useful action before institutional or explanatory c
 - Mobile and desktop primary navigation use the five client-requested destinations: Home, Encounters, Results, Medication, and Financial Assistance / Malasakit.
 - Signed-in Home opens the patient dashboard; signed-out Home opens the public landing page.
 - Guest access to Encounters, Results, and Medication follows the existing sign-in redirect and returns the patient to the destination after authentication.
-- The mobile header Menu contains Book Appointment, OPD Queue, directory, OPD guide, advisories, language, and account actions without hiding a primary destination behind “More.”
+- The icon-only mobile header hamburger opens Book Appointment, OPD Queue, directory, OPD guide, advisories, language, and account actions. It retains an accessible Menu label.
 - Book and Queue remain one tap from the Home page and patient dashboard as prominent contextual actions.
 - Current location is conveyed with text/icon styling and `aria-current`, not color alone.
 
@@ -32,7 +32,7 @@ Patients should see the next useful action before institutional or explanatory c
 ## Dashboard and clinical records
 
 - The dashboard opens with the patient's next appointment and its next valid action, followed by recent results and active medications.
-- Access history and settings live in More rather than consuming the dashboard's first viewport.
+- Access history and settings remain in the dashboard shortcut row and utility/account navigation; the welcome banner does not duplicate them.
 - Record indexes use readable rows with a clear status and one primary action. Supporting metadata wraps instead of overflowing.
 - Detail pages keep safety information and clinical wording intact while using consistent headings, definition-style metadata, and action placement.
 

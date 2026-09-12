@@ -3,6 +3,7 @@
     <Project Path="src/DrmcPatientPortal/DrmcPatientPortal.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/DrmcPatientPortal.BrowserTests/DrmcPatientPortal.BrowserTests.csproj" />
     <Project Path="tests/DrmcPatientPortal.Tests/DrmcPatientPortal.Tests.csproj" />
   </Folder>
 </Solution>

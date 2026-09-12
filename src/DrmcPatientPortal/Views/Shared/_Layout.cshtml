@@ -87,7 +87,6 @@
             <button class="mobile-menu-trigger" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileUtilityMenu"
                     aria-controls="mobileUtilityMenu" aria-label="@Loc["Mobile_Menu"]">
                 <i class="bi bi-list" aria-hidden="true"></i>
-                <span>@Loc["Mobile_Menu"]</span>
             </button>
         </div>
     </header>
@@ -170,7 +169,7 @@
 
             <div class="footer-bottom d-flex justify-content-between flex-wrap gap-2">
                 <span>&copy; @DateTime.Now.Year DRMC. All content is in the public domain unless otherwise stated.</span>
-                <span><a asp-controller="Home" asp-action="Privacy">Privacy Statement</a> · <a asp-controller="Home" asp-action="Privacy">Terms of Use</a></span>
+                <span><a asp-controller="Home" asp-action="Privacy">Privacy Statement</a> · <a asp-controller="Home" asp-action="Privacy" asp-fragment="portal-terms">Terms of Use</a></span>
             </div>
         </div>
     </footer>

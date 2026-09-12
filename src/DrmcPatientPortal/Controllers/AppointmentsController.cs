@@ -222,12 +222,10 @@ public class AppointmentsController : Controller
             .Include(a => a.Doctor)
             .FirstOrDefaultAsync(a => a.BookingReference == reference);
 
-        if (appointment is null)
-        {
-            return NotFound();
-        }
-
-        if (!CanAccessAppointment(appointment)) return NotFound();
+        // Use the same response for missing and inaccessible references. Keep
+        // the 404 boundary while giving patients a readable recovery screen.
+        if (appointment is null || !CanAccessAppointment(appointment))
+            return new ViewResult { ViewName = "CheckInNotFound", StatusCode = StatusCodes.Status404NotFound };
 
         return View(appointment);
     }

@@ -1,14 +1,16 @@
 @model AppointmentConfirmationViewModel
 @{
-    ViewData["Title"] = $"{Loc["Appt_Confirmed"]} — {Model.Appointment.BookingReference}";
     var appt = Model.Appointment;
+    var statusText = appt.Status == "Confirmed" ? Loc["Appt_Confirmed"].Value : appt.Status;
+    var statusClass = appt.Status == "Confirmed" ? "text-bg-success" : "text-bg-secondary";
+    ViewData["Title"] = $"{statusText} — {appt.BookingReference}";
 }
 
 <section class="page-header d-print-none">
     <div class="container">
         <div class="d-flex align-items-center gap-2 mb-2">
-            <span class="badge bg-success text-white fw-bold px-3 py-1 rounded-pill">
-                <i class="bi bi-check2-circle me-1"></i> @Loc["Appt_Confirmed"]
+            <span class="badge @statusClass fw-bold px-3 py-1 rounded-pill">
+                <i class="bi bi-calendar-event me-1"></i> @statusText
             </span>
             <span class="small text-white text-opacity-75">@Loc["Appt_BookingReference"]: @appt.BookingReference</span>
         </div>
@@ -46,7 +48,7 @@
                         <span class="badge @(appt.Type == "Teleconsultation" ? "bg-info-subtle text-info-emphasis" : "bg-success-subtle text-success") px-3 py-1 rounded-pill fw-semibold">
                             <i class="bi @(appt.Type == "Teleconsultation" ? "bi-camera-video" : "bi-hospital") me-1"></i> @appt.Type
                         </span>
-                        <span class="badge bg-success px-3 py-1 rounded-pill fw-semibold ms-1">
+                        <span class="badge @statusClass px-3 py-1 rounded-pill fw-semibold ms-1">
                             @appt.Status
                         </span>
                     </div>

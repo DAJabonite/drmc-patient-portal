@@ -211,4 +211,6 @@
   <data name="Appt_BookingReference"><value>Reference ng Booking</value></data>
   <data name="Appt_Scheduled"><value>Nakatakdang Petsa at Oras</value></data>
   <data name="Appt_Cancel"><value>Kanselahin ang Appointment</value></data>
+  <data name="Appt_UnavailableTitle" xml:space="preserve"><value>Hindi mabuksan ang appointment</value></data>
+  <data name="Appt_UnavailableBody" xml:space="preserve"><value>Hindi namin mabuksan ang check-in pass na ito. Gamitin ang link sa mensahe ng kumpirmasyon, mag-sign in sa account na nag-book ng pagbisita, o humingi ng tulong sa triage desk ng ospital.</value></data>
 </root>

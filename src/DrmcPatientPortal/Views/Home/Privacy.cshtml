@@ -14,51 +14,8 @@
                     </div>
                 </div>
 
-                <div class="privacy-content">
-                    <p class="lead text-secondary mb-4">
-                        The <strong>Davao Regional Medical Center (DRMC)</strong>, as a Department of Health (DOH) tertiary government teaching and training hospital, is committed to protecting and respecting your personal and health data privacy.
-                    </p>
-
-                    <h2 class="h5 fw-bold text-primary-drmc mt-4 mb-3">1. Information We Collect</h2>
-                    <p>When you register for and use the DRMC Patient Portal, we collect the following personal and health information:</p>
-                    <ul class="mb-4">
-                        <li><strong>Personal Identification Data:</strong> Full name, date of birth, contact number, email address, government-issued ID type and ID number.</li>
-                        <li><strong>Medical &amp; Clinical Information:</strong> Appointment schedules, attending clinical departments, laboratory and diagnostic test summaries, and communications with healthcare personnel.</li>
-                        <li><strong>Portal Usage Data:</strong> Login timestamps, device IP address, and security audit logs to safeguard your account.</li>
-                    </ul>
-
-                    <h2 class="h5 fw-bold text-primary-drmc mt-4 mb-3">2. Purpose of Data Processing</h2>
-                    <p>Your data is processed strictly for legitimate healthcare and administrative purposes, including:</p>
-                    <ul class="mb-4">
-                        <li>Facilitating clinical consultations, appointments, and outpatient scheduling.</li>
-                        <li>Delivering notifications and status updates regarding laboratory diagnostics and test results.</li>
-                        <li>Verifying patient identity to prevent unauthorized access to medical records.</li>
-                        <li>Complying with statutory health reporting requirements mandated by the Department of Health (DOH) and Philippine health laws.</li>
-                    </ul>
-
-                    <h2 class="h5 fw-bold text-primary-drmc mt-4 mb-3">3. Data Protection and Security Measures</h2>
-                    <p class="mb-4">
-                        DRMC implements stringent administrative, physical, and technical security measures—including data encryption, secure session tokens, role-based access control, and regular vulnerability assessments—to safeguard your information from unauthorized access, alteration, disclosure, or destruction.
-                    </p>
-
-                    <h2 class="h5 fw-bold text-primary-drmc mt-4 mb-3">4. Your Rights as a Data Subject</h2>
-                    <p>Under the Data Privacy Act of 2012, you are entitled to the following rights:</p>
-                    <ul class="mb-4">
-                        <li><strong>Right to be Informed:</strong> To know how your personal data is collected and processed.</li>
-                        <li><strong>Right to Access:</strong> To view your profile, appointment records, and laboratory statuses on this portal.</li>
-                        <li><strong>Right to Rectification:</strong> To dispute and request correction of inaccurate or outdated personal data.</li>
-                        <li><strong>Right to File a Complaint:</strong> To seek assistance from the DRMC Data Protection Officer or the National Privacy Commission (NPC).</li>
-                    </ul>
-
-                    <div class="bg-light p-4 rounded-3 mt-4 border">
-                        <h3 class="h6 fw-bold text-primary-drmc mb-2">Data Protection Officer (DPO) Contact Details</h3>
-                        <p class="small text-muted mb-0">
-                            <strong>Davao Regional Medical Center</strong><br />
-                            Brgy. Apokon, Tagum City, Davao del Norte, 8100 Philippines<br />
-                            Email: <a href="mailto:info@drmc.doh.gov.ph" class="text-primary-drmc fw-semibold">info@drmc.doh.gov.ph</a> &middot; Telephone / Helpline: <strong>1555 (DOH Hotline)</strong>
-                        </p>
-                    </div>
-                </div>
+                <partial name="_PrivacyNotice" />
+                <partial name="_PortalTerms" />
 
                 <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <a asp-controller="Home" asp-action="Index" class="btn btn-outline-drmc">

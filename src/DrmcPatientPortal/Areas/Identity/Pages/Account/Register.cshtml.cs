@@ -210,11 +210,12 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
         {
             // Route a fresh registration straight to the patient dashboard.
             returnUrl ??= Url.Content("~/Patient/Home");
+            ReturnUrl = returnUrl;
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
             if (!Input.PrivacyConsent)
             {
-                ModelState.AddModelError("Input.PrivacyConsent", "You must agree to the Data Privacy Consent to continue.");
+                ModelState.AddModelError("Input.PrivacyConsent", "Read and accept the privacy notice and portal terms to continue.");
             }
 
             if (ModelState.IsValid)
