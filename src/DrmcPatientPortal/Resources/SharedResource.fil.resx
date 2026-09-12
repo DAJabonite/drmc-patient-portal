@@ -51,6 +51,15 @@
   <data name="Nav_LogIn"><value>Mag-login</value></data>
   <data name="Nav_Register"><value>Magparehistro</value></data>
   <data name="Nav_Language"><value>Wika</value></data>
+  <data name="Mobile_Home"><value>Tahanan</value></data>
+  <data name="Mobile_Dashboard"><value>Dashboard</value></data>
+  <data name="Mobile_Book"><value>Mag-book</value></data>
+  <data name="Mobile_Queue"><value>Pila</value></data>
+  <data name="Mobile_Services"><value>Serbisyo</value></data>
+  <data name="Mobile_SignIn"><value>Mag-login</value></data>
+  <data name="Mobile_Results"><value>Resulta</value></data>
+  <data name="Mobile_Medications"><value>Gamot</value></data>
+  <data name="Mobile_More"><value>Iba pa</value></data>
 
   <!-- Common Actions & Buttons -->
   <data name="Action_Search"><value>Maghanap</value></data>

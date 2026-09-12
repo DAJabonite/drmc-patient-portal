@@ -1,0 +1,143 @@
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.Extensions.Localization
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IStringLocalizer<SharedResource> Loc
+@{
+    var signedIn = SignInManager.IsSignedIn(User);
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+    var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
+    var currentUrl = Context.Request.Path + Context.Request.QueryString;
+    var onLogin = Context.Request.Path.StartsWithSegments("/Identity/Account/Login");
+    var onIdentitySection = Context.Request.Path.StartsWithSegments("/Identity") && !onLogin;
+
+    var homeActive = signedIn
+        ? currentController == "Patient" && currentAction == "Home"
+        : currentController == "Home" && currentAction == "Index";
+    var bookActive = currentController == "Appointments";
+    var queueActive = currentController == "Queue";
+    var resultsActive = currentController == "LabResults";
+    var medicationsActive = currentController == "Medications";
+    var moreActive = signedIn
+        ? currentController is "Encounters" or "Malasakit" or "Directory" or "Advisories" or "Triage" ||
+          currentController == "Patient" && currentAction != "Home" ||
+          currentController == "Home" && currentAction != "Index" ||
+          onIdentitySection
+        : currentController is "Malasakit" or "Directory" or "Advisories" ||
+          currentController == "Home" && currentAction != "Index" ||
+          onIdentitySection;
+}
+
+<nav class="mobile-tab-bar d-lg-none" aria-label="Mobile navigation">
+    <div class="mobile-tab-inner">
+        @if (signedIn)
+        {
+            <a class="mobile-tab-item @(homeActive ? "active" : null)" aria-current="@(homeActive ? "page" : null)" asp-controller="Patient" asp-action="Home">
+                <i class="bi bi-house" aria-hidden="true"></i>
+                <span>@Loc["Mobile_Dashboard"]</span>
+            </a>
+            <a class="mobile-tab-item @(bookActive ? "active" : null)" aria-current="@(bookActive ? "page" : null)" asp-controller="Appointments" asp-action="Book">
+                <i class="bi bi-calendar-plus" aria-hidden="true"></i>
+                <span>@Loc["Mobile_Book"]</span>
+            </a>
+            <a class="mobile-tab-item @(resultsActive ? "active" : null)" aria-current="@(resultsActive ? "page" : null)" asp-controller="LabResults" asp-action="Index">
+                <i class="bi bi-file-earmark-medical" aria-hidden="true"></i>
+                <span>@Loc["Mobile_Results"]</span>
+            </a>
+            <a class="mobile-tab-item @(medicationsActive ? "active" : null)" aria-current="@(medicationsActive ? "page" : null)" asp-controller="Medications" asp-action="Index">
+                <i class="bi bi-capsule" aria-hidden="true"></i>
+                <span>@Loc["Mobile_Medications"]</span>
+            </a>
+            <button class="mobile-tab-item @(moreActive ? "active" : null)" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMoreMenu" aria-controls="mobileMoreMenu" aria-current="@(moreActive ? "page" : null)">
+                <i class="bi bi-grid" aria-hidden="true"></i>
+                <span>@Loc["Mobile_More"]</span>
+            </button>
+        }
+        else
+        {
+            <a class="mobile-tab-item @(homeActive ? "active" : null)" aria-current="@(homeActive ? "page" : null)" asp-controller="Home" asp-action="Index">
+                <i class="bi bi-house" aria-hidden="true"></i>
+                <span>@Loc["Mobile_Home"]</span>
+            </a>
+            <a class="mobile-tab-item @(bookActive ? "active" : null)" aria-current="@(bookActive ? "page" : null)" asp-controller="Appointments" asp-action="Book">
+                <i class="bi bi-calendar-plus" aria-hidden="true"></i>
+                <span>@Loc["Mobile_Book"]</span>
+            </a>
+            <a class="mobile-tab-item @(queueActive ? "active" : null)" aria-current="@(queueActive ? "page" : null)" asp-controller="Queue" asp-action="Index">
+                <i class="bi bi-people" aria-hidden="true"></i>
+                <span>@Loc["Mobile_Queue"]</span>
+            </a>
+            <button class="mobile-tab-item @(moreActive ? "active" : null)" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMoreMenu" aria-controls="mobileMoreMenu" aria-current="@(moreActive ? "page" : null)">
+                <i class="bi bi-grid" aria-hidden="true"></i>
+                <span>@Loc["Mobile_Services"]</span>
+            </button>
+            <a class="mobile-tab-item @(onLogin ? "active" : null)" aria-current="@(onLogin ? "page" : null)" asp-area="Identity" asp-page="/Account/Login">
+                <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
+                <span>@Loc["Mobile_SignIn"]</span>
+            </a>
+        }
+    </div>
+</nav>
+
+<div class="offcanvas offcanvas-bottom mobile-more-sheet" tabindex="-1" id="mobileMoreMenu" aria-labelledby="mobileMoreMenuLabel">
+    <div class="offcanvas-header">
+        <div>
+            <p class="eyebrow mb-1">Davao Regional Medical Center</p>
+            <h2 class="offcanvas-title h5 mb-0" id="mobileMoreMenuLabel">@(signedIn ? Loc["Mobile_More"] : Loc["Mobile_Services"])</h2>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="mobile-more-grid">
+            @if (signedIn)
+            {
+                <a class="mobile-more-link" asp-controller="Encounters" asp-action="Index"><i class="bi bi-journal-medical" aria-hidden="true"></i><span>@Loc["Nav_Encounters"]</span></a>
+                <a class="mobile-more-link" asp-controller="Queue" asp-action="Index"><i class="bi bi-people" aria-hidden="true"></i><span>@Loc["Nav_Queue"]</span></a>
+            }
+            <a class="mobile-more-link" asp-controller="Malasakit" asp-action="Index"><i class="bi bi-heart-pulse" aria-hidden="true"></i><span>@Loc["Nav_Malasakit"]</span></a>
+            <a class="mobile-more-link" asp-controller="Directory" asp-action="Index"><i class="bi bi-person-badge" aria-hidden="true"></i><span>@Loc["Nav_Directory"]</span></a>
+            <a class="mobile-more-link" asp-controller="Home" asp-action="OpdGuide"><i class="bi bi-signpost-split" aria-hidden="true"></i><span>@Loc["Nav_OpdGuide"]</span></a>
+            <a class="mobile-more-link" asp-controller="Advisories" asp-action="Index"><i class="bi bi-megaphone" aria-hidden="true"></i><span>@Loc["Nav_Advisories"]</span></a>
+            @if (signedIn)
+            {
+                <a class="mobile-more-link" asp-controller="Patient" asp-action="Audit"><i class="bi bi-shield-check" aria-hidden="true"></i><span>@Loc["Nav_Audit"]</span></a>
+                <a class="mobile-more-link" asp-area="Identity" asp-page="/Account/Manage/Index"><i class="bi bi-gear" aria-hidden="true"></i><span>@Loc["Nav_Settings"]</span></a>
+            }
+        </div>
+
+        <details class="mobile-menu-section mt-3">
+            <summary><i class="bi bi-translate" aria-hidden="true"></i><span>@Loc["Nav_Language"]</span></summary>
+            <div class="mobile-language-list">
+                <form asp-controller="Home" asp-action="SetLanguage" method="post">
+                    <input type="hidden" name="culture" value="en" />
+                    <input type="hidden" name="returnUrl" value="@currentUrl" />
+                    <button type="submit" class="mobile-language-option @(currentCulture.StartsWith("en") ? "active" : null)">English</button>
+                </form>
+                <form asp-controller="Home" asp-action="SetLanguage" method="post">
+                    <input type="hidden" name="culture" value="fil" />
+                    <input type="hidden" name="returnUrl" value="@currentUrl" />
+                    <button type="submit" class="mobile-language-option @(currentCulture.StartsWith("fil") ? "active" : null)">Filipino</button>
+                </form>
+                <form asp-controller="Home" asp-action="SetLanguage" method="post">
+                    <input type="hidden" name="culture" value="ceb" />
+                    <input type="hidden" name="returnUrl" value="@currentUrl" />
+                    <button type="submit" class="mobile-language-option @(currentCulture.StartsWith("ceb") ? "active" : null)">Cebuano / Bisaya</button>
+                </form>
+            </div>
+        </details>
+
+        <div class="mobile-account-actions mt-3">
+            @if (signedIn)
+            {
+                <div class="small text-muted text-break mb-2">@User.Identity?.Name</div>
+                <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+                    <button type="submit" class="btn btn-outline-danger w-100"><i class="bi bi-box-arrow-right me-2" aria-hidden="true"></i>@Loc["Nav_SignOut"]</button>
+                </form>
+            }
+            else
+            {
+                <a class="btn btn-outline-drmc w-100" asp-area="Identity" asp-page="/Account/Register"><i class="bi bi-person-plus me-2" aria-hidden="true"></i>@Loc["Nav_Register"]</a>
+            }
+        </div>
+    </div>
+</div>

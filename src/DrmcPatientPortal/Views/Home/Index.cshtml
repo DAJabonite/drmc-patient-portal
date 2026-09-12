@@ -4,178 +4,120 @@
     var signedIn = User.Identity?.IsAuthenticated ?? false;
 }
 
-<!-- Hero Section -->
 <section class="hero-section">
-    <div class="container py-5">
-        <div class="row align-items-center g-5">
-            <div class="col-lg-7">
-                <h1 class="display-5 fw-bold text-white mb-3 hero-title">
-                    Davao Regional Medical Center
-                </h1>
-                <p class="fs-4 text-warning fw-semibold mb-3 hero-tagline">
-                    &ldquo;Caring for Life, Changing Lives.&rdquo;
-                </p>
-                <p class="lead text-white text-opacity-95 mb-4 hero-lead" style="max-width: 600px;">
-                    Providing high-quality tertiary healthcare with a 1,000-bed capacity to the communities of Davao del Norte, Davao del Sur, Davao Oriental, and Davao de Oro.
-                </p>
-
-                <div class="d-flex flex-wrap gap-2 mb-4 text-white small">
-                    <div class="d-flex align-items-center gap-2 hero-chip px-3 py-2 rounded-3">
-                        <i class="bi bi-hospital text-warning fs-6"></i>
-                        <span class="fw-medium">1,000-Bed Tertiary Facility</span>
-                    </div>
-                    <div class="d-flex align-items-center gap-2 hero-chip px-3 py-2 rounded-3">
-                        <i class="bi bi-geo-alt-fill text-warning fs-6"></i>
-                        <span class="fw-medium">Brgy. Apokon, Tagum City</span>
-                    </div>
-                    <div class="d-flex align-items-center gap-2 hero-chip px-3 py-2 rounded-3">
-                        <i class="bi bi-shield-check text-warning fs-6"></i>
-                        <span class="fw-medium">RA 10173 Data Privacy</span>
-                    </div>
-                </div>
-
-                <div class="d-flex flex-wrap gap-3">
-                    @if (!signedIn)
-                    {
-                        <a class="btn btn-warning btn-lg fw-bold px-4 py-2 shadow-sm text-dark d-inline-flex align-items-center gap-2" asp-area="Identity" asp-page="/Account/Register">
-                            <i class="bi bi-person-plus-fill"></i> Create an Account
-                        </a>
-                        <a class="btn btn-outline-light btn-lg fw-semibold px-4 py-2 d-inline-flex align-items-center gap-2" asp-area="Identity" asp-page="/Account/Login">
-                            <i class="bi bi-box-arrow-in-right"></i> Sign in to Portal
-                        </a>
-                    }
-                    else
-                    {
-                        <a class="btn btn-warning btn-lg fw-bold px-4 py-2 shadow-sm text-dark d-inline-flex align-items-center gap-2" asp-controller="Patient" asp-action="Home">
-                            <i class="bi bi-speedometer2"></i> Open Patient Dashboard
-                        </a>
-                    }
-                </div>
+    <div class="container">
+        <div class="hero-content">
+            <p class="eyebrow text-warning mb-2">Official DRMC Patient Portal</p>
+            <h1 class="hero-title fw-bold text-white mb-3">Your care, in one clear place.</h1>
+            <p class="hero-lead mb-4">
+                Book a consultation, check the live OPD queue, and securely review your health records from your phone.
+            </p>
+            <div class="hero-actions">
+                <a class="btn btn-warning btn-lg text-dark" asp-controller="Appointments" asp-action="Book">
+                    <i class="bi bi-calendar-plus" aria-hidden="true"></i> Book appointment
+                </a>
+                <a class="btn btn-outline-light btn-lg" asp-controller="Queue" asp-action="Index">
+                    <i class="bi bi-people" aria-hidden="true"></i> Track queue
+                </a>
+                @if (signedIn)
+                {
+                    <a class="btn btn-outline-light btn-lg" asp-controller="Patient" asp-action="Home">
+                        <i class="bi bi-house-heart" aria-hidden="true"></i> My dashboard
+                    </a>
+                }
+                else
+                {
+                    <a class="btn btn-outline-light btn-lg" asp-area="Identity" asp-page="/Account/Login">
+                        <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Sign in
+                    </a>
+                }
             </div>
-
-            <!-- Quick Service Preview Card -->
-            <div class="col-lg-5">
-                <div class="hero-service-card card border-0 shadow-lg rounded-4 p-4 text-dark bg-white">
-                    <div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom">
-                        <img src="~/images/drmc-seal.png" alt="DRMC Seal" style="height: 48px; width: auto;" />
-                        <div>
-                            <h2 class="h5 fw-bold text-primary-drmc mb-0">Patient Online Services</h2>
-                            <span class="small text-muted">Official DRMC Citizen Access</span>
-                        </div>
-                    </div>
-                    <div class="d-flex flex-column gap-3 mb-4">
-                        <a asp-controller="Appointments" asp-action="Book" class="d-flex align-items-start gap-3 p-2 rounded-3 hover-bg-light text-decoration-none text-dark">
-                            <div class="service-icon-box bg-primary-subtle text-primary-drmc rounded-3 p-2">
-                                <i class="bi bi-calendar-check fs-5"></i>
-                            </div>
-                            <div>
-                                <strong class="d-block text-dark small">Outpatient Appointments</strong>
-                                <span class="text-muted small">Schedule clinic visits and online doctor consultations with instant QR pass.</span>
-                            </div>
-                        </a>
-                        <a asp-controller="Queue" asp-action="Index" class="d-flex align-items-start gap-3 p-2 rounded-3 hover-bg-light text-decoration-none text-dark">
-                            <div class="service-icon-box bg-info-subtle text-info-emphasis rounded-3 p-2">
-                                <i class="bi bi-broadcast fs-5"></i>
-                            </div>
-                            <div>
-                                <strong class="d-block text-dark small">Live OPD Queue Tracker</strong>
-                                <span class="text-muted small">Check real-time ticket numbers currently being called across clinics.</span>
-                            </div>
-                        </a>
-                        <a asp-controller="Malasakit" asp-action="Index" class="d-flex align-items-start gap-3 p-2 rounded-3 hover-bg-light text-decoration-none text-dark">
-                            <div class="service-icon-box bg-warning-subtle text-warning-emphasis rounded-3 p-2">
-                                <i class="bi bi-shield-heart fs-5"></i>
-                            </div>
-                            <div>
-                                <strong class="d-block text-dark small">Malasakit Center Navigator</strong>
-                                <span class="text-muted small">Step-by-step statutory eligibility and document checklist guide.</span>
-                            </div>
-                        </a>
-                        <a asp-controller="Advisories" asp-action="Index" class="d-flex align-items-start gap-3 p-2 rounded-3 hover-bg-light text-decoration-none text-dark">
-                            <div class="service-icon-box bg-success-subtle text-success rounded-3 p-2">
-                                <i class="bi bi-megaphone fs-5"></i>
-                            </div>
-                            <div>
-                                <strong class="d-block text-dark small">Health Advisories &amp; Bulletins</strong>
-                                <span class="text-muted small">Receive official disease alerts, vaccination drives, and notices.</span>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="bg-light p-3 rounded-3 text-center">
-                        <span class="small text-muted d-block mb-2">Need immediate assistance?</span>
-                        <a href="tel:1555" class="btn btn-sm btn-outline-drmc fw-semibold w-100">
-                            <i class="bi bi-telephone-fill me-1"></i> Call DOH Hotline: 1555
-                        </a>
-                    </div>
-                </div>
+            <div class="hero-meta">
+                <span><i class="bi bi-geo-alt" aria-hidden="true"></i> Brgy. Apokon, Tagum City</span>
+                <a class="text-white text-decoration-none" href="tel:1555"><i class="bi bi-telephone" aria-hidden="true"></i> Emergency hotline 1555</a>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Clinical Departments Section -->
-<section class="section py-5 bg-light" id="departments">
+<section class="task-strip" aria-labelledby="public-services-title">
     <div class="container">
-        <div class="text-center mb-5">
-            <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-semibold mb-2">Tertiary Medical Services</span>
-            <h2 class="h2 fw-bold text-primary-drmc mb-2">@Model.DepartmentHeading</h2>
-            <p class="text-muted mx-auto" style="max-width: 680px;">@Model.DepartmentSubheading</p>
+        <h2 id="public-services-title" class="visually-hidden">Patient services</h2>
+        <div class="task-strip-inner">
+            <a class="task-link" asp-controller="Malasakit" asp-action="Index">
+                <i class="bi bi-heart-pulse" aria-hidden="true"></i>
+                <span><strong>Malasakit assistance</strong><small>Check support and document requirements</small></span>
+            </a>
+            <a class="task-link" asp-controller="Directory" asp-action="Index">
+                <i class="bi bi-person-badge" aria-hidden="true"></i>
+                <span><strong>Find a doctor</strong><small>Browse clinics and specialists</small></span>
+            </a>
+            <a class="task-link" asp-controller="Advisories" asp-action="Index">
+                <i class="bi bi-megaphone" aria-hidden="true"></i>
+                <span><strong>Health advisories</strong><small>Read current hospital notices</small></span>
+            </a>
+        </div>
+    </div>
+</section>
+
+<section class="section py-5" id="departments" aria-labelledby="departments-title">
+    <div class="container">
+        <div class="d-flex align-items-end justify-content-between gap-3 mb-4">
+            <div>
+                <p class="eyebrow mb-1">Tertiary medical services</p>
+                <h2 id="departments-title" class="h2 fw-bold text-primary-drmc mb-1">@Model.DepartmentHeading</h2>
+                <p class="text-muted mb-0">Choose a common clinic or browse the complete directory.</p>
+            </div>
+            <a class="btn btn-outline-drmc d-none d-sm-inline-flex" asp-controller="Directory" asp-action="Index">
+                View all clinics <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            </a>
         </div>
 
-        <div class="row g-4">
-            @foreach (var dept in Model.Departments)
+        <div class="row g-3">
+            @foreach (var dept in Model.Departments.Take(4))
             {
-                <div class="col-sm-6 col-md-4 col-lg-3">
-                    <a asp-controller="Directory" asp-action="Department" asp-route-name="@dept.Name" class="card department-card border-0 shadow-sm rounded-4 h-100 p-3 text-decoration-none text-dark d-block">
+                <div class="col-sm-6 col-lg-3">
+                    <a asp-controller="Directory" asp-action="Department" asp-route-name="@dept.Name" class="card department-card h-100 p-3 text-decoration-none text-dark d-block">
                         <div class="card-body d-flex flex-column h-100 p-0">
-                            <div class="card-icon-wrapper mb-3">
-                                <partial name="_DepartmentIcon" model="dept.Icon" />
-                            </div>
-                            <h3 class="h6 card-title fw-bold text-primary-drmc mb-2">@dept.Name</h3>
-                            <p class="card-text small text-muted mb-3 flex-grow-1">@dept.Description</p>
-                            <div class="pt-2 border-top mt-auto">
-                                <span class="small text-primary-drmc fw-semibold d-inline-flex align-items-center gap-1">
-                                    Specialized Care &amp; Doctors <i class="bi bi-arrow-right small"></i>
-                                </span>
-                            </div>
+                            <div class="card-icon-wrapper mb-3"><partial name="_DepartmentIcon" model="dept.Icon" /></div>
+                            <h3 class="h6 fw-bold text-primary-drmc mb-2">@dept.Name</h3>
+                            <p class="small text-muted mb-3 flex-grow-1">@dept.Description</p>
+                            <span class="small text-primary-drmc fw-bold">Doctors and schedules <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
                         </div>
                     </a>
                 </div>
             }
         </div>
+
+        <a class="btn btn-outline-drmc w-100 mt-3 d-sm-none" asp-controller="Directory" asp-action="Index">
+            View all clinics <i class="bi bi-arrow-right" aria-hidden="true"></i>
+        </a>
     </div>
 </section>
 
-<!-- Patient portal CTA -->
-<section class="section py-5">
+<section class="pb-5" aria-label="Hospital information">
     <div class="container">
-        <div class="card border-0 rounded-4 shadow-sm p-4 p-md-5 text-center bg-primary-drmc text-white position-relative overflow-hidden">
-            <div class="position-relative z-1">
-                <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-circle bg-white bg-opacity-15 mb-3">
-                    <i class="bi bi-person-badge fs-2 text-warning"></i>
-                </div>
-                <h2 class="h2 fw-bold mb-2">Start Managing Your Healthcare with DRMC</h2>
-                <p class="text-white text-opacity-85 mx-auto mb-4" style="max-width: 600px;">
-                    Register your patient account with your valid government ID or sign in to access your appointments, test summaries, and hospital announcements.
-                </p>
-                <div class="d-flex justify-content-center flex-wrap gap-3">
-                    @if (!signedIn)
-                    {
-                        <a class="btn btn-warning btn-lg fw-bold px-4 py-2 text-dark shadow" asp-area="Identity" asp-page="/Account/Register">
-                            <i class="bi bi-person-plus-fill me-1"></i> Register Now
-                        </a>
-                        <a class="btn btn-outline-light btn-lg fw-semibold px-4 py-2" asp-area="Identity" asp-page="/Account/Login">
-                            <i class="bi bi-box-arrow-in-right me-1"></i> Patient Sign in
-                        </a>
-                    }
-                    else
-                    {
-                        <a class="btn btn-warning btn-lg fw-bold px-4 py-2 text-dark shadow" asp-controller="Patient" asp-action="Home">
-                            <i class="bi bi-speedometer2 me-1"></i> Go to My Dashboard
-                        </a>
-                    }
-                </div>
-            </div>
+        <div class="service-link-grid">
+            <a class="service-link" asp-controller="Home" asp-action="OpdGuide">
+                <i class="bi bi-signpost-split" aria-hidden="true"></i>
+                <strong>First OPD visit?</strong>
+                <span>Follow the step-by-step guide.</span>
+            </a>
+            <a class="service-link" asp-controller="Queue" asp-action="Index">
+                <i class="bi bi-broadcast" aria-hidden="true"></i>
+                <strong>Live clinic status</strong>
+                <span>See numbers currently being called.</span>
+            </a>
+            <a class="service-link" asp-controller="Malasakit" asp-action="Navigator">
+                <i class="bi bi-clipboard2-check" aria-hidden="true"></i>
+                <strong>Document checklist</strong>
+                <span>Prepare before visiting Malasakit.</span>
+            </a>
+            <a class="service-link" asp-controller="Home" asp-action="Privacy">
+                <i class="bi bi-shield-check" aria-hidden="true"></i>
+                <strong>Privacy and security</strong>
+                <span>Learn how patient information is handled.</span>
+            </a>
         </div>
     </div>
 </section>

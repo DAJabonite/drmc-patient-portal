@@ -51,6 +51,15 @@
   <data name="Nav_LogIn"><value>Log in</value></data>
   <data name="Nav_Register"><value>Register</value></data>
   <data name="Nav_Language"><value>Language</value></data>
+  <data name="Mobile_Home"><value>Home</value></data>
+  <data name="Mobile_Dashboard"><value>Dashboard</value></data>
+  <data name="Mobile_Book"><value>Book</value></data>
+  <data name="Mobile_Queue"><value>Queue</value></data>
+  <data name="Mobile_Services"><value>Services</value></data>
+  <data name="Mobile_SignIn"><value>Sign in</value></data>
+  <data name="Mobile_Results"><value>Results</value></data>
+  <data name="Mobile_Medications"><value>Medications</value></data>
+  <data name="Mobile_More"><value>More</value></data>
 
   <!-- Common Actions & Buttons -->
   <data name="Action_Search"><value>Search</value></data>

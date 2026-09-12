@@ -51,6 +51,15 @@
   <data name="Nav_LogIn"><value>Sulod</value></data>
   <data name="Nav_Register"><value>Pagparehistro</value></data>
   <data name="Nav_Language"><value>Pinulongan</value></data>
+  <data name="Mobile_Home"><value>Panid</value></data>
+  <data name="Mobile_Dashboard"><value>Dashboard</value></data>
+  <data name="Mobile_Book"><value>I-book</value></data>
+  <data name="Mobile_Queue"><value>Linya</value></data>
+  <data name="Mobile_Services"><value>Serbisyo</value></data>
+  <data name="Mobile_SignIn"><value>Sulod</value></data>
+  <data name="Mobile_Results"><value>Resulta</value></data>
+  <data name="Mobile_Medications"><value>Tambal</value></data>
+  <data name="Mobile_More"><value>Dugang</value></data>
 
   <!-- Common Actions & Buttons -->
   <data name="Action_Search"><value>Pangitaa</value></data>

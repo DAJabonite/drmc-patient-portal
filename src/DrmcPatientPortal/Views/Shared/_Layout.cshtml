@@ -1,19 +1,31 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.Extensions.Localization
-@using Microsoft.AspNetCore.Localization
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IStringLocalizer<SharedResource> Loc
 @{
-    var title = ViewData["Title"] as string;
+    var title = ViewData["Title"]?.ToString();
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
     var currentUrl = Context.Request.Path + Context.Request.QueryString;
-    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+    var signedIn = SignInManager.IsSignedIn(User);
+    var isHome = currentController == "Home" && currentAction == "Index";
+    var isDashboard = currentController == "Patient" && currentAction == "Home";
+    var isAppointments = currentController == "Appointments";
+    var isQueue = currentController == "Queue";
+    var isDirectory = currentController == "Directory";
+    var isMalasakit = currentController == "Malasakit";
+    var isResults = currentController == "LabResults";
+    var isMedications = currentController == "Medications";
+    var isEncounters = currentController == "Encounters";
+    var isMore = currentController is "Advisories" or "Triage" ||
+                 (currentController == "Home" && currentAction != "Index");
 }
 <!DOCTYPE html>
 <html lang="@currentCulture">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>@(string.IsNullOrEmpty(title) ? "Davao Regional Medical Center" : $"{title} | Davao Regional Medical Center")</title>
     <link rel="icon" type="image/png" href="~/drmc-favicon.png" />
     <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" />
@@ -21,156 +33,131 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/DrmcPatientPortal.styles.css" asp-append-version="true" />
 </head>
-<body>
+<body class="has-mobile-navigation">
     <a class="skip-link" href="#main-content">Skip to main content</a>
 
-    <!-- Unified Masthead Header with Integrated PST Clock & Trilingual Switcher -->
-    <header class="masthead" role="banner">
-        <div class="container d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <header class="masthead d-none d-lg-block" role="banner">
+        <div class="container d-flex justify-content-between align-items-center gap-4">
             <a class="d-inline-block" asp-area="" asp-controller="Home" asp-action="Index" aria-label="Davao Regional Medical Center home">
                 <img class="masthead-lockup" src="~/images/drmc-masthead.png"
                      alt="Davao Regional Medical Center, Republic of the Philippines, Department of Health, Brgy. Apokon, Tagum City, Davao del Norte" />
             </a>
-            
-            <div class="d-flex align-items-center gap-3 flex-wrap">
-                <!-- Trilingual Language Switcher -->
+
+            <div class="masthead-tools d-flex align-items-center gap-3">
                 <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-light dropdown-toggle rounded-pill px-3 fw-semibold text-white d-flex align-items-center gap-1 shadow-xs"
-                            type="button" id="langDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Select Language">
-                        <i class="bi bi-translate me-1"></i>
-                        <span>
-                            @(currentCulture.StartsWith("fil") ? "Filipino" : currentCulture.StartsWith("ceb") ? "Cebuano (Bisaya)" : "English")
-                        </span>
+                    <button class="btn btn-sm btn-outline-light dropdown-toggle header-control d-flex align-items-center gap-2"
+                            type="button" id="langDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Select language">
+                        <i class="bi bi-translate" aria-hidden="true"></i>
+                        <span>@(currentCulture.StartsWith("fil") ? "Filipino" : currentCulture.StartsWith("ceb") ? "Cebuano" : "English")</span>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 small rounded-3 mt-1" aria-labelledby="langDropdown">
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="langDropdown">
                         <li>
-                            <form asp-controller="Home" asp-action="SetLanguage" method="post" class="d-inline">
+                            <form asp-controller="Home" asp-action="SetLanguage" method="post">
                                 <input type="hidden" name="culture" value="en" />
                                 <input type="hidden" name="returnUrl" value="@currentUrl" />
-                                <button type="submit" class="dropdown-item py-2 @(currentCulture == "en" ? "active fw-bold" : "")">
-                                    <span class="fi fi-ph me-2"></span> English (Default)
-                                </button>
+                                <button type="submit" class="dropdown-item @(currentCulture.StartsWith("en") ? "active" : null)">English</button>
                             </form>
                         </li>
                         <li>
-                            <form asp-controller="Home" asp-action="SetLanguage" method="post" class="d-inline">
+                            <form asp-controller="Home" asp-action="SetLanguage" method="post">
                                 <input type="hidden" name="culture" value="fil" />
                                 <input type="hidden" name="returnUrl" value="@currentUrl" />
-                                <button type="submit" class="dropdown-item py-2 @(currentCulture.StartsWith("fil") ? "active fw-bold" : "")">
-                                    <span class="fi fi-ph me-2"></span> Filipino (Tagalog)
-                                </button>
+                                <button type="submit" class="dropdown-item @(currentCulture.StartsWith("fil") ? "active" : null)">Filipino</button>
                             </form>
                         </li>
                         <li>
-                            <form asp-controller="Home" asp-action="SetLanguage" method="post" class="d-inline">
+                            <form asp-controller="Home" asp-action="SetLanguage" method="post">
                                 <input type="hidden" name="culture" value="ceb" />
                                 <input type="hidden" name="returnUrl" value="@currentUrl" />
-                                <button type="submit" class="dropdown-item py-2 @(currentCulture.StartsWith("ceb") ? "active fw-bold" : "")">
-                                    <span class="fi fi-ph me-2"></span> Cebuano / Bisaya (Davao)
-                                </button>
+                                <button type="submit" class="dropdown-item @(currentCulture.StartsWith("ceb") ? "active" : null)">Cebuano / Bisaya</button>
                             </form>
                         </li>
                     </ul>
                 </div>
-
-                <!-- PST Clock -->
                 <div class="pst-clock text-end text-white">
-                    <div class="pst-label">Philippine Standard Time:</div>
-                    <div id="govphClock" class="pst-time" aria-live="polite">--</div>
+                    <div class="pst-label">Philippine Standard Time</div>
+                    <div id="govphClock" class="pst-time" aria-live="off">--</div>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Primary nav -->
-    <nav class="navbar navbar-expand-lg navbar-drmc" role="navigation" aria-label="Main Navigation">
-        <div class="container">
-            <a class="navbar-brand d-lg-none fw-bold text-primary-drmc" asp-area="" asp-controller="Home" asp-action="Index">DRMC</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#primaryNav"
-                    aria-controls="primaryNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="primaryNav">
-                <ul class="navbar-nav me-auto gap-lg-1">
-                    <li class="nav-item"><a class="nav-link px-3" asp-controller="Home" asp-action="Index">@Loc["Nav_Home"]</a></li>
-                    <li class="nav-item"><a class="nav-link px-3 @(currentController == "Encounters" ? "active" : null)" asp-controller="Encounters" asp-action="Index" aria-current="@(currentController == "Encounters" ? "page" : null)">@Loc["Nav_Encounters"]</a></li>
-                    <li class="nav-item"><a class="nav-link px-3" asp-controller="LabResults" asp-action="Index">@Loc["Nav_Results"]</a></li>
-                    <li class="nav-item"><a class="nav-link px-3" asp-controller="Medications" asp-action="Index">@Loc["Nav_Medication"]</a></li>
-                    <li class="nav-item"><a class="nav-link px-3" asp-controller="Malasakit" asp-action="Index">@Loc["Nav_Malasakit"]</a></li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle px-3" href="#" id="moreServicesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            @Loc["Nav_MoreServices"]
-                        </a>
-                        <ul class="dropdown-menu shadow-sm rounded-3 border-0 small mt-1" aria-labelledby="moreServicesDropdown">
-                            <li>
-                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" asp-controller="Home" asp-action="OpdGuide">
-                                    <i class="bi bi-compass text-primary-drmc"></i>
-                                    <span>@Loc["Nav_OpdGuide"]</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" asp-controller="Queue" asp-action="Index">
-                                    <i class="bi bi-people text-primary-drmc"></i>
-                                    <span>@Loc["Nav_Queue"]</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" asp-controller="Appointments" asp-action="Book">
-                                    <i class="bi bi-calendar-plus text-primary-drmc"></i>
-                                    <span>@Loc["Nav_Appointments"]</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" asp-controller="Directory" asp-action="Index">
-                                    <i class="bi bi-person-badge text-primary-drmc"></i>
-                                    <span>@Loc["Nav_Directory"]</span>
-                                </a>
-                            </li>
-                            <li><hr class="dropdown-divider my-1"></li>
-                            <li>
-                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" asp-controller="Advisories" asp-action="Index">
-                                    <i class="bi bi-megaphone text-primary-drmc"></i>
-                                    <span>@Loc["Nav_Advisories"]</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                </ul>
-                <div class="d-none d-lg-block nav-divider"></div>
-                <div class="d-flex align-items-center pt-2 pt-lg-0">
-                    <partial name="_LoginPartial" />
-                </div>
-            </div>
+    <header class="mobile-header d-lg-none" role="banner">
+        <div class="container-fluid">
+            <a class="mobile-brand" asp-area="" asp-controller="Home" asp-action="Index" aria-label="Davao Regional Medical Center home">
+                <img src="~/images/drmc-masthead.png"
+                     alt="Davao Regional Medical Center, Department of Health" />
+            </a>
+        </div>
+    </header>
+
+    <nav class="navbar navbar-drmc d-none d-lg-block" aria-label="Main navigation">
+        <div class="container d-flex align-items-center">
+            <ul class="navbar-nav flex-row align-items-center gap-1 me-auto">
+                @if (signedIn)
+                {
+                    <li class="nav-item"><a class="nav-link @(isDashboard ? "active" : null)" aria-current="@(isDashboard ? "page" : null)" asp-controller="Patient" asp-action="Home">@Loc["Nav_Dashboard"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(isAppointments ? "active" : null)" aria-current="@(isAppointments ? "page" : null)" asp-controller="Appointments" asp-action="Book">@Loc["Nav_Appointments"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(isResults ? "active" : null)" aria-current="@(isResults ? "page" : null)" asp-controller="LabResults" asp-action="Index">@Loc["Nav_Results"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(isMedications ? "active" : null)" aria-current="@(isMedications ? "page" : null)" asp-controller="Medications" asp-action="Index">@Loc["Nav_Medication"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(isEncounters ? "active" : null)" aria-current="@(isEncounters ? "page" : null)" asp-controller="Encounters" asp-action="Index">@Loc["Nav_Encounters"]</a></li>
+                }
+                else
+                {
+                    <li class="nav-item"><a class="nav-link @(isHome ? "active" : null)" aria-current="@(isHome ? "page" : null)" asp-controller="Home" asp-action="Index">@Loc["Nav_Home"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(isAppointments ? "active" : null)" aria-current="@(isAppointments ? "page" : null)" asp-controller="Appointments" asp-action="Book">@Loc["Nav_Appointments"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(isQueue ? "active" : null)" aria-current="@(isQueue ? "page" : null)" asp-controller="Queue" asp-action="Index">@Loc["Nav_Queue"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(isDirectory ? "active" : null)" aria-current="@(isDirectory ? "page" : null)" asp-controller="Directory" asp-action="Index">@Loc["Nav_Directory"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(isMalasakit ? "active" : null)" aria-current="@(isMalasakit ? "page" : null)" asp-controller="Malasakit" asp-action="Index">@Loc["Nav_Malasakit"]</a></li>
+                }
+                <li class="nav-item dropdown">
+                    <button class="nav-link dropdown-toggle @(isMore || (signedIn && (isQueue || isDirectory || isMalasakit)) ? "active" : null)"
+                            type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        @Loc["Nav_MoreServices"]
+                    </button>
+                    <ul class="dropdown-menu">
+                        @if (signedIn)
+                        {
+                            <li><a class="dropdown-item" asp-controller="Queue" asp-action="Index"><i class="bi bi-people" aria-hidden="true"></i>@Loc["Nav_Queue"]</a></li>
+                            <li><a class="dropdown-item" asp-controller="Malasakit" asp-action="Index"><i class="bi bi-heart-pulse" aria-hidden="true"></i>@Loc["Nav_Malasakit"]</a></li>
+                            <li><a class="dropdown-item" asp-controller="Directory" asp-action="Index"><i class="bi bi-person-badge" aria-hidden="true"></i>@Loc["Nav_Directory"]</a></li>
+                        }
+                        <li><a class="dropdown-item" asp-controller="Home" asp-action="OpdGuide"><i class="bi bi-signpost-split" aria-hidden="true"></i>@Loc["Nav_OpdGuide"]</a></li>
+                        <li><a class="dropdown-item" asp-controller="Advisories" asp-action="Index"><i class="bi bi-megaphone" aria-hidden="true"></i>@Loc["Nav_Advisories"]</a></li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="nav-account"><partial name="_LoginPartial" /></div>
         </div>
     </nav>
 
-    <main id="main-content" role="main" class="pb-3" tabindex="-1">
+    <main id="main-content" role="main" tabindex="-1">
         @RenderBody()
     </main>
 
-    <!-- Modern DRMC Hub Footer -->
-    <!-- Footer (GOVPH-standard) -->
     <footer class="footer-drmc" role="contentinfo">
         <div class="container">
-            <div class="row g-4">
-                <div class="col-lg-6 col-md-6">
-                    <img class="footer-seal" src="~/images/drmc-seal.png" alt="Davao Regional Medical Center seal" />
-                    <h6 class="text-white">Republic of the Philippines</h6>
-                    <p class="mb-2">All content is in the public domain unless otherwise stated.</p>
-                    <p class="mb-0">Davao Regional Medical Center<br />Brgy. Apokon, Tagum City, Davao del Norte<br />@Loc["Header_Tagline"]</p>
+            <div class="footer-primary">
+                <img class="footer-seal" src="~/images/drmc-seal.png" alt="Davao Regional Medical Center seal" />
+                <div>
+                    <h2 class="h6 text-white mb-1">Davao Regional Medical Center</h2>
+                    <p class="mb-0">Brgy. Apokon, Tagum City, Davao del Norte<br />@Loc["Header_Tagline"]</p>
                 </div>
-                <div class="col-lg-3 col-md-6">
-                    <h6>About GOVPH</h6>
+            </div>
+
+            <div class="row g-4 mt-1 d-none d-md-flex">
+                <div class="col-md-6">
+                    <h2 class="h6">About GOVPH</h2>
                     <p class="small">Learn more about the Philippine government, its structure, how government works, and the people behind it.</p>
-                    <ul class="footer-list">
+                    <ul class="footer-list footer-list-inline">
                         <li><a href="https://www.gov.ph/" target="_blank" rel="noopener">GOV.PH</a></li>
                         <li><a href="https://www.gov.ph/data" target="_blank" rel="noopener">Open Data Portal</a></li>
                         <li><a href="https://www.officialgazette.gov.ph/" target="_blank" rel="noopener">Official Gazette</a></li>
                     </ul>
                 </div>
-                <div class="col-lg-3 col-md-6">
-                    <h6>Government Links</h6>
-                    <ul class="footer-list">
+                <div class="col-md-6">
+                    <h2 class="h6">Government Links</h2>
+                    <ul class="footer-list footer-list-columns">
                         <li><a href="https://op-proper.gov.ph/" target="_blank" rel="noopener">Office of the President</a></li>
                         <li><a href="https://ovp.gov.ph/" target="_blank" rel="noopener">Office of the Vice President</a></li>
                         <li><a href="https://www.senate.gov.ph/" target="_blank" rel="noopener">Senate of the Philippines</a></li>
@@ -181,15 +168,33 @@
                     </ul>
                 </div>
             </div>
+
+            <div class="mobile-footer-links d-md-none">
+                <details>
+                    <summary>Government information</summary>
+                    <ul class="footer-list mt-2">
+                        <li><a href="https://www.gov.ph/" target="_blank" rel="noopener">GOV.PH</a></li>
+                        <li><a href="https://www.gov.ph/data" target="_blank" rel="noopener">Open Data Portal</a></li>
+                        <li><a href="https://www.officialgazette.gov.ph/" target="_blank" rel="noopener">Official Gazette</a></li>
+                        <li><a href="https://op-proper.gov.ph/" target="_blank" rel="noopener">Office of the President</a></li>
+                        <li><a href="https://ovp.gov.ph/" target="_blank" rel="noopener">Office of the Vice President</a></li>
+                        <li><a href="https://www.senate.gov.ph/" target="_blank" rel="noopener">Senate of the Philippines</a></li>
+                        <li><a href="https://www.congress.gov.ph/" target="_blank" rel="noopener">House of Representatives</a></li>
+                        <li><a href="https://sc.judiciary.gov.ph/" target="_blank" rel="noopener">Supreme Court</a></li>
+                        <li><a href="https://ca.judiciary.gov.ph/" target="_blank" rel="noopener">Court of Appeals</a></li>
+                        <li><a href="https://sb.judiciary.gov.ph/" target="_blank" rel="noopener">Sandiganbayan</a></li>
+                    </ul>
+                </details>
+            </div>
+
             <div class="footer-bottom d-flex justify-content-between flex-wrap gap-2">
-                <span>&copy; @DateTime.Now.Year Davao Regional Medical Center. All rights reserved.</span>
-                <span>
-                    <a asp-controller="Home" asp-action="Privacy">Privacy Statement</a>
-                    &nbsp;·&nbsp; <a asp-controller="Home" asp-action="Privacy">Terms of Use</a>
-                </span>
+                <span>&copy; @DateTime.Now.Year DRMC. All content is in the public domain unless otherwise stated.</span>
+                <span><a asp-controller="Home" asp-action="Privacy">Privacy Statement</a> · <a asp-controller="Home" asp-action="Privacy">Terms of Use</a></span>
             </div>
         </div>
     </footer>
+
+    <partial name="_MobileNavigation" />
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>

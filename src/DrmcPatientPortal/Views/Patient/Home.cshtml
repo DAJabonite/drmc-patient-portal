@@ -6,204 +6,144 @@
         : Model.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).First();
 }
 
-<!-- Dashboard Header Banner -->
-<section class="dashboard-hero py-4 bg-primary-drmc text-white shadow-sm">
+<section class="dashboard-hero">
     <div class="container">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-            <div class="d-flex align-items-center gap-3">
-                <div class="dashboard-avatar bg-white text-primary-drmc rounded-circle p-3 d-flex align-items-center justify-content-center shadow-xs" style="width: 56px; height: 56px;">
-                    <i class="bi bi-person-fill fs-3"></i>
-                </div>
-                <div>
-                    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
-                        <h1 class="display-6 fw-bold mb-0">Welcome, @firstName!</h1>
-                        <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill fw-semibold border border-success border-opacity-25">
-                            Verified Patient
-                        </span>
-                    </div>
-                    <span class="small text-white text-opacity-75">Davao Regional Medical Center &middot; Patient Portal</span>
+        <div class="d-flex align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3 min-w-0">
+                <div class="dashboard-avatar"><i class="bi bi-person-fill" aria-hidden="true"></i></div>
+                <div class="min-w-0">
+                    <p class="small text-white text-opacity-75 mb-0">My DRMC care</p>
+                    <h1 class="h2 fw-bold mb-0 text-truncate">Welcome, @firstName</h1>
                 </div>
             </div>
-
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <a asp-action="Audit" class="btn btn-outline-light d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill fw-semibold shadow-xs btn-sm">
-                    <i class="bi bi-shield-check"></i> Access History
-                </a>
-                <a asp-area="Identity" asp-page="/Account/Manage/Index" class="btn btn-outline-light d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill fw-semibold shadow-xs btn-sm">
-                    <i class="bi bi-person-gear"></i> Settings
-                </a>
+            <div class="dashboard-hero-actions d-flex gap-2">
+                <a asp-action="Audit" class="btn btn-outline-light btn-sm"><i class="bi bi-shield-check" aria-hidden="true"></i> Access history</a>
+                <a asp-area="Identity" asp-page="/Account/Manage/Index" class="btn btn-outline-light btn-sm"><i class="bi bi-gear" aria-hidden="true"></i> Settings</a>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Dashboard Main Cards Grid -->
-<section class="section py-5 bg-light">
+<section class="section dashboard-main py-4">
     <div class="container">
-        
         @if (TempData["SuccessMessage"] is not null)
         {
-            <div class="alert alert-success rounded-4 mb-4 shadow-sm">
-                <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <div class="alert alert-success mb-3" role="status">
+                <i class="bi bi-check-circle-fill me-2" aria-hidden="true"></i>@TempData["SuccessMessage"]
             </div>
         }
 
-        <div class="row g-4">
+        <nav class="dashboard-shortcuts mb-3" aria-label="Patient shortcuts">
+            <a asp-controller="Encounters" asp-action="Index"><i class="bi bi-journal-medical" aria-hidden="true"></i><span>Visits</span></a>
+            <a asp-controller="Queue" asp-action="Index"><i class="bi bi-people" aria-hidden="true"></i><span>Live queue</span></a>
+            <a asp-action="Audit"><i class="bi bi-shield-check" aria-hidden="true"></i><span>Access history</span></a>
+            <a asp-area="Identity" asp-page="/Account/Manage/Index"><i class="bi bi-gear" aria-hidden="true"></i><span>Settings</span></a>
+        </nav>
 
-            <!-- 1. Next Appointment & Pre-Consultation Triage Card -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card summary-card border-0 shadow-sm rounded-4 h-100 bg-white hover-shadow-sm transition">
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <article class="card summary-card appointment-summary h-100">
                     <div class="card-body p-4 d-flex flex-column">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <span class="card-icon bg-primary-subtle text-primary-drmc rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
-                                <i class="bi bi-calendar-event fs-5"></i>
-                            </span>
+                        <div class="summary-card-heading">
+                            <span class="card-icon"><i class="bi bi-calendar-event" aria-hidden="true"></i></span>
+                            <div>
+                                <p class="eyebrow mb-1">Next step</p>
+                                <h2 class="h5 fw-bold mb-0">Upcoming appointment</h2>
+                            </div>
                             @if (Model.NextAppointment is not null)
                             {
-                                <span class="badge @(Model.NextAppointment.Status == "Confirmed" ? "bg-success-subtle text-success border border-success border-opacity-25" : "bg-warning-subtle text-warning-emphasis border border-warning border-opacity-25") px-3 py-1 rounded-pill fw-semibold">
-                                    @Model.NextAppointment.Status
-                                </span>
+                                <span class="badge status-badge @(Model.NextAppointment.Status == "Confirmed" ? "text-bg-success" : "text-bg-warning")">@Model.NextAppointment.Status</span>
                             }
                         </div>
-
-                        <h2 class="h6 fw-bold text-dark mb-2">Upcoming Appointment</h2>
 
                         @if (Model.NextAppointment is not null)
                         {
                             var appt = Model.NextAppointment;
-                            <div class="p-3 bg-light rounded-3 mb-3 border">
-                                <span class="d-block fw-bold text-primary-drmc fs-6 mb-1">@appt.Department</span>
-                                <div class="small text-dark mb-1">
-                                    <i class="bi bi-clock me-1 text-muted"></i>
-                                    <strong>@appt.ScheduledAt.ToString("ddd, MMM d, yyyy")</strong> at @appt.ScheduledAt.ToString("h:mm tt")
+                            <div class="appointment-summary-content">
+                                <div>
+                                    <strong class="d-block fs-5 text-primary-drmc">@appt.Department</strong>
+                                    <span class="d-block mt-1"><i class="bi bi-clock me-2 text-muted" aria-hidden="true"></i>@appt.ScheduledAt.ToString("ddd, MMM d, yyyy") at @appt.ScheduledAt.ToString("h:mm tt")</span>
+                                    <span class="d-block mt-1 text-muted"><i class="bi bi-person-badge me-2" aria-hidden="true"></i>@appt.DoctorName</span>
                                 </div>
-                                <div class="small text-muted mb-2">
-                                    <i class="bi bi-person-badge me-1"></i> Provider: <span class="text-dark fw-medium">@appt.DoctorName</span>
-                                </div>
-
                                 @if (Model.HasTriageForNextAppointment)
                                 {
-                                    <div class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill small">
-                                        <i class="bi bi-check2-circle me-1"></i> Pre-Triage Completed
-                                    </div>
+                                    <div class="status-note status-note-success"><i class="bi bi-check2-circle" aria-hidden="true"></i>Pre-triage completed</div>
                                 }
                                 else
                                 {
-                                    <a asp-controller="Triage" asp-action="Start" asp-route-appointmentId="@appt.Id" class="btn btn-sm btn-outline-drmc rounded-pill px-3 fw-semibold w-100">
-                                        <i class="bi bi-clipboard-pulse me-1"></i> Complete Pre-Triage Intake
+                                    <a asp-controller="Triage" asp-action="Start" asp-route-appointmentId="@appt.Id" class="btn btn-primary-drmc">
+                                        <i class="bi bi-clipboard-pulse" aria-hidden="true"></i> Complete pre-triage
                                     </a>
                                 }
                             </div>
                         }
                         else
                         {
-                            <div class="p-4 text-center text-muted bg-light rounded-3 mb-3">
-                                <i class="bi bi-calendar-x fs-3 d-block mb-1 text-secondary"></i>
-                                <span class="small">No upcoming appointments scheduled.</span>
+                            <div class="empty-state flex-grow-1">
+                                <i class="bi bi-calendar2-plus" aria-hidden="true"></i>
+                                <strong>No upcoming appointment</strong>
+                                <span>Choose a clinic and time that works for you.</span>
                             </div>
                         }
 
-                        <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between">
-                            <a asp-controller="Appointments" asp-action="Book" class="small text-primary-drmc fw-semibold text-decoration-none">
-                                <i class="bi bi-calendar-plus me-1"></i> Book Appointment
-                            </a>
-                            <a asp-controller="Queue" asp-action="Index" class="small text-muted text-decoration-none">
-                                <i class="bi bi-broadcast me-1"></i> Live Queue
-                            </a>
+                        <div class="summary-card-actions mt-auto">
+                            <a asp-controller="Appointments" asp-action="Book"><i class="bi bi-calendar-plus" aria-hidden="true"></i> Book appointment</a>
+                            <a asp-controller="Queue" asp-action="Index"><i class="bi bi-broadcast" aria-hidden="true"></i> Live queue</a>
                         </div>
                     </div>
-                </div>
+                </article>
             </div>
 
-            <!-- 2. Diagnostic & Laboratory Results Card -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card summary-card border-0 shadow-sm rounded-4 h-100 bg-white hover-shadow-sm transition">
+            <div class="col-md-6 col-lg-3">
+                <article class="card summary-card h-100">
                     <div class="card-body p-4 d-flex flex-column">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <span class="card-icon bg-info-subtle text-info-emphasis rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
-                                <i class="bi bi-file-earmark-medical fs-5"></i>
-                            </span>
-                            <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill small fw-semibold">
-                                @Model.LabResults.Count Records
-                            </span>
+                        <div class="summary-card-heading">
+                            <span class="card-icon"><i class="bi bi-file-earmark-medical" aria-hidden="true"></i></span>
+                            <div>
+                                <p class="eyebrow mb-1">Latest updates</p>
+                                <h2 class="h6 fw-bold mb-0">Lab results</h2>
+                            </div>
+                            <span class="summary-count">@Model.LabResults.Count</span>
                         </div>
-
-                        <h2 class="h6 fw-bold text-dark mb-2">Diagnostic &amp; Lab Reports</h2>
 
                         @if (Model.LabResults.Count > 0)
                         {
-                            <div class="d-flex flex-column gap-2 mb-3">
+                            <div class="record-preview-list">
                                 @foreach (var lab in Model.LabResults.Take(2))
                                 {
-                                    <a asp-controller="LabResults" asp-action="Details" asp-route-id="@lab.Id" class="p-2 rounded-3 bg-light border text-decoration-none text-dark hover-shadow-xs transition">
-                                        <div class="d-flex align-items-center justify-content-between mb-1">
-                                            <strong class="small text-primary-drmc">@lab.TestName</strong>
-                                            <span class="badge @(lab.Status == "Available" ? "bg-success-subtle text-success" : "bg-warning-subtle text-warning-emphasis") rounded-pill small">
-                                                @lab.Status
-                                            </span>
-                                        </div>
-                                        <div class="small text-muted" style="font-size:0.75rem;">
-                                            Collected: @lab.CollectedAt.ToString("MMM d, yyyy") &middot; @lab.AccessionNumber
-                                        </div>
+                                    <a asp-controller="LabResults" asp-action="Details" asp-route-id="@lab.Id" class="record-preview">
+                                        <span><strong>@lab.TestName</strong><small>@lab.CollectedAt.ToString("MMM d, yyyy")</small></span>
+                                        <span class="badge status-badge @(lab.Status == "Available" ? "text-bg-success" : "text-bg-warning")">@lab.Status</span>
                                     </a>
                                 }
                             </div>
                         }
                         else
                         {
-                            <div class="p-4 text-center text-muted bg-light rounded-3 mb-3">
-                                <i class="bi bi-folder-x fs-3 d-block mb-1 text-secondary"></i>
-                                <span class="small">No recent laboratory records found.</span>
-                            </div>
+                            <div class="empty-state compact"><span>No recent laboratory records.</span></div>
                         }
 
-                        <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
-                            <a asp-controller="LabResults" asp-action="Index" class="small text-primary-drmc fw-semibold text-decoration-none">
-                                View All Lab Reports &rarr;
-                            </a>
-                            <a asp-controller="LabResults" asp-action="Trends" class="small text-muted text-decoration-none">
-                                <i class="bi bi-graph-up me-1"></i> Trends
-                            </a>
-                        </div>
+                        <a asp-controller="LabResults" asp-action="Index" class="summary-primary-link mt-auto">View all results <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                     </div>
-                </div>
+                </article>
             </div>
 
-            <!-- 3. Prescriptions & Medications Card -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card summary-card border-0 shadow-sm rounded-4 h-100 bg-white hover-shadow-sm transition">
+            <div class="col-md-6 col-lg-3">
+                <article class="card summary-card h-100">
                     <div class="card-body p-4 d-flex flex-column">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <span class="card-icon bg-success-subtle text-success rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;">
-                                <i class="bi bi-capsule fs-5"></i>
-                            </span>
-                            <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill small fw-semibold">
-                                @Model.ActivePrescriptionsCount Active
-                            </span>
-                        </div>
-
-                        <h2 class="h6 fw-bold text-dark mb-2">Prescriptions &amp; Pharmacy</h2>
-
-                        <div class="p-3 bg-light rounded-3 mb-3 border">
-                            <div class="d-flex align-items-baseline gap-2 mb-2">
-                                <span class="display-6 fw-bold text-primary-drmc">@Model.ActivePrescriptionsCount</span>
-                                <span class="text-muted small">active drug prescriptions</span>
+                        <div class="summary-card-heading">
+                            <span class="card-icon"><i class="bi bi-capsule" aria-hidden="true"></i></span>
+                            <div>
+                                <p class="eyebrow mb-1">Daily care</p>
+                                <h2 class="h6 fw-bold mb-0">Medications</h2>
                             </div>
-                            <p class="small text-muted mb-0">
-                                View your daily dosage schedule, drug safety instructions, and request outpatient pharmacy refills.
-                            </p>
+                            <span class="summary-count">@Model.ActivePrescriptionsCount</span>
                         </div>
-
-                        <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
-                            <a asp-controller="Medications" asp-action="Index" class="small text-primary-drmc fw-semibold text-decoration-none">
-                                Medication Tracker &rarr;
-                            </a>
-                            <span class="small text-muted">OPD Pharmacy</span>
-                        </div>
+                        <p class="text-muted small mb-3">Review dose times, safety instructions, and refill status.</p>
+                        <a asp-controller="Medications" asp-action="Index" class="summary-primary-link mt-auto">Open medications <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                     </div>
-                </div>
+                </article>
             </div>
-
         </div>
     </div>
 </section>

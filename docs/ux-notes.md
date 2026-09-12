@@ -1,72 +1,55 @@
-# UX & Interaction Notes — DRMC Patient Portal
+# DRMC Patient Portal UX notes
 
-> **Current-scope note (2026-09-12):** Messaging and caregiver/proxy access are removed. Encounters is restored as an authenticated, owner-scoped destination. Current behavior is summarized in [../STATUS.md](../STATUS.md).
+These notes define how the portal reduces effort while preserving clinical, privacy, identity, and authorization requirements. Visual rules live in [design.md](design.md).
 
-These notes cover **how** the register/login/dashboard flow should *behave*. They deliberately say nothing about branding — the branding always comes from `docs/design.md` and the real DRMC identity. These patterns are adapted from local and same-stack precedents:
+## Product principle
 
-- **PGH OCRA** (`pghopd.up.edu.ph`) — Philippine General Hospital's public outpatient login/appointment system; the closest local public-hospital precedent. Studied for *flow*, not visuals.
-- **OpenEMR portal module** (`github.com/openemr/openemr`, `/portal`) — general patient-portal information architecture.
-- **`AleGxrcia/Patient-Manager`** (ASP.NET Core MVC) and **`alexandra-valkova/DoctorAppointment`** (ASP.NET Core, Razor Pages, Identity, EF Core) — same-stack references for wiring Identity + a dashboard.
-- Dribbble tags `patient-portal`, `healthcare-dashboard` — card-layout polish only, never branding.
+Patients should see the next useful action before institutional or explanatory content. “Fewer clicks” means one-tap access to frequent destinations and fewer repeated choices; it does not mean removing consent, validation, identity verification, emergency guidance, or access controls.
 
----
+## Navigation
 
-## Principle: calm, trustworthy, health-literate
+- Mobile guests get one-tap Home, Book, Queue, Services, and Sign in destinations.
+- Mobile patients get one-tap Dashboard, Book, Results, Medications, and More destinations.
+- The More sheet contains every secondary destination and account action without nested menus.
+- Desktop navigation uses the same priority order and shows only destinations relevant to the current authentication state.
+- Current location is conveyed with text/icon styling and `aria-current`, not color alone.
 
-This is a public hospital, not a private clinic. Tone = reassuring, plain-language, no clinical jargon. Assume some patients use older phones with low digital literacy. Labels say what a layperson understands ("Recent Lab Work" rather than "Labs result panel pending review").
+## Public entry flow
 
----
+1. Home presents Book Appointment, Track Queue, and Sign in/Dashboard first.
+2. Secondary services—Malasakit, directory, advisories, and OPD guidance—remain directly available below or in Services.
+3. Department previews link to the full directory instead of reproducing the entire directory on the home page.
+4. Emergency contact information remains visible but does not compete with the main task hierarchy.
 
-## Flow (end-to-end)
+## Authentication and registration
 
-1. **Landing (public)** → two clear calls-to-action: **Create an account** and **Sign in**.
-2. **Register** (Razor Page, `Areas/Identity/Pages/Account/Register.cshtml`) → creates an `ApplicationUser` with profile fields (Full Name, Contact Number) persisted via EF Core. On success → user is signed in and redirected to the **Home/Dashboard**.
-3. **Login** (Razor Page) → `SignInManager.PasswordSignInAsync`. On success → **Home/Dashboard**. Include **Forgot password** (token flow).
-4. **Home/Dashboard** (`[Authorize]`, `/Patient/Home`) → summary cards backed by seeded data.
+- Login remains a single focused form and respects the requested return URL.
+- Registration retains the four-step verified-ID flow: ID choice, image/manual path, review, and credentials/consent.
+- Step labels stay concise on phones, Back/Continue actions remain full width, and focus moves to the active step heading.
+- Server validation, upload handling, OCR, account lockout, privacy consent, and post-registration dashboard redirect remain unchanged.
 
----
+## Dashboard and clinical records
 
-## Identity flow conventions (from same-stack references)
+- The dashboard opens with the patient's next appointment and its next valid action, followed by recent results and active medications.
+- Access history and settings live in More rather than consuming the dashboard's first viewport.
+- Record indexes use readable rows with a clear status and one primary action. Supporting metadata wraps instead of overflowing.
+- Detail pages keep safety information and clinical wording intact while using consistent headings, definition-style metadata, and action placement.
 
-- The Identity model is extended (`ApplicationUser` : `IdentityUser`) with real patient profile fields. These are persisted through a migration — never bolted on without persistence.
-- Registration collects the extra profile fields on the Register page so the profile is complete at first sign-in.
-- After login, redirect to the dashboard; after register (auto-sign-in), redirect to the dashboard.
-- The dashboard shows the logged-in user's identity (greeting with Full Name) and links to Identity's manage-account area (`/Identity/Account/Manage`).
-- Out-of-scope features are never presented as broken links. If a card maps to an out-of-scope module, it is either non-interactive or links to an already-built real page (e.g., the Departments section on Landing).
+## Booking and patient tools
 
----
+- Booking remains one page so users can review the whole request before submission. Signed-in patient data continues to prefill.
+- Route parameters continue to preselect department, doctor, or consultation type when supplied.
+- Queue refresh, category filters, search, Malasakit questions, triage, refill requests, and print actions preserve existing behavior and accessible status announcements.
 
-## Card-driven dashboard (from OpenEMR / Dribbble patient-portal IA)
+## Accessibility and older-phone handling
 
-Keep the dashboard to **4–6 summary cards** (max, per the well-documented "patients use 2 tabs" lesson from portals like MyChart):
+- Support 320px-wide layouts, 200% zoom, visible focus, semantic headings, and keyboard navigation.
+- Interactive targets are at least 44px; bottom navigation includes safe-area padding.
+- Horizontal scrolling is limited to clearly bounded filter rows; the document itself must not overflow.
 
-1. **Next Appointment** — department, date, status. (Seeded display-only.)
-2. **Recent Lab Results** — plain-language status. (Seeded display-only.)
-3. **Active Prescriptions** — count and link to persisted medication schedules.
-4. **My Profile** — real account fields; links to manage-account.
-5. **Clinical Encounters** — owner-scoped summaries and linked laboratory results.
+## Security and operational boundaries
 
-Card anatomy: title (brand-blue semibold), value/status, one action link. Equal height, consistent spacing, mobile-friendly (stack to 1 column).
-
----
-
-## Accessibility & older-phone handling
-
-- `lang="en"`. Skip-to-content link. Landmarks. Logical heading order (h1 → h2 → h3, no skips).
-- Form fields: visible labels, not placeholders-only. Large tap targets. Clear validation messages that appear near the field they describe.
-- Touch targets ≥44px on mobile. Focus-visible outlines. Contrast ≥4.5:1.
-- Content reflows to one column at 320px (GWTD).
-
----
-
-## Known-limitation notes (recorded for the README, never shown as UI text)
-
-- **Forgot password** uses Identity's token flow. Development logs notifications to the console; Production requires validated SMTP and SMS configuration and fails startup if it is absent.
-- Dashboard cards read persisted, patient-owned rows. Appointment, laboratory, encounter, medication, and triage destinations are real routes rather than display-only placeholders.
-
-## Hardened interaction notes
-
-- Guest appointment links exchange the address-bar capability for an HttpOnly cookie and immediately redirect to a clean URL.
-- Queue refresh announces success/errors through an accessible live region and updates every numeric value in each department card.
-- Prescriptions without persisted dose times state that no exact schedule is recorded; the UI never invents one from free text.
-- Local triage and refill states must never use wording that implies HIS or pharmacy synchronization.
+- Guest appointment capabilities remain exchanged into secure cookies and are never exposed in redesigned UI.
+- Patient records retain owner checks and fail-closed audit behavior.
+- The interface does not imply HIS, pharmacy, SMTP, SMS, or SIEM integration beyond configured production adapters.
+- Messaging and caregiver/proxy access remain outside current scope and must not reappear as navigation links.
