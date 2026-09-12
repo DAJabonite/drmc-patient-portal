@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Runtime.Versioning;
 using System.Text;
 using DrmcPatientPortal.Areas.Identity.Pages.Account;
 using DrmcPatientPortal.Controllers;
@@ -20,6 +21,7 @@ using Xunit;
 
 namespace DrmcPatientPortal.Tests;
 
+[SupportedOSPlatform("windows")]
 public class IdDocumentRegistrationTests
 {
     private ApplicationDbContext CreateInMemoryDbContext()
@@ -242,7 +244,7 @@ public class IdDocumentRegistrationTests
         db.PatientIdDocuments.Add(doc);
         await db.SaveChangesAsync();
 
-        var controller = new PatientDocumentsController(db, userManager, auditMock.Object, envMock.Object)
+        var controller = new PatientDocumentsController(db, userManager, auditMock.Object, new Mock<IPatientDocumentStorage>().Object)
         {
             ControllerContext = new ControllerContext
             {
@@ -297,7 +299,7 @@ public class IdDocumentRegistrationTests
             emailMock.Object,
             ocrMock.Object,
             db,
-            envMock.Object)
+            new Mock<IPatientDocumentStorage>().Object)
         {
             PageContext = new PageContext
             {
@@ -371,7 +373,7 @@ public class IdDocumentRegistrationTests
             emailMock.Object,
             ocrMock.Object,
             db,
-            envMock.Object)
+            new Mock<IPatientDocumentStorage>().Object)
         {
             PageContext = new PageContext
             {

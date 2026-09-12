@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.ComponentModel.DataAnnotations;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
@@ -11,7 +12,7 @@ namespace DrmcPatientPortal.Controllers;
 
 // PRE-CONSULTATION SELF-TRIAGE & DIGITAL INTAKE
 // BOUNDARY NOTE: Clinical intake responses, 0-10 visual pain scales, and acuity scores are saved to SQLite.
-// Real-time synchronization to attending clinician workstations is an infrastructure boundary (logged to ILogger).
+// Institutional clinician-workstation synchronization remains disabled until a DRMC integration is configured.
 // A clinician-side workstation dashboard is out-of-scope for this patient-only portal build.
 [Authorize]
 [Route("Patient/Triage")]
@@ -87,11 +88,44 @@ public class TriageController : Controller
             return NotFound();
         }
 
+        var existing = await _db.TriageIntakes.FirstOrDefaultAsync(t => t.AppointmentId == appointment.Id);
+        if (existing is not null) return RedirectToAction(nameof(Summary), new { id = existing.Id });
+
+        if (!ModelState.IsValid)
+        {
+            model.BookingReference = appointment.BookingReference;
+            model.Department = appointment.Department;
+            model.DoctorName = appointment.DoctorName;
+            model.ScheduledAt = appointment.ScheduledAt;
+            return View("Start", model);
+        }
+
         // Emergency red flag safeguard intercept
         if (model.HasChestPain || model.HasSevereBreathingDifficulty || model.HasSuddenNumbness || model.HasUncontrolledBleeding)
         {
+            var redFlags = new List<string>();
+            if (model.HasChestPain) redFlags.Add("Sudden crushing chest pain or pressure");
+            if (model.HasSevereBreathingDifficulty) redFlags.Add("Severe breathing difficulty");
+            if (model.HasSuddenNumbness) redFlags.Add("Sudden numbness or stroke warning signs");
+            if (model.HasUncontrolledBleeding) redFlags.Add("Uncontrolled bleeding");
+            var emergencyIntake = new TriageIntake
+            {
+                AppointmentId = appointment.Id,
+                PatientUserId = user.Id,
+                SubmittedAt = DateTime.UtcNow,
+                ChiefComplaint = string.IsNullOrWhiteSpace(model.ChiefComplaint) ? appointment.ChiefComplaint : model.ChiefComplaint.Trim(),
+                SymptomDurationDays = model.SymptomDurationDays,
+                PainScale = model.PainScale,
+                SymptomsJson = JsonSerializer.Serialize(redFlags),
+                HasEmergencyRedFlags = true,
+                ComorbiditiesJson = "[]",
+                CurrentMedicationsSummary = model.CurrentMedicationsSummary ?? string.Empty,
+                AcuityLevel = TriageAcuity.UrgentEmergency,
+                TriageNotes = "Emergency warning displayed; patient instructed to seek immediate emergency care."
+            };
+            _db.TriageIntakes.Add(emergencyIntake);
             var ipRed = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
-            await _auditLog.LogAsync(user.Id, "EMERGENCY_RED_FLAG_TRIGGERED", $"Appointment/{appointment.Id}", "Patient reported acute emergency red-flag symptoms.", ipRed);
+            await PersistWithAuditAsync(emergencyIntake, user.Id, "EMERGENCY_RED_FLAG_TRIGGERED", "Emergency red-flag intake recorded.", ipRed);
             return RedirectToAction(nameof(EmergencyWarning));
         }
 
@@ -140,14 +174,11 @@ public class TriageController : Controller
         };
 
         _db.TriageIntakes.Add(intake);
-        await _db.SaveChangesAsync();
-
-        // CLINICIAN WORKSTATION BOUNDARY LOG
-        _logger.LogInformation("[TRIAGE_INTAKE_SYNC] Intake #{IntakeId} for appointment {Reference} synced to {Department} clinician queue. Acuity: {Acuity}",
-            intake.Id, appointment.BookingReference, appointment.Department, intake.AcuityLevel);
-
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
-        await _auditLog.LogAsync(user.Id, "SUBMIT_TRIAGE_INTAKE", $"TriageIntake/{intake.Id}", $"Submitted digital self-triage for appointment {appointment.BookingReference}", ip);
+        await PersistWithAuditAsync(intake, user.Id, "SUBMIT_TRIAGE_INTAKE", "Digital self-triage submitted.", ip);
+
+        _logger.LogInformation("[TRIAGE_INTAKE_RECORDED] Intake {IntakeId} recorded locally with acuity {Acuity}.",
+            intake.Id, intake.AcuityLevel);
 
         return RedirectToAction(nameof(Summary), new { id = intake.Id });
     }
@@ -177,6 +208,26 @@ public class TriageController : Controller
     {
         return View();
     }
+
+    private async Task PersistWithAuditAsync(TriageIntake intake, string userId, string action, string details, string ipAddress)
+    {
+        var transaction = _db.Database.IsRelational() ? await _db.Database.BeginTransactionAsync() : null;
+        try
+        {
+            await _db.SaveChangesAsync();
+            await _auditLog.LogAsync(userId, action, $"TriageIntake/{intake.Id}", details, ipAddress);
+            if (transaction is not null) await transaction.CommitAsync();
+        }
+        catch
+        {
+            if (transaction is not null) await transaction.RollbackAsync();
+            throw;
+        }
+        finally
+        {
+            if (transaction is not null) await transaction.DisposeAsync();
+        }
+    }
 }
 
 public class TriageSubmissionViewModel
@@ -187,8 +238,11 @@ public class TriageSubmissionViewModel
     public string DoctorName { get; set; } = string.Empty;
     public DateTime ScheduledAt { get; set; }
 
+    [StringLength(500)]
     public string ChiefComplaint { get; set; } = string.Empty;
+    [Range(1, 365)]
     public int SymptomDurationDays { get; set; } = 1;
+    [Range(0, 10)]
     public int PainScale { get; set; } = 0; // 0 to 10
 
     // Symptoms checkboxes
@@ -198,6 +252,7 @@ public class TriageSubmissionViewModel
     public bool HasFatigue { get; set; }
     public bool HasGastrointestinal { get; set; }
     public bool HasJointPain { get; set; }
+    [StringLength(300)]
     public string? OtherSymptoms { get; set; }
 
     // Red Flag safeguards
@@ -207,11 +262,11 @@ public class TriageSubmissionViewModel
     public bool HasUncontrolledBleeding { get; set; }
 
     // Vitals
-    public string? ReportedBloodPressure { get; set; }
-    public string? ReportedTemperature { get; set; }
-    public string? ReportedHeartRate { get; set; }
-    public string? ReportedWeightKg { get; set; }
-    public string? ReportedBloodSugar { get; set; }
+    [StringLength(20)] public string? ReportedBloodPressure { get; set; }
+    [StringLength(20)] public string? ReportedTemperature { get; set; }
+    [StringLength(20)] public string? ReportedHeartRate { get; set; }
+    [StringLength(20)] public string? ReportedWeightKg { get; set; }
+    [StringLength(20)] public string? ReportedBloodSugar { get; set; }
 
     // Comorbidities
     public bool HasHypertension { get; set; }
@@ -220,5 +275,5 @@ public class TriageSubmissionViewModel
     public bool HasHeartDisease { get; set; }
     public bool HasKidneyDisease { get; set; }
 
-    public string? CurrentMedicationsSummary { get; set; }
+    [StringLength(500)] public string? CurrentMedicationsSummary { get; set; }
 }

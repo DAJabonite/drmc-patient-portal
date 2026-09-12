@@ -1,5 +1,7 @@
 # DRMC Patient Portal — Phase 3 Implementation Plan & Technical Specification
 
+> **Historical document — superseded.** This plan records earlier intent, including Messaging and caregiver/proxy features that are no longer present. Use [../STATUS.md](../STATUS.md) for current scope and [DEPLOYMENT.md](DEPLOYMENT.md) for operations.
+
 > **Document Version:** 3.0.0  
 > **Status:** Approved for Implementation  
 > **Target Framework:** .NET 10.0 (ASP.NET Core MVC + Identity Razor Pages + EF Core SQLite)  

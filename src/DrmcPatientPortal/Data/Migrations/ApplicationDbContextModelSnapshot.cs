@@ -175,6 +175,12 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Property<string>("PhilHealthNumber")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("PublicAccessExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PublicAccessTokenHash")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("QrCodePayload")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -300,6 +306,77 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.ToTable("AuditLogs");
                 });
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.ClinicalEncounter", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AttendingPhysician")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CarePlanAndInstructions")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ChiefComplaint")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ClinicalSummary")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("EncounterDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EncounterReference")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("FollowUpDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FollowUpNotes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PatientUserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PrimaryDiagnosis")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SecondaryDiagnosis")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("VitalSignsRecorded")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EncounterReference")
+                        .IsUnique();
+
+                    b.HasIndex("PatientUserId");
+
+                    b.ToTable("ClinicalEncounters");
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.Doctor", b =>
                 {
                     b.Property<int>("Id")
@@ -364,6 +441,9 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Property<int>("Category")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("ClinicalEncounterId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ClinicalNotes")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -406,6 +486,8 @@ namespace DrmcPatientPortal.Data.Migrations
 
                     b.HasIndex("AccessionNumber");
 
+                    b.HasIndex("ClinicalEncounterId");
+
                     b.HasIndex("PatientUserId");
 
                     b.ToTable("LabResults");
@@ -446,6 +528,29 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.ToTable("LabResultItems");
                 });
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.MedicationDoseSchedule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<TimeOnly>("DoseTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PrescriptionId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PrescriptionId", "DoseTime")
+                        .IsUnique();
+
+                    b.ToTable("MedicationDoseSchedules");
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.PatientAllergy", b =>
                 {
                     b.Property<int>("Id")
@@ -483,6 +588,9 @@ namespace DrmcPatientPortal.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("BackPhotoContentType")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("BackPhotoFileName")
                         .HasColumnType("TEXT");
 
@@ -490,6 +598,9 @@ namespace DrmcPatientPortal.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ExtractedFieldsJson")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FrontPhotoContentType")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("FrontPhotoFileName")
@@ -512,6 +623,9 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Property<string>("PatientUserId")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("StorageVersion")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
@@ -801,7 +915,8 @@ namespace DrmcPatientPortal.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AppointmentId");
+                    b.HasIndex("AppointmentId")
+                        .IsUnique();
 
                     b.HasIndex("PatientUserId");
 
@@ -957,13 +1072,31 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Navigation("Patient");
                 });
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.ClinicalEncounter", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "Patient")
+                        .WithMany("Encounters")
+                        .HasForeignKey("PatientUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.LabResult", b =>
                 {
+                    b.HasOne("DrmcPatientPortal.Models.ClinicalEncounter", "Encounter")
+                        .WithMany("LabResults")
+                        .HasForeignKey("ClinicalEncounterId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "Patient")
                         .WithMany("LabResults")
                         .HasForeignKey("PatientUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Encounter");
 
                     b.Navigation("Patient");
                 });
@@ -977,6 +1110,17 @@ namespace DrmcPatientPortal.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("LabResult");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.MedicationDoseSchedule", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.Prescription", "Prescription")
+                        .WithMany("DoseSchedules")
+                        .HasForeignKey("PrescriptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Prescription");
                 });
 
             modelBuilder.Entity("DrmcPatientPortal.Models.PatientAllergy", b =>
@@ -1109,6 +1253,8 @@ namespace DrmcPatientPortal.Data.Migrations
 
                     b.Navigation("Appointments");
 
+                    b.Navigation("Encounters");
+
                     b.Navigation("IdDocuments");
 
                     b.Navigation("LabResults");
@@ -1118,6 +1264,11 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Navigation("QueueTickets");
 
                     b.Navigation("TriageIntakes");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.ClinicalEncounter", b =>
+                {
+                    b.Navigation("LabResults");
                 });
 
             modelBuilder.Entity("DrmcPatientPortal.Models.Doctor", b =>
@@ -1132,6 +1283,8 @@ namespace DrmcPatientPortal.Data.Migrations
 
             modelBuilder.Entity("DrmcPatientPortal.Models.Prescription", b =>
                 {
+                    b.Navigation("DoseSchedules");
+
                     b.Navigation("RefillRequests");
                 });
 #pragma warning restore 612, 618

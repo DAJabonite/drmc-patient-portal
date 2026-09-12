@@ -16,6 +16,9 @@ public class PatientIdDocument
     // Secure relative file paths inside App_Data/PatientIdDocuments/ (outside wwwroot)
     public string? FrontPhotoFileName { get; set; }
     public string? BackPhotoFileName { get; set; }
+    public string? FrontPhotoContentType { get; set; }
+    public string? BackPhotoContentType { get; set; }
+    public int StorageVersion { get; set; } = 2;
 
     public DateTime CapturedAt { get; set; } = DateTime.UtcNow;
 

@@ -472,7 +472,7 @@ public static class DbInitializer
             userManager.CreateAsync(user, password).GetAwaiter().GetResult();
         }
 
-        // 6. Seed Reviewer Patient Data (Appointments, Labs, Messages, Queue Ticket Link)
+        // 6. Seed reviewer patient data for current portal features.
         var primary = db.Users.FirstOrDefault(u => u.Email == "patient@drmc.doh.gov.ph");
         if (primary is not null)
         {
@@ -498,7 +498,7 @@ public static class DbInitializer
                         TimeSlot = "09:30 AM - 10:00 AM",
                         ChiefComplaint = "Routine 3-month follow-up for blood pressure and fasting blood sugar management.",
                         Status = "Confirmed",
-                        QrCodePayload = "DRMC|REF:DRMC-2026-IM-0192|PAT:Maria Clara Santos|DEPT:Internal Medicine|DATE:20260907-0930|SIG:VERIFIED_DOH_DRMC",
+                        QrCodePayload = "DRMC|REF:DRMC-2026-IM-0192|PURPOSE:CHECKIN",
                         CreatedAt = DateTime.UtcNow.AddDays(-2)
                     },
                     new Appointment
@@ -517,10 +517,14 @@ public static class DbInitializer
                         TimeSlot = "02:00 PM - 02:30 PM",
                         ChiefComplaint = "PhilHealth Konsulta preventive wellness consultation.",
                         Status = "Pending",
-                        QrCodePayload = "DRMC|REF:DRMC-2026-TC-0481|PAT:Maria Clara Santos|DEPT:Family & Community Medicine|DATE:20260926-1400|SIG:VERIFIED_DOH_DRMC",
+                        QrCodePayload = "DRMC|REF:DRMC-2026-TC-0481|PURPOSE:CHECKIN",
                         TeleconsultMeetingUrl = "https://telehealth.drmc.doh.gov.ph/consult/room-tc-0481",
                         CreatedAt = DateTime.UtcNow.AddDays(-1)
                     });
+            }
+            foreach (var appointment in db.Appointments.Where(a => a.PatientUserId == primary.Id && a.QrCodePayload.Contains("|PAT:")))
+            {
+                appointment.QrCodePayload = $"DRMC|REF:{appointment.BookingReference}|PURPOSE:CHECKIN";
             }
 
             // Link a queue ticket to Maria Clara Santos so she can test the ticket lookup
@@ -539,11 +543,55 @@ public static class DbInitializer
                 });
             }
 
+            var encounterIm = db.ClinicalEncounters.FirstOrDefault(e => e.EncounterReference == "DRMC-ENC-2026-0412");
+            if (encounterIm is null)
+            {
+                encounterIm = new ClinicalEncounter
+                {
+                    PatientUserId = primary.Id,
+                    EncounterReference = "DRMC-ENC-2026-0412",
+                    EncounterDate = DateTime.UtcNow.AddDays(-18),
+                    Department = "Internal Medicine",
+                    AttendingPhysician = "Dr. Arthur Llanos, MD, FPCP",
+                    Type = EncounterType.OpdConsultation,
+                    ChiefComplaint = "Routine follow-up for chronic blood sugar and blood pressure management.",
+                    PrimaryDiagnosis = "Essential Hypertension (ICD-10 I10)",
+                    SecondaryDiagnosis = "Type 2 Diabetes Mellitus without complications (ICD-10 E11.9)",
+                    ClinicalSummary = "Patient is asymptomatic and reports good medication adherence.",
+                    CarePlanAndInstructions = "Maintain a low-sodium, low-glycemic diet.\nContinue prescribed medicines.\nRepeat fasting blood sugar and HbA1c in three months.",
+                    VitalSignsRecorded = "BP: 128/82 mmHg | HR: 76 bpm | Temp: 36.5 C | Wt: 64.0 kg",
+                    FollowUpDate = DateTime.UtcNow.AddMonths(3),
+                    FollowUpNotes = "Internal Medicine OPD follow-up."
+                };
+                db.ClinicalEncounters.Add(encounterIm);
+            }
+
+            var encounterFcm = db.ClinicalEncounters.FirstOrDefault(e => e.EncounterReference == "DRMC-ENC-2025-1089");
+            if (encounterFcm is null)
+            {
+                encounterFcm = new ClinicalEncounter
+                {
+                    PatientUserId = primary.Id,
+                    EncounterReference = "DRMC-ENC-2025-1089",
+                    EncounterDate = DateTime.UtcNow.AddMonths(-6),
+                    Department = "Family & Community Medicine",
+                    AttendingPhysician = "Dr. Cristina Ramos, MD, FPAFP",
+                    Type = EncounterType.OpdConsultation,
+                    ChiefComplaint = "Annual wellness physical checkup.",
+                    PrimaryDiagnosis = "General Adult Medical Examination (ICD-10 Z00.0)",
+                    ClinicalSummary = "Complete physical examination was unremarkable.",
+                    CarePlanAndInstructions = "Continue a healthy lifestyle and routine preventive care.",
+                    VitalSignsRecorded = "BP: 120/78 mmHg | HR: 72 bpm | Temp: 36.6 C | Wt: 63.5 kg"
+                };
+                db.ClinicalEncounters.Add(encounterFcm);
+            }
+
             if (!db.LabResults.Any(l => l.PatientUserId == primary.Id))
             {
                 var cbc1 = new LabResult
                 {
                     PatientUserId = primary.Id,
+                    Encounter = encounterIm,
                     AccessionNumber = "DRMC-LAB-2026-0814",
                     TestName = "Complete Blood Count (CBC) with Platelet Count",
                     Category = LabCategory.Hematology,
@@ -569,6 +617,7 @@ public static class DbInitializer
                 var fbs = new LabResult
                 {
                     PatientUserId = primary.Id,
+                    Encounter = encounterIm,
                     AccessionNumber = "DRMC-LAB-2026-0815",
                     TestName = "Fasting Blood Sugar (FBS)",
                     Category = LabCategory.ClinicalChemistry,
@@ -587,6 +636,7 @@ public static class DbInitializer
                 var lipid = new LabResult
                 {
                     PatientUserId = primary.Id,
+                    Encounter = encounterIm,
                     AccessionNumber = "DRMC-LAB-2026-0790",
                     TestName = "Lipid Profile Panel",
                     Category = LabCategory.ClinicalChemistry,
@@ -608,6 +658,7 @@ public static class DbInitializer
                 var cbc2 = new LabResult
                 {
                     PatientUserId = primary.Id,
+                    Encounter = encounterFcm,
                     AccessionNumber = "DRMC-LAB-2025-0451",
                     TestName = "Complete Blood Count (CBC) with Platelet Count",
                     Category = LabCategory.Hematology,
@@ -629,6 +680,7 @@ public static class DbInitializer
                 var urinalysis = new LabResult
                 {
                     PatientUserId = primary.Id,
+                    Encounter = encounterFcm,
                     AccessionNumber = "DRMC-LAB-2025-0452",
                     TestName = "Routine Urinalysis",
                     Category = LabCategory.UrinalysisFecalysis,
@@ -664,6 +716,14 @@ public static class DbInitializer
 
                 db.LabResults.AddRange(cbc1, fbs, lipid, cbc2, urinalysis, hba1c);
             }
+            else
+            {
+                foreach (var lab in db.LabResults.Where(l => l.PatientUserId == primary.Id && l.ClinicalEncounterId == null))
+                {
+                    if (lab.AccessionNumber is "DRMC-LAB-2026-0814" or "DRMC-LAB-2026-0815" or "DRMC-LAB-2026-0790") lab.Encounter = encounterIm;
+                    if (lab.AccessionNumber is "DRMC-LAB-2025-0451" or "DRMC-LAB-2025-0452") lab.Encounter = encounterFcm;
+                }
+            }
 
             if (!db.Prescriptions.Any(p => p.PatientUserId == primary.Id))
             {
@@ -686,6 +746,8 @@ public static class DbInitializer
                     RefillsRemaining = 2,
                     LastRefillDate = DateTime.UtcNow.AddDays(-18)
                 };
+                rx1.DoseSchedules.Add(new MedicationDoseSchedule { DoseTime = new TimeOnly(8, 0), DisplayOrder = 1 });
+                rx1.DoseSchedules.Add(new MedicationDoseSchedule { DoseTime = new TimeOnly(18, 0), DisplayOrder = 2 });
 
                 var rx2 = new Prescription
                 {
@@ -706,6 +768,7 @@ public static class DbInitializer
                     RefillsRemaining = 1,
                     LastRefillDate = DateTime.UtcNow.AddDays(-2)
                 };
+                rx2.DoseSchedules.Add(new MedicationDoseSchedule { DoseTime = new TimeOnly(8, 0), DisplayOrder = 1 });
 
                 rx2.RefillRequests.Add(new RefillRequest
                 {
@@ -734,8 +797,25 @@ public static class DbInitializer
                     RefillsTotal = 3,
                     RefillsRemaining = 3
                 };
+                rx3.DoseSchedules.Add(new MedicationDoseSchedule { DoseTime = new TimeOnly(8, 0), DisplayOrder = 1 });
 
                 db.Prescriptions.AddRange(rx1, rx2, rx3);
+            }
+            else
+            {
+                foreach (var rx in db.Prescriptions.Where(p => p.PatientUserId == primary.Id).Include(p => p.DoseSchedules))
+                {
+                    if (rx.DoseSchedules.Count > 0) continue;
+                    if (rx.RxNumber is "DRMC-RX-2026-3819")
+                    {
+                        rx.DoseSchedules.Add(new MedicationDoseSchedule { DoseTime = new TimeOnly(8, 0), DisplayOrder = 1 });
+                        rx.DoseSchedules.Add(new MedicationDoseSchedule { DoseTime = new TimeOnly(18, 0), DisplayOrder = 2 });
+                    }
+                    else if (rx.RxNumber is "DRMC-RX-2026-3820" or "DRMC-RX-2026-2104")
+                    {
+                        rx.DoseSchedules.Add(new MedicationDoseSchedule { DoseTime = new TimeOnly(8, 0), DisplayOrder = 1 });
+                    }
+                }
             }
 
             if (!db.PatientAllergies.Any(a => a.PatientUserId == primary.Id))

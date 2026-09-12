@@ -3,14 +3,8 @@ using DrmcPatientPortal.Models;
 
 namespace DrmcPatientPortal.Services;
 
-// SECURITY REVIEW TODO (Item #3): PHI Access Audit Logging & Tamper Resistance
-// BOUNDARY NOTE: Access transparency and security events (e.g. proxy switching, viewing lab reports, intake submissions)
-// are persisted to the database and mirrored to ILogger.
-// Production hardening requirements:
-// 1. Immutable / WORM or remote SIEM log forwarding (e.g. Syslog/Kafka/Azure Sentinel) to prevent tampering.
-// 2. Automated log retention policy matching DOH guidelines (10 years).
-// 3. Masking of sensitive query parameters in Details string.
-// Reference: docs/SECURITY_REVIEW_TODO.md
+// BOUNDARY NOTE: Access transparency and security events (e.g. viewing records and submitting intake)
+// are persisted before the protected operation succeeds. External immutable SIEM retention remains a DRMC deployment dependency.
 public class AuditLogService : IAuditLogService
 {
     private readonly ApplicationDbContext _db;
@@ -44,6 +38,7 @@ public class AuditLogService : IAuditLogService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to persist audit log entry: {Action} on {Resource}", action, resource);
+            throw new AuditLogPersistenceException("The required security audit record could not be persisted.", ex);
         }
     }
 }

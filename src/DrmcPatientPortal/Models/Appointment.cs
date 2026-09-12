@@ -29,6 +29,8 @@ public class Appointment
     public string Status { get; set; } = "Confirmed"; // "Confirmed", "Pending", "Completed", "Cancelled"
 
     public string QrCodePayload { get; set; } = string.Empty;
+    public string? PublicAccessTokenHash { get; set; }
+    public DateTime? PublicAccessExpiresAt { get; set; }
     public string? TeleconsultMeetingUrl { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

@@ -1,5 +1,7 @@
 # Phase 3.3 Milestone Summary — Governance, Accessibility & Trilingual Pass
 
+> **Historical implementation log — superseded for scope and compliance claims.** Repository checks are not institutional certification. See [../../STATUS.md](../../STATUS.md) and [../COMPLIANCE_REPORT.md](../COMPLIANCE_REPORT.md).
+
 **Date:** August 26, 2026  
 **Milestone:** Phase 3.3 (Cross-Cutting Governance, Compliance, Accessibility & Localization)  
 **Branch:** `feature/phase3-3-governance-accessibility`  
@@ -69,5 +71,5 @@ This milestone ensures that all 11 patient-facing features (from Phases 3.1 & 3.
    - Verified language toggling across English, Cebuano, and Filipino.
    - Verified patient access audit trail, proxy consent logs, and 2FA authenticator pairing.
 3. **Regulatory Documentation:**
-   - Produced [`docs/COMPLIANCE_REPORT.md`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/docs/COMPLIANCE_REPORT.md) certifying portal compliance for DRMC's compliance office.
-   - Reconciled [`docs/SECURITY_REVIEW_TODO.md`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/docs/SECURITY_REVIEW_TODO.md).
+   - Produced [`docs/COMPLIANCE_REPORT.md`](../../docs/COMPLIANCE_REPORT.md) certifying portal compliance for DRMC's compliance office.
+   - Reconciled [`docs/SECURITY_REVIEW_TODO.md`](../../docs/SECURITY_REVIEW_TODO.md).

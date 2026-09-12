@@ -5,6 +5,8 @@ public class LabResult
     public int Id { get; set; }
     public string PatientUserId { get; set; } = string.Empty;
     public ApplicationUser Patient { get; set; } = null!;
+    public int? ClinicalEncounterId { get; set; }
+    public ClinicalEncounter? Encounter { get; set; }
 
     public string AccessionNumber { get; set; } = string.Empty; // e.g. "DRMC-LAB-2026-0981"
     public string TestName { get; set; } = string.Empty;        // e.g. "Complete Blood Count (CBC) with Platelet"

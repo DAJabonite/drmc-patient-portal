@@ -2,8 +2,7 @@ namespace DrmcPatientPortal.Models;
 
 // PRE-CONSULTATION SELF-TRIAGE & DIGITAL INTAKE
 // BOUNDARY NOTE: Clinical intake responses and acuity assessments are recorded in the database.
-// Real-time synchronization to attending clinician workstations is an infrastructure boundary (logged to ILogger).
-// A clinician-side dashboard is out-of-scope for this patient-only portal build.
+// No clinician-workstation or HIS synchronization is active; this portal records local intake state only.
 public class TriageIntake
 {
     public int Id { get; set; }

@@ -38,6 +38,7 @@ public class MedicationsController : Controller
 
         var prescriptions = await _db.Prescriptions
             .Include(p => p.RefillRequests)
+            .Include(p => p.DoseSchedules)
             .Where(p => p.PatientUserId == user.Id)
             .OrderByDescending(p => p.Status == PrescriptionStatus.Active)
             .ThenByDescending(p => p.PrescribedAt)
@@ -75,7 +76,7 @@ public class MedicationsController : Controller
         }
 
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
-        await _auditLog.LogAsync(user.Id, "VIEW_PRESCRIPTION", $"Prescription/{id}", $"Rx #{rx.RxNumber} - {rx.GenericName}", ip);
+        await _auditLog.LogAsync(user.Id, "VIEW_PRESCRIPTION", $"Prescription/{id}", "Viewed an owned prescription.", ip);
 
         return View(rx);
     }
@@ -104,38 +105,46 @@ public class MedicationsController : Controller
         }
 
         // Check if there is already an active pending request
-        var hasPending = rx.RefillRequests.Any(r => r.Status == Models.RefillStatus.Requested || r.Status == Models.RefillStatus.Approved);
+        var hasPending = rx.RefillRequests.Any(r => r.Status is Models.RefillStatus.Requested or Models.RefillStatus.Approved or Models.RefillStatus.ReadyForPickup);
         if (hasPending)
         {
             TempData["ErrorMessage"] = "A refill request is already pending processing for this medication.";
             return RedirectToAction(nameof(Details), new { id = prescriptionId });
         }
 
-        // Create refill request and decrement remaining refills
+        // Record the request only. Refill inventory changes when a pharmacy dispensing workflow confirms fulfillment.
         var refill = new RefillRequest
         {
             PrescriptionId = rx.Id,
             PatientUserId = user.Id,
             RequestedAt = DateTime.UtcNow,
-            Status = Models.RefillStatus.Approved, // Pre-approved in hospital workflow
-            EstimatedPickupDate = DateTime.UtcNow.AddDays(1),
-            PharmacyNotes = "Refill approved. Prescription slip sent to DRMC OPD Pharmacy Window 2 for dispensing."
+            Status = Models.RefillStatus.Requested,
+            PharmacyNotes = "Request recorded in the patient portal. Pharmacy review is pending."
         };
 
-        rx.RefillsRemaining--;
-        rx.LastRefillDate = DateTime.UtcNow;
         rx.RefillRequests.Add(refill);
 
-        await _db.SaveChangesAsync();
-
-        // PHARMACY INFRASTRUCTURE BOUNDARY LOG
-        _logger.LogInformation("[PHARMACY_REFILL_SUBMITTED] Rx #{RxNumber} ({Drug}) submitted for patient {UserId}. Refills remaining: {Remaining}",
-            rx.RxNumber, rx.GenericName, user.Id, rx.RefillsRemaining);
-
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
-        await _auditLog.LogAsync(user.Id, "REQUEST_REFILL", $"Prescription/{rx.Id}", $"Refill request #{refill.Id} created for Rx {rx.RxNumber}", ip);
+        var transaction = _db.Database.IsRelational() ? await _db.Database.BeginTransactionAsync() : null;
+        try
+        {
+            await _db.SaveChangesAsync();
+            await _auditLog.LogAsync(user.Id, "REQUEST_REFILL", $"Prescription/{rx.Id}", "Refill request recorded.", ip);
+            if (transaction is not null) await transaction.CommitAsync();
+        }
+        catch
+        {
+            if (transaction is not null) await transaction.RollbackAsync();
+            throw;
+        }
+        finally
+        {
+            if (transaction is not null) await transaction.DisposeAsync();
+        }
 
-        TempData["SuccessMessage"] = $"Your refill request for {rx.GenericName} has been approved and sent to the DRMC OPD Pharmacy.";
+        _logger.LogInformation("[PHARMACY_REFILL_RECORDED] Refill request {RefillRequestId} recorded locally; external pharmacy review is pending.", refill.Id);
+
+        TempData["SuccessMessage"] = $"Your refill request for {rx.GenericName} was recorded and is awaiting pharmacy review.";
         return RedirectToAction(nameof(RefillStatus), new { id = refill.Id });
     }
 

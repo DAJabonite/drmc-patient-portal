@@ -1,6 +1,6 @@
 @model QueueBoardViewModel
 @{
-    ViewData["Title"] = "Live OPD Queue Tracker";
+    ViewData["Title"] = Loc["Queue_Title"];
 }
 
 <!-- Hero Section -->
@@ -10,32 +10,32 @@
             <div class="col-lg-8">
                 <div class="d-flex align-items-center gap-2 mb-2">
                     <span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill">
-                        <i class="bi bi-broadcast me-1"></i> Live Real-Time Feed
+                        <i class="bi bi-broadcast me-1"></i> @Loc["Queue_Live"]
                     </span>
                     <span class="small text-white text-opacity-75" id="liveTimestamp">
-                        Updated at @Model.LastUpdated.ToString("h:mm:ss tt")
+                        @Loc["Queue_UpdatedAt", Model.LastUpdated.ToString("T")]
                     </span>
                 </div>
-                <h1 class="display-6 fw-bold mb-2">Outpatient Clinic Queue Tracker</h1>
+                <h1 class="display-6 fw-bold mb-2">@Loc["Queue_Title"]</h1>
                 <p class="lead text-white text-opacity-90 mb-0 fs-6" style="max-width: 680px;">
-                    Monitor live ticket numbers currently called and serving across Davao Regional Medical Center outpatient clinics and diagnostic units.
+                    @Loc["Queue_Description"]
                 </p>
             </div>
             <div class="col-lg-4">
                 <!-- Direct Ticket Lookup Card -->
                 <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-dark">
                     <h2 class="h6 fw-bold text-primary-drmc mb-2">
-                        <i class="bi bi-search me-1"></i> Track Your Ticket
+                        <i class="bi bi-search me-1"></i> @Loc["Queue_Track"]
                     </h2>
                     <form asp-action="Status" method="get" class="d-flex gap-2">
                         <input type="text" name="ticketNumber" class="form-control form-control-sm text-uppercase fw-bold"
                                placeholder="e.g. IM-105, PED-018" required aria-label="Enter Ticket Number" />
                         <button type="submit" class="btn btn-sm btn-primary-drmc px-3 fw-semibold text-nowrap">
-                            Check
+                            @Loc["Queue_Check"]
                         </button>
                     </form>
                     <span class="small text-muted mt-1" style="font-size: 0.75rem;">
-                        <i class="bi bi-info-circle me-1"></i> Enter the ticket number on your clinic pass.
+                        <i class="bi bi-info-circle me-1"></i> @Loc["Queue_Enter"]
                     </span>
                 </div>
             </div>
@@ -49,7 +49,7 @@
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div class="d-flex align-items-center gap-1 overflow-x-auto pb-1" style="max-width: 100%;">
                 <a asp-action="Index" class="btn btn-sm @(string.IsNullOrEmpty(Model.SelectedDepartment) ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
-                    All Clinics
+                    @Loc["Queue_All"]
                 </a>
                 @foreach (var dept in Model.Departments)
                 {
@@ -61,7 +61,7 @@
             </div>
             <div class="d-flex align-items-center gap-2">
                 <button id="refreshQueueBtn" class="btn btn-sm btn-outline-drmc d-inline-flex align-items-center gap-1 rounded-pill px-3 fw-semibold">
-                    <i class="bi bi-arrow-clockwise" id="refreshIcon"></i> Refresh Board
+                    <i class="bi bi-arrow-clockwise" id="refreshIcon"></i> @Loc["Queue_Refresh"]
                 </button>
             </div>
         </div>
@@ -85,19 +85,19 @@
                                         <i class="bi bi-geo-alt me-1"></i> @item.ClinicRoom
                                     </span>
                                 </div>
-                                <span class="badge bg-light text-secondary border px-2 py-1 rounded-pill small">
-                                    @(item.WaitingCount) Waiting
+                                <span class="badge bg-light text-secondary border px-2 py-1 rounded-pill small" data-queue-value="waiting-badge">
+                                    @(item.WaitingCount) @Loc["Queue_Waiting"]
                                 </span>
                             </div>
 
                             <!-- Serving Block -->
                             <div class="p-3 rounded-3 bg-primary-subtle border border-primary border-opacity-25 mb-3 text-center">
                                 <span class="small fw-semibold text-primary-drmc text-uppercase tracking-wider d-block mb-1">
-                                    Now Serving
+                                    @Loc["Queue_NowServing"]
                                 </span>
                                 @if (item.ServingTicket is not null)
                                 {
-                                    <div class="display-5 fw-bolder text-primary-drmc mb-1" style="letter-spacing: 1px;">
+                                    <div class="display-5 fw-bolder text-primary-drmc mb-1" data-queue-value="serving" style="letter-spacing: 1px;">
                                         @item.ServingTicket.TicketNumber
                                     </div>
                                     <span class="small text-dark fw-medium">
@@ -110,7 +110,7 @@
                                 }
                                 else
                                 {
-                                    <div class="display-6 fw-bold text-muted my-1">
+                                    <div class="display-6 fw-bold text-muted my-1" data-queue-value="serving">
                                         --
                                     </div>
                                     <span class="small text-muted">Awaiting Next Patient</span>
@@ -121,17 +121,17 @@
                             <div class="row g-2 text-center mb-3">
                                 <div class="col-6">
                                     <div class="p-2 rounded-3 bg-light border">
-                                        <span class="small text-muted d-block" style="font-size: 0.75rem;">Next Called</span>
-                                        <strong class="fs-6 text-dark">
+                                        <span class="small text-muted d-block" style="font-size: 0.75rem;">@Loc["Queue_NextCalled"]</span>
+                                        <strong class="fs-6 text-dark" data-queue-value="called">
                                             @(item.CalledTicket?.TicketNumber ?? "--")
                                         </strong>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="p-2 rounded-3 bg-light border">
-                                        <span class="small text-muted d-block" style="font-size: 0.75rem;">In Queue</span>
-                                        <strong class="fs-6 text-dark">
-                                            @item.WaitingCount Patients
+                                        <span class="small text-muted d-block" style="font-size: 0.75rem;">@Loc["Queue_InQueue"]</span>
+                                        <strong class="fs-6 text-dark" data-queue-value="waiting">
+                                            @item.WaitingCount @Loc["Queue_Patients"]
                                         </strong>
                                     </div>
                                 </div>
@@ -152,6 +152,7 @@
                 </div>
             }
         </div>
+        <div id="queueRefreshStatus" class="visually-hidden" role="status" aria-live="polite"></div>
     </div>
 </section>
 
@@ -182,25 +183,40 @@
         const refreshBtn = document.getElementById("refreshQueueBtn");
         const refreshIcon = document.getElementById("refreshIcon");
         const liveTimestamp = document.getElementById("liveTimestamp");
+        const refreshStatus = document.getElementById("queueRefreshStatus");
+        const patientsLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Loc["Queue_Patients"].Value));
+        const waitingLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Loc["Queue_Waiting"].Value));
+        const updatedAtTemplate = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Loc["Queue_UpdatedAt"].Value));
+        const updatedMessage = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Loc["Queue_Updated"].Value));
+        const failedMessage = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Loc["Queue_Failed"].Value));
 
         async function fetchLiveQueue() {
             if (refreshIcon) refreshIcon.classList.add("spin-animation");
             try {
                 const response = await fetch("/Queue/Live");
-                if (response.ok) {
-                    const data = await response.json();
-                    if (liveTimestamp) {
-                        liveTimestamp.textContent = "Updated at " + data.timestamp;
-                    }
+                if (!response.ok) throw new Error("Queue service returned " + response.status);
+                const data = await response.json();
+                for (const summary of data.departments) {
+                    const card = Array.from(document.querySelectorAll(".queue-card-item"))
+                        .find(item => item.dataset.department === summary.department);
+                    if (!card) continue;
+                    card.querySelector('[data-queue-value="serving"]').textContent = summary.serving;
+                    card.querySelector('[data-queue-value="called"]').textContent = summary.called;
+                    card.querySelector('[data-queue-value="waiting"]').textContent = summary.waitingCount + " " + patientsLabel;
+                    card.querySelector('[data-queue-value="waiting-badge"]').textContent = summary.waitingCount + " " + waitingLabel;
                 }
+                if (liveTimestamp) liveTimestamp.textContent = updatedAtTemplate.replace("{0}", data.timestamp);
+                if (refreshStatus) refreshStatus.textContent = updatedMessage;
             } catch (err) {
-                console.log("Queue poll status:", err);
+                if (refreshStatus) refreshStatus.textContent = failedMessage;
             } finally {
                 if (refreshIcon) {
                     setTimeout(() => refreshIcon.classList.remove("spin-animation"), 500);
                 }
             }
         }
+
+        if (refreshBtn) refreshBtn.addEventListener("click", fetchLiveQueue);
 
         // Low-bandwidth conscious auto-poll: only poll when tab is visible every 30 seconds
         setInterval(function () {

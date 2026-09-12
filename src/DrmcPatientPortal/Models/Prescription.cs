@@ -25,6 +25,7 @@ public class Prescription
     public DateTime? LastRefillDate { get; set; }
 
     public ICollection<RefillRequest> RefillRequests { get; set; } = new List<RefillRequest>();
+    public ICollection<MedicationDoseSchedule> DoseSchedules { get; set; } = new List<MedicationDoseSchedule>();
 }
 
 public enum PrescriptionStatus

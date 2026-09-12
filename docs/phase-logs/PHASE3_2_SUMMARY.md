@@ -1,5 +1,7 @@
 # Phase 3.2 Milestone Summary — Authenticated Dashboard Features
 
+> **Historical implementation log — superseded.** Messaging and caregiver/proxy described below were later removed; Encounters has since been restored. See [../../STATUS.md](../../STATUS.md).
+
 **Date:** August 26, 2026  
 **Milestone:** Phase 3.2 (Authenticated Clinical Features)  
 **Branch:** `feature/phase3-2-authenticated-dashboard`  
@@ -13,7 +15,7 @@ Phase 3.2 delivers **6 database-backed authenticated clinical platform features*
 
 All features are implemented with real EF Core SQLite models, controller workflows under `[Authorize]`, server-rendered Razor views styled with the official DRMC design tokens, and an audit logging service. Zero placeholder/mock wording appears anywhere in the patient-facing interface.
 
-Additionally, formal security review boundaries are catalogued in [`docs/SECURITY_REVIEW_TODO.md`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/docs/SECURITY_REVIEW_TODO.md) with corresponding in-code markers, establishing clear specifications for subsequent production hardening.
+Additionally, formal security review boundaries are catalogued in [`docs/SECURITY_REVIEW_TODO.md`](../../docs/SECURITY_REVIEW_TODO.md) with corresponding in-code markers, establishing clear specifications for subsequent production hardening.
 
 ---
 
@@ -88,7 +90,7 @@ Additionally, formal security review boundaries are catalogued in [`docs/SECURIT
 
 ## Security Boundaries & Hardening Register
 
-Formal register created at [`docs/SECURITY_REVIEW_TODO.md`](file:///c:/Users/User/Documents/1Random%20Works/Drmc%20V2/drmc-patient-portal/docs/SECURITY_REVIEW_TODO.md) with corresponding in-code markers:
+Formal register created at [`docs/SECURITY_REVIEW_TODO.md`](../../docs/SECURITY_REVIEW_TODO.md) with corresponding in-code markers:
 
 1. **Item #1 (Messaging):** Field-level AES-256 encryption-at-rest for `Message.Body` and clinical RBAC verification.
 2. **Item #2 (Proxy Access):** HIMD institutional documentary verification and age-of-majority expiration workflows.

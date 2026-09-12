@@ -38,7 +38,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
         private readonly IEmailSender _emailSender;
         private readonly IIdDocumentExtractionService _idExtractionService;
         private readonly ApplicationDbContext _db;
-        private readonly IWebHostEnvironment _environment;
+        private readonly IPatientDocumentStorage _documentStorage;
 
         public RegisterModel(
             UserManager<ApplicationUser> userManager,
@@ -48,7 +48,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             IEmailSender emailSender,
             IIdDocumentExtractionService idExtractionService,
             ApplicationDbContext db,
-            IWebHostEnvironment environment)
+            IPatientDocumentStorage documentStorage)
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -58,7 +58,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             _emailSender = emailSender;
             _idExtractionService = idExtractionService;
             _db = db;
-            _environment = environment;
+            _documentStorage = documentStorage;
         }
 
         [BindProperty]
@@ -157,26 +157,15 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                 return new JsonResult(new { success = false, message = "Please select an ID type and provide a clear front photo." });
             }
 
+            StagedPatientDocument stagedFront = null;
+            StagedPatientDocument stagedBack = null;
+            var uploadSessionId = GetUploadSessionId();
             try
             {
-                // Save temporary photos in App_Data/TempUploads/ for later persistence upon account creation
-                string tempDir = Path.Combine(_environment.ContentRootPath, "App_Data", "TempUploads");
-                Directory.CreateDirectory(tempDir);
-
-                string frontToken = $"{Guid.NewGuid():N}_{Path.GetFileName(frontPhoto.FileName)}";
-                string frontTempPath = Path.Combine(tempDir, frontToken);
-                await using (var frontStream = new FileStream(frontTempPath, FileMode.Create))
-                {
-                    await frontPhoto.CopyToAsync(frontStream);
-                }
-
-                string backToken = null;
+                stagedFront = await _documentStorage.StageAsync(frontPhoto, uploadSessionId, HttpContext.RequestAborted);
                 if (backPhoto != null && backPhoto.Length > 0)
                 {
-                    backToken = $"{Guid.NewGuid():N}_{Path.GetFileName(backPhoto.FileName)}";
-                    string backTempPath = Path.Combine(tempDir, backToken);
-                    await using var backStream = new FileStream(backTempPath, FileMode.Create);
-                    await backPhoto.CopyToAsync(backStream);
+                    stagedBack = await _documentStorage.StageAsync(backPhoto, uploadSessionId, HttpContext.RequestAborted);
                 }
 
                 // Execute genuine local OCR extraction
@@ -188,8 +177,8 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                 {
                     success = result.Success,
                     meanConfidence = result.MeanConfidence,
-                    tempFrontToken = frontToken,
-                    tempBackToken = backToken,
+                    tempFrontToken = stagedFront.Token,
+                    tempBackToken = stagedBack?.Token,
                     firstName = result.FirstName.Found ? result.FirstName.Value : "",
                     middleName = result.MiddleName.Found ? result.MiddleName.Value : "",
                     lastName = result.LastName.Found ? result.LastName.Value : "",
@@ -202,8 +191,16 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                     foundSummary = result.FoundFieldsSummary
                 });
             }
+            catch (InvalidDataException ex)
+            {
+                await _documentStorage.DiscardStagedAsync(stagedFront?.Token, uploadSessionId, HttpContext.RequestAborted);
+                await _documentStorage.DiscardStagedAsync(stagedBack?.Token, uploadSessionId, HttpContext.RequestAborted);
+                return new JsonResult(new { success = false, message = ex.Message });
+            }
             catch (Exception ex)
             {
+                await _documentStorage.DiscardStagedAsync(stagedFront?.Token, uploadSessionId, HttpContext.RequestAborted);
+                await _documentStorage.DiscardStagedAsync(stagedBack?.Token, uploadSessionId, HttpContext.RequestAborted);
                 _logger.LogError(ex, "Error processing ID photo extraction for {IdType}", idType);
                 return new JsonResult(new { success = false, message = "Could not read ID photo. You can proceed with manual entry." });
             }
@@ -247,8 +244,17 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                 {
                     _logger.LogInformation("User created a new account with password.");
 
-                    // Persist PatientIdDocument outside wwwroot
-                    await SavePatientIdDocumentAsync(user);
+                    try
+                    {
+                        await SavePatientIdDocumentAsync(user);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to persist PatientIdDocument for user {UserId}", user.Id);
+                        await _userManager.DeleteAsync(user);
+                        ModelState.AddModelError(string.Empty, "We could not securely save the identity document. Please upload it again.");
+                        return Page();
+                    }
 
                     var userId = await _userManager.GetUserIdAsync(user);
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -284,52 +290,40 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
 
         private async Task SavePatientIdDocumentAsync(ApplicationUser user)
         {
+            string frontFileName = null;
+            string backFileName = null;
+            string frontContentType = null;
+            string backContentType = null;
+            var storageVersion = 2;
+
             try
             {
-                string patientStorageDir = Path.Combine(_environment.ContentRootPath, "App_Data", "PatientIdDocuments", user.Id);
-                Directory.CreateDirectory(patientStorageDir);
-
-                string frontFileName = null;
-                string backFileName = null;
-
-                // 1. Direct form file upload if present
                 if (Input.FrontPhoto != null && Input.FrontPhoto.Length > 0)
                 {
-                    frontFileName = $"front_{Guid.NewGuid():N}{Path.GetExtension(Input.FrontPhoto.FileName)}";
-                    string frontPath = Path.Combine(patientStorageDir, frontFileName);
-                    await using var stream = new FileStream(frontPath, FileMode.Create);
-                    await Input.FrontPhoto.CopyToAsync(stream);
+                    var stored = await _documentStorage.StoreAsync(Input.FrontPhoto, user.Id, "front", HttpContext.RequestAborted);
+                    frontFileName = stored.FileName;
+                    frontContentType = stored.ContentType;
+                    storageVersion = stored.StorageVersion;
                 }
-                // 2. Transfer from temp token if uploaded during AJAX scan step
                 else if (!string.IsNullOrWhiteSpace(Input.TempFrontPhotoToken))
                 {
-                    string tempDir = Path.Combine(_environment.ContentRootPath, "App_Data", "TempUploads");
-                    string tempPath = Path.Combine(tempDir, Input.TempFrontPhotoToken);
-                    if (System.IO.File.Exists(tempPath))
-                    {
-                        frontFileName = $"front_{Guid.NewGuid():N}{Path.GetExtension(Input.TempFrontPhotoToken)}";
-                        string destPath = Path.Combine(patientStorageDir, frontFileName);
-                        System.IO.File.Move(tempPath, destPath);
-                    }
+                    var stored = await _documentStorage.CommitAsync(Input.TempFrontPhotoToken, GetUploadSessionId(), user.Id, "front", HttpContext.RequestAborted);
+                    frontFileName = stored.FileName;
+                    frontContentType = stored.ContentType;
+                    storageVersion = stored.StorageVersion;
                 }
 
                 if (Input.BackPhoto != null && Input.BackPhoto.Length > 0)
                 {
-                    backFileName = $"back_{Guid.NewGuid():N}{Path.GetExtension(Input.BackPhoto.FileName)}";
-                    string backPath = Path.Combine(patientStorageDir, backFileName);
-                    await using var stream = new FileStream(backPath, FileMode.Create);
-                    await Input.BackPhoto.CopyToAsync(stream);
+                    var stored = await _documentStorage.StoreAsync(Input.BackPhoto, user.Id, "back", HttpContext.RequestAborted);
+                    backFileName = stored.FileName;
+                    backContentType = stored.ContentType;
                 }
                 else if (!string.IsNullOrWhiteSpace(Input.TempBackPhotoToken))
                 {
-                    string tempDir = Path.Combine(_environment.ContentRootPath, "App_Data", "TempUploads");
-                    string tempPath = Path.Combine(tempDir, Input.TempBackPhotoToken);
-                    if (System.IO.File.Exists(tempPath))
-                    {
-                        backFileName = $"back_{Guid.NewGuid():N}{Path.GetExtension(Input.TempBackPhotoToken)}";
-                        string destPath = Path.Combine(patientStorageDir, backFileName);
-                        System.IO.File.Move(tempPath, destPath);
-                    }
+                    var stored = await _documentStorage.CommitAsync(Input.TempBackPhotoToken, GetUploadSessionId(), user.Id, "back", HttpContext.RequestAborted);
+                    backFileName = stored.FileName;
+                    backContentType = stored.ContentType;
                 }
 
                 var doc = new PatientIdDocument
@@ -339,9 +333,12 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                     IdNumber = Input.IdNumber?.Trim() ?? string.Empty,
                     FrontPhotoFileName = frontFileName,
                     BackPhotoFileName = backFileName,
+                    FrontPhotoContentType = frontContentType,
+                    BackPhotoContentType = backContentType,
+                    StorageVersion = storageVersion,
                     CapturedAt = DateTime.UtcNow,
                     OcrConfidence = Input.OcrConfidence,
-                    IsManualEntry = Input.IsManualEntry || (frontFileName == null),
+                    IsManualEntry = Input.IsManualEntry || frontFileName == null,
                     ExtractedFieldsJson = JsonSerializer.Serialize(new
                     {
                         user.FirstName,
@@ -358,10 +355,22 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                 _db.PatientIdDocuments.Add(doc);
                 await _db.SaveChangesAsync();
             }
-            catch (Exception ex)
+            catch
             {
-                _logger.LogError(ex, "Failed to persist PatientIdDocument for user {UserId}", user.Id);
+                await _documentStorage.DeleteStoredAsync(user.Id, frontFileName, CancellationToken.None);
+                await _documentStorage.DeleteStoredAsync(user.Id, backFileName, CancellationToken.None);
+                throw;
             }
+        }
+
+        private string GetUploadSessionId()
+        {
+            const string key = "RegistrationUploadSessionId";
+            var value = HttpContext.Session.GetString(key);
+            if (!string.IsNullOrWhiteSpace(value)) return value;
+            value = Guid.NewGuid().ToString("N");
+            HttpContext.Session.SetString(key, value);
+            return value;
         }
 
         private ApplicationUser CreateUser()
