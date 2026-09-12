@@ -1,6 +1,6 @@
 @model BookingFormViewModel
 @{
-    ViewData["Title"] = "Book an Appointment";
+    ViewData["Title"] = Loc["Appt_Book"];
     var signedIn = User.Identity?.IsAuthenticated ?? false;
 }
 
@@ -9,13 +9,13 @@
     <div class="container">
         <div class="d-flex align-items-center gap-2 mb-2">
             <span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill">
-                <i class="bi bi-calendar-check-fill me-1"></i> Self-Service Online Booking
+                <i class="bi bi-calendar-check-fill me-1"></i> @Loc["Appt_SelfService"]
             </span>
-            <span class="small text-white text-opacity-75">Outpatient Clinics &amp; Teleconsultation</span>
+            <span class="small text-white text-opacity-75">@Loc["Appt_OutpatientModes"]</span>
         </div>
-        <h1 class="display-6 fw-bold mb-2">Schedule Your Medical Consultation</h1>
+        <h1 class="display-6 fw-bold mb-2">@Loc["Appt_Schedule"]</h1>
         <p class="lead text-white text-opacity-90 mb-0 fs-6" style="max-width: 720px;">
-            Reserve an outpatient consultation slot with Davao Regional Medical Center specialists. Instant confirmation with QR check-in pass.
+            @Loc["Appt_Description"]
         </p>
     </div>
 </section>
@@ -30,11 +30,11 @@
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-person-check fs-4 text-primary-drmc"></i>
                     <span class="small text-dark">
-                        Have a DRMC Patient Account? <strong>Sign in</strong> to auto-fill your profile details and link this visit to your dashboard.
+                        @Loc["Appt_SignInHint"]
                     </span>
                 </div>
                 <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-sm btn-primary-drmc rounded-pill px-3 fw-semibold">
-                    Sign in to Account
+                    @Loc["Appt_SignIn"]
                 </a>
             </div>
         }
@@ -47,32 +47,32 @@
                 <div class="mb-5">
                     <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
                         <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width:28px;height:28px;">1</span>
-                        <h2 class="h5 fw-bold text-primary-drmc mb-0">Select Clinical Department &amp; Consultation Mode</h2>
+                        <h2 class="h5 fw-bold text-primary-drmc mb-0">@Loc["Appt_SelectService"]</h2>
                     </div>
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-dark small">Consultation Mode <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold text-dark small">@Loc["Appt_Mode"] <span class="text-danger">*</span></label>
                             <div class="d-flex gap-2">
                                 <div class="form-check custom-radio-card flex-fill p-3 rounded-3 border @(Model.AppointmentType == "In-Person OPD" ? "border-primary bg-primary-subtle bg-opacity-25" : "")">
                                     <input class="form-check-input" type="radio" asp-for="AppointmentType" value="In-Person OPD" id="typeInPerson" checked />
                                     <label class="form-check-label fw-bold text-dark d-block" for="typeInPerson">
-                                        <i class="bi bi-hospital text-primary-drmc me-1"></i> In-Person OPD
-                                        <span class="small text-muted fw-normal d-block" style="font-size:0.75rem;">Visit DRMC Tagum City Clinic</span>
+                                        <i class="bi bi-hospital text-primary-drmc me-1"></i> @Loc["Appt_InPerson"]
+                                        <span class="small text-muted fw-normal d-block" style="font-size:0.75rem;">@Loc["Appt_VisitClinic"]</span>
                                     </label>
                                 </div>
                                 <div class="form-check custom-radio-card flex-fill p-3 rounded-3 border @(Model.AppointmentType == "Teleconsultation" ? "border-primary bg-primary-subtle bg-opacity-25" : "")">
                                     <input class="form-check-input" type="radio" asp-for="AppointmentType" value="Teleconsultation" id="typeTeleconsult" />
                                     <label class="form-check-label fw-bold text-dark d-block" for="typeTeleconsult">
-                                        <i class="bi bi-camera-video text-success me-1"></i> Teleconsultation
-                                        <span class="small text-muted fw-normal d-block" style="font-size:0.75rem;">Online Video Consultation</span>
+                                        <i class="bi bi-camera-video text-success me-1"></i> @Loc["Appt_Teleconsult"]
+                                        <span class="small text-muted fw-normal d-block" style="font-size:0.75rem;">@Loc["Appt_OnlineVideo"]</span>
                                     </label>
                                 </div>
                             </div>
                         </div>
 
                         <div class="col-md-6">
-                            <label asp-for="Department" class="form-label fw-semibold text-dark small">Specialty Department <span class="text-danger">*</span></label>
+                            <label asp-for="Department" class="form-label fw-semibold text-dark small">@Loc["Appt_Department"] <span class="text-danger">*</span></label>
                             <select asp-for="Department" asp-items="Model.DepartmentList" class="form-select rounded-3 py-2" id="departmentSelect">
                             </select>
                             <span asp-validation-for="Department" class="text-danger small"></span>
@@ -80,12 +80,12 @@
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="DoctorId" class="form-label fw-semibold text-dark small">Attending Doctor / Specialist (Optional)</label>
+                        <label asp-for="DoctorId" class="form-label fw-semibold text-dark small">@Loc["Appt_Doctor"]</label>
                         <select asp-for="DoctorId" asp-items="Model.DoctorList" class="form-select rounded-3 py-2">
-                            <option value="">-- Any Available Specialist on Duty --</option>
+                            <option value="">-- @Loc["Appt_AnyDoctor"] --</option>
                         </select>
                         <span class="small text-muted" style="font-size:0.75rem;">
-                            <i class="bi bi-info-circle me-1"></i> You can choose a preferred physician or select any available consultant.
+                            <i class="bi bi-info-circle me-1"></i> @Loc["Appt_DoctorHint"]
                         </span>
                     </div>
                 </div>
@@ -94,12 +94,12 @@
                 <div class="mb-5">
                     <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
                         <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width:28px;height:28px;">2</span>
-                        <h2 class="h5 fw-bold text-primary-drmc mb-0">Choose Preferred Consultation Schedule</h2>
+                        <h2 class="h5 fw-bold text-primary-drmc mb-0">@Loc["Appt_ChooseSchedule"]</h2>
                     </div>
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-5">
-                            <label asp-for="AppointmentDate" class="form-label fw-semibold text-dark small">Consultation Date <span class="text-danger">*</span></label>
+                            <label asp-for="AppointmentDate" class="form-label fw-semibold text-dark small">@Loc["Appt_Date"] <span class="text-danger">*</span></label>
                             <input asp-for="AppointmentDate" type="date" class="form-control rounded-3 py-2"
                                    min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")"
                                    max="@DateTime.Today.AddMonths(2).ToString("yyyy-MM-dd")" />
@@ -107,7 +107,7 @@
                         </div>
 
                         <div class="col-md-7">
-                            <label asp-for="TimeSlot" class="form-label fw-semibold text-dark small">Available Time Slot <span class="text-danger">*</span></label>
+                            <label asp-for="TimeSlot" class="form-label fw-semibold text-dark small">@Loc["Appt_Time"] <span class="text-danger">*</span></label>
                             <select asp-for="TimeSlot" class="form-select rounded-3 py-2">
                                 @foreach (var slot in BookingFormViewModel.TimeSlots)
                                 {
@@ -123,31 +123,31 @@
                 <div class="mb-5">
                     <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
                         <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width:28px;height:28px;">3</span>
-                        <h2 class="h5 fw-bold text-primary-drmc mb-0">Patient Contact Details</h2>
+                        <h2 class="h5 fw-bold text-primary-drmc mb-0">@Loc["Appt_Contact"]</h2>
                     </div>
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
-                            <label asp-for="PatientName" class="form-label fw-semibold text-dark small">Full Name (First, Middle, Last) <span class="text-danger">*</span></label>
+                            <label asp-for="PatientName" class="form-label fw-semibold text-dark small">@Loc["Appt_FullName"] <span class="text-danger">*</span></label>
                             <input asp-for="PatientName" class="form-control rounded-3 py-2" placeholder="e.g. Maria Clara Santos" />
                             <span asp-validation-for="PatientName" class="text-danger small"></span>
                         </div>
 
                         <div class="col-md-6">
-                            <label asp-for="ContactNumber" class="form-label fw-semibold text-dark small">Philippine Mobile Number <span class="text-danger">*</span></label>
+                            <label asp-for="ContactNumber" class="form-label fw-semibold text-dark small">@Loc["Appt_Mobile"] <span class="text-danger">*</span></label>
                             <input asp-for="ContactNumber" class="form-control rounded-3 py-2" placeholder="0917 123 4567" />
                             <span asp-validation-for="ContactNumber" class="text-danger small"></span>
-                            <span class="small text-muted" style="font-size:0.75rem;">Your booking confirmation SMS will be sent here.</span>
+                            <span class="small text-muted" style="font-size:0.75rem;">@Loc["Appt_SmsHint"]</span>
                         </div>
 
                         <div class="col-md-6">
-                            <label asp-for="Email" class="form-label fw-semibold text-dark small">Email Address <span class="text-danger">*</span></label>
+                            <label asp-for="Email" class="form-label fw-semibold text-dark small">@Loc["Appt_Email"] <span class="text-danger">*</span></label>
                             <input asp-for="Email" type="email" class="form-control rounded-3 py-2" placeholder="name@example.com" />
                             <span asp-validation-for="Email" class="text-danger small"></span>
                         </div>
 
                         <div class="col-md-6">
-                            <label asp-for="PhilHealthNumber" class="form-label fw-semibold text-dark small">PhilHealth Identification Number (Optional)</label>
+                            <label asp-for="PhilHealthNumber" class="form-label fw-semibold text-dark small">@Loc["Appt_PhilHealth"]</label>
                             <input asp-for="PhilHealthNumber" class="form-control rounded-3 py-2" placeholder="12-345678901-2" />
                             <span class="small text-muted" style="font-size:0.75rem;">For automatic PhilHealth Konsulta package coverage.</span>
                         </div>
@@ -158,11 +158,11 @@
                 <div class="mb-4">
                     <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
                         <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width:28px;height:28px;">4</span>
-                        <h2 class="h5 fw-bold text-primary-drmc mb-0">Reason for Visit &amp; Symptoms</h2>
+                        <h2 class="h5 fw-bold text-primary-drmc mb-0">@Loc["Appt_Reason"]</h2>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="ChiefComplaint" class="form-label fw-semibold text-dark small">Describe your medical concern or main symptoms <span class="text-danger">*</span></label>
+                        <label asp-for="ChiefComplaint" class="form-label fw-semibold text-dark small">@Loc["Appt_Describe"] <span class="text-danger">*</span></label>
                         <textarea asp-for="ChiefComplaint" rows="3" class="form-control rounded-3"
                                   placeholder="e.g. Follow-up consultation for high blood pressure; experiencing mild headaches and dizziness for 3 days."></textarea>
                         <span asp-validation-for="ChiefComplaint" class="text-danger small"></span>
@@ -173,7 +173,7 @@
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="privacyAgree" required checked />
                             <label class="form-check-label small text-muted" for="privacyAgree">
-                                I confirm that the information provided is accurate and consent to the processing of personal and health data in compliance with Republic Act No. 10173 (Data Privacy Act of 2012) for clinical consultation scheduling at Davao Regional Medical Center.
+                                @Loc["Appt_PrivacyConsent"]
                             </label>
                         </div>
                     </div>
@@ -181,10 +181,10 @@
 
                 <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between pt-3 border-top">
                     <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-semibold">
-                        Cancel
+                        @Loc["Action_Cancel"]
                     </a>
                     <button type="submit" class="btn btn-primary-drmc btn-lg px-5 py-2 rounded-pill fw-bold shadow-sm">
-                        <i class="bi bi-check-circle-fill me-1"></i> Confirm &amp; Generate QR Pass
+                        <i class="bi bi-check-circle-fill me-1"></i> @Loc["Appt_Confirm"]
                     </button>
                 </div>
             </form>

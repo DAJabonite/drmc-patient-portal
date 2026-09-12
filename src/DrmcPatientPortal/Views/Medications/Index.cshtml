@@ -1,6 +1,6 @@
 @model MedicationsIndexViewModel
 @{
-    ViewData["Title"] = "Prescription & Medication Tracker";
+    ViewData["Title"] = Loc["Rx_Title"];
 }
 
 <section class="py-4 bg-primary-drmc text-white shadow-sm">
@@ -9,16 +9,16 @@
             <div>
                 <div class="d-flex align-items-center gap-2 mb-1">
                     <span class="badge bg-white text-primary-drmc fw-bold px-3 py-1 rounded-pill small">
-                        <i class="bi bi-capsule me-1"></i> Pharmacy Health Record
+                        <i class="bi bi-capsule me-1"></i> @Loc["Rx_Record"]
                     </span>
-                    <span class="small text-white text-opacity-75">DRMC Outpatient Pharmacy</span>
+                    <span class="small text-white text-opacity-75">@Loc["Rx_Pharmacy"]</span>
                 </div>
-                <h1 class="display-6 fw-bold mb-0">Active Prescriptions &amp; Medications</h1>
+                <h1 class="display-6 fw-bold mb-0">@Loc["Rx_Title"]</h1>
             </div>
 
             <div>
                 <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold fs-6">
-                    <i class="bi bi-check2-circle me-1"></i> @Model.ActiveCount Active Prescriptions
+                    <i class="bi bi-check2-circle me-1"></i> @Model.ActiveCount @Loc["Rx_Active"]
                 </span>
             </div>
         </div>
@@ -38,10 +38,10 @@
                     </div>
                     <div>
                         <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="badge bg-white text-danger fw-bold rounded-pill small">PATIENT SAFETY ALERT</span>
+                            <span class="badge bg-white text-danger fw-bold rounded-pill small">@Loc["Rx_SafetyAlert"]</span>
                             <span class="small text-white text-opacity-85">Documented Drug Allergies</span>
                         </div>
-                        <h2 class="h6 fw-bold mb-2">Known Clinical Allergies Recorded:</h2>
+                        <h2 class="h6 fw-bold mb-2">@Loc["Rx_Allergies"]:</h2>
                         <ul class="mb-0 small ps-3">
                             @foreach (var a in Model.Allergies)
                             {
@@ -55,65 +55,40 @@
             </div>
         }
 
-        <!-- Daily Medication Schedule Guide -->
+        <!-- Data-backed daily medication schedule -->
         <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
             <h2 class="h6 fw-bold text-primary-drmc mb-3">
-                <i class="bi bi-clock-history me-1"></i> Daily Dosing Schedule Visualizer
+                <i class="bi bi-clock-history me-1"></i> @Loc["Rx_DailySchedule"]
             </h2>
-
-            <div class="row g-3">
-                <div class="col-sm-6 col-md-3">
-                    <div class="p-3 bg-light rounded-3 border h-100">
-                        <div class="d-flex align-items-center gap-2 mb-2 text-warning-emphasis">
-                            <i class="bi bi-sun-fill fs-5 text-warning"></i>
-                            <strong class="small">Morning (8:00 AM)</strong>
+            @{ var scheduledDoses = Model.Prescriptions.Where(p => p.Status == PrescriptionStatus.Active)
+                .SelectMany(p => p.DoseSchedules.Select(s => new { Prescription = p, Schedule = s }))
+                .OrderBy(x => x.Schedule.DoseTime).ThenBy(x => x.Schedule.DisplayOrder).ToList(); }
+            @if (scheduledDoses.Count == 0)
+            {
+                <p class="small text-muted mb-0">@Loc["Rx_NoExactSchedule"]</p>
+            }
+            else
+            {
+                <div class="row g-3">
+                    @foreach (var group in scheduledDoses.GroupBy(x => x.Schedule.DoseTime))
+                    {
+                        <div class="col-sm-6 col-md-3">
+                            <div class="p-3 bg-light rounded-3 border h-100">
+                                <strong class="small text-primary-drmc d-block mb-2">@group.Key.ToString("h:mm tt")</strong>
+                                <ul class="list-unstyled small text-dark mb-0">
+                                    @foreach (var dose in group) { <li>&bull; @dose.Prescription.GenericName @dose.Prescription.Dosage</li> }
+                                </ul>
+                            </div>
                         </div>
-                        <ul class="list-unstyled small text-dark mb-0 ps-1">
-                            <li>&bull; Losartan 50mg (OD)</li>
-                            <li>&bull; Metformin 500mg (BID)</li>
-                            <li>&bull; Ascorbic Acid + Zinc</li>
-                        </ul>
-                    </div>
+                    }
                 </div>
-
-                <div class="col-sm-6 col-md-3">
-                    <div class="p-3 bg-light rounded-3 border h-100">
-                        <div class="d-flex align-items-center gap-2 mb-2 text-info-emphasis">
-                            <i class="bi bi-brightness-high-fill fs-5 text-info"></i>
-                            <strong class="small">Noon (12:00 PM)</strong>
-                        </div>
-                        <span class="small text-muted">No scheduled noon medications.</span>
-                    </div>
-                </div>
-
-                <div class="col-sm-6 col-md-3">
-                    <div class="p-3 bg-light rounded-3 border h-100">
-                        <div class="d-flex align-items-center gap-2 mb-2 text-primary-drmc">
-                            <i class="bi bi-sunset-fill fs-5 text-primary"></i>
-                            <strong class="small">Evening (6:00 PM)</strong>
-                        </div>
-                        <ul class="list-unstyled small text-dark mb-0 ps-1">
-                            <li>&bull; Metformin 500mg (BID)</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="col-sm-6 col-md-3">
-                    <div class="p-3 bg-light rounded-3 border h-100">
-                        <div class="d-flex align-items-center gap-2 mb-2 text-secondary">
-                            <i class="bi bi-moon-stars-fill fs-5 text-secondary"></i>
-                            <strong class="small">Bedtime (9:00 PM)</strong>
-                        </div>
-                        <span class="small text-muted">No bedtime doses.</span>
-                    </div>
-                </div>
-            </div>
+            }
         </div>
 
         <!-- Prescriptions List -->
         <div class="mb-3 d-flex align-items-center justify-content-between">
-            <h2 class="h5 fw-bold text-primary-drmc mb-0">Active Medication Orders (@Model.Prescriptions.Count)</h2>
-            <span class="small text-muted">Managed by DRMC OPD Pharmacy</span>
+            <h2 class="h5 fw-bold text-primary-drmc mb-0">@Loc["Rx_ActiveOrders"] (@Model.Prescriptions.Count)</h2>
+            <span class="small text-muted">@Loc["Rx_Pharmacy"]</span>
         </div>
 
         <div class="d-flex flex-column gap-3">
@@ -127,7 +102,7 @@
                                     @rx.Status
                                 </span>
                                 <span class="small text-muted" style="font-size: 0.75rem;">
-                                    Rx Number: <strong>@rx.RxNumber</strong>
+                                    @Loc["Rx_Number"]: <strong>@rx.RxNumber</strong>
                                 </span>
                             </div>
 
@@ -146,8 +121,8 @@
                             <p class="small text-muted mb-2">@rx.Instructions</p>
 
                             <div class="small text-muted d-flex flex-wrap gap-3" style="font-size: 0.8rem;">
-                                <span><i class="bi bi-person-badge me-1"></i> Prescriber: @rx.PrescribingDoctor</span>
-                                <span><i class="bi bi-calendar3 me-1"></i> Valid Until: @rx.ValidUntil.ToString("MMM d, yyyy")</span>
+                                <span><i class="bi bi-person-badge me-1"></i> @Loc["Rx_Prescriber"]: @rx.PrescribingDoctor</span>
+                                <span><i class="bi bi-calendar3 me-1"></i> @Loc["Rx_ValidUntil"]: @rx.ValidUntil.ToString("d")</span>
                             </div>
                         </div>
 
@@ -160,14 +135,14 @@
 
                             <div class="d-flex gap-2 justify-content-md-end">
                                 <a asp-action="Details" asp-route-id="@rx.Id" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold btn-sm">
-                                    Details
+                                    @Loc["Rx_Details"]
                                 </a>
                                 @if (rx.Status == PrescriptionStatus.Active && rx.RefillsRemaining > 0)
                                 {
                                     <form asp-action="RequestRefill" method="post" class="d-inline">
                                         <input type="hidden" name="prescriptionId" value="@rx.Id" />
                                         <button type="submit" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold btn-sm shadow-xs">
-                                            <i class="bi bi-arrow-repeat me-1"></i> Order Refill
+                                            <i class="bi bi-arrow-repeat me-1"></i> @Loc["Med_OrderRefill"]
                                         </button>
                                     </form>
                                 }
