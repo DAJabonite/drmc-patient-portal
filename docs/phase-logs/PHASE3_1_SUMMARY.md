@@ -1,5 +1,7 @@
 # Phase 3.1: Public Homepage Features — Summary & Milestone Log
 
+> **Historical implementation log — superseded for current product claims.** See [../../STATUS.md](../../STATUS.md).
+
 **Milestone:** Phase 3.1: Public Homepage Features  
 **Branch:** `feature/phase3-1-public-homepage`  
 **Status:** Converged & Verified  

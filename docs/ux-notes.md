@@ -1,5 +1,7 @@
 # UX & Interaction Notes — DRMC Patient Portal
 
+> **Current-scope note (2026-09-12):** Messaging and caregiver/proxy access are removed. Encounters is restored as an authenticated, owner-scoped destination. Current behavior is summarized in [../STATUS.md](../STATUS.md).
+
 These notes cover **how** the register/login/dashboard flow should *behave*. They deliberately say nothing about branding — the branding always comes from `docs/design.md` and the real DRMC identity. These patterns are adapted from local and same-stack precedents:
 
 - **PGH OCRA** (`pghopd.up.edu.ph`) — Philippine General Hospital's public outpatient login/appointment system; the closest local public-hospital precedent. Studied for *flow*, not visuals.
@@ -40,10 +42,9 @@ Keep the dashboard to **4–6 summary cards** (max, per the well-documented "pat
 
 1. **Next Appointment** — department, date, status. (Seeded display-only.)
 2. **Recent Lab Results** — plain-language status. (Seeded display-only.)
-3. **Messages** — unread count. (Seeded display-only.)
+3. **Active Prescriptions** — count and link to persisted medication schedules.
 4. **My Profile** — real account fields; links to manage-account.
-5. **Clinical Departments** — reuses real Landing content (links to Landing's departments section).
-6. *(optional)* **Announcements** — static text.
+5. **Clinical Encounters** — owner-scoped summaries and linked laboratory results.
 
 Card anatomy: title (brand-blue semibold), value/status, one action link. Equal height, consistent spacing, mobile-friendly (stack to 1 column).
 
@@ -60,5 +61,12 @@ Card anatomy: title (brand-blue semibold), value/status, one action link. Equal 
 
 ## Known-limitation notes (recorded for the README, never shown as UI text)
 
-- **Forgot password** uses Identity's default token flow. Because there is no configured SMTP for this build, the reset link is logged to the development console/stdout rather than emailed. This is documented in the README as a known limitation — never rendered as "demo" text in the UI.
-- All dashboard data behind the cards is **seeded** (a small number of rows). The dashboard cards read the seeded rows from the database; they are not hardcoded in markup, and they are display-only in this scope (no booking/labs/messages modules behind them).
+- **Forgot password** uses Identity's token flow. Development logs notifications to the console; Production requires validated SMTP and SMS configuration and fails startup if it is absent.
+- Dashboard cards read persisted, patient-owned rows. Appointment, laboratory, encounter, medication, and triage destinations are real routes rather than display-only placeholders.
+
+## Hardened interaction notes
+
+- Guest appointment links exchange the address-bar capability for an HttpOnly cookie and immediately redirect to a clean URL.
+- Queue refresh announces success/errors through an accessible live region and updates every numeric value in each department card.
+- Prescriptions without persisted dose times state that no exact schedule is recorded; the UI never invents one from free text.
+- Local triage and refill states must never use wording that implies HIS or pharmacy synchronization.

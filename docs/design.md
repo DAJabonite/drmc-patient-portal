@@ -1,5 +1,7 @@
 # DRMC Patient Portal — Design System
 
+> **Current-scope note (2026-09-12):** The live patient navigation includes Dashboard, Appointments, Results, Encounters, Medications, and More Services. Messaging and caregiver/proxy links are intentionally absent. Bootstrap Icons are served locally so the interface works under the self-only CSP and on constrained connections.
+
 > Every value below was OBSERVED from the real DRMC reference — either the attached reference screenshots (`Screenshot 2026-08-25 143442.png`, `mast-head_sample-removebg-preview.png`) or the live site (`https://drmc.doh.gov.ph/`). No hex code, font, or measurement below is invented. Where a value is a deliberate choice (e.g., a body-text color derived for accessibility), it is flagged as such.
 
 Authoritative cross-check: Philippine **Government Website Template Design (GWTD) Guidelines, Annex C** (iGovPhil / DOST-ICT Office). GWTD rules that govern this build:
