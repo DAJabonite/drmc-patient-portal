@@ -5,7 +5,7 @@
 }
 
 <!-- Hero Banner -->
-<section class="py-4 bg-primary-drmc text-white shadow-sm">
+<section class="page-header">
     <div class="container">
         <div class="d-flex align-items-center gap-2 mb-2">
             <span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill">
@@ -22,11 +22,11 @@
 
 <!-- Main Booking Form -->
 <section class="section py-5 bg-light">
-    <div class="container" style="max-width: 900px;">
+    <div class="container content-narrow">
         
         @if (!signedIn)
         {
-            <div class="alert alert-info border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="alert alert-info booking-signin mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-person-check fs-4 text-primary-drmc"></i>
                     <span class="small text-dark">
@@ -39,12 +39,12 @@
             </div>
         }
 
-        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+        <div class="card booking-card p-4 p-md-5 bg-white">
             <form asp-action="Book" method="post" id="bookingForm">
                 <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3 small mb-4" role="alert"></div>
 
                 <!-- Step 1: Service & Department -->
-                <div class="mb-5">
+                <div class="booking-section">
                     <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
                         <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width:28px;height:28px;">1</span>
                         <h2 class="h5 fw-bold text-primary-drmc mb-0">@Loc["Appt_SelectService"]</h2>
@@ -53,7 +53,7 @@
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold text-dark small">@Loc["Appt_Mode"] <span class="text-danger">*</span></label>
-                            <div class="d-flex gap-2">
+                            <div class="consultation-mode-grid">
                                 <div class="form-check custom-radio-card flex-fill p-3 rounded-3 border @(Model.AppointmentType == "In-Person OPD" ? "border-primary bg-primary-subtle bg-opacity-25" : "")">
                                     <input class="form-check-input" type="radio" asp-for="AppointmentType" value="In-Person OPD" id="typeInPerson" checked />
                                     <label class="form-check-label fw-bold text-dark d-block" for="typeInPerson">
@@ -91,7 +91,7 @@
                 </div>
 
                 <!-- Step 2: Date & Time Selection -->
-                <div class="mb-5">
+                <div class="booking-section">
                     <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
                         <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width:28px;height:28px;">2</span>
                         <h2 class="h5 fw-bold text-primary-drmc mb-0">@Loc["Appt_ChooseSchedule"]</h2>
@@ -120,7 +120,7 @@
                 </div>
 
                 <!-- Step 3: Patient Information -->
-                <div class="mb-5">
+                <div class="booking-section">
                     <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
                         <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width:28px;height:28px;">3</span>
                         <h2 class="h5 fw-bold text-primary-drmc mb-0">@Loc["Appt_Contact"]</h2>
@@ -129,33 +129,33 @@
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label asp-for="PatientName" class="form-label fw-semibold text-dark small">@Loc["Appt_FullName"] <span class="text-danger">*</span></label>
-                            <input asp-for="PatientName" class="form-control rounded-3 py-2" placeholder="e.g. Maria Clara Santos" />
+                            <input asp-for="PatientName" class="form-control rounded-3 py-2" autocomplete="name" placeholder="e.g. Maria Clara Santos" />
                             <span asp-validation-for="PatientName" class="text-danger small"></span>
                         </div>
 
                         <div class="col-md-6">
                             <label asp-for="ContactNumber" class="form-label fw-semibold text-dark small">@Loc["Appt_Mobile"] <span class="text-danger">*</span></label>
-                            <input asp-for="ContactNumber" class="form-control rounded-3 py-2" placeholder="0917 123 4567" />
+                            <input asp-for="ContactNumber" class="form-control rounded-3 py-2" inputmode="tel" autocomplete="tel" placeholder="0917 123 4567" />
                             <span asp-validation-for="ContactNumber" class="text-danger small"></span>
                             <span class="small text-muted" style="font-size:0.75rem;">@Loc["Appt_SmsHint"]</span>
                         </div>
 
                         <div class="col-md-6">
                             <label asp-for="Email" class="form-label fw-semibold text-dark small">@Loc["Appt_Email"] <span class="text-danger">*</span></label>
-                            <input asp-for="Email" type="email" class="form-control rounded-3 py-2" placeholder="name@example.com" />
+                            <input asp-for="Email" type="email" class="form-control rounded-3 py-2" autocomplete="email" placeholder="name@example.com" />
                             <span asp-validation-for="Email" class="text-danger small"></span>
                         </div>
 
                         <div class="col-md-6">
                             <label asp-for="PhilHealthNumber" class="form-label fw-semibold text-dark small">@Loc["Appt_PhilHealth"]</label>
-                            <input asp-for="PhilHealthNumber" class="form-control rounded-3 py-2" placeholder="12-345678901-2" />
+                            <input asp-for="PhilHealthNumber" class="form-control rounded-3 py-2" inputmode="numeric" placeholder="12-345678901-2" />
                             <span class="small text-muted" style="font-size:0.75rem;">For automatic PhilHealth Konsulta package coverage.</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Step 4: Medical Concern / Reason -->
-                <div class="mb-4">
+                <div class="booking-section">
                     <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
                         <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width:28px;height:28px;">4</span>
                         <h2 class="h5 fw-bold text-primary-drmc mb-0">@Loc["Appt_Reason"]</h2>
@@ -179,7 +179,7 @@
                     </div>
                 </div>
 
-                <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between pt-3 border-top">
+                <div class="form-actions d-flex flex-wrap gap-3 align-items-center justify-content-between pt-3 border-top">
                     <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-semibold">
                         @Loc["Action_Cancel"]
                     </a>

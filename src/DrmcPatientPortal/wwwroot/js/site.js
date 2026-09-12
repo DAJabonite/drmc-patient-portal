@@ -31,6 +31,8 @@
         el.textContent = dateStr + ", " + timeStr;
     }
 
-    updateClock();
-    setInterval(updateClock, 1000);
+    if (document.getElementById("govphClock")) {
+        updateClock();
+        setInterval(updateClock, 1000);
+    }
 })();

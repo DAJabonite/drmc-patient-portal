@@ -1,107 +1,117 @@
-# DRMC Patient Portal — Design System
-
-> **Current-scope note (2026-09-12):** The live patient navigation includes Dashboard, Appointments, Results, Encounters, Medications, and More Services. Messaging and caregiver/proxy links are intentionally absent. Bootstrap Icons are served locally so the interface works under the self-only CSP and on constrained connections.
-
-> Every value below was OBSERVED from the real DRMC reference — either the attached reference screenshots (`Screenshot 2026-08-25 143442.png`, `mast-head_sample-removebg-preview.png`) or the live site (`https://drmc.doh.gov.ph/`). No hex code, font, or measurement below is invented. Where a value is a deliberate choice (e.g., a body-text color derived for accessibility), it is flagged as such.
-
-Authoritative cross-check: Philippine **Government Website Template Design (GWTD) Guidelines, Annex C** (iGovPhil / DOST-ICT Office). GWTD rules that govern this build:
-- Standard content width **1190px**; 12-column grid; scales down to single column at 320px.
-- Content-area background must be **white `#ffffff`**.
-- Agency logo in masthead **≤ 100px height**.
-- Navigation limited to **two levels**.
-- Fonts: Verdana, Arial, Tahoma (government-family). We use a clean sans stack for legibility.
-
+---
+status: adopted
+updated: 2026-09-12
+owners: DRMC patient portal team
 ---
 
-## 1. Color palette (Bootstrap 5.3 `--bs-*` overrides)
+# DRMC Patient Portal design system
 
-All branding is expressed as Bootstrap CSS custom-property overrides on `:root` (see `wwwroot/css/site.css`) — **no Sass recompile**. Bootstrap 5.3 theming reads `--bs-*` variables at runtime.
+## Product and audience
 
-| Token | Hex | Source | Contrast on white | Use |
-|-------|-----|--------|-------------------|-----|
-| `--bs-primary` | **`#0d4e86`** | sampled from masthead & Citizen's-Charter band | 8.57:1 (AA/AAA) | Masthead bg, headings, links, primary buttons. |
-| `--bs-primary-rgb` | `13,78,134` | derived | — | `rgba()` utility variant. |
-| `--bs-dark` | **`#0c4c82`** | sampled (masthead upper edge) | — | Overlay / hover shade of primary. |
-| `--bs-body-color` | **`#212529`** | Bootstrap default | 15.4:1 | Body text. |
-| `--bs-body-bg` | **`#ffffff`** | GWTD mandated | — | Content background. |
-| --bs-secondary | `#f7f7f7` | sampled (nav band / card bg) | 8.0:1 | Light band behind secondary nav, card backgrounds. |
-| --bs-secondary-rgb | `247,247,247` | derived | — | — |
-| --bs-link-color | `#0d4e86` | brand | 8.57:1 | Links. |
-| --bs-link-hover-color | `#0c4c82` | derived | — | Links hover. |
-| GOVPH bar bg | **`#3b3b3f`** | sampled (top utility bar) | 11.1:1 w/ white | GOVPH utility bar. |
-| Nav active / focus | **`#002973`** | sampled (deep blue on active menu) | 13.4:1 w/ white | Active nav item, focus rings. |
-| Footer bg | **`#3b3b3f`** | sampled | — | Site footer (GOVPH-style). |
+- **Purpose:** Give patients fast, trustworthy access to appointments, queue information, clinical records, medication information, and hospital services.
+- **Primary users:** Patients and family members, often using older phones, slower connections, or assistive technology.
+- **Primary tasks:** Book a consultation, track the OPD queue, review results and medications, and find the next required action.
+- **Density:** Calm and concise. Show the next useful action first, then disclose supporting detail.
 
-**Contrast notes (computed):**
-- White text on brand blue `#0d4e86` = **8.57:1** ✅ AA & AAA.
-- Brand blue text on white = **8.57:1** ✅ AA & AAA — so `#0d4e86` body text on white passes.
-- Bootstrap muted `#6c757d` on white = **4.69:1** ✅ AA (normal text). Prefer brand blue or dark for body copy.
-- White on nav-active `#002973` = **13.42:1** ✅.
+## Design direction
 
----
+- **Character:** Reassuring, direct, civic.
+- **Signature idea:** A restrained DRMC-blue frame around clear, white task surfaces.
+- **Should feel like:** A dependable public hospital service that is easy to use with one hand.
+- **Must not feel like:** A copied government portal, a marketing landing page, or a generic card-heavy SaaS dashboard.
 
-## 2. Typography
+## Sources and provenance
 
-- **Family:** `system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif` (Bootstrap default). Arial/Verdana are GWTD-approved; system sans gives the cleanest rendering and matches the reference's sans-serif real site.
-- **Masthead metadata lines** ("Republic of the Philippines", "Department of Health", "Brgy. Apokon..."): small (~0.7–0.8rem), white or light-blue, on brand blue. GWTD nominates **Trajan Pro** for agency masthead metadata; Trajan is a display serif with limited availability — we approximate the *role* (small caps-ish caption above the brand name) with a semibold small sans, since Trajan is not freely licensed. This is the one place we prioritize legibility over font-name fidelity.
-- **Agency name** ("DAVAO REGIONAL MEDICAL CENTER"): uses the real **chrome/embossed lettering** from the provided masthead image (`.png` asset), not a webfont.
-- **Headings:** large, bold, brand-blue or dark. H1 = page title.
+| Source | Role | Adapt | Do not copy |
+| --- | --- | --- | --- |
+| Client brief, 2026-09-12 | Product direction | `#0E4E87`, mobile-first, fewer clicks, less visual noise | No requirement to preserve the old website layout |
+| Client navigation clarification, 2026-09-12 | Information architecture | Home, Encounters, Results, Medication, and Financial Assistance / Malasakit as the five permanent primary destinations | Do not replace a requested destination with a generic “More” tab |
+| `wwwroot/images/drmc-masthead.png` and DRMC seals | Identity | Official marks and institutional name | Do not redraw or decorate the marks |
+| https://drmc.doh.gov.ph/ | Brand reference | DRMC blue and public-service character | Page composition, dense navigation, and dated visual patterns |
+| https://www.nhs.uk/ | Responsive health-service reference | Clear service taxonomy, task-first health links, and separate account/search utilities | NHS branding, page composition, or content |
+| https://www.healthdirect.gov.au/ | Responsive health-service reference | Compact mobile identity, a clear utility menu, and direct task language | Healthdirect branding, palette, or page composition |
+| Bootstrap 5 and Bootstrap Icons | Interaction system | Existing grid, controls, offcanvas, utilities, and local icons | No additional UI framework |
 
----
+The live DRMC site returned HTTP 403 during the 2026-09-12 implementation review. The checked-in identity assets and the client's explicit color direction are therefore the implementation source of truth.
 
-## 3. Header / nav structure
+## Foundations
 
-**Layer 1 — GOVPH utility bar** (dark navy `#3b3b3f`, full width):
-- Left: "GOVPH" wordmark (links to gov.ph).
-- Right: "Philippine Standard Time: [live clock]" in white small text (JS updates).
+### Color
 
-**Layer 2 — Masthead** (brand blue `#0d4e86`):
-- Left: **DRMC seal** (`drmc-seal.png`, ≤100px height).
-- Center-left: metadata lines + real chrome masthead image (`drmc-masthead.png`) = the agency wordmark.
-- Right: **DOH seal** (`doh-seal.png`).
-- Tagline "Caring for Life, Changing Lives." in small white text.
+- Primary/action: `#0E4E87`; hover/pressed: `#093963`; deep emphasis: `#062846`.
+- Canvas: `#F5F7FA`; surface: `#FFFFFF`; soft surface: `#EEF4F8`; border: `#D8E1EA`.
+- Text: `#17212B`; secondary text: `#536273`.
+- Gold `#F2B32A` is reserved for one high-priority call to action or important attention, never general decoration.
+- Success, warning, and danger always include text or an icon and never rely on color alone.
 
-**Layer 3 — Primary nav** (white band, two levels max):
-- Left-aligned links: Home · About Us · Services · Transparency · Programs & Projects (mirrors DRMC's real menu).
-- Right: **Contact Us**, a compact **Search** field, and a universal accessibility icon (per GWTD/Philippine Web Accessibility Group).
-- Active/current item: deep blue `#002973` text or underline. Hover: brand blue.
+### Typography
 
-**Layer 4 — Secondary nav** (light `#f7f7f7` band): the in-scope portal nav only — **Citizen's Charter** (current) · Opportunities · Training & Research · Doctor's Directory · Rates & Fees · Press Release · Related Links · FAQs. Active item highlighted.
+- Use the existing system sans-serif stack. Do not load remote fonts.
+- Page titles use a compact responsive scale; body copy remains at least 16px on phones.
+- Keep paragraphs near 65 characters per line and use plain, health-literate labels.
 
-On mobile the navs collapse to a single toggle (Bootstrap navbar).
+### Spacing and geometry
 
----
+- Use a 4px base with common steps of 8, 12, 16, 24, 32, and 48px.
+- Touch targets are at least 44px. Mobile gutters are 16px; desktop content remains within the existing Bootstrap container.
+- Controls and cards use 10–14px radii. Full pills are reserved for statuses, filters, and compact segmented actions.
+- Use borders and spacing before shadows. Standard surfaces use no shadow or a single low-elevation shadow.
 
-## 4. Hero pattern (Landing)
+### Iconography, imagery, and motion
 
-- Full-width brand-blue band with the masthead identity, a short headline, and a **primary call-to-action** into Register / Login.
-- Subline: Level III DOH Teaching and Training Hospital · 1,000-bed capacity · catchment area (Davao del Norte, Davao del Sur, Davao Oriental, Davao de Oro).
+- Use locally vendored Bootstrap Icons and the existing DRMC assets only.
+- Icons support labels; they do not replace unfamiliar action text.
+- Keep the facade image to the public landing hero. Clinical and account screens use plain surfaces.
+- Motion communicates state in 120–200ms and is removed under `prefers-reduced-motion`.
 
----
+## Layout and responsive behavior
 
-## 5. Card / footer patterns
+- Mobile is the baseline. Content must reflow without page-level horizontal overflow at 320px.
+- On phones, use a compact 64–72px brand header and a fixed five-item bottom navigation. Utility navigation opens in one accessible offcanvas sheet from the header.
+- The five primary destinations are always Home, Encounters, Results, Medication, and Malasakit. “Financial Assistance / Malasakit” is shortened to “Malasakit” only where mobile width requires it, with the full accessible label retained.
+- Signed-in Home opens the patient dashboard; signed-out Home opens the public landing page. Protected record destinations retain the existing sign-in redirect and return URL.
+- Booking, queue tracking, directory, OPD guidance, advisories, language, and account actions remain available in the mobile utility menu and as contextual page actions.
+- Desktop uses the same five-destination information architecture, plus the existing account controls.
+- The public home page is task-first: Book, Queue, and Sign in/Dashboard lead; secondary hospital information follows.
+- List and detail pages use compact page headers, flat record rows, and horizontally scrollable filter groups where necessary.
+- Print views hide navigation and interactive chrome and retain their current clinical content.
 
-**Cards (dashboard & departments):** Bootstrap grid, white background, `#f7f7f7` accent band or 1px `#dee2e6` border, 8px radius, 16px padding, consistent 24px gutter. Card title brand-blue semibold; body dark text; a labeled action link (`#0d4e86`). Cards are equal-height (`.d-flex` + flex-column).
+## Components and states
 
-**Footer (GOVPH-standard):** dark navy `#3b3b3f`, white/light text, 4 columns:
-1. GOVPH logo/seal + "Republic of the Philippines" + "All content is in the public domain unless otherwise stated."
-2. About GOVPH (with links).
-3. Government Links (Office of the President, Vice President, Senate, House of Representatives, Supreme Court, Court of Appeals, Sandiganbayan).
-4. DRMC contact info (address, tagline "Caring for Life, Changing Lives.").
-Bottom line: © year DRMC, plus a privacy/terms note (GWTD requires a Security/Data Privacy Policy reference — R.A. 10173).
+- **Page header:** eyebrow only when useful, one H1, optional short description, and at most one primary action.
+- **Buttons:** solid primary for the page's main action, outline or text for secondary actions. Avoid multiple equal-weight buttons.
+- **Cards/rows:** one surface per information group; avoid cards nested inside cards.
+- **Statuses:** compact label plus readable text; include pending, success, warning, error, empty, and disabled states.
+- **Forms:** visible labels, persistent validation, correct input modes, full-width mobile actions, and no removal of required consent or verification steps.
+- **Mobile navigation:** fixed to the safe-area-aware viewport edge, exposes current location with `aria-current`, and never covers page actions or content.
 
----
+## Accessibility and content
 
-## 6. Spacing rhythm
+- Target WCAG 2.2 AA contrast, visible focus, semantic landmarks, logical headings, and keyboard-operable menus and forms.
+- Maintain a 44px minimum interactive area and support 200% zoom and reduced motion.
+- Keep English, Filipino, and Cebuano resource keys in parity. Clinical content remains verbatim and is not machine-translated.
+- Use direct labels such as “Book”, “Results”, and “Medications”; reserve explanatory copy for decisions or safety information.
 
-- Consistent 8px base unit. Section padding: 64px top/bottom (desktop), 40px (mobile).
-- Grid gutter: 24px. Container max-width 1190px (`--bs-gutter-x: 1.5rem`; container capped at 1190px).
-- Card stack spacing: 1.5rem.
-- Headings margin-bottom: 1rem; h1→h2 vertical rhythm 1.5×.
+## Implementation mapping
 
----
+| Design concept | Existing implementation | Rule |
+| --- | --- | --- |
+| Brand and semantic tokens | `wwwroot/css/site.css` | Extend the existing CSS variables; do not add a parallel theme |
+| Shared shell and navigation | `Views/Shared/_Layout.cshtml` | Keep routes and auth checks; vary priority by sign-in state and viewport |
+| Mobile task navigation | `Views/Shared/_MobileNavigation.cshtml` | Use Bootstrap offcanvas and existing localization/resources |
+| Patient workflows | Razor views under `Views` and `Areas/Identity/Pages` | Preserve handlers, field names, validation, and security boundaries |
 
-## 7. Form styling (Register / Login)
+## Anti-patterns and non-goals
 
-- Matches Identity scaffold but re-skinned: brand-blue primary button, white card on `#f7f7f7`/white page, 400px max-width centered form card, large touch targets (≥44px height inputs), clear labels (not placeholders-only), inline field validation messages in accessible red.
-- Contrast for validation text ≥4.5:1 (use `#b02a37` or darker on white).
+- No giant page heroes after the landing page.
+- No repeated calls to action, decorative badges, pill-shaped primary buttons, glass effects, or nested card stacks.
+- No hiding functionality to simplify a screen.
+- No new routes, dependencies, API contracts, persistence changes, or invented patient data as part of visual work.
+
+## Decisions
+
+- Adopted: `#0E4E87` remains the primary brand color.
+- Adopted: the client-requested five primary destinations remain stable for guests and signed-in patients; authentication changes the Home destination and access boundary, not the navigation vocabulary.
+- Adopted: booking and queue are high-priority tasks surfaced on Home/Dashboard and in the header utility menu rather than replacing requested primary destinations.
+- Adopted: necessary registration, privacy, triage, confirmation, and clinical safety steps remain intact.
+- Adopted: the portal is inspired by DRMC identity but does not reproduce the older public website's layout.
