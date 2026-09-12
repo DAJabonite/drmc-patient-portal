@@ -31,6 +31,7 @@
     --bs-secondary-color: #536273;
     --bs-secondary-color-rgb: 83, 98, 115;
     --bs-border-color: #d8e1ea;
+    --bs-code-color: #093963;
     --bs-focus-ring-color: rgba(14, 78, 135, 0.28);
 }
 
@@ -55,6 +56,28 @@ body {
 main {
     flex: 1 0 auto;
     min-width: 0;
+}
+
+/* Semantic text needs AA contrast on Bootstrap's pale status surfaces too. */
+.text-secondary {
+    color: var(--drmc-text-muted) !important;
+}
+
+.text-success {
+    color: #146c43 !important;
+}
+
+.text-danger {
+    color: #a51d2d !important;
+}
+
+.btn-outline-secondary {
+    --bs-btn-color: #536273;
+    --bs-btn-border-color: #536273;
+}
+
+.bg-danger .text-white.text-opacity-75 {
+    --bs-text-opacity: 1;
 }
 
 img,
@@ -174,7 +197,7 @@ textarea:focus-visible,
     align-items: center;
     min-width: 0;
     min-height: 44px;
-    max-width: min(calc(100% - 76px), 290px);
+    max-width: min(calc(100% - 52px), 290px);
 }
 
 .mobile-brand img {
@@ -187,7 +210,8 @@ textarea:focus-visible,
 }
 
 .mobile-menu-trigger {
-    min-width: 64px;
+    width: 44px;
+    min-width: 44px;
     min-height: 44px;
     padding: 0.35rem 0.45rem;
     display: inline-flex;
@@ -253,6 +277,19 @@ textarea:focus-visible,
 
 .nav-account .navbar-nav {
     flex-direction: row;
+}
+
+/* Bootstrap keeps non-expanded navbar dropdowns static by default. This nav
+   is desktop-only, so its account menu must always overlay the page. */
+.navbar-drmc .dropdown-menu {
+    position: absolute;
+    inset: 100% 0 auto auto;
+    min-width: 18rem;
+    max-width: calc(100vw - 2rem);
+}
+
+.navbar-drmc .dropdown-item {
+    white-space: normal;
 }
 
 .dropdown-menu {
@@ -702,10 +739,6 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
     font-size: 1.45rem !important;
 }
 
-.dashboard-hero-actions .btn {
-    border-radius: var(--drmc-radius-sm) !important;
-}
-
 .min-w-0 {
     min-width: 0;
 }
@@ -752,6 +785,8 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
 
 .summary-card-heading > div {
     min-width: 0;
+    flex: 1;
+    overflow-wrap: normal;
 }
 
 .summary-card-heading .card-icon {
@@ -769,6 +804,24 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
 .summary-card-heading .status-badge,
 .summary-card-heading .summary-count {
     margin-left: auto;
+    flex-shrink: 0;
+}
+
+.record-metadata .badge {
+    white-space: normal;
+    text-align: left;
+}
+
+.record-search {
+    width: min(100%, 300px);
+}
+
+.record-search input {
+    min-width: 0;
+}
+
+.record-search button {
+    flex-shrink: 0;
 }
 
 .summary-count {
@@ -860,6 +913,16 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
 .record-preview strong,
 .record-preview small {
     display: block;
+}
+
+.record-preview > span:first-child {
+    flex: 1;
+    min-width: 0;
+}
+
+.card .record-preview .status-badge {
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .record-preview strong {
@@ -1305,6 +1368,15 @@ code,
 }
 
 @media (max-width: 991.98px) {
+    html {
+        scroll-padding-top: calc(var(--mobile-header-height) + 12px);
+        scroll-padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 12px);
+    }
+
+    main :is(input, select, textarea, button, a) {
+        scroll-margin-block: 12px;
+    }
+
     body.has-mobile-navigation {
         padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
     }
@@ -1336,10 +1408,6 @@ code,
 
     .dashboard-hero h1 {
         font-size: 1.45rem;
-    }
-
-    .dashboard-hero-actions {
-        display: none !important;
     }
 
     .task-strip {
@@ -1414,6 +1482,61 @@ code,
 }
 
 @media (max-width: 767.98px) {
+    .print-hospital-heading {
+        flex-wrap: wrap;
+    }
+
+    .print-hospital-heading > div {
+        order: 1;
+        flex: 0 0 100%;
+        overflow-wrap: normal;
+    }
+
+    .appointment-summary .summary-card-heading {
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr);
+    }
+
+    .appointment-summary .summary-card-heading .status-badge {
+        grid-column: 2;
+        justify-self: start;
+        margin-left: 0;
+    }
+
+    .record-reference {
+        flex-basis: 100%;
+    }
+
+    .page-header .d-flex {
+        flex-wrap: wrap;
+    }
+
+    .card .badge {
+        max-width: 100%;
+        white-space: normal;
+        line-height: 1.4;
+    }
+
+    .card .d-flex > div {
+        min-width: 0;
+    }
+
+    .card .border-top.d-flex,
+    .card .border-top > .d-flex {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .card .border-top .btn,
+    .card .border-top form {
+        max-width: 100%;
+    }
+
+    .card .btn {
+        padding-inline: 1rem !important;
+        overflow-wrap: normal;
+    }
+
     .hero-content {
         padding-block: 2.35rem 2.75rem;
     }
@@ -1538,7 +1661,7 @@ code,
     }
 
     .mobile-brand {
-        max-width: calc(100% - 72px);
+        max-width: calc(100% - 52px);
     }
 
     .mobile-tab-item {

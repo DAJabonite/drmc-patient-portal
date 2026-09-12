@@ -58,7 +58,7 @@
                         <p class="small text-muted mb-3">Choose the valid government ID you will use for account verification and autofill.</p>
 
                         <div class="mb-3">
-                            <label asp-for="Input.IdType" class="form-label fw-semibold">Valid government ID</label>
+                            <label asp-for="Input.IdType" for="selectIdType" class="form-label fw-semibold">Valid government ID</label>
                             <select asp-for="Input.IdType" id="selectIdType" class="form-select form-select-lg">
                                 <option value="" disabled selected>Choose your ID type...</option>
                                 <option value="Philippine National ID (PhilSys)" data-back="true">Philippine National ID (PhilSys)</option>
@@ -225,38 +225,38 @@
                         <div class="row g-3">
                             <!-- Names -->
                             <div class="col-md-4">
-                                <label asp-for="Input.FirstName" class="form-label fw-semibold">First name</label>
+                                <label asp-for="Input.FirstName" for="txtFirstName" class="form-label fw-semibold">First name</label>
                                 <input asp-for="Input.FirstName" id="txtFirstName" class="form-control" autocomplete="given-name" placeholder="Juan" />
                                 <span asp-validation-for="Input.FirstName" class="field-validation-error"></span>
                             </div>
                             <div class="col-md-4">
-                                <label asp-for="Input.MiddleName" class="form-label fw-semibold">Middle name <span class="fw-normal text-muted">(optional)</span></label>
+                                <label asp-for="Input.MiddleName" for="txtMiddleName" class="form-label fw-semibold">Middle name <span class="fw-normal text-muted">(optional)</span></label>
                                 <input asp-for="Input.MiddleName" id="txtMiddleName" class="form-control" autocomplete="additional-name" placeholder="Santos" />
                                 <span asp-validation-for="Input.MiddleName" class="field-validation-error"></span>
                             </div>
                             <div class="col-md-4">
-                                <label asp-for="Input.LastName" class="form-label fw-semibold">Last name</label>
+                                <label asp-for="Input.LastName" for="txtLastName" class="form-label fw-semibold">Last name</label>
                                 <input asp-for="Input.LastName" id="txtLastName" class="form-control" autocomplete="family-name" placeholder="Dela Cruz" />
                                 <span asp-validation-for="Input.LastName" class="field-validation-error"></span>
                             </div>
 
                             <!-- ID Number -->
                             <div class="col-md-6">
-                                <label asp-for="Input.IdNumber" class="form-label fw-semibold">ID number</label>
+                                <label asp-for="Input.IdNumber" for="txtIdNumber" class="form-label fw-semibold">ID number</label>
                                 <input asp-for="Input.IdNumber" id="txtIdNumber" class="form-control" placeholder="As printed on your card" />
                                 <span asp-validation-for="Input.IdNumber" class="field-validation-error"></span>
                             </div>
 
                             <!-- Date of Birth -->
                             <div class="col-md-6">
-                                <label asp-for="Input.DateOfBirth" class="form-label fw-semibold">Date of birth <span class="fw-normal text-muted">(optional)</span></label>
+                                <label asp-for="Input.DateOfBirth" for="txtDob" class="form-label fw-semibold">Date of birth <span class="fw-normal text-muted">(optional)</span></label>
                                 <input asp-for="Input.DateOfBirth" id="txtDob" type="date" class="form-control" />
                                 <span asp-validation-for="Input.DateOfBirth" class="field-validation-error"></span>
                             </div>
 
                             <!-- Sex -->
                             <div class="col-md-6">
-                                <label asp-for="Input.Sex" class="form-label fw-semibold">Sex <span class="fw-normal text-muted">(optional)</span></label>
+                                <label asp-for="Input.Sex" for="txtSex" class="form-label fw-semibold">Sex <span class="fw-normal text-muted">(optional)</span></label>
                                 <select asp-for="Input.Sex" id="txtSex" class="form-select">
                                     <option value="">Select sex...</option>
                                     <option value="Male">Male</option>
@@ -267,7 +267,7 @@
 
                             <!-- Blood Type -->
                             <div class="col-md-6">
-                                <label asp-for="Input.BloodType" class="form-label fw-semibold">Blood type <span class="fw-normal text-muted">(optional)</span></label>
+                                <label asp-for="Input.BloodType" for="txtBloodType" class="form-label fw-semibold">Blood type <span class="fw-normal text-muted">(optional)</span></label>
                                 <select asp-for="Input.BloodType" id="txtBloodType" class="form-select">
                                     <option value="">Select blood type...</option>
                                     <option value="A+">A+</option>
@@ -284,7 +284,7 @@
 
                             <!-- Address -->
                             <div class="col-12">
-                                <label asp-for="Input.Address" class="form-label fw-semibold">Residential address <span class="fw-normal text-muted">(optional)</span></label>
+                                <label asp-for="Input.Address" for="txtAddress" class="form-label fw-semibold">Residential address <span class="fw-normal text-muted">(optional)</span></label>
                                 <input asp-for="Input.Address" id="txtAddress" class="form-control" placeholder="House/Unit No., Street, Barangay, City/Municipality, Province" />
                                 <span asp-validation-for="Input.Address" class="field-validation-error"></span>
                             </div>
@@ -331,7 +331,7 @@
 
                             <!-- Passwords -->
                             <div class="col-md-6">
-                                <label asp-for="Input.Password" class="form-label fw-semibold">Password</label>
+                                <label asp-for="Input.Password" for="regPassword" class="form-label fw-semibold">Password</label>
                                 <div class="input-group">
                                     <input asp-for="Input.Password" class="form-control" type="password" id="regPassword" autocomplete="new-password" placeholder="At least 8 characters" />
                                     <button class="btn btn-outline-secondary pw-toggle" type="button" aria-controls="regPassword" aria-pressed="false" aria-label="Show password">
@@ -342,7 +342,7 @@
                                 <div class="form-text small text-muted">Must include uppercase, lowercase, number, and symbol.</div>
                             </div>
                             <div class="col-md-6">
-                                <label asp-for="Input.ConfirmPassword" class="form-label fw-semibold">Confirm password</label>
+                                <label asp-for="Input.ConfirmPassword" for="regConfirmPassword" class="form-label fw-semibold">Confirm password</label>
                                 <div class="input-group">
                                     <input asp-for="Input.ConfirmPassword" class="form-control" type="password" id="regConfirmPassword" autocomplete="new-password" placeholder="Re-enter your password" />
                                     <button class="btn btn-outline-secondary pw-toggle" type="button" aria-controls="regConfirmPassword" aria-pressed="false" aria-label="Show password">

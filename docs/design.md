@@ -83,7 +83,9 @@ The live DRMC site returned HTTP 403 during the 2026-09-12 implementation review
 - **Cards/rows:** one surface per information group; avoid cards nested inside cards.
 - **Statuses:** compact label plus readable text; include pending, success, warning, error, empty, and disabled states.
 - **Forms:** visible labels, persistent validation, correct input modes, full-width mobile actions, and no removal of required consent or verification steps.
-- **Mobile navigation:** fixed to the safe-area-aware viewport edge, exposes current location with `aria-current`, and never covers page actions or content.
+- **Mobile navigation:** fixed to the safe-area-aware viewport edge, exposes current location with `aria-current`, and never makes page actions or content unreachable. The hamburger is icon-only with a localized accessible name and a minimum 44px touch target. Focused controls scroll clear of both fixed bars.
+- **Record metadata:** badges wrap; references occupy a separate line on phones. Appointment status moves below the heading on phones. The dashboard uses three columns only at the extra-large breakpoint.
+- **Desktop dropdowns:** account menus overlay the page without changing navigation height.
 
 ## Accessibility and content
 

@@ -93,6 +93,10 @@ dotnet list DrmcPatientPortal.slnx package --vulnerable --include-transitive
 
 Current result: **25/25 tests passing** on .NET 10 with zero build warnings. The OCR image-generation fixture is explicitly marked Windows-only because it uses `System.Drawing`; production code is platform-neutral. NuGet reports no known vulnerable packages.
 
+## Browser validation
+
+For repeatable desktop/mobile UI validation, run `pwsh scripts/test-ui.ps1` (or add `-SkipBrowserInstall` after the first run). The browser suite starts a separate development server with a temporary SQLite database, key ring, and document directories. It never uses the normal `app.db`. Screenshots, device metadata, accessibility findings, and TRX results are written under the ignored `output/playwright/` directory. See [UI validation](docs/UI_VALIDATION.md) for coverage and limitations.
+
 ## External boundaries
 
 No DRMC HIS, pharmacy, SIEM, SMTP, or SMS credentials are stored here. HIS and pharmacy synchronization remain disabled until approved adapters and credentials exist. Local triage and refill states never claim external synchronization or dispensing.

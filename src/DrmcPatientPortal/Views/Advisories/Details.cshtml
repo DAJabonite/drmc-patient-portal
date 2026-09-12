@@ -87,7 +87,7 @@
                                 <span class="small text-muted mt-auto" style="font-size:0.75rem;">
                                     @rel.PublishedAt.ToString("MMM d, yyyy")
                                 </span>
-                                <a asp-action="Details" asp-route-slug="@rel.Slug" class="stretched-link"></a>
+                                <a asp-action="Details" asp-route-slug="@rel.Slug" class="stretched-link" aria-label="@rel.Title"></a>
                             </div>
                         </div>
                     }

@@ -211,4 +211,6 @@
   <data name="Appt_BookingReference"><value>Reference sa Booking</value></data>
   <data name="Appt_Scheduled"><value>Gitakdang Petsa ug Oras</value></data>
   <data name="Appt_Cancel"><value>Kanselahon ang Appointment</value></data>
+  <data name="Appt_UnavailableTitle" xml:space="preserve"><value>Dili maablihan ang appointment</value></data>
+  <data name="Appt_UnavailableBody" xml:space="preserve"><value>Dili namo maablihan kini nga check-in pass. Gamita ang link sa mensahe sa kumpirmasyon, pag-sign in sa account nga nag-book sa pagbisita, o pangayo og tabang sa triage desk sa ospital.</value></data>
 </root>

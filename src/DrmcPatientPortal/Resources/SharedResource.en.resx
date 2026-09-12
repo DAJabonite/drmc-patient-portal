@@ -211,4 +211,6 @@
   <data name="Appt_BookingReference"><value>Booking Reference</value></data>
   <data name="Appt_Scheduled"><value>Scheduled Date &amp; Time</value></data>
   <data name="Appt_Cancel"><value>Cancel Appointment</value></data>
+  <data name="Appt_UnavailableTitle" xml:space="preserve"><value>Appointment unavailable</value></data>
+  <data name="Appt_UnavailableBody" xml:space="preserve"><value>We could not open this check-in pass. Use the link from your confirmation message, sign in to the account that booked the visit, or ask the hospital triage desk for help.</value></data>
 </root>

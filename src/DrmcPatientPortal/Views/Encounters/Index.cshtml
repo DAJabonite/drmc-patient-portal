@@ -65,14 +65,14 @@
                     <div class="card border-0 shadow-sm rounded-4 p-4 bg-white hover-shadow-sm transition">
                         <div class="row align-items-center g-3">
                             <div class="col-md-8">
-                                <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="record-metadata d-flex flex-wrap align-items-center gap-2 mb-2">
                                     <span class="badge bg-primary-subtle text-primary-drmc rounded-pill small fw-semibold">
                                         @enc.Department
                                     </span>
                                     <span class="badge bg-light text-secondary border rounded-pill small">
                                         @Loc[$"EncounterType_{enc.Type}"]
                                     </span>
-                                    <span class="small text-muted" style="font-size: 0.75rem;">
+                                    <span class="encounter-reference record-reference small text-muted" style="font-size: 0.75rem;">
                                         @Loc["Enc_Reference"]: <strong>@enc.EncounterReference</strong>
                                     </span>
                                 </div>
