@@ -8,10 +8,11 @@ Patients should see the next useful action before institutional or explanatory c
 
 ## Navigation
 
-- Mobile guests get one-tap Home, Book, Queue, Services, and Sign in destinations.
-- Mobile patients get one-tap Dashboard, Book, Results, Medications, and More destinations.
-- The More sheet contains every secondary destination and account action without nested menus.
-- Desktop navigation uses the same priority order and shows only destinations relevant to the current authentication state.
+- Mobile and desktop primary navigation use the five client-requested destinations: Home, Encounters, Results, Medication, and Financial Assistance / Malasakit.
+- Signed-in Home opens the patient dashboard; signed-out Home opens the public landing page.
+- Guest access to Encounters, Results, and Medication follows the existing sign-in redirect and returns the patient to the destination after authentication.
+- The mobile header Menu contains Book Appointment, OPD Queue, directory, OPD guide, advisories, language, and account actions without hiding a primary destination behind “More.”
+- Book and Queue remain one tap from the Home page and patient dashboard as prominent contextual actions.
 - Current location is conveyed with text/icon styling and `aria-current`, not color alone.
 
 ## Public entry flow

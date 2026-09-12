@@ -36,6 +36,7 @@
   <data name="Nav_Results"><value>Mga Resulta</value></data>
   <data name="Nav_Medication"><value>Tambal</value></data>
   <data name="Nav_Malasakit"><value>Malasakit</value></data>
+  <data name="Nav_FinancialAssistance"><value>Tabang Pinansyal / Malasakit</value></data>
   <data name="Nav_MoreServices"><value>Dugang Serbisyo</value></data>
   <data name="Nav_OpdGuide"><value>Giya sa OPD</value></data>
   <data name="Nav_Queue"><value>Linya sa OPD</value></data>
@@ -52,14 +53,13 @@
   <data name="Nav_Register"><value>Pagparehistro</value></data>
   <data name="Nav_Language"><value>Pinulongan</value></data>
   <data name="Mobile_Home"><value>Panid</value></data>
-  <data name="Mobile_Dashboard"><value>Dashboard</value></data>
-  <data name="Mobile_Book"><value>I-book</value></data>
-  <data name="Mobile_Queue"><value>Linya</value></data>
-  <data name="Mobile_Services"><value>Serbisyo</value></data>
-  <data name="Mobile_SignIn"><value>Sulod</value></data>
+  <data name="Mobile_Encounters"><value>Konsulta</value></data>
   <data name="Mobile_Results"><value>Resulta</value></data>
-  <data name="Mobile_Medications"><value>Tambal</value></data>
-  <data name="Mobile_More"><value>Dugang</value></data>
+  <data name="Mobile_Medication"><value>Tambal</value></data>
+  <data name="Mobile_Malasakit"><value>Malasakit</value></data>
+  <data name="Mobile_Menu"><value>Menu</value></data>
+  <data name="Mobile_QuickTasks"><value>Dali nga buluhaton</value></data>
+  <data name="Mobile_HospitalServices"><value>Mga serbisyo sa ospital</value></data>
 
   <!-- Common Actions & Buttons -->
   <data name="Action_Search"><value>Pangitaa</value></data>

@@ -11,15 +11,11 @@
     var signedIn = SignInManager.IsSignedIn(User);
     var isHome = currentController == "Home" && currentAction == "Index";
     var isDashboard = currentController == "Patient" && currentAction == "Home";
-    var isAppointments = currentController == "Appointments";
-    var isQueue = currentController == "Queue";
-    var isDirectory = currentController == "Directory";
     var isMalasakit = currentController == "Malasakit";
     var isResults = currentController == "LabResults";
     var isMedications = currentController == "Medications";
     var isEncounters = currentController == "Encounters";
-    var isMore = currentController is "Advisories" or "Triage" ||
-                 (currentController == "Home" && currentAction != "Index");
+    var homeActive = signedIn ? isDashboard : isHome;
 }
 <!DOCTYPE html>
 <html lang="@currentCulture">
@@ -83,11 +79,16 @@
     </header>
 
     <header class="mobile-header d-lg-none" role="banner">
-        <div class="container-fluid">
+        <div class="container-fluid justify-content-between gap-2">
             <a class="mobile-brand" asp-area="" asp-controller="Home" asp-action="Index" aria-label="Davao Regional Medical Center home">
                 <img src="~/images/drmc-masthead.png"
                      alt="Davao Regional Medical Center, Department of Health" />
             </a>
+            <button class="mobile-menu-trigger" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileUtilityMenu"
+                    aria-controls="mobileUtilityMenu" aria-label="@Loc["Mobile_Menu"]">
+                <i class="bi bi-list" aria-hidden="true"></i>
+                <span>@Loc["Mobile_Menu"]</span>
+            </button>
         </div>
     </header>
 
@@ -96,36 +97,16 @@
             <ul class="navbar-nav flex-row align-items-center gap-1 me-auto">
                 @if (signedIn)
                 {
-                    <li class="nav-item"><a class="nav-link @(isDashboard ? "active" : null)" aria-current="@(isDashboard ? "page" : null)" asp-controller="Patient" asp-action="Home">@Loc["Nav_Dashboard"]</a></li>
-                    <li class="nav-item"><a class="nav-link @(isAppointments ? "active" : null)" aria-current="@(isAppointments ? "page" : null)" asp-controller="Appointments" asp-action="Book">@Loc["Nav_Appointments"]</a></li>
-                    <li class="nav-item"><a class="nav-link @(isResults ? "active" : null)" aria-current="@(isResults ? "page" : null)" asp-controller="LabResults" asp-action="Index">@Loc["Nav_Results"]</a></li>
-                    <li class="nav-item"><a class="nav-link @(isMedications ? "active" : null)" aria-current="@(isMedications ? "page" : null)" asp-controller="Medications" asp-action="Index">@Loc["Nav_Medication"]</a></li>
-                    <li class="nav-item"><a class="nav-link @(isEncounters ? "active" : null)" aria-current="@(isEncounters ? "page" : null)" asp-controller="Encounters" asp-action="Index">@Loc["Nav_Encounters"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(homeActive ? "active" : null)" aria-current="@(homeActive ? "page" : null)" asp-controller="Patient" asp-action="Home">@Loc["Nav_Home"]</a></li>
                 }
                 else
                 {
-                    <li class="nav-item"><a class="nav-link @(isHome ? "active" : null)" aria-current="@(isHome ? "page" : null)" asp-controller="Home" asp-action="Index">@Loc["Nav_Home"]</a></li>
-                    <li class="nav-item"><a class="nav-link @(isAppointments ? "active" : null)" aria-current="@(isAppointments ? "page" : null)" asp-controller="Appointments" asp-action="Book">@Loc["Nav_Appointments"]</a></li>
-                    <li class="nav-item"><a class="nav-link @(isQueue ? "active" : null)" aria-current="@(isQueue ? "page" : null)" asp-controller="Queue" asp-action="Index">@Loc["Nav_Queue"]</a></li>
-                    <li class="nav-item"><a class="nav-link @(isDirectory ? "active" : null)" aria-current="@(isDirectory ? "page" : null)" asp-controller="Directory" asp-action="Index">@Loc["Nav_Directory"]</a></li>
-                    <li class="nav-item"><a class="nav-link @(isMalasakit ? "active" : null)" aria-current="@(isMalasakit ? "page" : null)" asp-controller="Malasakit" asp-action="Index">@Loc["Nav_Malasakit"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(homeActive ? "active" : null)" aria-current="@(homeActive ? "page" : null)" asp-controller="Home" asp-action="Index">@Loc["Nav_Home"]</a></li>
                 }
-                <li class="nav-item dropdown">
-                    <button class="nav-link dropdown-toggle @(isMore || (signedIn && (isQueue || isDirectory || isMalasakit)) ? "active" : null)"
-                            type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        @Loc["Nav_MoreServices"]
-                    </button>
-                    <ul class="dropdown-menu">
-                        @if (signedIn)
-                        {
-                            <li><a class="dropdown-item" asp-controller="Queue" asp-action="Index"><i class="bi bi-people" aria-hidden="true"></i>@Loc["Nav_Queue"]</a></li>
-                            <li><a class="dropdown-item" asp-controller="Malasakit" asp-action="Index"><i class="bi bi-heart-pulse" aria-hidden="true"></i>@Loc["Nav_Malasakit"]</a></li>
-                            <li><a class="dropdown-item" asp-controller="Directory" asp-action="Index"><i class="bi bi-person-badge" aria-hidden="true"></i>@Loc["Nav_Directory"]</a></li>
-                        }
-                        <li><a class="dropdown-item" asp-controller="Home" asp-action="OpdGuide"><i class="bi bi-signpost-split" aria-hidden="true"></i>@Loc["Nav_OpdGuide"]</a></li>
-                        <li><a class="dropdown-item" asp-controller="Advisories" asp-action="Index"><i class="bi bi-megaphone" aria-hidden="true"></i>@Loc["Nav_Advisories"]</a></li>
-                    </ul>
-                </li>
+                <li class="nav-item"><a class="nav-link @(isEncounters ? "active" : null)" aria-current="@(isEncounters ? "page" : null)" asp-controller="Encounters" asp-action="Index">@Loc["Nav_Encounters"]</a></li>
+                <li class="nav-item"><a class="nav-link @(isResults ? "active" : null)" aria-current="@(isResults ? "page" : null)" asp-controller="LabResults" asp-action="Index">@Loc["Nav_Results"]</a></li>
+                <li class="nav-item"><a class="nav-link @(isMedications ? "active" : null)" aria-current="@(isMedications ? "page" : null)" asp-controller="Medications" asp-action="Index">@Loc["Nav_Medication"]</a></li>
+                <li class="nav-item"><a class="nav-link @(isMalasakit ? "active" : null)" aria-current="@(isMalasakit ? "page" : null)" asp-controller="Malasakit" asp-action="Index">@Loc["Nav_FinancialAssistance"]</a></li>
             </ul>
             <div class="nav-account"><partial name="_LoginPartial" /></div>
         </div>

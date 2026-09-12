@@ -25,8 +25,11 @@ owners: DRMC patient portal team
 | Source | Role | Adapt | Do not copy |
 | --- | --- | --- | --- |
 | Client brief, 2026-09-12 | Product direction | `#0E4E87`, mobile-first, fewer clicks, less visual noise | No requirement to preserve the old website layout |
+| Client navigation clarification, 2026-09-12 | Information architecture | Home, Encounters, Results, Medication, and Financial Assistance / Malasakit as the five permanent primary destinations | Do not replace a requested destination with a generic “More” tab |
 | `wwwroot/images/drmc-masthead.png` and DRMC seals | Identity | Official marks and institutional name | Do not redraw or decorate the marks |
 | https://drmc.doh.gov.ph/ | Brand reference | DRMC blue and public-service character | Page composition, dense navigation, and dated visual patterns |
+| https://www.nhs.uk/ | Responsive health-service reference | Clear service taxonomy, task-first health links, and separate account/search utilities | NHS branding, page composition, or content |
+| https://www.healthdirect.gov.au/ | Responsive health-service reference | Compact mobile identity, a clear utility menu, and direct task language | Healthdirect branding, palette, or page composition |
 | Bootstrap 5 and Bootstrap Icons | Interaction system | Existing grid, controls, offcanvas, utilities, and local icons | No additional UI framework |
 
 The live DRMC site returned HTTP 403 during the 2026-09-12 implementation review. The checked-in identity assets and the client's explicit color direction are therefore the implementation source of truth.
@@ -64,10 +67,11 @@ The live DRMC site returned HTTP 403 during the 2026-09-12 implementation review
 ## Layout and responsive behavior
 
 - Mobile is the baseline. Content must reflow without page-level horizontal overflow at 320px.
-- On phones, use a compact 64–72px brand header and a fixed five-item bottom navigation. Secondary navigation opens in one accessible offcanvas sheet.
-- Guest destinations: Home, Book, Queue, Services, Sign in.
-- Signed-in destinations: Dashboard, Book, Results, Medications, More.
-- Desktop keeps a compact masthead and contextual navigation. Signed-out navigation shows public services; signed-in navigation prioritizes patient tasks.
+- On phones, use a compact 64–72px brand header and a fixed five-item bottom navigation. Utility navigation opens in one accessible offcanvas sheet from the header.
+- The five primary destinations are always Home, Encounters, Results, Medication, and Malasakit. “Financial Assistance / Malasakit” is shortened to “Malasakit” only where mobile width requires it, with the full accessible label retained.
+- Signed-in Home opens the patient dashboard; signed-out Home opens the public landing page. Protected record destinations retain the existing sign-in redirect and return URL.
+- Booking, queue tracking, directory, OPD guidance, advisories, language, and account actions remain available in the mobile utility menu and as contextual page actions.
+- Desktop uses the same five-destination information architecture, plus the existing account controls.
 - The public home page is task-first: Book, Queue, and Sign in/Dashboard lead; secondary hospital information follows.
 - List and detail pages use compact page headers, flat record rows, and horizontally scrollable filter groups where necessary.
 - Print views hide navigation and interactive chrome and retain their current clinical content.
@@ -107,6 +111,7 @@ The live DRMC site returned HTTP 403 during the 2026-09-12 implementation review
 ## Decisions
 
 - Adopted: `#0E4E87` remains the primary brand color.
-- Adopted: bottom navigation is available to guests and signed-in patients, with destinations adapted to their tasks.
+- Adopted: the client-requested five primary destinations remain stable for guests and signed-in patients; authentication changes the Home destination and access boundary, not the navigation vocabulary.
+- Adopted: booking and queue are high-priority tasks surfaced on Home/Dashboard and in the header utility menu rather than replacing requested primary destinations.
 - Adopted: necessary registration, privacy, triage, confirmation, and clinical safety steps remain intact.
 - Adopted: the portal is inspired by DRMC identity but does not reproduce the older public website's layout.

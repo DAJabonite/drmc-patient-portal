@@ -36,6 +36,7 @@
   <data name="Nav_Results"><value>Results</value></data>
   <data name="Nav_Medication"><value>Medication</value></data>
   <data name="Nav_Malasakit"><value>Malasakit</value></data>
+  <data name="Nav_FinancialAssistance"><value>Financial Assistance / Malasakit</value></data>
   <data name="Nav_MoreServices"><value>More Services</value></data>
   <data name="Nav_OpdGuide"><value>OPD Guide</value></data>
   <data name="Nav_Queue"><value>OPD Queue</value></data>
@@ -52,14 +53,13 @@
   <data name="Nav_Register"><value>Register</value></data>
   <data name="Nav_Language"><value>Language</value></data>
   <data name="Mobile_Home"><value>Home</value></data>
-  <data name="Mobile_Dashboard"><value>Dashboard</value></data>
-  <data name="Mobile_Book"><value>Book</value></data>
-  <data name="Mobile_Queue"><value>Queue</value></data>
-  <data name="Mobile_Services"><value>Services</value></data>
-  <data name="Mobile_SignIn"><value>Sign in</value></data>
+  <data name="Mobile_Encounters"><value>Encounters</value></data>
   <data name="Mobile_Results"><value>Results</value></data>
-  <data name="Mobile_Medications"><value>Medications</value></data>
-  <data name="Mobile_More"><value>More</value></data>
+  <data name="Mobile_Medication"><value>Medication</value></data>
+  <data name="Mobile_Malasakit"><value>Malasakit</value></data>
+  <data name="Mobile_Menu"><value>Menu</value></data>
+  <data name="Mobile_QuickTasks"><value>Quick tasks</value></data>
+  <data name="Mobile_HospitalServices"><value>Hospital services</value></data>
 
   <!-- Common Actions & Buttons -->
   <data name="Action_Search"><value>Search</value></data>

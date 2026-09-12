@@ -164,14 +164,17 @@ textarea:focus-visible,
     height: 100%;
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
     padding-inline: 1rem;
 }
 
 .mobile-brand {
     display: inline-flex;
     align-items: center;
+    min-width: 0;
     min-height: 44px;
-    max-width: min(100%, 290px);
+    max-width: min(calc(100% - 76px), 290px);
 }
 
 .mobile-brand img {
@@ -181,6 +184,37 @@ textarea:focus-visible,
     max-height: 39px;
     object-fit: contain;
     object-position: left center;
+}
+
+.mobile-menu-trigger {
+    min-width: 64px;
+    min-height: 44px;
+    padding: 0.35rem 0.45rem;
+    display: inline-flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.05rem;
+    color: #fff;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: var(--drmc-radius-sm);
+    font: inherit;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.mobile-menu-trigger i {
+    font-size: 1.25rem;
+}
+
+.mobile-menu-trigger:hover,
+.mobile-menu-trigger:focus-visible {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.7);
 }
 
 /* Desktop navigation */
@@ -310,27 +344,39 @@ textarea:focus-visible,
     background: var(--drmc-primary);
 }
 
-.mobile-more-sheet {
-    height: auto !important;
-    max-height: min(82vh, 680px);
-    border-radius: 1.25rem 1.25rem 0 0;
+.mobile-utility-sheet {
+    width: min(90vw, 360px) !important;
     border: 0;
+    box-shadow: -12px 0 36px rgba(6, 40, 70, 0.18);
 }
 
-.mobile-more-sheet .offcanvas-header {
+.mobile-utility-sheet .offcanvas-header {
     padding: 1.1rem 1rem 0.8rem;
     border-bottom: 1px solid var(--drmc-border);
 }
 
-.mobile-more-sheet .btn-close {
+.mobile-utility-sheet .btn-close {
     width: 44px;
     height: 44px;
     margin: -0.35rem -0.35rem -0.35rem auto;
     padding: 0.85rem;
 }
 
-.mobile-more-sheet .offcanvas-body {
-    padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+.mobile-utility-sheet .offcanvas-body {
+    padding: 1rem 1rem calc(var(--mobile-nav-height) + 1rem + env(safe-area-inset-bottom));
+}
+
+.mobile-utility-section + .mobile-utility-section {
+    margin-top: 1.25rem;
+}
+
+.mobile-utility-heading {
+    margin: 0 0 0.55rem;
+    color: var(--drmc-text-muted);
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
 }
 
 .mobile-more-grid {
@@ -1492,7 +1538,7 @@ code,
     }
 
     .mobile-brand {
-        max-width: 250px;
+        max-width: calc(100% - 72px);
     }
 
     .mobile-tab-item {
@@ -1532,7 +1578,7 @@ code,
     .mobile-header,
     .navbar-drmc,
     .mobile-tab-bar,
-    .mobile-more-sheet,
+    .mobile-utility-sheet,
     .footer-drmc,
     .d-print-none {
         display: none !important;
