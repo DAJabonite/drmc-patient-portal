@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
@@ -17,19 +18,22 @@ public class AppointmentsController : Controller
     private readonly ISmsSender _smsSender;
     private readonly IEmailSender _emailSender;
     private readonly IQrCodeService _qrCodeService;
+    private readonly IAppointmentAccessService _appointmentAccess;
 
     public AppointmentsController(
         ApplicationDbContext db,
         UserManager<ApplicationUser> userManager,
         ISmsSender smsSender,
         IEmailSender emailSender,
-        IQrCodeService qrCodeService)
+        IQrCodeService qrCodeService,
+        IAppointmentAccessService appointmentAccess)
     {
         _db = db;
         _userManager = userManager;
         _smsSender = smsSender;
         _emailSender = emailSender;
         _qrCodeService = qrCodeService;
+        _appointmentAccess = appointmentAccess;
     }
 
     // GET /Appointments/Book
@@ -82,23 +86,46 @@ public class AppointmentsController : Controller
             return View(model);
         }
 
+        if (!ClinicalDepartments.All.Any(d => d.Name == model.Department))
+            ModelState.AddModelError(nameof(model.Department), "Select a valid clinical department.");
+        if (model.AppointmentType is not ("In-Person OPD" or "Teleconsultation"))
+            ModelState.AddModelError(nameof(model.AppointmentType), "Select a valid consultation type.");
+        if (!BookingFormViewModel.TimeSlots.Contains(model.TimeSlot))
+            ModelState.AddModelError(nameof(model.TimeSlot), "Select a valid appointment time.");
+
+        var slotStartText = model.TimeSlot.Split(" - ", StringSplitOptions.TrimEntries)[0];
+        if (!TimeOnly.TryParseExact(slotStartText, "hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out var slotStart))
+            ModelState.AddModelError(nameof(model.TimeSlot), "Select a valid appointment time.");
+
         Doctor? doctor = null;
         if (model.DoctorId.HasValue)
         {
-            doctor = await _db.Doctors.FindAsync(model.DoctorId.Value);
+            doctor = await _db.Doctors.FirstOrDefaultAsync(d => d.Id == model.DoctorId.Value && d.IsActive);
+            if (doctor is null || doctor.Department != model.Department)
+                ModelState.AddModelError(nameof(model.DoctorId), "Select an active doctor from the chosen department.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            await PopulateBookingDropdownsAsync(model);
+            return View(model);
+        }
+
+        var scheduledDateTime = model.AppointmentDate.Date.Add(slotStart.ToTimeSpan());
+        if (doctor is not null && await _db.Appointments.AnyAsync(a => a.DoctorId == doctor.Id && a.ScheduledAt == scheduledDateTime && a.Status != "Cancelled"))
+        {
+            ModelState.AddModelError(nameof(model.TimeSlot), "That doctor is already booked for the selected time.");
+            await PopulateBookingDropdownsAsync(model);
+            return View(model);
         }
 
         var doctorName = doctor?.FullName ?? "Attending OPD Specialist";
         var deptPrefix = model.Department.Length >= 2 ? model.Department[..2].ToUpperInvariant() : "OP";
-        var randomSuffix = Random.Shared.Next(1000, 9999);
-        var bookingRef = $"DRMC-2026-{deptPrefix}-{randomSuffix}";
-
-        // Combine date and timeslot
-        var scheduledDateTime = model.AppointmentDate.Date.AddHours(9); // Base slot start
+        string bookingRef;
+        do { bookingRef = $"DRMC-{DateTime.Now.Year}-{deptPrefix}-{Random.Shared.Next(1000, 10000)}"; }
+        while (await _db.Appointments.AnyAsync(a => a.BookingReference == bookingRef));
 
         var user = User.Identity?.IsAuthenticated == true ? await _userManager.GetUserAsync(User) : null;
-
-        var qrPayload = $"DRMC|REF:{bookingRef}|PAT:{model.PatientName}|DEPT:{model.Department}|DATE:{model.AppointmentDate:yyyyMMdd}|SIG:VERIFIED_DOH_DRMC";
 
         var appointment = new Appointment
         {
@@ -116,29 +143,44 @@ public class AppointmentsController : Controller
             TimeSlot = model.TimeSlot,
             ChiefComplaint = model.ChiefComplaint,
             Status = "Confirmed",
-            QrCodePayload = qrPayload,
+            QrCodePayload = string.Empty,
             TeleconsultMeetingUrl = model.AppointmentType == "Teleconsultation" 
                 ? $"https://telehealth.drmc.doh.gov.ph/consult/room-{bookingRef.ToLowerInvariant()}" 
                 : null,
             CreatedAt = DateTime.UtcNow
         };
 
+        var accessToken = _appointmentAccess.CreateToken(appointment);
+        appointment.QrCodePayload = Url.Action(nameof(Access), "Appointments", new { reference = bookingRef, token = accessToken, destination = "checkin" }, Request.Scheme)!;
+
         _db.Appointments.Add(appointment);
         await _db.SaveChangesAsync();
+        _appointmentAccess.GrantCookieAccess(HttpContext, appointment, accessToken);
 
-        // 1. Dispatch SMS confirmation (Infrastructure boundary: logs to console)
-        var smsText = $"DRMC Appointment Confirmed: {bookingRef}. {appointment.Department} with {appointment.DoctorName} on {appointment.ScheduledAt:MMM d, yyyy} ({appointment.TimeSlot}). Please arrive 15 mins early.";
+        // Dispatch through the configured environment-specific notification providers.
+        var accessUrl = Url.Action(nameof(Access), "Appointments", new { reference = bookingRef, token = accessToken }, Request.Scheme)!;
+        var smsText = $"DRMC appointment {bookingRef} is confirmed for {appointment.ScheduledAt:MMM d, yyyy} ({appointment.TimeSlot}). Secure pass: {accessUrl}";
         await _smsSender.SendSmsAsync(appointment.ContactNumber, smsText);
 
-        // 2. Dispatch Email confirmation (Infrastructure boundary: logs to console)
         if (!string.IsNullOrWhiteSpace(appointment.Email))
         {
             var emailSubject = $"DRMC Appointment Confirmation — {bookingRef}";
-            var emailBody = $"Dear {appointment.PatientName}, your appointment ({bookingRef}) at DRMC {appointment.Department} has been confirmed for {appointment.ScheduledAt:dddd, MMMM d, yyyy} at {appointment.TimeSlot}.";
+            var emailBody = $"Your DRMC appointment ({bookingRef}) is confirmed for {appointment.ScheduledAt:dddd, MMMM d, yyyy} at {appointment.TimeSlot}. Open your secure pass: <a href=\"{System.Net.WebUtility.HtmlEncode(accessUrl)}\">View appointment</a>.";
             await _emailSender.SendEmailAsync(appointment.Email, emailSubject, emailBody);
         }
 
         return RedirectToAction(nameof(Confirmation), new { reference = bookingRef });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Access(string reference, string token, string? destination = null)
+    {
+        var appointment = await _db.Appointments.FirstOrDefaultAsync(a => a.BookingReference == reference);
+        if (appointment is null || !_appointmentAccess.ValidateToken(appointment, token)) return NotFound();
+        _appointmentAccess.GrantCookieAccess(HttpContext, appointment, token);
+        return destination == "checkin"
+            ? RedirectToAction(nameof(CheckIn), new { reference })
+            : RedirectToAction(nameof(Confirmation), new { reference });
     }
 
     // GET /Appointments/Confirmation/{reference}
@@ -158,6 +200,8 @@ public class AppointmentsController : Controller
         {
             return NotFound();
         }
+
+        if (!CanAccessAppointment(appointment)) return NotFound();
 
         var qrSvg = _qrCodeService.GenerateSvgQrCode(appointment.QrCodePayload);
 
@@ -180,9 +224,10 @@ public class AppointmentsController : Controller
 
         if (appointment is null)
         {
-            ViewBag.NotFoundRef = reference;
-            return View("CheckInNotFound");
+            return NotFound();
         }
+
+        if (!CanAccessAppointment(appointment)) return NotFound();
 
         return View(appointment);
     }
@@ -198,15 +243,28 @@ public class AppointmentsController : Controller
             return NotFound();
         }
 
+        if (!CanAccessAppointment(appointment)) return NotFound();
+
         appointment.Status = "Cancelled";
+        appointment.PublicAccessTokenHash = null;
+        appointment.PublicAccessExpiresAt = null;
         await _db.SaveChangesAsync();
+        _appointmentAccess.RevokeCookieAccess(HttpContext, appointment);
 
         if (User.Identity?.IsAuthenticated == true)
         {
             return RedirectToAction("Home", "Patient");
         }
 
-        return RedirectToAction(nameof(Confirmation), new { reference = appointment.BookingReference });
+        TempData["SuccessMessage"] = "The appointment was cancelled.";
+        return RedirectToAction("Index", "Home");
+    }
+
+    private bool CanAccessAppointment(Appointment appointment)
+    {
+        var userId = _userManager.GetUserId(User);
+        return (!string.IsNullOrWhiteSpace(userId) && appointment.PatientUserId == userId)
+            || _appointmentAccess.HasCookieAccess(HttpContext, appointment);
     }
 
     private async Task PopulateBookingDropdownsAsync(BookingFormViewModel model)

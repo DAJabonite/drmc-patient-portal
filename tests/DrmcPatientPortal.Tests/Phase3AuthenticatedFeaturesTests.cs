@@ -5,8 +5,10 @@ using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -40,6 +42,7 @@ public class Phase3AuthenticatedFeaturesTests
         var store = new Mock<IUserStore<ApplicationUser>>();
         var userManager = new Mock<UserManager<ApplicationUser>>(store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(user.Id);
 
         return (userManager.Object, user);
     }
@@ -181,7 +184,7 @@ public class Phase3AuthenticatedFeaturesTests
     }
 
     [Fact]
-    public async Task MedicationsController_RequestRefill_DecrementsRemainingAndCreatesRefillRequest()
+    public async Task MedicationsController_RequestRefill_RecordsPendingRequestWithoutDecrementing()
     {
         using var db = CreateInMemoryDbContext();
         var (userManager, user) = CreateMockUserManager(db);
@@ -211,9 +214,9 @@ public class Phase3AuthenticatedFeaturesTests
         Assert.Equal(nameof(MedicationsController.RefillStatus), actionResult.ActionName);
 
         var updatedRx = await db.Prescriptions.Include(p => p.RefillRequests).FirstAsync(p => p.Id == rx.Id);
-        Assert.Equal(1, updatedRx.RefillsRemaining);
+        Assert.Equal(2, updatedRx.RefillsRemaining);
         Assert.Single(updatedRx.RefillRequests);
-        Assert.Equal(RefillStatus.Approved, updatedRx.RefillRequests.First().Status);
+        Assert.Equal(RefillStatus.Requested, updatedRx.RefillRequests.First().Status);
     }
 
     [Fact]
@@ -248,5 +251,65 @@ public class Phase3AuthenticatedFeaturesTests
         var actionResult = await controller.Submit(model) as RedirectToActionResult;
         Assert.NotNull(actionResult);
         Assert.Equal(nameof(TriageController.EmergencyWarning), actionResult.ActionName);
+        var intake = await db.TriageIntakes.SingleAsync();
+        Assert.True(intake.HasEmergencyRedFlags);
+        Assert.Equal(TriageAcuity.UrgentEmergency, intake.AcuityLevel);
+    }
+
+    [Fact]
+    public async Task EncountersController_Details_IsOwnerIsolatedAndIncludesLabs()
+    {
+        using var db = CreateInMemoryDbContext();
+        var (userManager, user) = CreateMockUserManager(db);
+        var auditMock = new Mock<IAuditLogService>();
+        var owned = new ClinicalEncounter { PatientUserId = user.Id, EncounterReference = "ENC-OWNED", Department = "Internal Medicine", PrimaryDiagnosis = "Hypertension" };
+        owned.LabResults.Add(new LabResult { PatientUserId = user.Id, AccessionNumber = "LAB-ENC", TestName = "CBC" });
+        var other = new ClinicalEncounter { PatientUserId = "other", EncounterReference = "ENC-OTHER", Department = "Surgery", PrimaryDiagnosis = "Follow-up" };
+        db.ClinicalEncounters.AddRange(owned, other);
+        await db.SaveChangesAsync();
+        var controller = new EncountersController(db, userManager, auditMock.Object) { ControllerContext = CreateControllerContext() };
+
+        var result = Assert.IsType<ViewResult>(await controller.Details(owned.Id));
+        Assert.Single(Assert.IsType<ClinicalEncounter>(result.Model).LabResults);
+        Assert.IsType<NotFoundResult>(await controller.Details(other.Id));
+        auditMock.Verify(x => x.LogAsync(user.Id, "VIEW_ENCOUNTER_SUMMARY", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public void AppointmentAccessToken_IsHighEntropyAndExpires()
+    {
+        var service = new AppointmentAccessService(new EphemeralDataProtectionProvider());
+        var appointment = new Appointment { Id = 7, ScheduledAt = DateTime.Now.AddDays(2) };
+        var token = service.CreateToken(appointment);
+        Assert.True(token.Length >= 43);
+        Assert.DoesNotContain(token, appointment.PublicAccessTokenHash!, StringComparison.Ordinal);
+        Assert.True(service.ValidateToken(appointment, token));
+        Assert.False(service.ValidateToken(appointment, token + "x"));
+        appointment.PublicAccessExpiresAt = DateTime.UtcNow.AddSeconds(-1);
+        Assert.False(service.ValidateToken(appointment, token));
+    }
+
+    [Fact]
+    public async Task AppointmentsController_AllowsLegacyOwnerButDeniesReferenceOnlyAccess()
+    {
+        using var db = CreateInMemoryDbContext();
+        var (userManager, user) = CreateMockUserManager(db);
+        var ownerAppointment = new Appointment { PatientUserId = user.Id, BookingReference = "DRMC-OWNER", ScheduledAt = DateTime.Now.AddDays(1) };
+        var otherAppointment = new Appointment { PatientUserId = "other-user", BookingReference = "DRMC-OTHER", ScheduledAt = DateTime.Now.AddDays(1) };
+        db.Appointments.AddRange(ownerAppointment, otherAppointment);
+        await db.SaveChangesAsync();
+
+        var access = new Mock<IAppointmentAccessService>();
+        var qr = new Mock<IQrCodeService>();
+        qr.Setup(x => x.GenerateSvgQrCode(It.IsAny<string>())).Returns("<svg></svg>");
+        var controller = new AppointmentsController(db, userManager, Mock.Of<ISmsSender>(), Mock.Of<IEmailSender>(), qr.Object, access.Object)
+        {
+            ControllerContext = CreateControllerContext()
+        };
+
+        Assert.IsType<ViewResult>(await controller.Confirmation(ownerAppointment.BookingReference));
+        Assert.IsType<NotFoundResult>(await controller.Confirmation(otherAppointment.BookingReference));
+        Assert.IsType<NotFoundResult>(await controller.Cancel(otherAppointment.Id));
+        Assert.NotEqual("Cancelled", otherAppointment.Status);
     }
 }

@@ -85,7 +85,7 @@ public class LabResultsController : Controller
         }
 
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
-        await _auditLog.LogAsync(user.Id, "VIEW_LAB_REPORT", $"LabResult/{id}", $"Accession #{result.AccessionNumber} - {result.TestName}", ip);
+        await _auditLog.LogAsync(user.Id, "VIEW_LAB_REPORT", $"LabResult/{id}", "Viewed an owned laboratory report.", ip);
 
         return View(result);
     }
@@ -107,7 +107,7 @@ public class LabResultsController : Controller
         }
 
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
-        await _auditLog.LogAsync(user.Id, "PRINT_LAB_REPORT", $"LabResult/{id}", $"Printed official slip for Accession #{result.AccessionNumber}", ip);
+        await _auditLog.LogAsync(user.Id, "PRINT_LAB_REPORT", $"LabResult/{id}", "Printed an owned laboratory report.", ip);
 
         var model = new LabPrintReportViewModel
         {

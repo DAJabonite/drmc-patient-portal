@@ -16,18 +16,18 @@ public class PatientDocumentsController : Controller
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IAuditLogService _auditLogService;
-    private readonly IWebHostEnvironment _environment;
+    private readonly IPatientDocumentStorage _storage;
 
     public PatientDocumentsController(
         ApplicationDbContext db,
         UserManager<ApplicationUser> userManager,
         IAuditLogService auditLogService,
-        IWebHostEnvironment environment)
+        IPatientDocumentStorage storage)
     {
         _db = db;
         _userManager = userManager;
         _auditLogService = auditLogService;
-        _environment = environment;
+        _storage = storage;
     }
 
     [HttpGet]
@@ -56,29 +56,41 @@ public class PatientDocumentsController : Controller
             return NotFound();
         }
 
-        string storageDir = Path.Combine(_environment.ContentRootPath, "App_Data", "PatientIdDocuments", user.Id);
-        string filePath = Path.Combine(storageDir, fileName);
+        var contentType = side.Equals("back", StringComparison.OrdinalIgnoreCase)
+            ? document.BackPhotoContentType
+            : document.FrontPhotoContentType;
+        contentType ??= fileName.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/jpeg";
 
-        // Security boundary check: Path traversal prevention
-        string canonicalPath = Path.GetFullPath(filePath);
-        string canonicalStorageDir = Path.GetFullPath(storageDir);
-        if (!canonicalPath.StartsWith(canonicalStorageDir, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(canonicalPath))
+        try
         {
-            return NotFound();
+            var bytes = await _storage.ReadAsync(user.Id, fileName, document.StorageVersion, HttpContext.RequestAborted);
+            await _auditLogService.LogAsync(
+                user.Id,
+                "VIEW_ID_PHOTO",
+                $"PatientIdDocument/{id}/{side}",
+                $"Viewed government ID photo ({side}).",
+                HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+
+            if (document.StorageVersion < 2)
+            {
+                var migrated = await _storage.MigrateLegacyAsync(user.Id, fileName, side, contentType, HttpContext.RequestAborted);
+                if (side.Equals("back", StringComparison.OrdinalIgnoreCase))
+                {
+                    document.BackPhotoFileName = migrated.FileName;
+                    document.BackPhotoContentType = migrated.ContentType;
+                }
+                else
+                {
+                    document.FrontPhotoFileName = migrated.FileName;
+                    document.FrontPhotoContentType = migrated.ContentType;
+                }
+                document.StorageVersion = migrated.StorageVersion;
+                await _db.SaveChangesAsync();
+                await _storage.DeleteLegacyAsync(user.Id, fileName, HttpContext.RequestAborted);
+            }
+            return File(bytes, contentType);
         }
-
-        string contentType = fileName.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
-            ? "image/png"
-            : "image/jpeg";
-
-        await _auditLogService.LogAsync(
-            "VIEW_ID_PHOTO",
-            $"PatientIdDocument/{id}/{side}",
-            $"Viewed government ID photo ({side}) for document type {document.IdType}",
-            user.Id,
-            HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"
-        );
-
-        return PhysicalFile(canonicalPath, contentType);
+        catch (FileNotFoundException) { return NotFound(); }
+        catch (InvalidDataException) { return NotFound(); }
     }
 }

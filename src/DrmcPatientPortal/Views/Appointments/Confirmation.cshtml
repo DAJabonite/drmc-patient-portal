@@ -1,6 +1,6 @@
 @model AppointmentConfirmationViewModel
 @{
-    ViewData["Title"] = $"Appointment Confirmed — {Model.Appointment.BookingReference}";
+    ViewData["Title"] = $"{Loc["Appt_Confirmed"]} — {Model.Appointment.BookingReference}";
     var appt = Model.Appointment;
 }
 
@@ -8,12 +8,12 @@
     <div class="container">
         <div class="d-flex align-items-center gap-2 mb-2">
             <span class="badge bg-success text-white fw-bold px-3 py-1 rounded-pill">
-                <i class="bi bi-check2-circle me-1"></i> Booking Confirmed
+                <i class="bi bi-check2-circle me-1"></i> @Loc["Appt_Confirmed"]
             </span>
-            <span class="small text-white text-opacity-75">Reference: @appt.BookingReference</span>
+            <span class="small text-white text-opacity-75">@Loc["Appt_BookingReference"]: @appt.BookingReference</span>
         </div>
-        <h1 class="display-6 fw-bold mb-1">Official Appointment Slip</h1>
-        <p class="text-white text-opacity-90 mb-0">Present this QR code pass at the clinic triage reception on your consultation day.</p>
+        <h1 class="display-6 fw-bold mb-1">@Loc["Appt_OfficialSlip"]</h1>
+        <p class="text-white text-opacity-90 mb-0">@Loc["Appt_SlipHelp"]</p>
     </div>
 </section>
 
@@ -39,7 +39,7 @@
             <!-- Booking Reference & QR Block -->
             <div class="row align-items-center g-4 mb-4 pb-4 border-bottom">
                 <div class="col-md-7">
-                    <span class="small text-muted text-uppercase tracking-wider d-block">Booking Reference</span>
+                    <span class="small text-muted text-uppercase tracking-wider d-block">@Loc["Appt_BookingReference"]</span>
                     <h3 class="display-6 fw-bolder text-primary-drmc mb-2">@appt.BookingReference</h3>
                     
                     <div class="mb-2">
@@ -72,7 +72,7 @@
             <div class="row g-3 mb-4">
                 <div class="col-sm-6">
                     <div class="p-3 bg-light rounded-3 border h-100">
-                        <span class="small text-muted d-block mb-1">Patient Name</span>
+                        <span class="small text-muted d-block mb-1">@Loc["Enc_PatientName"]</span>
                         <strong class="h6 fw-bold text-dark mb-0">@appt.PatientName</strong>
                         <div class="small text-muted mt-1">
                             <i class="bi bi-telephone me-1"></i> @appt.ContactNumber
@@ -82,7 +82,7 @@
 
                 <div class="col-sm-6">
                     <div class="p-3 bg-light rounded-3 border h-100">
-                        <span class="small text-muted d-block mb-1">Clinical Department</span>
+                        <span class="small text-muted d-block mb-1">@Loc["Enc_Department"]</span>
                         <strong class="h6 fw-bold text-primary-drmc mb-0">@appt.Department</strong>
                         <div class="small text-muted mt-1">
                             <i class="bi bi-person-badge me-1"></i> Attending: <span class="text-dark fw-medium">@appt.DoctorName</span>
@@ -92,7 +92,7 @@
 
                 <div class="col-sm-6">
                     <div class="p-3 bg-light rounded-3 border h-100">
-                        <span class="small text-muted d-block mb-1">Scheduled Date &amp; Time</span>
+                        <span class="small text-muted d-block mb-1">@Loc["Appt_Scheduled"]</span>
                         <strong class="h6 fw-bold text-dark mb-0">@appt.ScheduledAt.ToString("dddd, MMMM d, yyyy")</strong>
                         <div class="small text-primary-drmc fw-semibold mt-1">
                             <i class="bi bi-clock me-1"></i> @appt.TimeSlot
@@ -155,6 +155,12 @@
                     <a asp-action="CheckIn" asp-route-reference="@appt.BookingReference" class="btn btn-outline-secondary fw-semibold rounded-pill px-3">
                         <i class="bi bi-qr-code-scan me-1"></i> Verify Check-in
                     </a>
+                    @if (appt.Status is not "Cancelled" and not "Completed")
+                    {
+                        <form asp-action="Cancel" asp-route-id="@appt.Id" method="post" class="d-inline" onsubmit="return confirm('Cancel this appointment?');">
+                            <button type="submit" class="btn btn-outline-danger fw-semibold rounded-pill px-3">@Loc["Appt_Cancel"]</button>
+                        </form>
+                    }
                 </div>
                 
                 @if (User.Identity?.IsAuthenticated == true)

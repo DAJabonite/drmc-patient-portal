@@ -35,10 +35,23 @@ public class HomeController : Controller
         return View();
     }
 
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult ServiceUnavailable()
+    {
+        Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+        return View();
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult SetLanguage(string culture, string returnUrl)
     {
+        var supportedCultures = new[] { "en", "fil", "ceb" };
+        if (!supportedCultures.Contains(culture, StringComparer.OrdinalIgnoreCase))
+        {
+            culture = "en";
+        }
+
         Response.Cookies.Append(
             Microsoft.AspNetCore.Localization.CookieRequestCultureProvider.DefaultCookieName,
             Microsoft.AspNetCore.Localization.CookieRequestCultureProvider.MakeCookieValue(new Microsoft.AspNetCore.Localization.RequestCulture(culture)),
