@@ -16,7 +16,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     // Authenticated Clinical Features (Phase 3.2)
     public DbSet<LabResult> LabResults => Set<LabResult>();
     public DbSet<LabResultItem> LabResultItems => Set<LabResultItem>();
+    public DbSet<ClinicalEncounter> ClinicalEncounters => Set<ClinicalEncounter>();
     public DbSet<Prescription> Prescriptions => Set<Prescription>();
+    public DbSet<MedicationDoseSchedule> MedicationDoseSchedules => Set<MedicationDoseSchedule>();
     public DbSet<PatientAllergy> PatientAllergies => Set<PatientAllergy>();
     public DbSet<RefillRequest> RefillRequests => Set<RefillRequest>();
     public DbSet<TriageIntake> TriageIntakes => Set<TriageIntake>();
@@ -75,8 +77,24 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(x => x.PatientUserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            e.HasOne(x => x.Encounter)
+                .WithMany(x => x.LabResults)
+                .HasForeignKey(x => x.ClinicalEncounterId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             e.HasIndex(x => x.PatientUserId);
+            e.HasIndex(x => x.ClinicalEncounterId);
             e.HasIndex(x => x.AccessionNumber);
+        });
+
+        builder.Entity<ClinicalEncounter>(e =>
+        {
+            e.HasOne(x => x.Patient)
+                .WithMany(x => x.Encounters)
+                .HasForeignKey(x => x.PatientUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.PatientUserId);
+            e.HasIndex(x => x.EncounterReference).IsUnique();
         });
 
         builder.Entity<LabResultItem>(e =>
@@ -96,6 +114,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             e.HasIndex(x => x.PatientUserId);
             e.HasIndex(x => x.RxNumber).IsUnique();
+        });
+
+        builder.Entity<MedicationDoseSchedule>(e =>
+        {
+            e.HasOne(x => x.Prescription)
+                .WithMany(x => x.DoseSchedules)
+                .HasForeignKey(x => x.PrescriptionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.PrescriptionId, x.DoseTime }).IsUnique();
         });
 
         builder.Entity<PatientAllergy>(e =>
@@ -131,7 +158,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .OnDelete(DeleteBehavior.Cascade);
 
             e.HasIndex(x => x.PatientUserId);
-            e.HasIndex(x => x.AppointmentId);
+            e.HasIndex(x => x.AppointmentId).IsUnique();
         });
 
         builder.Entity<AuditLog>(e =>

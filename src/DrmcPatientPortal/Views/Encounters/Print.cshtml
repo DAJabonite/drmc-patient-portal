@@ -1,0 +1,135 @@
+@model EncounterPrintViewModel
+@{
+    ViewData["Title"] = $"{Loc["Enc_Print"]} — {Model.Encounter.EncounterReference}";
+    Layout = "_Layout";
+    var enc = Model.Encounter;
+}
+
+<section class="py-3 bg-light d-print-none border-bottom">
+    <div class="container d-flex justify-content-between align-items-center">
+        <a asp-action="Details" asp-route-id="@enc.Id" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+            <i class="bi bi-arrow-left me-1"></i> @Loc["Enc_ReturnSummary"]
+        </a>
+        <button onclick="window.print();" class="btn btn-sm btn-primary-drmc rounded-pill px-4 fw-semibold shadow-xs">
+            <i class="bi bi-printer-fill me-1"></i> @Loc["Action_Print"]
+        </button>
+    </div>
+</section>
+
+<div class="container py-4" style="max-width: 860px;">
+    <div class="card border p-4 p-md-5 bg-white print-container shadow-xs">
+
+        <!-- Official Hospital Header -->
+        <div class="text-center pb-3 mb-4 border-bottom position-relative">
+            <div class="d-flex align-items-center justify-content-center gap-3 mb-2">
+                <img src="~/images/drmc-seal.png" alt="DRMC Seal" style="height: 64px; width: auto;" />
+                <div>
+                    <h1 class="h5 fw-bold text-uppercase mb-0 text-primary-drmc">Republic of the Philippines &middot; Department of Health</h1>
+                    <h2 class="h4 fw-bolder mb-0 text-dark">Davao Regional Medical Center</h2>
+                    <span class="small text-muted d-block">Center of Excellence in Specialized Tertiary Healthcare &middot; Tagum City, Davao del Norte</span>
+                </div>
+                <img src="~/images/doh-seal.png" alt="DOH Seal" style="height: 64px; width: auto;" />
+            </div>
+            <div class="badge bg-light text-dark border px-3 py-1 text-uppercase fw-bold" style="letter-spacing: 1px;">
+                @Loc["Enc_OfficialSummary"]
+            </div>
+        </div>
+
+        <!-- Demographics -->
+        <div class="p-3 bg-light rounded-3 border mb-4 small">
+            <div class="row g-2">
+                <div class="col-sm-6">
+                    <span class="text-muted">@Loc["Enc_PatientName"]:</span>
+                    <strong class="text-dark d-block">@Model.Patient.FullName</strong>
+                </div>
+                <div class="col-sm-3">
+                    <span class="text-muted">@Loc["Enc_VisitDate"]:</span>
+                    <strong class="text-dark d-block">@enc.EncounterDate.ToString("D")</strong>
+                </div>
+                <div class="col-sm-3">
+                    <span class="text-muted">@Loc["Enc_Reference"]:</span>
+                    <strong class="text-dark d-block">@enc.EncounterReference</strong>
+                </div>
+                <div class="col-sm-6">
+                    <span class="text-muted">@Loc["Enc_Department"]:</span>
+                    <strong class="text-primary-drmc d-block">@enc.Department</strong>
+                </div>
+                <div class="col-sm-6">
+                    <span class="text-muted">@Loc["Enc_Physician"]:</span>
+                    <strong class="text-dark d-block">@enc.AttendingPhysician</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vital Signs Recorded -->
+        <div class="p-3 bg-light rounded-3 border mb-4 small">
+            <strong class="d-block mb-1 text-dark">@Loc["Enc_Vitals"]:</strong>
+            <span class="text-primary-drmc fw-bold">@enc.VitalSignsRecorded</span>
+        </div>
+
+        <!-- Diagnosis & Progress -->
+        <div class="mb-4 small">
+            <div class="p-3 border rounded-3 mb-3">
+                <strong class="text-muted text-uppercase d-block" style="font-size: 0.75rem;">@Loc["Enc_PrimaryDiagnosis"]:</strong>
+                <h2 class="h6 fw-bold text-dark mb-0 mt-1">@enc.PrimaryDiagnosis</h2>
+                @if (!string.IsNullOrEmpty(enc.SecondaryDiagnosis))
+                {
+                    <span class="text-muted d-block mt-1">@Loc["Enc_SecondaryDiagnosis"]: @enc.SecondaryDiagnosis</span>
+                }
+            </div>
+
+            <div class="p-3 border rounded-3 mb-3">
+                <strong class="text-muted text-uppercase d-block mb-1" style="font-size: 0.75rem;">@Loc["Enc_ProgressNotes"]:</strong>
+                <p class="text-dark mb-0 leading-relaxed">@enc.ClinicalSummary</p>
+            </div>
+
+            <div class="p-3 border rounded-3 bg-light">
+                <strong class="text-muted text-uppercase d-block mb-1" style="font-size: 0.75rem;">@Loc["Enc_CarePlan"]:</strong>
+                <div class="text-dark leading-relaxed">
+                    <span style="white-space: pre-line;">@enc.CarePlanAndInstructions</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signatures -->
+        <div class="row pt-5 text-center small">
+            <div class="col-6">
+                <div class="border-top pt-2 mx-auto" style="max-width: 280px;">
+                    <strong class="d-block text-dark">@Model.Patient.FullName</strong>
+                    <span class="text-muted" style="font-size: 0.75rem;">@Loc["Enc_PatientRepresentative"]</span>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="border-top pt-2 mx-auto" style="max-width: 280px;">
+                    <strong class="d-block text-dark">@enc.AttendingPhysician</strong>
+                    <span class="text-muted" style="font-size: 0.75rem;">@Loc["Enc_AttendingSpecialist"]</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center pt-4 mt-3 border-top text-muted" style="font-size: 0.7rem;">
+            @Loc["Enc_Generated", Model.PrintedAt.ToString("f")]
+        </div>
+
+    </div>
+</div>
+
+<style>
+    @@media print {
+        body * {
+            visibility: hidden;
+        }
+        .print-container, .print-container * {
+            visibility: visible;
+        }
+        .print-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+        }
+    }
+</style>
