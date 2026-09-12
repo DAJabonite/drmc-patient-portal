@@ -5,6 +5,7 @@ Validation date: 2026-09-13. Follow-up to the desktop/mobile audit in PR #7.
 ## Changes
 
 - The four-step indicator uses the same styles from first render onward. Equal-width columns align circles and labels. Completed steps show a check, the current step has `aria-current`, and manual entry marks the photo step as skipped. The circles are progress information rather than buttons that do nothing.
+- The redundant “Step X of 4” badges are removed from every form step; the shared progress indicator and section headings provide the navigation context.
 - All step action buttons share a 48px minimum height and regular text size. Desktop actions fit on one line; phone actions stack. The photo step keeps Back separate from Manual Entry and Scan ID.
 - All registration JavaScript alerts are replaced by inline feedback. Required fields show their own messages and the first invalid field receives focus. Native form popups are disabled while client and server validation remain active. Enter advances the review step; final submission checks the entire form and prevents duplicate submissions.
 - Scan failures no longer claim that autofill succeeded. The scan state disables conflicting controls and restores them after the response. Upload actions support keyboard activation.
