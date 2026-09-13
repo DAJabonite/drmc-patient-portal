@@ -14,22 +14,19 @@
                     </span>
                     <span class="small text-white text-opacity-75">DOH Region XI &amp; DRMC Public Health</span>
                 </div>
-                <h1 class="display-6 fw-bold mb-2">Health Advisories &amp; Bulletins</h1>
-                <p class="lead text-white text-opacity-90 mb-0 fs-6" style="max-width: 640px;">
-                    Stay informed with official disease surveillance alerts, routine immunization schedules, holiday clinic operating notices, and public health guidelines.
-                </p>
+                <h1 class="display-6 fw-bold mb-0">Health Advisories &amp; Bulletins</h1>
             </div>
 
             <div class="col-lg-5">
                 <form asp-action="Index" method="get" class="card border-0 shadow-sm rounded-4 p-3 bg-white text-dark">
-                    <label class="form-label fw-bold text-primary-drmc small mb-2">
+                    <label for="advisorySearch" class="form-label fw-bold text-primary-drmc small mb-2">
                         <i class="bi bi-search me-1"></i> Search Advisories &amp; Notices
                     </label>
-                    <div class="input-group">
-                        <input type="text" name="search" value="@Model.SearchTerm" class="form-control form-control-sm"
+                    <div class="input-group advisory-search-control">
+                        <input id="advisorySearch" type="search" name="search" value="@Model.SearchTerm" class="form-control form-control-sm"
                                placeholder="e.g. Dengue, Vaccine, Schedule, Konsulta" aria-label="Search Advisories" />
-                        <button type="submit" class="btn btn-sm btn-primary-drmc px-3 fw-semibold">
-                            Search
+                        <button type="submit" class="btn btn-sm btn-primary-drmc px-3 fw-semibold" aria-label="Search advisories">
+                            <i class="bi bi-search" aria-hidden="true"></i><span class="d-none d-sm-inline ms-1">Search</span>
                         </button>
                     </div>
                 </form>

@@ -89,8 +89,6 @@
   <data name="Med_CompleteBloodCount"><value>Complete Blood Count (CBC)</value></data>
   <data name="Med_LipidProfile"><value>Cholesterol &amp; Lipid Panel</value></data>
   <data name="Med_Allergy"><value>Known Clinical Allergies</value></data>
-  <data name="Med_RefillsRemaining"><value>Refills Remaining</value></data>
-  <data name="Med_OrderRefill"><value>Order Medication Refill</value></data>
   <data name="Med_PharmacyPickup"><value>OPD Pharmacy Pick-Up Window 2</value></data>
   <data name="Med_EmergencyWarning"><value>For medical emergencies, proceed immediately to the DRMC Emergency Department or call 1555.</value></data>
   <data name="Error_ServiceUnavailableTitle"><value>Security service temporarily unavailable</value></data>
@@ -179,7 +177,6 @@
   <data name="Appt_SelfService"><value>Self-Service Online Booking</value></data>
   <data name="Appt_OutpatientModes"><value>Outpatient Clinics &amp; Teleconsultation</value></data>
   <data name="Appt_Schedule"><value>Schedule Your Medical Consultation</value></data>
-  <data name="Appt_Description"><value>Reserve an outpatient consultation slot with DRMC specialists. Confirmation includes a secure QR check-in pass.</value></data>
   <data name="Appt_SignInHint"><value>Have a DRMC Patient Account? Sign in to auto-fill your profile and link this visit to your dashboard.</value></data>
   <data name="Appt_SignIn"><value>Sign in to Account</value></data>
   <data name="Appt_SelectService"><value>Select Clinical Department &amp; Consultation Mode</value></data>
