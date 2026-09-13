@@ -13,8 +13,7 @@
             <span class="text-white text-opacity-50">/</span>
             <span class="small text-white text-opacity-75">Clinical Departments</span>
         </div>
-        <h1 class="display-6 fw-bold mb-1">Department of @dept.Name</h1>
-        <p class="text-white text-opacity-90 mb-0">Davao Regional Medical Center Tertiary Clinical Division</p>
+        <h1 class="display-6 fw-bold mb-0">Department of @dept.Name</h1>
     </div>
 </section>
 
@@ -24,7 +23,7 @@
             
             <!-- Department Overview Sidebar -->
             <div class="col-lg-4">
-                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white sticky-lg-top" style="top: 80px;">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white sticky-lg-top department-overview">
                     <div class="mb-3">
                         <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-semibold">
                             Clinical Division
@@ -74,7 +73,7 @@
 
             <!-- Affiliated Medical Specialists -->
             <div class="col-lg-8">
-                <div class="mb-3 d-flex align-items-center justify-content-between">
+                <div class="mb-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
                     <h2 class="h5 fw-bold text-primary-drmc mb-0">
                         Attending Physicians &amp; Consultants (@Model.Doctors.Count)
                     </h2>

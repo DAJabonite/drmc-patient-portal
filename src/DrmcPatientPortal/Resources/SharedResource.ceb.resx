@@ -128,7 +128,6 @@
   <data name="Queue_Title"><value>Subay sa Pila sa Outpatient Clinic</value></data>
   <data name="Queue_Live"><value>Live nga Daloy</value></data>
   <data name="Queue_UpdatedAt"><value>Gi-update sa {0}</value></data>
-  <data name="Queue_Description"><value>Subaya ang mga numero nga gitawag ug giserbisyuhan sa mga outpatient clinic sa DRMC.</value></data>
   <data name="Queue_Track"><value>Subaya ang Imong Numero</value></data>
   <data name="Queue_Enter"><value>Isulod ang numero sa imong clinic pass.</value></data>
   <data name="Queue_Check"><value>Tan-awa</value></data>

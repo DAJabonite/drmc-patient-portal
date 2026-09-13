@@ -128,7 +128,6 @@
   <data name="Queue_Title"><value>Tagasubaybay ng Pila sa Outpatient Clinic</value></data>
   <data name="Queue_Live"><value>Live na Daloy</value></data>
   <data name="Queue_UpdatedAt"><value>Na-update nang {0}</value></data>
-  <data name="Queue_Description"><value>Subaybayan ang mga numerong kasalukuyang tinatawag at sineserbisyuhan sa mga outpatient clinic ng DRMC.</value></data>
   <data name="Queue_Track"><value>Subaybayan ang Iyong Numero</value></data>
   <data name="Queue_Enter"><value>Ilagay ang numero sa iyong clinic pass.</value></data>
   <data name="Queue_Check"><value>Tingnan</value></data>
