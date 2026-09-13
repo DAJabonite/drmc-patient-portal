@@ -1,7 +1,6 @@
 namespace DrmcPatientPortal.Models;
 
-// Static reference data for accepted Philippine Government Identification Documents,
-// verified against PSA/PhilSys, LTO, DFA, GSIS/SSS, PhilHealth, PRC, and PHLPost official standards.
+// Capture guidance for common government IDs. Other government-issued IDs are also accepted.
 public record PhilippineIdType(
     string Name,
     string Category,
@@ -25,6 +24,9 @@ public static class PhilippineIdTypes
     public const string PhilHealth = "PhilHealth ID";
     public const string SssGsis = "SSS / GSIS ID";
     public const string PrcId = "PRC ID";
+    public const string SeniorCitizen = "Senior Citizen ID";
+    public const string Pwd = "PWD ID";
+    public const string OtherGovernment = "Other government-issued ID";
 
     public static readonly IReadOnlyList<PhilippineIdType> All = new List<PhilippineIdType>
     {
@@ -123,7 +125,13 @@ public static class PhilippineIdTypes
             NeedsBackPhoto: false,
             FramingGuidance: "Position your PRC Professional Identification Card within the frame, ensuring your registration number and full name are legible.",
             Notes: "Name and PRC registration number extraction."
-        )
+        ),
+        new(SeniorCitizen, "Local government", true, false, false, false, false, false,
+            "Capture the side with your name and ID number. Review or enter any missing details manually."),
+        new(Pwd, "Local government", true, false, false, false, false, false,
+            "Capture the side with your name and ID number. Review or enter any missing details manually."),
+        new(OtherGovernment, "Any government issuer", true, false, false, false, false, false,
+            "Capture the side or page with your name and ID number. You can enter details manually if your ID cannot be read.")
     };
 
     public static PhilippineIdType? GetByName(string? name)

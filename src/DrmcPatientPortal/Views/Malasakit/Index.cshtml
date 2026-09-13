@@ -16,6 +16,8 @@
                 </div>
                 <h1 class="display-6 fw-bold mb-3">Malasakit Center &amp; Social Services</h1>
                 <div class="d-flex flex-wrap gap-2">
+                    <a asp-action="Apply" class="btn btn-warning fw-semibold">@Loc["Subsidy_Apply"]</a>
+                    <a asp-action="Status" class="btn btn-outline-light">@Loc["Subsidy_Status"]</a>
                     <a asp-action="Navigator" class="btn btn-warning text-dark fw-bold rounded-pill px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2">
                         <i class="bi bi-compass-fill"></i> Launch Eligibility Navigator
                     </a>
@@ -66,8 +68,9 @@
 <!-- How to Avail Step-by-Step Guide -->
 <section class="section py-5 bg-light">
     <div class="container">
+        <partial name="_OfficialDrmcSources" />
         <div class="text-center mb-5">
-            <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-semibold mb-2">Citizen's Charter</span>
+            <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-semibold mb-2">Preparation guide</span>
             <h2 class="h3 fw-bold text-primary-drmc mb-2">How to Avail Medical Assistance at DRMC</h2>
             <p class="text-muted small mx-auto" style="max-width: 600px;">
                 Follow these 4 simple steps to receive coverage for your hospital bills, laboratory tests, and medicines.
@@ -170,7 +173,7 @@
                 <i class="bi bi-card-checklist fs-1 text-warning mb-2 d-block"></i>
                 <h2 class="h3 fw-bold mb-2">Need Help Preparing Your Malasakit Documents?</h2>
                 <p class="text-white text-opacity-90 mx-auto mb-4" style="max-width: 600px;">
-                    Answer 4 quick questions to generate a personalized checklist of required documents and find out which programs you qualify for before visiting the hospital desk.
+                    Answer 4 quick questions to generate a personalized checklist of required documents and explore programs for discussion with a social worker before visiting the hospital desk.
                 </p>
                 <a asp-action="Navigator" class="btn btn-warning btn-lg text-dark fw-bold rounded-pill px-5 shadow">
                     <i class="bi bi-play-circle-fill me-1"></i> Start Interactive Navigator

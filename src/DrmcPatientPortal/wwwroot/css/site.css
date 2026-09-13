@@ -1283,6 +1283,8 @@ code,
 }
 
 .btn-outline-drmc {
+    /* Switch text and fill together so hover transitions retain readable contrast. */
+    transition: border-color 160ms ease, box-shadow 160ms ease;
     color: var(--drmc-primary);
     border-color: var(--drmc-primary);
     background: #fff;
@@ -1701,9 +1703,11 @@ code,
     }
 
     .page-header .page-header-search-control .btn {
-        width: 48px;
-        flex: 0 0 48px;
-        padding-inline: 0 !important;
+        width: auto;
+        min-width: 48px;
+        flex: 0 0 auto;
+        padding-inline: 0.75rem !important;
+        white-space: nowrap;
     }
 
     .dashboard-shortcuts {

@@ -10,6 +10,8 @@ dotnet ef database update --project src/DrmcPatientPortal/DrmcPatientPortal.cspr
 
 `20260912091834_RestoreEncountersAndHardenPortal` is forward-only. SQLite rebuilds temporarily change `PRAGMA foreign_keys`; do not interrupt migration execution. Verify migration history and create a post-deployment backup.
 
+The subsequent `20260913120223_AddSubsidyApplications` migration adds the patient-owned subsidy application table and a unique current-application index. It does not modify existing clinical records. The portal does not yet receive institutional billing or social-work decisions; do not populate confirmed status from patient-entered values.
+
 ## Data Protection and documents
 
 Configure persistent, access-restricted paths:

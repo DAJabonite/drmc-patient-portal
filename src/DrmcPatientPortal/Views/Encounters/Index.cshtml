@@ -16,7 +16,8 @@
                 <h1 class="display-6 fw-bold mb-0">@Loc["Enc_Title"]</h1>
             </div>
 
-            <div>
+            <div class="d-flex flex-wrap gap-2">
+                <a asp-controller="MedicalHistory" asp-action="Index" class="btn btn-outline-light">@Loc["History_Title"]</a>
                 <a asp-controller="Appointments" asp-action="Book" class="btn btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm">
                     <i class="bi bi-calendar-plus me-1"></i> @Loc["Enc_BookFollowUp"]
                 </a>

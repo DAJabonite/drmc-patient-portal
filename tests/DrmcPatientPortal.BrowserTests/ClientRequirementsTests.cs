@@ -1,0 +1,89 @@
+using Microsoft.Playwright;
+using static Microsoft.Playwright.Assertions;
+
+namespace DrmcPatientPortal.BrowserTests;
+
+[Collection("Portal")]
+public sealed class ClientRequirementsTests(PortalFixture app)
+{
+    [Theory]
+    [InlineData("chromium", "1440")]
+    [InlineData("webkit", "iphone")]
+    [InlineData("chromium", "small")]
+    public async Task HistoryAndSubsidyFlow(string engine, string device)
+    {
+        await using var browser = await app.Engine(engine).LaunchAsync();
+        await using var context = await browser.NewContextAsync(app.Context(device));
+        var page = await context.NewPageAsync();
+        await page.GotoAsync("/Patient/MedicalHistory");
+        await Expect(page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex("/Identity/Account/Login"));
+        await PortalFixture.SignIn(page);
+        await page.GotoAsync("/Patient/MedicalHistory");
+        await Expect(page.Locator("h1")).ToHaveTextAsync("Medical history");
+        Assert.Equal(5, await page.Locator(".mobile-tab-item").CountAsync());
+        Assert.Equal(0, await page.Locator(".mobile-tab-bar a[href*='MedicalHistory'], nav[aria-label='Main navigation'] > .container > ul a[href*='MedicalHistory']").CountAsync());
+        await page.Locator("main a[href*='category=ER']").ClickAsync();
+        await Expect(page.Locator("#heading-ER")).ToBeVisibleAsync();
+        await Expect(page.Locator("#heading-OPD")).ToHaveCountAsync(0);
+        Assert.Empty(await ResponsiveTests.LayoutProblems(page));
+        await page.ScreenshotAsync(new() { Path = Path.Combine(app.Artifacts, $"client-history-{device}.png"), FullPage = true });
+
+        await page.GotoAsync("/Malasakit/Apply");
+        // Each device can revisit the same saved current application.
+        if (page.Url.EndsWith("/Apply"))
+        {
+            await page.Locator("#Need").SelectOptionAsync("Medicines");
+            await page.Locator("#ReportedPayment").SelectOptionAsync("Paid");
+            await page.Locator("#GovernmentIdReady").CheckAsync();
+            await page.Locator("#AcknowledgedReview").CheckAsync();
+            Assert.Empty(await ResponsiveTests.LayoutProblems(page));
+            await page.ScreenshotAsync(new() { Path = Path.Combine(app.Artifacts, $"client-apply-{device}.png"), FullPage = true });
+            await page.GetByRole(AriaRole.Button, new() { Name = "Save subsidy application" }).ClickAsync();
+        }
+        await Expect(page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex("/Malasakit/Status$"));
+        await Expect(page.Locator("main")).ToContainTextAsync("Pending assessment");
+        await Expect(page.Locator("main")).ToContainTextAsync("Not yet determined");
+        await Expect(page.Locator("main")).ToContainTextAsync("Not confirmed");
+        await page.Locator("#CostDocumentReady").CheckAsync();
+        await page.GetByRole(AriaRole.Button, new() { Name = "Save document checklist" }).ClickAsync();
+        await Expect(page.Locator("main [role='status']")).ToContainTextAsync("has been saved");
+        await page.ReloadAsync();
+        await Expect(page.Locator("#CostDocumentReady")).ToBeCheckedAsync();
+        Assert.Empty(await ResponsiveTests.LayoutProblems(page));
+        await page.ScreenshotAsync(new() { Path = Path.Combine(app.Artifacts, $"client-subsidy-{device}.png"), FullPage = true });
+        await Expect(page.Locator("main a[href='https://drmc.doh.gov.ph/citizens-charter/']")).ToBeVisibleAsync();
+        await Expect(page.Locator("main a[href='https://drmc.doh.gov.ph/anti-red-tape-act/']")).ToBeVisibleAsync();
+    }
+
+    [Fact]
+    public async Task OtherGovernmentId_RequiresDescription_AndSupportsManualRegistration()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+        await using var context = await browser.NewContextAsync(app.Context("small"));
+        var page = await context.NewPageAsync();
+        await page.GotoAsync("/Identity/Account/Register");
+        await SignupTests.AcceptNotice(page);
+        await page.Locator("#selectIdType").SelectOptionAsync("Other government-issued ID");
+        await page.Locator("#btnManualSkip").ClickAsync();
+        await Expect(page.Locator("#wizardStep1")).ToBeVisibleAsync();
+        await Expect(page.Locator("#stepFeedback1")).ToContainTextAsync("government issuer");
+        await page.Locator("#Input_OtherGovernmentIdName").FillAsync("Voter's ID - COMELEC");
+        Assert.Empty(await ResponsiveTests.LayoutProblems(page));
+        await page.ScreenshotAsync(new() { Path = Path.Combine(app.Artifacts, "client-other-government-id.png"), FullPage = true });
+        await page.Locator("#btnManualSkip").ClickAsync();
+        await page.Locator("#txtFirstName").FillAsync("Test");
+        await page.Locator("#txtLastName").FillAsync("GovernmentId");
+        await page.Locator("#txtIdNumber").FillAsync("TEST-" + Guid.NewGuid().ToString("N")[..8]);
+        await page.Locator("#btnGoToStep4").ClickAsync();
+        await page.Locator("input[name='Input.Email']").FillAsync($"gov-id-{Guid.NewGuid():N}@example.test");
+        await page.Locator("input[name='Input.Mobile']").FillAsync("9175550123");
+        await page.Locator("#regPassword").FillAsync("Browser!2026Test");
+        await page.Locator("#regConfirmPassword").FillAsync("Browser!2026Test");
+        await page.Locator("#registerSubmit").ClickAsync();
+        await page.WaitForURLAsync("**/Patient/Home");
+        await page.GotoAsync("/Malasakit/Status");
+        await Expect(page.Locator("main")).ToContainTextAsync("No subsidy application yet");
+        await page.GotoAsync("/Patient/MedicalHistory");
+        await Expect(page.Locator("main")).ToContainTextAsync("No records in this category");
+    }
+}
