@@ -20,13 +20,6 @@
 <section class="section py-5 bg-light">
     <div class="container" style="max-width: 860px;">
         
-        @if (TempData["ErrorMessage"] is not null)
-        {
-            <div class="alert alert-danger rounded-4 mb-4 shadow-sm">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
-            </div>
-        }
-
         <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4">
             
             <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 pb-4 mb-4 border-bottom">
@@ -45,10 +38,7 @@
                 </div>
 
                 <div class="text-md-end">
-                    <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill small">
-                        @Model.RefillsRemaining of @Model.RefillsTotal Refills Remaining
-                    </span>
-                    <div class="small text-muted mt-1" style="font-size:0.8rem;">
+                    <div class="small text-muted" style="font-size:0.8rem;">
                         Prescribed: @Model.PrescribedAt.ToString("MMM d, yyyy")
                     </div>
                 </div>
@@ -91,46 +81,10 @@
                 <p class="mb-0 leading-relaxed">@Model.Instructions</p>
             </div>
 
-            <!-- Refill Action / History -->
-            @if (Model.RefillRequests.Count > 0)
-            {
-                <div class="mb-4">
-                    <h3 class="h6 fw-bold text-dark mb-2">Refill History &amp; Pick-Up Orders</h3>
-                    <div class="d-flex flex-column gap-2">
-                        @foreach (var r in Model.RefillRequests)
-                        {
-                            <div class="p-3 bg-light rounded-3 border d-flex justify-content-between align-items-center flex-wrap gap-2 small">
-                                <div>
-                                    <strong class="text-dark">Refill Request #@r.Id</strong>
-                                    <span class="text-muted ms-2">&middot; @r.RequestedAt.ToString("MMM d, yyyy")</span>
-                                    @if (!string.IsNullOrEmpty(r.PharmacyNotes))
-                                    {
-                                        <div class="text-muted mt-1" style="font-size: 0.75rem;">@r.PharmacyNotes</div>
-                                    }
-                                </div>
-                                <span class="badge bg-success px-3 py-1 rounded-pill">
-                                    @r.Status
-                                </span>
-                            </div>
-                        }
-                    </div>
-                </div>
-            }
-
-            <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center pt-3 border-top">
+            <div class="pt-3 border-top">
                 <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
                     <i class="bi bi-arrow-left me-1"></i> Back to Prescriptions
                 </a>
-                
-                @if (Model.Status == PrescriptionStatus.Active && Model.RefillsRemaining > 0)
-                {
-                    <form asp-action="RequestRefill" method="post">
-                        <input type="hidden" name="prescriptionId" value="@Model.Id" />
-                        <button type="submit" class="btn btn-primary-drmc rounded-pill px-5 fw-bold shadow-xs">
-                            <i class="bi bi-arrow-repeat me-1"></i> Request Next Refill Voucher
-                        </button>
-                    </form>
-                }
             </div>
 
         </div>

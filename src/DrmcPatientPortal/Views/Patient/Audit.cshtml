@@ -37,7 +37,7 @@
                 <div>
                     <h2 class="h6 fw-bold text-dark mb-1">Patient Access Transparency Guarantee</h2>
                     <p class="small text-muted mb-0 leading-relaxed">
-                        Under the Philippine Data Privacy Act of 2012 (RA 10173) and DRMC Health Information Management Department (HIMD) regulations, every interaction with your electronic health record is timestamped and logged. Below is the chronological record of all activities, including diagnostic report views, prescription refill orders, and clinical consultations.
+                        Under the Philippine Data Privacy Act of 2012 (RA 10173) and DRMC Health Information Management Department (HIMD) regulations, every interaction with your electronic health record is timestamped and logged. Below is the chronological record of activities, including diagnostic report views and clinical consultations.
                     </p>
                 </div>
             </div>
@@ -87,7 +87,7 @@
                                                 <i class="bi bi-eye me-1"></i> @log.Action
                                             </span>
                                         }
-                                        else if (log.Action.Contains("REFILL") || log.Action.Contains("SUBMIT"))
+                                        else if (log.Action.Contains("SUBMIT"))
                                         {
                                             <span class="badge bg-success-subtle text-success rounded-pill px-2">
                                                 <i class="bi bi-check2-circle me-1"></i> @log.Action

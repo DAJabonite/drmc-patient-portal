@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -184,39 +183,33 @@ public class Phase3AuthenticatedFeaturesTests
     }
 
     [Fact]
-    public async Task MedicationsController_RequestRefill_RecordsPendingRequestWithoutDecrementing()
+    public async Task MedicationsController_Details_ReturnsOwnedPrescriptionAndLogsAudit()
     {
         using var db = CreateInMemoryDbContext();
         var (userManager, user) = CreateMockUserManager(db);
         var auditMock = new Mock<IAuditLogService>();
-        var loggerMock = new Mock<ILogger<MedicationsController>>();
 
         var rx = new Prescription
         {
             PatientUserId = user.Id,
             RxNumber = "RX-001",
             GenericName = "Metformin",
-            Status = PrescriptionStatus.Active,
-            RefillsTotal = 3,
-            RefillsRemaining = 2
+            Status = PrescriptionStatus.Active
         };
         db.Prescriptions.Add(rx);
         await db.SaveChangesAsync();
 
-        var controller = new MedicationsController(db, userManager, auditMock.Object, loggerMock.Object)
+        var controller = new MedicationsController(db, userManager, auditMock.Object)
         {
-            ControllerContext = CreateControllerContext(),
-            TempData = new TempDataDictionary(new DefaultHttpContext(), Mock.Of<ITempDataProvider>())
+            ControllerContext = CreateControllerContext()
         };
 
-        var actionResult = await controller.RequestRefill(rx.Id) as RedirectToActionResult;
-        Assert.NotNull(actionResult);
-        Assert.Equal(nameof(MedicationsController.RefillStatus), actionResult.ActionName);
+        var result = await controller.Details(rx.Id) as ViewResult;
+        Assert.NotNull(result);
 
-        var updatedRx = await db.Prescriptions.Include(p => p.RefillRequests).FirstAsync(p => p.Id == rx.Id);
-        Assert.Equal(2, updatedRx.RefillsRemaining);
-        Assert.Single(updatedRx.RefillRequests);
-        Assert.Equal(RefillStatus.Requested, updatedRx.RefillRequests.First().Status);
+        var model = Assert.IsType<Prescription>(result.Model);
+        Assert.Equal("RX-001", model.RxNumber);
+        auditMock.Verify(a => a.LogAsync(user.Id, "VIEW_PRESCRIPTION", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
     }
 
     [Fact]

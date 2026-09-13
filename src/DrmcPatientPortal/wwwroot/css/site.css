@@ -1686,6 +1686,20 @@ code,
         width: 100%;
     }
 
+    .page-header .advisory-search-control {
+        flex-wrap: nowrap;
+    }
+
+    .page-header .advisory-search-control .form-control {
+        min-width: 0;
+    }
+
+    .page-header .advisory-search-control .btn {
+        width: 48px;
+        flex: 0 0 48px;
+        padding-inline: 0 !important;
+    }
+
     .dashboard-shortcuts {
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 0.35rem;

@@ -156,7 +156,7 @@ public sealed class WorkflowTests(PortalFixture app)
     }
 
     [Fact]
-    public async Task Assistance_refill_and_queue_states()
+    public async Task Assistance_medication_information_and_queue_states()
     {
         await using var browser = await app.Playwright.Chromium.LaunchAsync();
         await using var context = await browser.NewContextAsync(app.Context("small"));
@@ -168,9 +168,9 @@ public sealed class WorkflowTests(PortalFixture app)
         Assert.Empty(await ResponsiveTests.LayoutProblems(page));
         await PortalFixture.SignIn(page);
         await page.GotoAsync("/Patient/Medications/Details/1");
-        await page.Locator("form[action*='RequestRefill'] button").ClickAsync();
-        await page.WaitForURLAsync("**/Patient/Medications/RefillStatus/*");
-        await Expect(page.Locator("main")).ToContainTextAsync("Requested");
+        await Expect(page.Locator("main")).ToContainTextAsync("Prescription Order Details");
+        await Expect(page.Locator("main")).Not.ToContainTextAsync("Refill");
+        Assert.Equal(0, await page.Locator("form[action*='RequestRefill']").CountAsync());
         Assert.Empty(await ResponsiveTests.LayoutProblems(page));
         await page.GotoAsync("/Queue");
         await page.Locator("#refreshQueueBtn").ClickAsync();

@@ -89,8 +89,6 @@
   <data name="Med_CompleteBloodCount"><value>Kompletong Ihap sa Dugo (CBC)</value></data>
   <data name="Med_LipidProfile"><value>Pagsusi sa Kolesterol ug Tambok sa Dugo</value></data>
   <data name="Med_Allergy"><value>Narekord nga Alerdyi sa Tambal</value></data>
-  <data name="Med_RefillsRemaining"><value>Nahabiling Refill sa Reseta</value></data>
-  <data name="Med_OrderRefill"><value>Paghangyo og Refill sa Parmasya</value></data>
   <data name="Med_PharmacyPickup"><value>Kuhaanan sa OPD Pharmacy Window 2</value></data>
   <data name="Med_EmergencyWarning"><value>Alang sa dinalian nga emerhensiya, dumeretso dayon sa DRMC Emergency Room o tawag sa 1555.</value></data>
   <data name="Error_ServiceUnavailableTitle"><value>Dili magamit sa pagkakaron ang serbisyo sa seguridad</value></data>
@@ -179,7 +177,6 @@
   <data name="Appt_SelfService"><value>Online nga Kaugalingong Pag-book</value></data>
   <data name="Appt_OutpatientModes"><value>Mga Outpatient Clinic ug Telekonsultasyon</value></data>
   <data name="Appt_Schedule"><value>Itakda ang Imong Medikal nga Konsultasyon</value></data>
-  <data name="Appt_Description"><value>Magreserba og oras sa mga espesyalista sa DRMC. Ang kumpirmasyon adunay luwas nga QR check-in pass.</value></data>
   <data name="Appt_SignInHint"><value>Adunay DRMC Patient Account? Pag-sign in aron awtomatikong masulod ang profile ug ma-link ang pagbisita sa dashboard.</value></data>
   <data name="Appt_SignIn"><value>Pag-sign in sa Account</value></data>
   <data name="Appt_SelectService"><value>Pilia ang Departamento ug Paagi sa Konsultasyon</value></data>
