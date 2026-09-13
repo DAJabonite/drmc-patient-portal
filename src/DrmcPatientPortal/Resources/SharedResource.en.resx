@@ -128,7 +128,6 @@
   <data name="Queue_Title"><value>Outpatient Clinic Queue Tracker</value></data>
   <data name="Queue_Live"><value>Live Feed</value></data>
   <data name="Queue_UpdatedAt"><value>Updated at {0}</value></data>
-  <data name="Queue_Description"><value>Monitor ticket numbers currently called and serving across DRMC outpatient clinics.</value></data>
   <data name="Queue_Track"><value>Track Your Ticket</value></data>
   <data name="Queue_Enter"><value>Enter the ticket number on your clinic pass.</value></data>
   <data name="Queue_Check"><value>Check</value></data>
