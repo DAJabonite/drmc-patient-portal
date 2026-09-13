@@ -1692,15 +1692,15 @@ code,
         width: 100%;
     }
 
-    .page-header .advisory-search-control {
+    .page-header .page-header-search-control {
         flex-wrap: nowrap;
     }
 
-    .page-header .advisory-search-control .form-control {
+    .page-header .page-header-search-control .form-control {
         min-width: 0;
     }
 
-    .page-header .advisory-search-control .btn {
+    .page-header .page-header-search-control .btn {
         width: 48px;
         flex: 0 0 48px;
         padding-inline: 0 !important;
