@@ -1007,6 +1007,12 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
     box-shadow: var(--drmc-shadow) !important;
 }
 
+@media (min-width: 992px) {
+    .department-overview {
+        top: 80px;
+    }
+}
+
 .sticky-top {
     z-index: 1010 !important;
 }
