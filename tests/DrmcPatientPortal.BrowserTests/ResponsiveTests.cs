@@ -10,7 +10,7 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
     internal static IEnumerable<string> PublicScreens => PublicRoutes;
     internal static IEnumerable<string> PatientScreens => PatientRoutes;
     private static readonly string[] PublicRoutes = ["/", "/Directory", "/Directory/Doctor/1", "/Directory/Department?name=Internal%20Medicine", "/OpdGuide", "/Advisories", "/Advisories/Details?slug=dengue-4s-prevention-alert", "/Queue", "/Queue/Status?ticketNumber=IM-104", "/Queue/Status?ticketNumber=missing", "/Home/Privacy", "/Home/ServiceUnavailable", "/Malasakit", "/Malasakit/Program?code=MALASAKIT", "/Malasakit/Navigator", "/Appointments/Book", "/Appointments/CheckIn?reference=missing", "/Identity/Account/Login", "/Identity/Account/Register", "/Identity/Account/ForgotPassword", "/Identity/Account/AccessDenied", "/Home/Error"];
-    private static readonly string[] PatientRoutes = ["/Patient/Home", "/Patient/Encounters", "/Patient/Encounters/Details/1", "/Patient/Encounters/Print/1", "/Patient/LabResults", "/Patient/LabResults/Details/1", "/Patient/LabResults/Print/1", "/Patient/LabResults/Trends", "/Patient/Medications", "/Patient/Medications/Details/1", "/Patient/Audit", "/Identity/Account/Manage", "/Identity/Account/Manage/TwoFactorAuthentication", "/Identity/Account/Manage/EnableAuthenticator", "/Appointments/Confirmation?reference=DRMC-2026-IM-0192", "/Appointments/CheckIn?reference=DRMC-2026-IM-0192", "/Patient/Triage/Start/2", "/Patient/Triage/Summary/1", "/Patient/Triage/EmergencyWarning"];
+    private static readonly string[] PatientRoutes = ["/Patient/MedicalHistory", "/Patient/MedicalHistory?category=ADMITTED", "/Malasakit/Apply", "/Malasakit/Status", "/Patient/Home", "/Patient/Encounters", "/Patient/Encounters/Details/1", "/Patient/Encounters/Print/1", "/Patient/LabResults", "/Patient/LabResults/Details/1", "/Patient/LabResults/Print/1", "/Patient/LabResults/Trends", "/Patient/Medications", "/Patient/Medications/Details/1", "/Patient/Audit", "/Identity/Account/Manage", "/Identity/Account/Manage/TwoFactorAuthentication", "/Identity/Account/Manage/EnableAuthenticator", "/Appointments/Confirmation?reference=DRMC-2026-IM-0192", "/Appointments/CheckIn?reference=DRMC-2026-IM-0192", "/Patient/Triage/Start/2", "/Patient/Triage/Summary/1", "/Patient/Triage/EmergencyWarning"];
 
     public static TheoryData<string, string, string> Matrix
     {
@@ -89,7 +89,12 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
                 failures.AddRange(problems.Select(p => route + ": " + p));
                 routes.Add(route);
                 if (problems.Length > 0 || (culture == "en" && device is "1440" or "small" or "iphone") || route is "/Patient/Home" or "/Patient/Encounters" or "/" or "/Malasakit/Navigator")
-                    await page.ScreenshotAsync(new() { Path = Path.Combine(app.Artifacts, $"{engine}-{device}-{culture}-{Array.IndexOf(group, route)}-{(ReferenceEquals(group, PatientRoutes) ? "patient" : "public")}.png"), FullPage = true });
+                {
+                    // CSS pixels avoid WebKit's 32767-pixel image limit on high-DPI phones.
+                    // Layout checks still inspect the entire page, including long audit histories.
+                    var fullPage = await page.EvaluateAsync<bool>("() => document.documentElement.scrollHeight < 32000");
+                    await page.ScreenshotAsync(new() { Path = Path.Combine(app.Artifacts, $"{engine}-{device}-{culture}-{Array.IndexOf(group, route)}-{(ReferenceEquals(group, PatientRoutes) ? "patient" : "public")}.png"), FullPage = fullPage, Scale = ScreenshotScale.Css });
+                }
             }
         }
         await File.WriteAllLinesAsync(Path.Combine(app.Artifacts, $"{engine}-{device}-{culture}.txt"), new[] { "ENV " + environment }.Concat(routes.Select(r => "VISITED " + r)).Concat(failures).Concat(scriptErrors));

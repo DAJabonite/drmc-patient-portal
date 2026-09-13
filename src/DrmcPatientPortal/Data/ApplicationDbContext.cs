@@ -11,6 +11,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<QueueTicket> QueueTickets => Set<QueueTicket>();
     public DbSet<Doctor> Doctors => Set<Doctor>();
     public DbSet<AssistanceProgram> AssistancePrograms => Set<AssistanceProgram>();
+    public DbSet<SubsidyApplication> SubsidyApplications => Set<SubsidyApplication>();
     public DbSet<PublicAdvisory> PublicAdvisories => Set<PublicAdvisory>();
     
     // Authenticated Clinical Features (Phase 3.2)
@@ -28,6 +29,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        builder.Entity<SubsidyApplication>(e =>
+        {
+            e.HasOne(x => x.Patient).WithMany().HasForeignKey(x => x.PatientUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.PatientUserId).IsUnique();
+        });
 
         builder.Entity<Appointment>(e =>
         {

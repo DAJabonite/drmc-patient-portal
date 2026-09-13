@@ -69,6 +69,7 @@ The live DRMC site returned HTTP 403 during the 2026-09-12 implementation review
 - Mobile is the baseline. Content must reflow without page-level horizontal overflow at 320px.
 - On phones, use a compact 64–72px brand header and a fixed five-item bottom navigation. Utility navigation opens in one accessible offcanvas sheet from the header.
 - The five primary destinations are always Home, Encounters, Results, Medication, and Malasakit. “Financial Assistance / Malasakit” is shortened to “Malasakit” only where mobile width requires it, with the full accessible label retained.
+- Medical History is a secondary authenticated destination in account/utility menus and contextual links. It groups OPD, ER, and Admitted records without adding to or replacing the five primary destinations (client clarification, 2026-09-13).
 - Signed-in Home opens the patient dashboard; signed-out Home opens the public landing page. Protected record destinations retain the existing sign-in redirect and return URL.
 - Booking, queue tracking, directory, OPD guidance, advisories, language, and account actions remain available in the mobile utility menu and as contextual page actions.
 - Desktop uses the same five-destination information architecture, plus the existing account controls.

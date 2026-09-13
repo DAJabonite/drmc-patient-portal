@@ -1,0 +1,38 @@
+@model SubsidyApplicationInput
+@{ ViewData["Title"] = Loc["Subsidy_Apply"]; }
+<section class="page-header">
+    <div class="container"><h1 class="h2 fw-bold">@Loc["Subsidy_Apply"]</h1><p class="mb-0">@Loc["Subsidy_Intro"]</p></div>
+</section>
+<section class="section py-4">
+    <div class="container"><div class="row"><div class="col-lg-8">
+        <a asp-action="Index" class="d-inline-block mb-3">@Loc["Mobile_Malasakit"]</a>
+        <div class="alert alert-info">@Loc["Subsidy_LocalNotice"]</div>
+        <form asp-action="Apply" method="post" class="bg-white border rounded-3 p-3 p-md-4">
+            <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+            <div class="mb-3">
+                <label asp-for="Need" class="form-label fw-semibold">@Loc["Subsidy_Need"]</label>
+                <select asp-for="Need" class="form-select" required>
+                    <option value="">@Loc["Subsidy_Select"]</option>
+                    @foreach (var need in Enum.GetValues<SubsidyNeed>())
+                    { <option value="@need">@Loc[$"SubsidyNeed_{need}"]</option> }
+                </select>
+            </div>
+            <div class="mb-4">
+                <label asp-for="ReportedPayment" class="form-label fw-semibold">@Loc["Subsidy_ReportedPayment"]</label>
+                <select asp-for="ReportedPayment" class="form-select" required>
+                    <option value="">@Loc["Subsidy_Select"]</option>
+                    @foreach (var payment in Enum.GetValues<BillPaymentStatus>())
+                    { <option value="@payment">@Loc[$"BillPaymentStatus_{payment}"]</option> }
+                </select>
+                <p class="form-text">@Loc["Subsidy_PaymentHelp"]</p>
+            </div>
+            <partial name="_SubsidyRequirements" model="Model" />
+            <div class="form-check mb-4">
+                <input asp-for="AcknowledgedReview" class="form-check-input" required />
+                <label asp-for="AcknowledgedReview" class="form-check-label">@Loc["Subsidy_Acknowledge"]</label>
+            </div>
+            <button type="submit" class="btn btn-drmc">@Loc["Subsidy_SaveApplication"]</button>
+        </form>
+        <partial name="_OfficialDrmcSources" />
+    </div></div></div>
+</section>

@@ -21,6 +21,8 @@ $(function () {
     const stepper = document.getElementById('wizardStepperNav');
 
     const selectIdType = document.getElementById('selectIdType');
+    const otherIdFields = document.getElementById('otherGovernmentIdFields');
+    const otherIdName = document.getElementById('Input_OtherGovernmentIdName');
     const idGuidanceCard = document.getElementById('idGuidanceCard');
     const guidanceTitle = document.getElementById('guidanceTitle');
     const guidanceText = document.getElementById('guidanceText');
@@ -135,6 +137,11 @@ $(function () {
     function validateStep(step) {
         let valid = true;
         let firstInvalid;
+        if (step === 1 && selectIdType.value === 'Other government-issued ID' && !otherIdName.value.trim()) {
+            showFeedback(1, 'Enter the ID name and government issuer.');
+            otherIdName.focus();
+            return false;
+        }
         for (const input of document.querySelectorAll('#wizardStep' + step + ' [data-val="true"]')) {
             if (!validator.element(input)) { valid = false; firstInvalid ??= input; }
         }
@@ -196,6 +203,9 @@ $(function () {
     // ID Type selection handler
     selectIdType.addEventListener('change', function () {
         const val = selectIdType.value;
+        otherIdFields.hidden = val !== 'Other government-issued ID';
+        otherIdName.disabled = otherIdFields.hidden;
+        otherIdName.required = !otherIdFields.hidden;
         if (!val) {
             idGuidanceCard.classList.add('d-none');
             btnGoToCapture.disabled = true;
@@ -206,7 +216,7 @@ $(function () {
         idGuidanceCard.classList.remove('d-none');
         guidanceTitle.textContent = val;
 
-        const info = idGuidanceMap[val] || { desc: "Position your ID within the frame.", supports: "Extracts available cardholder information." };
+        const info = idGuidanceMap[val] || { desc: "Capture the side or page with your name and ID number.", supports: "Review all details. You can enter missing information manually if this ID cannot be read." };
         guidanceText.textContent = info.desc;
         guidanceSupports.textContent = info.supports;
 
@@ -223,6 +233,7 @@ $(function () {
 
     // Nav buttons
     btnGoToCapture.addEventListener('click', function () {
+        if (!validateStep(1)) return;
         isManualFlow = false;
         isManualEntryInput.value = 'false';
         displaySelectedId.textContent = selectIdType.value;
@@ -252,13 +263,10 @@ $(function () {
 
     // Manual Skip Handlers
     function enterManualMode() {
+        if (!validateStep(1)) return;
         isManualFlow = true;
         isManualEntryInput.value = 'true';
         autofillNotice.classList.add('d-none');
-        // Ensure an ID type is selected or fallback to default
-        if (!selectIdType.value) {
-            selectIdType.value = "Philippine National ID (PhilSys)";
-        }
         selectIdType.dispatchEvent(new Event('change'));
         updateProgress(3);
     }

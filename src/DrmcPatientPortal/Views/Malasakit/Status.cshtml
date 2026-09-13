@@ -1,0 +1,59 @@
+@model SubsidyApplication
+@{ ViewData["Title"] = Loc["Subsidy_Status"]; }
+<section class="page-header">
+    <div class="container"><h1 class="h2 fw-bold">@Loc["Subsidy_Status"]</h1><p class="mb-0">@Loc["Subsidy_StatusIntro"]</p></div>
+</section>
+<section class="section py-4">
+    <div class="container">
+        <a asp-action="Index" class="d-inline-block mb-3">@Loc["Mobile_Malasakit"]</a>
+        @if (Model is null)
+        {
+            <div class="bg-white border rounded-3 p-4">
+                <h2 class="h5">@Loc["Subsidy_Empty"]</h2>
+                <p>@Loc["Subsidy_Intro"]</p>
+                <a asp-action="Apply" class="btn btn-drmc">@Loc["Subsidy_Apply"]</a>
+            </div>
+        }
+        else
+        {
+            @if (TempData["RequirementsSaved"] is not null)
+            { <div class="alert alert-success" role="status">@Loc["Subsidy_Saved"]</div> }
+            <div class="alert alert-info">@Loc["Subsidy_LocalNotice"]</div>
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <section class="bg-white border rounded-3 p-3 p-md-4" aria-labelledby="application-heading">
+                        <h2 class="h5" id="application-heading">@Loc["Subsidy_Application"] #@Model.Id</h2>
+                        <p class="small text-muted">@Loc["Subsidy_Created"] <time datetime="@Model.CreatedAt.ToString("O")">@Model.CreatedAt.ToString("d") (UTC)</time></p>
+                        <dl>
+                            <dt>@Loc["Subsidy_Need"]</dt><dd>@Loc[$"SubsidyNeed_{Model.Need}"]</dd>
+                            <dt>@Loc["Subsidy_Eligibility"]</dt><dd>@Loc[$"SubsidyEligibility_{Model.Eligibility}"]</dd>
+                            <dt>@Loc["Subsidy_Coverage"]</dt><dd>@Loc[$"SubsidyCoverage_{Model.Coverage}"]</dd>
+                            <dt>@Loc["Subsidy_ConfirmedPayment"]</dt><dd>@Loc[$"BillPaymentStatus_{Model.ConfirmedPayment}"]</dd>
+                            <dt>@Loc["Subsidy_ReportedPayment"]</dt><dd>@Loc[$"BillPaymentStatus_{Model.ReportedPayment}"]</dd>
+                        </dl>
+                        <p class="small text-muted mb-0">@Loc["Subsidy_PaymentHelp"]</p>
+                        @if (Model.ReviewedAt is not null)
+                        {
+                            <p class="small mt-3">@Loc["Subsidy_Reviewed"] @Model.ReviewedAt.Value.ToString("d") (UTC)</p>
+                            <p>@Model.ReviewNotes</p>
+                        }
+                    </section>
+                </div>
+                <div class="col-lg-7">
+                    <form asp-action="Requirements" method="post" class="bg-white border rounded-3 p-3 p-md-4">
+                        <partial name="_SubsidyRequirements" model="@(new SubsidyRequirementsInput {
+                            GovernmentIdReady = Model.GovernmentIdReady, ClinicalDocumentReady = Model.ClinicalDocumentReady,
+                            CostDocumentReady = Model.CostDocumentReady, IndigencyDocumentReady = Model.IndigencyDocumentReady })" />
+                        <button type="submit" class="btn btn-drmc">@Loc["Subsidy_SaveRequirements"]</button>
+                    </form>
+                    <section class="mt-4" aria-labelledby="next-step-heading">
+                        <h2 class="h5" id="next-step-heading">@Loc["Subsidy_NextStep"]</h2>
+                        <p>@Loc["Subsidy_VisitDesk"]</p>
+                        <a asp-action="Navigator">@Loc["Subsidy_Guidance"]</a>
+                    </section>
+                </div>
+            </div>
+        }
+        <partial name="_OfficialDrmcSources" />
+    </div>
+</section>

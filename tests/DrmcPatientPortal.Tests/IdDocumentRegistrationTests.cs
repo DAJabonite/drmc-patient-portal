@@ -67,10 +67,12 @@ public class IdDocumentRegistrationTests
     }
 
     [Fact]
-    public void PhilippineIdTypes_ContainsAll8OfficialTypesWithAccurateMetadata()
+    public void PhilippineIdTypes_IncludesOtherGovernmentIdsAndPreservesCaptureMetadata()
     {
         var types = PhilippineIdTypes.All;
-        Assert.Equal(8, types.Count);
+        Assert.Contains(types, type => type.Name == PhilippineIdTypes.OtherGovernment);
+        Assert.Contains(types, type => type.Name == PhilippineIdTypes.SeniorCitizen);
+        Assert.Contains(types, type => type.Name == PhilippineIdTypes.Pwd);
 
         var philSys = PhilippineIdTypes.GetByName(PhilippineIdTypes.PhilSys);
         Assert.NotNull(philSys);
@@ -337,8 +339,12 @@ public class IdDocumentRegistrationTests
         Assert.Equal(0.92f, doc.OcrConfidence);
     }
 
-    [Fact]
-    public async Task RegisterModel_OnPost_ManualSkip_CreatesUserWithoutPhoto()
+    [Theory]
+    [InlineData(PhilippineIdTypes.PhilHealth, null)]
+    [InlineData(PhilippineIdTypes.SeniorCitizen, null)]
+    [InlineData(PhilippineIdTypes.Pwd, null)]
+    [InlineData(PhilippineIdTypes.OtherGovernment, "Voter's ID - COMELEC")]
+    public async Task RegisterModel_OnPost_ManualSkip_CreatesUserWithoutPhoto(string idType, string? otherName)
     {
         using var db = CreateInMemoryDbContext();
         var (userManager, existingUser, userStore) = CreateMockUserManager(db);
@@ -387,7 +393,8 @@ public class IdDocumentRegistrationTests
                 LastName = "Manual",
                 Email = "elderly.manual@example.com",
                 Mobile = "9185550123",
-                IdType = PhilippineIdTypes.PhilHealth,
+                IdType = idType,
+                OtherGovernmentIdName = otherName!,
                 IdNumber = "12-345678901-2",
                 Password = "Password123!",
                 ConfirmPassword = "Password123!",
@@ -403,5 +410,6 @@ public class IdDocumentRegistrationTests
         Assert.NotNull(doc);
         Assert.True(doc.IsManualEntry);
         Assert.Null(doc.FrontPhotoFileName);
+        Assert.Equal(otherName ?? idType, doc.IdType);
     }
 }

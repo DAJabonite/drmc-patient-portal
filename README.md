@@ -8,6 +8,9 @@ ASP.NET Core 10 patient portal for Davao Regional Medical Center. It provides pu
 |---|---|---|
 | Appointments | Public booking; protected follow-up | Confirmation, check-in, and cancellation require the authenticated owner or a 256-bit capability delivered by email/SMS/QR. Only the SHA-256 hash is stored; access expires 24 hours after the visit. |
 | Queue | Public | Serving, called, and waiting values refresh on demand and every 30 seconds while visible. |
+| Medical history | Authenticated | OPD, ER, and Admitted categories from owned encounters; available through account and contextual links, outside the five primary destinations. |
+| Malasakit application | Authenticated | Saved subsidy request, document preparation checklist, and separate eligibility, coverage, reported payment, and confirmed payment states. Institutional review is still required. |
+| Official DRMC references | Public | Direct ARTA and Citizen's Charter landing-page links show the publisher's current content. |
 | Encounters | Authenticated | Patient-owned list, details, linked labs, printable summary, and fail-closed auditing. |
 | Laboratory results | Authenticated | Patient-owned results, details, trends, printable report, and access auditing. |
 | Medications | Authenticated | Active prescriptions, persisted dose times, and local refill requests. New requests remain `Requested` pending institutional pharmacy review. |
@@ -61,6 +64,10 @@ Never copy development seed credentials into a deployed environment.
 | Route | Purpose |
 |---|---|
 | `GET /Patient/Home` | Patient dashboard |
+| `GET /Patient/MedicalHistory?category=OPD` | Medical history; optional OPD, ER, or ADMITTED filter |
+| `GET/POST /Malasakit/Apply` | Save current subsidy application |
+| `GET /Malasakit/Status` | Own application, coverage, eligibility, and payment status |
+| `POST /Malasakit/Requirements` | Save document preparation checklist |
 | `GET /Patient/Encounters` | Encounter timeline |
 | `GET /Patient/Encounters/Details/{id}` | Owned encounter with linked labs |
 | `GET /Patient/Encounters/Print/{id}` | Printable owned encounter summary |
@@ -71,6 +78,8 @@ Never copy development seed credentials into a deployed environment.
 | `GET /Patient/Documents/IdPhoto/{id}` | Audited, owner-only decrypted document |
 
 ## Data and security
+
+Migration `20260913120223_AddSubsidyApplications` adds persisted subsidy applications with an owner foreign key and a unique current-application index. Apply it before deploying. See [client requirements and integration boundaries](docs/CLIENT_REQUIREMENTS_2026-09-13.md).
 
 Migration `20260912091834_RestoreEncountersAndHardenPortal` is forward-only. It restores `ClinicalEncounters` and `LabResults.ClinicalEncounterId`, and adds appointment capability fields, `MedicationDoseSchedules`, document MIME/storage metadata, and a unique appointment-to-triage constraint.
 
@@ -91,7 +100,7 @@ dotnet test DrmcPatientPortal.slnx --no-build
 dotnet list DrmcPatientPortal.slnx package --vulnerable --include-transitive
 ```
 
-Current result: **25/25 tests passing** on .NET 10 with zero build warnings. The OCR image-generation fixture is explicitly marked Windows-only because it uses `System.Drawing`; production code is platform-neutral. NuGet reports no known vulnerable packages.
+Current result: **34 backend tests and 46 browser tests passing** on .NET 10, with no build warnings. Details are in [UI validation](docs/UI_VALIDATION.md) and the [client requirements](docs/CLIENT_REQUIREMENTS_2026-09-13.md). The OCR image-generation fixture is explicitly marked Windows-only because it uses `System.Drawing`; production code is platform-neutral. NuGet reports no known vulnerable packages.
 
 ## Browser validation
 
@@ -99,7 +108,7 @@ For repeatable desktop/mobile UI validation, run `pwsh scripts/test-ui.ps1` (or 
 
 ## External boundaries
 
-No DRMC HIS, pharmacy, SIEM, SMTP, or SMS credentials are stored here. HIS and pharmacy synchronization remain disabled until approved adapters and credentials exist. Local triage and refill states never claim external synchronization or dispensing.
+No DRMC HIS, billing, social-work, pharmacy, SIEM, SMTP, or SMS credentials are stored here. Malasakit applications are saved locally in the portal; hospital receipt, eligibility, subsidies, and payment remain unconfirmed until an approved institutional workflow supplies them. HIS and pharmacy synchronization remain disabled until approved adapters and credentials exist. Local triage and refill states never claim external synchronization or dispensing.
 
 ## Documentation
 

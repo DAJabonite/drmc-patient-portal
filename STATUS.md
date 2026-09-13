@@ -1,8 +1,13 @@
 # Current Implementation Status
 
-Last reconciled: 2026-09-12. This is the source of truth for current code; historical plans and logs are not current product scope.
+Last reconciled: 2026-09-13. This is the source of truth for current code; historical plans and logs are not current product scope.
 
 ## Implemented
+
+- Official DRMC ARTA and Citizen's Charter landing-page references, verified live on September 13.
+- Any government-issued ID registration, including a named Other option, Senior Citizen, and PWD IDs.
+- Audited medical history grouped into OPD, ER, and Admitted, outside the five primary destinations.
+- Persisted Malasakit applications and preparation checklists with separate reported and confirmed payment/eligibility/coverage states.
 
 - Public booking with server-side department, type, doctor, doctor/department, slot, and conflict validation.
 - Capability-protected appointment confirmation, check-in, and cancellation; hashed tokens expire 24 hours after the visit and revoke on cancellation.
@@ -31,9 +36,13 @@ Last reconciled: 2026-09-12. This is the source of truth for current code; histo
 | GET | `/Patient/Encounters/Details/{id}` | Authenticated owner |
 | GET | `/Patient/Encounters/Print/{id}` | Authenticated owner |
 
-Latest migration: `20260912091834_RestoreEncountersAndHardenPortal`.
+Latest migration: `20260913120223_AddSubsidyApplications`.
+
+See [September 13 client requirements](docs/CLIENT_REQUIREMENTS_2026-09-13.md) for routes, verification, and the outstanding institutional billing/social-work integration.
 
 ## Verification
+
+Current client update: **34 backend and 46 browser tests pass**, including database upgrade and automated accessibility. The table below records the previous baseline; details are in [the requirements report](docs/CLIENT_REQUIREMENTS_2026-09-13.md).
 
 | Check | Result |
 |---|---|

@@ -114,6 +114,9 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             [Display(Name = "Valid government ID")]
             public string IdType { get; set; }
 
+            [StringLength(120)]
+            public string OtherGovernmentIdName { get; set; }
+
             [Required(ErrorMessage = "Enter your ID number.")]
             [StringLength(40, ErrorMessage = "The {0} must be at most {1} characters long.")]
             [Display(Name = "ID number")]
@@ -218,6 +221,14 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                 ModelState.AddModelError("Input.PrivacyConsent", "Read and accept the privacy notice and portal terms to continue.");
             }
 
+            var selectedId = PhilippineIdTypes.GetByName(Input.IdType);
+            if (selectedId is null)
+                ModelState.AddModelError("Input.IdType", "Select a government-issued ID, or choose Other government-issued ID.");
+            else
+                Input.IdType = selectedId.Name;
+            if (Input.IdType == PhilippineIdTypes.OtherGovernment && string.IsNullOrWhiteSpace(Input.OtherGovernmentIdName))
+                ModelState.AddModelError("Input.OtherGovernmentIdName", "Enter the ID name and government issuer.");
+
             if (ModelState.IsValid)
             {
                 var user = CreateUser();
@@ -229,7 +240,8 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                     : $"{user.FirstName} {user.MiddleName} {user.LastName}";
                 user.ContactNumber = $"+63 {Input.Mobile?.Trim()}";
                 user.PhoneNumber = Input.Mobile?.Trim();
-                user.IdType = Input.IdType?.Trim() ?? string.Empty;
+                user.IdType = Input.IdType == PhilippineIdTypes.OtherGovernment
+                    ? Input.OtherGovernmentIdName!.Trim() : Input.IdType.Trim();
                 user.IdNumber = Input.IdNumber?.Trim() ?? string.Empty;
                 user.DateOfBirth = Input.DateOfBirth;
                 user.Address = string.IsNullOrWhiteSpace(Input.Address) ? null : Input.Address.Trim();
@@ -330,7 +342,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                 var doc = new PatientIdDocument
                 {
                     PatientUserId = user.Id,
-                    IdType = Input.IdType?.Trim() ?? string.Empty,
+                    IdType = user.IdType,
                     IdNumber = Input.IdNumber?.Trim() ?? string.Empty,
                     FrontPhotoFileName = frontFileName,
                     BackPhotoFileName = backFileName,

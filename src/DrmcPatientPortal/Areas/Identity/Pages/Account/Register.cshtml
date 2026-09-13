@@ -14,7 +14,7 @@
                     <span class="fw-bold fs-5 text-primary-drmc">Davao Regional Medical Center</span>
                 </a>
                 <h1 class="h3 fw-bold text-primary-drmc mb-1">Create your patient account</h1>
-                <p class="text-muted small mb-0">Fast, verified registration with Philippine Government ID scan-to-autofill.</p>
+                <p class="text-muted small mb-0">Register with any valid government-issued ID. Scan your ID or enter your details manually.</p>
             </div>
 
             <ol class="registration-stepper mb-4" id="wizardStepperNav" aria-label="Registration progress">
@@ -43,23 +43,25 @@
                 <div class="wizard-step" id="wizardStep1">
                     <div id="stepFeedback1" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
                     <div class="mb-4">
-                        <h2 class="h5 fw-bold text-dark mb-1">Select your Philippine Government ID</h2>
-                        <p class="small text-muted mb-3">Choose the valid government ID you will use for account verification and autofill.</p>
+                        <h2 class="h5 fw-bold text-dark mb-1">Select your government-issued ID</h2>
+                        <p class="small text-muted mb-3">DRMC accepts any valid government-issued ID. If your ID is not listed, select “Other government-issued ID”.</p>
 
                         <div class="mb-3">
                             <label asp-for="Input.IdType" for="selectIdType" class="form-label fw-semibold">Valid government ID</label>
                             <select asp-for="Input.IdType" id="selectIdType" class="form-select form-select-lg">
-                                <option value="" disabled selected>Choose your ID type...</option>
-                                <option value="Philippine National ID (PhilSys)" data-back="true">Philippine National ID (PhilSys)</option>
-                                <option value="Driver's License" data-back="false">Driver's License</option>
-                                <option value="Philippine Passport" data-back="false">Philippine Passport</option>
-                                <option value="UMID" data-back="false">UMID</option>
-                                <option value="Postal ID" data-back="false">Postal ID</option>
-                                <option value="PhilHealth ID" data-back="false">PhilHealth ID</option>
-                                <option value="SSS / GSIS ID" data-back="false">SSS / GSIS ID</option>
-                                <option value="PRC ID" data-back="false">PRC ID</option>
+                                <option value="">Choose your ID type...</option>
+                                @foreach (var id in DrmcPatientPortal.Models.PhilippineIdTypes.All)
+                                {
+                                    <option value="@id.Name" data-back="@id.NeedsBackPhoto.ToString().ToLowerInvariant()">@id.Name</option>
+                                }
                             </select>
                             <span asp-validation-for="Input.IdType" class="field-validation-error"></span>
+                        </div>
+                        <div class="mb-3" id="otherGovernmentIdFields" hidden>
+                            <label asp-for="Input.OtherGovernmentIdName" class="form-label fw-semibold">ID name and government issuer</label>
+                            <input asp-for="Input.OtherGovernmentIdName" class="form-control" maxlength="120" aria-describedby="otherIdHelp" />
+                            <p class="form-text" id="otherIdHelp">For example: Voter's ID — COMELEC, or a government employee ID and its issuing agency.</p>
+                            <span asp-validation-for="Input.OtherGovernmentIdName" class="field-validation-error"></span>
                         </div>
 
                         <!-- Dynamic ID Guidance Notice Card -->

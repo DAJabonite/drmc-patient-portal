@@ -209,4 +209,60 @@
   <data name="Appt_Cancel"><value>Kanselahin ang Appointment</value></data>
   <data name="Appt_UnavailableTitle" xml:space="preserve"><value>Hindi mabuksan ang appointment</value></data>
   <data name="Appt_UnavailableBody" xml:space="preserve"><value>Hindi namin mabuksan ang check-in pass na ito. Gamitin ang link sa mensahe ng kumpirmasyon, mag-sign in sa account na nag-book ng pagbisita, o humingi ng tulong sa triage desk ng ospital.</value></data>
+  <data name="Sources_Title" xml:space="preserve"><value>Mga opisyal na sanggunian ng DRMC</value></data>
+  <data name="Sources_Description" xml:space="preserve"><value>Basahin ang pinakabagong mga publikasyon sa website ng DRMC.</value></data>
+  <data name="Sources_Arta" xml:space="preserve"><value>ARTA / Anti-Red Tape Act</value></data>
+  <data name="Sources_Charter" xml:space="preserve"><value>Citizen’s Charter</value></data>
+  <data name="History_Title" xml:space="preserve"><value>Kasaysayang medikal</value></data>
+  <data name="History_Description" xml:space="preserve"><value>Mga rekord ng outpatient, emergency, at pagpapaospital na makikita sa portal.</value></data>
+  <data name="History_Categories" xml:space="preserve"><value>Mga kategorya ng kasaysayang medikal</value></data>
+  <data name="History_All" xml:space="preserve"><value>Lahat ng rekord</value></data>
+  <data name="History_OPD" xml:space="preserve"><value>OPD · Outpatient</value></data>
+  <data name="History_ER" xml:space="preserve"><value>ER · Emergency</value></data>
+  <data name="History_ADMITTED" xml:space="preserve"><value>Admitted · Naospital</value></data>
+  <data name="History_Empty" xml:space="preserve"><value>Wala pang rekord sa kategoryang ito sa portal.</value></data>
+  <data name="Subsidy_Apply" xml:space="preserve"><value>Mag-apply ng tulong pinansyal</value></data>
+  <data name="Subsidy_Status" xml:space="preserve"><value>Status ng aking aplikasyon</value></data>
+  <data name="Subsidy_Intro" xml:space="preserve"><value>I-save ang kahilingan at ihanda ang mga dokumento para sa pagsusuri ng Malasakit Center.</value></data>
+  <data name="Subsidy_StatusIntro" xml:space="preserve"><value>Tingnan ang aplikasyon, pagiging kwalipikado, saklaw ng tulong, at bayad.</value></data>
+  <data name="Subsidy_LocalNotice" xml:space="preserve"><value>Naka-save ang aplikasyon sa portal. Dalhin ang reference at mga dokumento sa Malasakit Center para sa pagsusuri. Hindi pinatutunayan ng online submission ang pagtanggap ng DRMC, pagiging kwalipikado, pag-apruba ng tulong, o bayad.</value></data>
+  <data name="Subsidy_Need" xml:space="preserve"><value>Saan kailangan ng tulong?</value></data>
+  <data name="Subsidy_Select" xml:space="preserve"><value>Pumili ng opsyon</value></data>
+  <data name="Subsidy_ReportedPayment" xml:space="preserve"><value>Katayuan ng bayad na iniulat mo</value></data>
+  <data name="Subsidy_PaymentHelp" xml:space="preserve"><value>Hiwalay ang iniulat mong bayad sa kumpirmasyon ng ospital. Hindi garantiya ng tulong o reimbursement ang pagbabayad ng bill.</value></data>
+  <data name="Subsidy_Requirements" xml:space="preserve"><value>Mga dokumentong ihahanda</value></data>
+  <data name="Subsidy_RequirementsHelp" xml:space="preserve"><value>Lagyan ng tsek ang mga handa nang dokumento. Checklist ito ng paghahanda, hindi patunay ng pagsusumite o pagsunod. Kukumpirmahin ng social worker ang naaangkop at karagdagang mga dokumento.</value></data>
+  <data name="Subsidy_Id" xml:space="preserve"><value>Anumang valid na government-issued ID ng pasyente</value></data>
+  <data name="Subsidy_Clinical" xml:space="preserve"><value>Medical certificate, clinical abstract, reseta, o diagnostic order para sa kahilingan</value></data>
+  <data name="Subsidy_Cost" xml:space="preserve"><value>Statement of account o presyo ng gamot / pagsusuri; resibo kung bayad na</value></data>
+  <data name="Subsidy_Indigency" xml:space="preserve"><value>Barangay certificate of indigency, kung hihingin pagkatapos ng pagsusuri</value></data>
+  <data name="Subsidy_Acknowledge" xml:space="preserve"><value>Nauunawaan kong kailangan ang pagsusuri ng Malasakit Center at hindi garantisado ang tulong pinansyal.</value></data>
+  <data name="Subsidy_SaveApplication" xml:space="preserve"><value>I-save ang aplikasyon</value></data>
+  <data name="Subsidy_SaveRequirements" xml:space="preserve"><value>I-save ang checklist</value></data>
+  <data name="Subsidy_Saved" xml:space="preserve"><value>Na-save na ang checklist ng dokumento.</value></data>
+  <data name="Subsidy_Empty" xml:space="preserve"><value>Wala pang aplikasyon</value></data>
+  <data name="Subsidy_Application" xml:space="preserve"><value>Aplikasyon</value></data>
+  <data name="Subsidy_Created" xml:space="preserve"><value>Na-save noong</value></data>
+  <data name="Subsidy_Eligibility" xml:space="preserve"><value>Pagiging kwalipikado</value></data>
+  <data name="Subsidy_Coverage" xml:space="preserve"><value>Saklaw ng tulong</value></data>
+  <data name="Subsidy_ConfirmedPayment" xml:space="preserve"><value>Bayad na kinumpirma ng ospital</value></data>
+  <data name="Subsidy_Reviewed" xml:space="preserve"><value>Sinuri noong</value></data>
+  <data name="Subsidy_NextStep" xml:space="preserve"><value>Susunod na hakbang</value></data>
+  <data name="Subsidy_VisitDesk" xml:space="preserve"><value>Ihanda ang naaangkop na mga dokumento at pumunta sa DRMC Malasakit Center. Kailangang suriin ng social worker ang kahilingan at kumpirmahin ang requirements, pagiging kwalipikado, at tulong.</value></data>
+  <data name="Subsidy_Guidance" xml:space="preserve"><value>Tingnan ang mga programa at gabay sa paghahanda</value></data>
+  <data name="SubsidyNeed_Medicines" xml:space="preserve"><value>Mga gamot</value></data>
+  <data name="SubsidyNeed_Diagnostics" xml:space="preserve"><value>Laboratoryo / diagnostics</value></data>
+  <data name="SubsidyNeed_HospitalCare" xml:space="preserve"><value>Pangangalaga / pagpapaospital</value></data>
+  <data name="BillPaymentStatus_Unconfirmed" xml:space="preserve"><value>Hindi pa kumpirmado</value></data>
+  <data name="BillPaymentStatus_Unpaid" xml:space="preserve"><value>Hindi pa bayad</value></data>
+  <data name="BillPaymentStatus_PartiallyPaid" xml:space="preserve"><value>Bahagyang bayad</value></data>
+  <data name="BillPaymentStatus_Paid" xml:space="preserve"><value>Bayad na</value></data>
+  <data name="SubsidyEligibility_PendingReview" xml:space="preserve"><value>Naghihintay ng pagsusuri</value></data>
+  <data name="SubsidyEligibility_RequirementsNeeded" xml:space="preserve"><value>Kailangan ng karagdagang dokumento</value></data>
+  <data name="SubsidyEligibility_Eligible" xml:space="preserve"><value>Kwalipikado</value></data>
+  <data name="SubsidyEligibility_Ineligible" xml:space="preserve"><value>Hindi kwalipikado</value></data>
+  <data name="SubsidyCoverage_Unconfirmed" xml:space="preserve"><value>Hindi pa natutukoy</value></data>
+  <data name="SubsidyCoverage_Subsidised" xml:space="preserve"><value>May subsidy</value></data>
+  <data name="SubsidyCoverage_PartiallySubsidised" xml:space="preserve"><value>Bahagyang may subsidy</value></data>
+  <data name="SubsidyCoverage_SelfPay" xml:space="preserve"><value>Sagot ng pasyente</value></data>
 </root>

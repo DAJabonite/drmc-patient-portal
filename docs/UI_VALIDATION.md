@@ -4,6 +4,8 @@ Validation date: 2026-09-13. Branch: `codex/ui-ux-validation-fixes`, based on `o
 
 The subsequent [signup follow-up](SIGNUP_VALIDATION.md) adds a privacy/terms entry dialog and fixes all signup steps. Its latest full run passes **42 browser tests and 25 backend tests**. The initial audit results below are retained as their original evidence.
 
+The [September 13 client update](CLIENT_REQUIREMENTS_2026-09-13.md) now passes **46 browser tests and 34 backend tests**, including medical history, other government IDs, Malasakit applications, migration upgrade, and the expanded responsive/accessibility matrix.
+
 ## Reproduce
 
 ```powershell

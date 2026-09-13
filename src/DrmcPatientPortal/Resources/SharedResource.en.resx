@@ -209,4 +209,60 @@
   <data name="Appt_Cancel"><value>Cancel Appointment</value></data>
   <data name="Appt_UnavailableTitle" xml:space="preserve"><value>Appointment unavailable</value></data>
   <data name="Appt_UnavailableBody" xml:space="preserve"><value>We could not open this check-in pass. Use the link from your confirmation message, sign in to the account that booked the visit, or ask the hospital triage desk for help.</value></data>
+  <data name="Sources_Title" xml:space="preserve"><value>Official DRMC references</value></data>
+  <data name="Sources_Description" xml:space="preserve"><value>Read the latest publications directly on the DRMC website.</value></data>
+  <data name="Sources_Arta" xml:space="preserve"><value>ARTA / Anti-Red Tape Act</value></data>
+  <data name="Sources_Charter" xml:space="preserve"><value>Citizen’s Charter</value></data>
+  <data name="History_Title" xml:space="preserve"><value>Medical history</value></data>
+  <data name="History_Description" xml:space="preserve"><value>Your outpatient, emergency, and admission records available in this portal.</value></data>
+  <data name="History_Categories" xml:space="preserve"><value>Medical history categories</value></data>
+  <data name="History_All" xml:space="preserve"><value>All records</value></data>
+  <data name="History_OPD" xml:space="preserve"><value>OPD · Outpatient</value></data>
+  <data name="History_ER" xml:space="preserve"><value>ER · Emergency</value></data>
+  <data name="History_ADMITTED" xml:space="preserve"><value>Admitted · Inpatient</value></data>
+  <data name="History_Empty" xml:space="preserve"><value>No records in this category are available in the portal yet.</value></data>
+  <data name="Subsidy_Apply" xml:space="preserve"><value>Apply for subsidy</value></data>
+  <data name="Subsidy_Status" xml:space="preserve"><value>My subsidy status</value></data>
+  <data name="Subsidy_Intro" xml:space="preserve"><value>Save your request and prepare the documents for your Malasakit Center assessment.</value></data>
+  <data name="Subsidy_StatusIntro" xml:space="preserve"><value>Track your application, eligibility, coverage, and payment information.</value></data>
+  <data name="Subsidy_LocalNotice" xml:space="preserve"><value>Applications are saved in this portal. Bring your application reference and documents to the Malasakit Center to request assessment. Online submission does not confirm receipt by DRMC, eligibility, subsidy approval, or payment.</value></data>
+  <data name="Subsidy_Need" xml:space="preserve"><value>What do you need assistance with?</value></data>
+  <data name="Subsidy_Select" xml:space="preserve"><value>Select an option</value></data>
+  <data name="Subsidy_ReportedPayment" xml:space="preserve"><value>Payment status you reported</value></data>
+  <data name="Subsidy_PaymentHelp" xml:space="preserve"><value>Your reported payment is separate from hospital-confirmed payment. Paying a bill does not establish subsidy eligibility or reimbursement.</value></data>
+  <data name="Subsidy_Requirements" xml:space="preserve"><value>Documents to prepare</value></data>
+  <data name="Subsidy_RequirementsHelp" xml:space="preserve"><value>Check documents you have ready; unchecked items remain to prepare. This is your preparation checklist, not proof of submission or compliance. The social worker will confirm which documents apply and any additional requirements.</value></data>
+  <data name="Subsidy_Id" xml:space="preserve"><value>Any valid government-issued ID of the patient</value></data>
+  <data name="Subsidy_Clinical" xml:space="preserve"><value>Medical certificate, clinical abstract, prescription, or diagnostic order relevant to your request</value></data>
+  <data name="Subsidy_Cost" xml:space="preserve"><value>Statement of account or medicine / diagnostic cost quotation; receipts if already paid</value></data>
+  <data name="Subsidy_Indigency" xml:space="preserve"><value>Barangay certificate of indigency, if requested after assessment</value></data>
+  <data name="Subsidy_Acknowledge" xml:space="preserve"><value>I understand that this request requires review at the Malasakit Center and does not guarantee financial assistance.</value></data>
+  <data name="Subsidy_SaveApplication" xml:space="preserve"><value>Save subsidy application</value></data>
+  <data name="Subsidy_SaveRequirements" xml:space="preserve"><value>Save document checklist</value></data>
+  <data name="Subsidy_Saved" xml:space="preserve"><value>Your document checklist has been saved.</value></data>
+  <data name="Subsidy_Empty" xml:space="preserve"><value>No subsidy application yet</value></data>
+  <data name="Subsidy_Application" xml:space="preserve"><value>Application</value></data>
+  <data name="Subsidy_Created" xml:space="preserve"><value>Saved on</value></data>
+  <data name="Subsidy_Eligibility" xml:space="preserve"><value>Eligibility</value></data>
+  <data name="Subsidy_Coverage" xml:space="preserve"><value>Subsidy coverage</value></data>
+  <data name="Subsidy_ConfirmedPayment" xml:space="preserve"><value>Hospital-confirmed payment</value></data>
+  <data name="Subsidy_Reviewed" xml:space="preserve"><value>Reviewed on</value></data>
+  <data name="Subsidy_NextStep" xml:space="preserve"><value>Next step</value></data>
+  <data name="Subsidy_VisitDesk" xml:space="preserve"><value>Prepare the applicable documents and visit the DRMC Malasakit Center. A social worker must assess your request and confirm the requirements, eligibility, and available assistance.</value></data>
+  <data name="Subsidy_Guidance" xml:space="preserve"><value>Explore assistance programs and preparation guidance</value></data>
+  <data name="SubsidyNeed_Medicines" xml:space="preserve"><value>Medicines</value></data>
+  <data name="SubsidyNeed_Diagnostics" xml:space="preserve"><value>Laboratory / diagnostics</value></data>
+  <data name="SubsidyNeed_HospitalCare" xml:space="preserve"><value>Hospital care / admission</value></data>
+  <data name="BillPaymentStatus_Unconfirmed" xml:space="preserve"><value>Not confirmed</value></data>
+  <data name="BillPaymentStatus_Unpaid" xml:space="preserve"><value>Unpaid</value></data>
+  <data name="BillPaymentStatus_PartiallyPaid" xml:space="preserve"><value>Partially paid</value></data>
+  <data name="BillPaymentStatus_Paid" xml:space="preserve"><value>Paid</value></data>
+  <data name="SubsidyEligibility_PendingReview" xml:space="preserve"><value>Pending assessment</value></data>
+  <data name="SubsidyEligibility_RequirementsNeeded" xml:space="preserve"><value>Additional requirements needed</value></data>
+  <data name="SubsidyEligibility_Eligible" xml:space="preserve"><value>Eligible</value></data>
+  <data name="SubsidyEligibility_Ineligible" xml:space="preserve"><value>Not eligible</value></data>
+  <data name="SubsidyCoverage_Unconfirmed" xml:space="preserve"><value>Not yet determined</value></data>
+  <data name="SubsidyCoverage_Subsidised" xml:space="preserve"><value>Subsidised</value></data>
+  <data name="SubsidyCoverage_PartiallySubsidised" xml:space="preserve"><value>Partially subsidised</value></data>
+  <data name="SubsidyCoverage_SelfPay" xml:space="preserve"><value>Patient-paid / self-pay</value></data>
 </root>
