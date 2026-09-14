@@ -113,18 +113,52 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
         var before = (await main.BoundingBoxAsync())!.Y;
         var trigger = page.GetByRole(AriaRole.Button, new() { Name = "User Account Menu" });
         await trigger.ClickAsync();
-        await Expect(page.Locator(".nav-account .dropdown-menu")).ToBeVisibleAsync();
+        var menu = page.Locator("#mobileUtilityMenu");
+        await Expect(menu).ToBeVisibleAsync();
+        await Expect(menu).ToHaveCSSAsync("transform", "none");
         await page.ScreenshotAsync(new() { Path = Path.Combine(app.Artifacts, "desktop-account-menu.png") });
         Assert.InRange(Math.Abs((await main.BoundingBoxAsync())!.Y - before), 0, 1);
-        await trigger.PressAsync("ArrowDown");
-        Assert.True(await page.Locator(".nav-account .dropdown-menu a").First.EvaluateAsync<bool>("el => el === document.activeElement"));
+        // Focus stays trapped inside the drawer while it is open.
+        await page.Keyboard.PressAsync("Tab");
+        Assert.True(await page.EvaluateAsync<bool>("() => !!document.activeElement.closest('#mobileUtilityMenu')"));
         await page.Keyboard.PressAsync("Escape");
+        await Expect(menu).ToBeHiddenAsync();
         await Expect(trigger).ToBeFocusedAsync();
-        await Expect(page.Locator(".nav-account .dropdown-menu")).ToBeHiddenAsync();
         await trigger.ClickAsync();
-        await page.Locator("h1").ClickAsync();
-        await Expect(page.Locator(".nav-account .dropdown-menu")).ToBeHiddenAsync();
+        await Expect(menu).ToBeVisibleAsync();
+        await page.Locator(".offcanvas-backdrop").ClickAsync();
+        await Expect(menu).ToBeHiddenAsync();
         Assert.Equal(0, await page.Locator(".dashboard-hero a").CountAsync());
+    }
+
+    [Fact]
+    public async Task Desktop_menu_opens_the_same_utility_drawer_as_mobile()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+        await using var context = await browser.NewContextAsync(app.Context("1440"));
+        var page = await context.NewPageAsync();
+        await PortalFixture.SignIn(page);
+        var trigger = page.Locator(".nav-menu-trigger");
+        await Expect(trigger).ToBeVisibleAsync();
+        await Expect(page.Locator(".nav-menu-trigger")).ToHaveCountAsync(1); // one shared menu trigger, no duplicate menus
+        await Expect(trigger).ToHaveAttributeAsync("aria-label", "User Account Menu");
+        var viewport = page.ViewportSize!;
+        await trigger.ClickAsync();
+        var menu = page.Locator("#mobileUtilityMenu");
+        await Expect(menu).ToBeVisibleAsync();
+        await Expect(menu).ToHaveCSSAsync("transform", "none"); // wait out the slide-in transition
+        var menuBox = (await menu.BoundingBoxAsync())!;
+        Assert.True(menuBox.Width <= 360 && Math.Abs(menuBox.X + menuBox.Width - viewport.Width) <= 1, $"Drawer box {menuBox.Width}x@{menuBox.X} in {viewport.Width}px viewport");
+        await Expect(menu).ToHaveAttributeAsync("aria-modal", "true");
+        await Expect(menu.Locator("#mobileQuickTasksHeading")).ToBeVisibleAsync();
+        await Expect(menu.Locator("#mobileHospitalServicesHeading")).ToBeVisibleAsync();
+        await Expect(menu.Locator(".mobile-more-link[href='/Directory']")).ToBeVisibleAsync();
+        await Expect(menu.Locator(".mobile-more-link[href='/Patient/MedicalHistory']")).ToBeVisibleAsync();
+        await Expect(menu.GetByRole(AriaRole.Link, new() { Name = "Two-Factor Auth (2FA)" })).ToBeVisibleAsync();
+        await page.ScreenshotAsync(new() { Path = Path.Combine(app.Artifacts, "desktop-menu-drawer.png") });
+        await menu.GetByRole(AriaRole.Button, new() { Name = "Close", Exact = true }).ClickAsync();
+        await Expect(menu).ToBeHiddenAsync();
+        await Expect(trigger).ToBeFocusedAsync();
     }
 
     [Theory]

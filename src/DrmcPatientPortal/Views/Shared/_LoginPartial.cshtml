@@ -14,55 +14,13 @@
             displayName = User.Identity?.Name;
         }
 
-        <li class="nav-item dropdown">
-            <a class="btn btn-sm btn-outline-primary dropdown-toggle d-inline-flex align-items-center gap-2 px-3 py-1 text-primary-drmc fw-semibold bg-white border-primary-subtle"
-               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="User Account Menu">
-                <i class="bi bi-person-circle fs-6"></i>
+        <li class="nav-item">
+            <button class="nav-menu-trigger btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-2 px-3 py-1 text-primary-drmc fw-semibold bg-white border-primary-subtle"
+                    type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileUtilityMenu"
+                    aria-controls="mobileUtilityMenu" aria-label="User Account Menu">
+                <i class="bi bi-person-circle fs-6" aria-hidden="true"></i>
                 <span class="d-inline-block text-truncate" style="max-width: 180px;">@displayName</span>
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end shadow-sm rounded-3 border-0 small mt-2">
-                <li>
-                    <a class="dropdown-item fw-semibold text-primary-drmc py-2" asp-controller="Patient" asp-action="Home">
-                        <i class="bi bi-speedometer2 me-2"></i> @Loc["Nav_Dashboard"]
-                    </a>
-                </li>
-                <li><a class="dropdown-item py-2" asp-controller="MedicalHistory" asp-action="Index"><i class="bi bi-clock-history me-2" aria-hidden="true"></i>@Loc["History_Title"]</a></li>
-                <li><hr class="dropdown-divider my-1"></li>
-                <li>
-                    <a class="dropdown-item py-1" asp-controller="LabResults" asp-action="Index">
-                        <i class="bi bi-file-earmark-medical me-2 text-info-emphasis"></i> @Loc["Nav_LabResults"]
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item py-1" asp-controller="Medications" asp-action="Index">
-                        <i class="bi bi-capsule me-2 text-success"></i> @Loc["Nav_Medications"]
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item py-1" asp-controller="Patient" asp-action="Audit">
-                        <i class="bi bi-shield-check me-2 text-success"></i> @Loc["Nav_Audit"]
-                    </a>
-                </li>
-                <li><hr class="dropdown-divider my-1"></li>
-                <li>
-                    <a class="dropdown-item py-1" asp-area="Identity" asp-page="/Account/Manage/TwoFactorAuthentication">
-                        <i class="bi bi-shield-lock me-2 text-primary-drmc"></i> Two-Factor Auth (2FA)
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item py-1" asp-area="Identity" asp-page="/Account/Manage/Index">
-                        <i class="bi bi-gear me-2 text-muted"></i> @Loc["Nav_Settings"]
-                    </a>
-                </li>
-                <li>
-                    <form class="d-inline" asp-area="Identity" asp-page="/Account/Logout"
-                          asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-                        <button type="submit" class="dropdown-item text-danger py-1">
-                            <i class="bi bi-box-arrow-right me-2"></i> @Loc["Nav_SignOut"]
-                        </button>
-                    </form>
-                </li>
-            </ul>
+            </button>
         </li>
     }
     else
