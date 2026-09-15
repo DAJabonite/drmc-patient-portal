@@ -279,19 +279,6 @@ textarea:focus-visible,
     flex-direction: row;
 }
 
-/* Bootstrap keeps non-expanded navbar dropdowns static by default. This nav
-   is desktop-only, so its account menu must always overlay the page. */
-.navbar-drmc .dropdown-menu {
-    position: absolute;
-    inset: 100% 0 auto auto;
-    min-width: 18rem;
-    max-width: calc(100vw - 2rem);
-}
-
-.navbar-drmc .dropdown-item {
-    white-space: normal;
-}
-
 .dropdown-menu {
     --bs-dropdown-zindex: 1060;
     z-index: 1060 !important;
@@ -401,6 +388,13 @@ textarea:focus-visible,
 
 .mobile-utility-sheet .offcanvas-body {
     padding: 1rem 1rem calc(var(--mobile-nav-height) + 1rem + env(safe-area-inset-bottom));
+}
+
+/* The drawer is shared with desktop, which has no fixed tab bar to clear. */
+@media (min-width: 992px) {
+    .mobile-utility-sheet .offcanvas-body {
+        padding-bottom: 1.5rem;
+    }
 }
 
 .mobile-utility-section + .mobile-utility-section {
@@ -749,7 +743,7 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
 
 .dashboard-shortcuts {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 0.6rem;
 }
 
@@ -1457,6 +1451,14 @@ code,
         padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
     }
 
+    .dashboard-shortcuts {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .dashboard-shortcuts a:last-child {
+        grid-column: 1 / -1;
+    }
+
     .container,
     .container-fluid {
         --bs-gutter-x: 2rem;
@@ -1715,7 +1717,7 @@ code,
         gap: 0.35rem;
     }
 
-    .dashboard-shortcuts a {
+    .dashboard-shortcuts a:not(:last-child) {
         min-height: 58px;
         flex-direction: column;
         gap: 0.15rem;
@@ -1723,6 +1725,10 @@ code,
         font-size: 0.66rem;
         line-height: 1.1;
         text-align: center;
+    }
+
+    .dashboard-shortcuts a:last-child {
+        justify-content: flex-start;
     }
 
     .dashboard-shortcuts i {
