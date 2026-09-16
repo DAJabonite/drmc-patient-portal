@@ -3,14 +3,9 @@
     ViewData["Title"] = "Your Malasakit Checklist & Guidance";
 }
 
-<section class="page-header d-print-none">
+<section class="page-header">
     <div class="container">
-        <div class="d-flex align-items-center gap-2 mb-2">
-            <span class="badge bg-success text-white fw-bold px-3 py-1 rounded-pill">
-                <i class="bi bi-check-circle-fill me-1"></i> Preparation Guide
-            </span>
-            <span class="small text-white text-opacity-75">Personalized Social Services Guide</span>
-        </div>
+        <p class="small text-white text-opacity-75 mb-2">Personalized Social Services Guide</p>
         <h1 class="display-6 fw-bold mb-1">Your Document Checklist &amp; Program Matches</h1>
         <p class="text-white text-opacity-90 mb-0">Prepare these documents before heading to the DRMC Malasakit Center desk.</p>
     </div>
@@ -18,9 +13,9 @@
 
 <section class="section py-5 bg-light">
     <div class="container" style="max-width: 860px;">
-        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white print-container">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
             
-            <!-- Header for Print -->
+            <!-- Checklist Header -->
             <div class="text-center pb-4 mb-4 border-bottom">
                 <img src="~/images/drmc-seal.png" alt="DRMC Seal" style="height: 60px; width: auto;" class="mb-2" />
                 <h2 class="h5 fw-bold text-primary-drmc mb-0">Davao Regional Medical Center &middot; Malasakit Center</h2>
@@ -81,18 +76,13 @@
             <p class="small text-muted">This guide does not determine eligibility or approve assistance. Confirm the current requirements with the Malasakit Center.</p>
             <a asp-action="Apply" class="btn btn-drmc mb-3">@Loc["Subsidy_Apply"]</a>
             <!-- Actions -->
-            <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center pt-3 border-top d-print-none">
-                <button onclick="window.print();" class="btn btn-outline-drmc rounded-pill px-4 fw-semibold">
-                    <i class="bi bi-printer-fill me-1"></i> Print Checklist
-                </button>
-                <div class="d-flex gap-2">
+            <div class="d-flex gap-2 justify-content-end pt-3 border-top">
                     <a asp-action="Navigator" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold">
                         Recalculate
                     </a>
                     <a asp-action="Index" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold">
                         Malasakit Overview
                     </a>
-                </div>
             </div>
 
         </div>

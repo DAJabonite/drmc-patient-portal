@@ -11,13 +11,13 @@ Patients should see the next useful action before institutional or explanatory c
 - Mobile and desktop primary navigation use the five client-requested destinations: Home, Encounters, Results, Medication, and Financial Assistance / Malasakit.
 - Signed-in Home opens the patient dashboard; signed-out Home opens the public landing page.
 - Guest access to Encounters, Results, and Medication follows the existing sign-in redirect and returns the patient to the destination after authentication.
-- The icon-only mobile header hamburger opens Book Appointment, OPD Queue, directory, OPD guide, advisories, language, and account actions. It retains an accessible Menu label.
-- Book and Queue remain one tap from the Home page and patient dashboard as prominent contextual actions.
+- The icon-only mobile header hamburger opens Book Appointment, directory, OPD guide, advisories, language, and account actions. It retains an accessible Menu label.
+- Booking remains one tap from the Home page and patient dashboard as a prominent contextual action.
 - Current location is conveyed with text/icon styling and `aria-current`, not color alone.
 
 ## Public entry flow
 
-1. Home presents Book Appointment, Track Queue, and Sign in/Dashboard first.
+1. Home presents Book Appointment and Sign in/Dashboard first.
 2. Secondary services—Malasakit, directory, advisories, and OPD guidance—remain directly available below or in Services.
 3. Department previews link to the full directory instead of reproducing the entire directory on the home page.
 4. Emergency contact information remains visible but does not compete with the main task hierarchy.
@@ -40,7 +40,7 @@ Patients should see the next useful action before institutional or explanatory c
 
 - Booking remains one page so users can review the whole request before submission. Signed-in patient data continues to prefill.
 - Route parameters continue to preselect department, doctor, or consultation type when supplied.
-- Queue refresh, category filters, search, Malasakit questions, triage, refill requests, and print actions preserve existing behavior and accessible status announcements.
+- Category filters, search, Malasakit questions, triage, and refill requests preserve existing behavior and accessible status announcements.
 
 ## Accessibility and older-phone handling
 

@@ -12,9 +12,6 @@
                 <a class="btn btn-warning btn-lg text-dark" asp-controller="Appointments" asp-action="Book">
                     <i class="bi bi-calendar-plus" aria-hidden="true"></i> Book appointment
                 </a>
-                <a class="btn btn-outline-light btn-lg" asp-controller="Queue" asp-action="Index">
-                    <i class="bi bi-people" aria-hidden="true"></i> Track queue
-                </a>
                 @if (signedIn)
                 {
                     <a class="btn btn-outline-light btn-lg" asp-controller="Patient" asp-action="Home">
@@ -98,11 +95,6 @@
                 <i class="bi bi-signpost-split" aria-hidden="true"></i>
                 <strong>First OPD visit?</strong>
                 <span>Follow the step-by-step guide.</span>
-            </a>
-            <a class="service-link" asp-controller="Queue" asp-action="Index">
-                <i class="bi bi-broadcast" aria-hidden="true"></i>
-                <strong>Live clinic status</strong>
-                <span>See numbers currently being called.</span>
             </a>
             <a class="service-link" asp-controller="Malasakit" asp-action="Navigator">
                 <i class="bi bi-clipboard2-check" aria-hidden="true"></i>

@@ -6,7 +6,7 @@
     ViewData["Title"] = $"{statusText} — {appt.BookingReference}";
 }
 
-<section class="page-header d-print-none">
+<section class="page-header">
     <div class="container">
         <div class="d-flex align-items-center gap-2 mb-2">
             <span class="badge @statusClass fw-bold px-3 py-1 rounded-pill">
@@ -22,10 +22,10 @@
 <section class="section py-5 bg-light">
     <div class="container" style="max-width: 760px;">
 
-        <!-- Printable Official Pass Card -->
-        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white print-container">
+        <!-- Official Appointment Pass Card -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
             
-            <!-- Hospital Header on Print Pass -->
+            <!-- Hospital Header -->
             <div class="text-center pb-4 mb-4 border-bottom">
                 <img src="~/images/drmc-seal.png" alt="DRMC Seal" style="height: 64px; width: auto;" class="mb-2" />
                 <h2 class="h5 fw-bold text-primary-drmc mb-0">Davao Regional Medical Center</h2>
@@ -143,17 +143,14 @@
                 </h4>
                 <ul class="small text-muted mb-0 ps-3">
                     <li>Please arrive at DRMC Tagum City <strong>15 minutes prior</strong> to your scheduled time slot.</li>
-                    <li>Present this digital or printed pass along with a valid government ID (PhilSys, PhilHealth, or Senior/PWD ID) at the OPD Triage Desk.</li>
+                    <li>Present this digital pass along with a valid government ID (PhilSys, PhilHealth, or Senior/PWD ID) at the OPD Triage Desk.</li>
                     <li>If you are scheduled for laboratory fasting tests (e.g. Fasting Blood Sugar), maintain a 10-12 hour fast prior to your appointment.</li>
                 </ul>
             </div>
 
             <!-- Action Buttons -->
-            <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center pt-3 border-top d-print-none">
+            <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center pt-3 border-top">
                 <div class="d-flex gap-2">
-                    <button onclick="window.print();" class="btn btn-outline-drmc fw-semibold rounded-pill px-4">
-                        <i class="bi bi-printer-fill me-1"></i> Print / Save Pass
-                    </button>
                     <a asp-action="CheckIn" asp-route-reference="@appt.BookingReference" class="btn btn-outline-secondary fw-semibold rounded-pill px-3">
                         <i class="bi bi-qr-code-scan me-1"></i> Verify Check-in
                     </a>
@@ -191,22 +188,5 @@
         max-height: 160px;
         display: block;
         margin: 0 auto;
-    }
-    @@media print {
-        body * {
-            visibility: hidden;
-        }
-        .print-container, .print-container * {
-            visibility: visible;
-        }
-        .print-container {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-        }
     }
 </style>

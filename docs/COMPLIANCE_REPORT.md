@@ -16,7 +16,7 @@ This is an engineering readiness report, not legal, clinical, privacy, accessibi
 | Data minimization | Appointment QR contains only a capability URL; audit descriptions avoid unnecessary clinical content | Implemented |
 | Web controls | CSP, `nosniff`, frame restriction, referrer restriction, local icon assets | Implemented; independent penetration test pending |
 | Localization | EN/FIL/CEB shared resources for shell and restored workflows; clinical and patient-authored content stays verbatim | Implemented for current shared-resource surface; native-speaker review required |
-| Accessibility | Semantic landmarks, keyboard focus, live queue status, responsive Bootstrap layout | Engineering checks implemented; formal WCAG audit pending |
+| Accessibility | Semantic landmarks, keyboard focus, accessible status messaging, responsive Bootstrap layout | Engineering checks implemented; formal WCAG audit pending |
 
 ## Product-scope corrections
 

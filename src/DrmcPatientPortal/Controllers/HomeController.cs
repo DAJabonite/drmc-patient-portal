@@ -24,9 +24,7 @@ public class HomeController : Controller
     {
         return View(new OpdGuideViewModel
         {
-            Steps = OpdGuideSteps.All,
-            IntroLine = OpdGuideSteps.IntroLine,
-            KioskReferralLine = OpdGuideSteps.KioskReferralLine
+            Facilities = OpdGuideFlows.All
         });
     }
 
@@ -88,7 +86,5 @@ public class LandingViewModel
 
 public class OpdGuideViewModel
 {
-    public IReadOnlyList<OpdGuideStep> Steps { get; set; } = Array.Empty<OpdGuideStep>();
-    public string IntroLine { get; set; } = string.Empty;
-    public string KioskReferralLine { get; set; } = string.Empty;
+    public IReadOnlyList<OpdFacilityFlow> Facilities { get; set; } = Array.Empty<OpdFacilityFlow>();
 }

@@ -54,10 +54,7 @@
 
 <div class="offcanvas offcanvas-end mobile-utility-sheet" tabindex="-1" id="mobileUtilityMenu" aria-labelledby="mobileUtilityMenuLabel">
     <div class="offcanvas-header">
-        <div>
-            <p class="eyebrow mb-1">Davao Regional Medical Center</p>
-            <h2 class="offcanvas-title h5 mb-0" id="mobileUtilityMenuLabel">@Loc["Mobile_Menu"]</h2>
-        </div>
+        <h2 class="offcanvas-title h5 mb-0" id="mobileUtilityMenuLabel">@Loc["Mobile_Menu"]</h2>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body">
@@ -65,7 +62,6 @@
             <h3 class="mobile-utility-heading" id="mobileQuickTasksHeading">@Loc["Mobile_QuickTasks"]</h3>
             <div class="mobile-more-grid">
                 <a class="mobile-more-link" asp-controller="Appointments" asp-action="Book"><i class="bi bi-calendar-plus" aria-hidden="true"></i><span>@Loc["Nav_Appointments"]</span></a>
-                <a class="mobile-more-link" asp-controller="Queue" asp-action="Index"><i class="bi bi-people" aria-hidden="true"></i><span>@Loc["Nav_Queue"]</span></a>
             </div>
         </section>
 

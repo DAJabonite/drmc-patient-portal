@@ -1,18 +1,17 @@
 # DRMC Patient Portal
 
-ASP.NET Core 10 patient portal for Davao Regional Medical Center. It provides public appointment booking, queue and hospital information, plus authenticated access to laboratory results, encounters, medications, triage, and access history.
+ASP.NET Core 10 patient portal for Davao Regional Medical Center. It provides public appointment booking and hospital information, plus authenticated access to laboratory results, encounters, medications, triage, and access history.
 
 ## Current scope
 
 | Area | Access | Current behavior |
 |---|---|---|
 | Appointments | Public booking; protected follow-up | Confirmation, check-in, and cancellation require the authenticated owner or a 256-bit capability delivered by email/SMS/QR. Only the SHA-256 hash is stored; access expires 24 hours after the visit. |
-| Queue | Public | Serving, called, and waiting values refresh on demand and every 30 seconds while visible. |
 | Medical history | Authenticated | OPD, ER, and Admitted categories from owned encounters; available through account and contextual links, outside the five primary destinations. |
 | Malasakit application | Authenticated | Saved subsidy request, document preparation checklist, and separate eligibility, coverage, reported payment, and confirmed payment states. Institutional review is still required. |
 | Official DRMC references | Public | Direct ARTA and Citizen's Charter landing-page links show the publisher's current content. |
-| Encounters | Authenticated | Patient-owned list, details, linked labs, printable summary, and fail-closed auditing. |
-| Laboratory results | Authenticated | Patient-owned results, details, trends, printable report, and access auditing. |
+| Encounters | Authenticated | Patient-owned list, details, linked labs, and fail-closed auditing. |
+| Laboratory results | Authenticated | Patient-owned results, details, trends, and access auditing. |
 | Medications | Authenticated | Active prescriptions, persisted dose times, and local refill requests. New requests remain `Requested` pending institutional pharmacy review. |
 | Triage | Authenticated | Validated, one-per-appointment intake. Emergency red flags persist as `UrgentEmergency` before the warning is shown. |
 | ID documents | Authenticated owner | Verified JPEG/PNG, 10 MB limit, encrypted storage, signed 30-minute staging tokens, ownership checks, and plaintext legacy migration. |
@@ -52,7 +51,6 @@ Never copy development seed credentials into a deployed environment.
 | Route | Purpose |
 |---|---|
 | `GET /`, `/OpdGuide`, `/Directory`, `/Malasakit`, `/Advisories` | Public services and information |
-| `GET /Queue` and `GET /Queue/Live` | Queue board and polling data |
 | `GET/POST /Appointments/Book` | Public booking |
 | `GET /Appointments/Access` | URL token exchange into an encrypted HttpOnly access cookie |
 | `GET /Appointments/Confirmation` | Owner/capability-protected confirmation |
@@ -70,7 +68,6 @@ Never copy development seed credentials into a deployed environment.
 | `POST /Malasakit/Requirements` | Save document preparation checklist |
 | `GET /Patient/Encounters` | Encounter timeline |
 | `GET /Patient/Encounters/Details/{id}` | Owned encounter with linked labs |
-| `GET /Patient/Encounters/Print/{id}` | Printable owned encounter summary |
 | `GET /Patient/LabResults` | Laboratory results and trends |
 | `GET /Patient/Medications` | Prescriptions, exact schedules, and refill status |
 | `GET/POST /Patient/Triage/*` | Pre-consultation intake |

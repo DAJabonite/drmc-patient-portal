@@ -8,9 +8,9 @@ owners: DRMC patient portal team
 
 ## Product and audience
 
-- **Purpose:** Give patients fast, trustworthy access to appointments, queue information, clinical records, medication information, and hospital services.
+- **Purpose:** Give patients fast, trustworthy access to appointments, clinical records, medication information, and hospital services.
 - **Primary users:** Patients and family members, often using older phones, slower connections, or assistive technology.
-- **Primary tasks:** Book a consultation, track the OPD queue, review results and medications, and find the next required action.
+- **Primary tasks:** Book a consultation, review results and medications, and find the next required action.
 - **Density:** Calm and concise. Show the next useful action first, then disclose supporting detail.
 
 ## Design direction
@@ -71,11 +71,10 @@ The live DRMC site returned HTTP 403 during the 2026-09-12 implementation review
 - The five primary destinations are always Home, Encounters, Results, Medication, and Malasakit. “Financial Assistance / Malasakit” is shortened to “Malasakit” only where mobile width requires it, with the full accessible label retained.
 - Medical History is a secondary authenticated destination in account/utility menus and contextual links. It groups OPD, ER, and Admitted records without adding to or replacing the five primary destinations (client clarification, 2026-09-13).
 - Signed-in Home opens the patient dashboard; signed-out Home opens the public landing page. Protected record destinations retain the existing sign-in redirect and return URL.
-- Booking, queue tracking, directory, OPD guidance, advisories, language, and account actions remain available in the mobile utility menu and as contextual page actions.
+- Booking, directory, OPD guidance, advisories, language, and account actions remain available in the mobile utility menu and as contextual page actions.
 - Desktop uses the same five-destination information architecture, plus the existing account controls.
-- The public home page is task-first: Book, Queue, and Sign in/Dashboard lead; secondary hospital information follows.
+- The public home page is task-first: Book and Sign in/Dashboard lead; secondary hospital information follows.
 - List and detail pages use compact page headers, flat record rows, and horizontally scrollable filter groups where necessary.
-- Print views hide navigation and interactive chrome and retain their current clinical content.
 
 ## Components and states
 
@@ -115,6 +114,6 @@ The live DRMC site returned HTTP 403 during the 2026-09-12 implementation review
 
 - Adopted: `#0E4E87` remains the primary brand color.
 - Adopted: the client-requested five primary destinations remain stable for guests and signed-in patients; authentication changes the Home destination and access boundary, not the navigation vocabulary.
-- Adopted: booking and queue are high-priority tasks surfaced on Home/Dashboard and in the header utility menu rather than replacing requested primary destinations.
+- Adopted: booking is a high-priority task surfaced on Home/Dashboard and in the header utility menu rather than replacing requested primary destinations.
 - Adopted: necessary registration, privacy, triage, confirmation, and clinical safety steps remain intact.
 - Adopted: the portal is inspired by DRMC identity but does not reproduce the older public website's layout.

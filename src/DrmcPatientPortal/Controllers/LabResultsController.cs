@@ -90,35 +90,6 @@ public class LabResultsController : Controller
         return View(result);
     }
 
-    // GET /Patient/LabResults/Print/{id}
-    [HttpGet("Print/{id:int}")]
-    public async Task<IActionResult> Print(int id)
-    {
-        var user = await _userManager.GetUserAsync(User);
-        if (user is null) return Challenge();
-
-        var result = await _db.LabResults
-            .Include(l => l.Items)
-            .FirstOrDefaultAsync(l => l.Id == id && l.PatientUserId == user.Id);
-
-        if (result is null)
-        {
-            return NotFound();
-        }
-
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
-        await _auditLog.LogAsync(user.Id, "PRINT_LAB_REPORT", $"LabResult/{id}", "Printed an owned laboratory report.", ip);
-
-        var model = new LabPrintReportViewModel
-        {
-            LabResult = result,
-            Patient = user,
-            PrintedAt = DateTime.UtcNow
-        };
-
-        return View(model);
-    }
-
     // GET /Patient/LabResults/Trends
     [HttpGet("Trends")]
     public async Task<IActionResult> Trends(string? parameter)
@@ -163,13 +134,6 @@ public class LabResultsIndexViewModel
     public int TotalCount { get; set; }
     public int TotalAvailable { get; set; }
     public int TotalInProgress { get; set; }
-}
-
-public class LabPrintReportViewModel
-{
-    public LabResult LabResult { get; set; } = null!;
-    public ApplicationUser Patient { get; set; } = null!;
-    public DateTime PrintedAt { get; set; }
 }
 
 public class LabTrendsViewModel

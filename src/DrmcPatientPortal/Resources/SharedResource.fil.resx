@@ -39,7 +39,6 @@
   <data name="Nav_FinancialAssistance"><value>Tulong Pinansyal / Malasakit</value></data>
   <data name="Nav_MoreServices"><value>Iba Pang Serbisyo</value></data>
   <data name="Nav_OpdGuide"><value>Gabay sa OPD</value></data>
-  <data name="Nav_Queue"><value>Pila sa OPD</value></data>
   <data name="Nav_Appointments"><value>Magpa-Appointment</value></data>
   <data name="Nav_Directory"><value>Mga Doktor at Klinika</value></data>
   <data name="Nav_Advisories"><value>Mga Anunsyo sa Kalusugan</value></data>
@@ -64,7 +63,6 @@
   <!-- Common Actions & Buttons -->
   <data name="Action_Search"><value>Maghanap</value></data>
   <data name="Action_Filter"><value>Salain</value></data>
-  <data name="Action_Print"><value>I-print / I-save bilang PDF</value></data>
   <data name="Action_ViewDetails"><value>Tingnan ang Detalye</value></data>
   <data name="Action_ReturnDashboard"><value>Bumalik sa Dashboard</value></data>
   <data name="Action_Cancel"><value>Kanselahin</value></data>
@@ -95,7 +93,6 @@
   <data name="Error_ServiceUnavailableBody"><value>Hindi makumpleto ang kinakailangang tala ng seguridad. Walang protektadong impormasyon ang inilabas. Pakisubukang muli.</value></data>
   <data name="Enc_Title"><value>Buod at Tala Pagkatapos ng Konsultasyon</value></data>
   <data name="Enc_Subtitle"><value>Mga Konsultasyon sa Outpatient at Klinika</value></data>
-  <data name="Enc_Record"><value>Elektronikong Rekord Medikal</value></data>
   <data name="Enc_BookFollowUp"><value>Magpa-iskedyul ng Follow-Up</value></data>
   <data name="Enc_AllDepartments"><value>Lahat ng Departamento</value></data>
   <data name="Enc_None"><value>Walang nakatalang konsultasyon</value></data>
@@ -114,7 +111,6 @@
   <data name="Enc_CarePlan"><value>Plano ng Pangangalaga at Tagubilin sa Bahay</value></data>
   <data name="Enc_Labs"><value>Mga Resulta ng Laboratoryo mula sa Konsultasyong Ito</value></data>
   <data name="Enc_NoLabs"><value>Walang laboratory test na iniutos sa konsultasyong ito.</value></data>
-  <data name="Enc_Print"><value>I-print ang buod ng konsultasyon</value></data>
   <data name="Enc_ReturnSummary"><value>Bumalik sa Buod</value></data>
   <data name="Enc_OfficialSummary"><value>Opisyal na Buod ng Konsultasyong Outpatient at Plano ng Pangangalaga</value></data>
   <data name="Enc_PatientName"><value>Pangalan ng Pasyente</value></data>
@@ -125,23 +121,7 @@
   <data name="Enc_PatientRepresentative"><value>Pasyente / Awtorisadong Kinatawan</value></data>
   <data name="Enc_AttendingSpecialist"><value>Dumadaluhang Espesyalistang Medikal · DRMC</value></data>
   <data name="Enc_Generated"><value>Nilikha mula sa Electronic Health Records ng Davao Regional Medical Center noong {0}.</value></data>
-  <data name="Queue_Title"><value>Tagasubaybay ng Pila sa Outpatient Clinic</value></data>
-  <data name="Queue_Live"><value>Live na Daloy</value></data>
-  <data name="Queue_UpdatedAt"><value>Na-update nang {0}</value></data>
-  <data name="Queue_Track"><value>Subaybayan ang Iyong Numero</value></data>
-  <data name="Queue_Enter"><value>Ilagay ang numero sa iyong clinic pass.</value></data>
-  <data name="Queue_Check"><value>Tingnan</value></data>
-  <data name="Queue_All"><value>Lahat ng Klinika</value></data>
-  <data name="Queue_Refresh"><value>I-refresh ang Board</value></data>
-  <data name="Queue_Waiting"><value>Naghihintay</value></data>
-  <data name="Queue_NowServing"><value>Kasalukuyang Sineserbisyuhan</value></data>
-  <data name="Queue_NextCalled"><value>Susunod na Tatawagin</value></data>
-  <data name="Queue_InQueue"><value>Nasa Pila</value></data>
-  <data name="Queue_Patients"><value>mga Pasyente</value></data>
-  <data name="Queue_Updated"><value>Na-update ang queue board.</value></data>
-  <data name="Queue_Failed"><value>Nabigo ang pag-update. Nananatiling nakikita ang kasalukuyang datos.</value></data>
   <data name="Rx_Title"><value>Mga Aktibong Reseta at Gamot</value></data>
-  <data name="Rx_Record"><value>Talaang Pangkalusugan ng Parmasya</value></data>
   <data name="Rx_Pharmacy"><value>Outpatient Pharmacy ng DRMC</value></data>
   <data name="Rx_Active"><value>Mga Aktibong Reseta</value></data>
   <data name="Rx_SafetyAlert"><value>Babala sa Kaligtasan ng Pasyente</value></data>
@@ -167,7 +147,6 @@
   <data name="Enc_BookFollowUpSlot"><value>Mag-book ng Follow-Up</value></data>
   <data name="Enc_BackNotes"><value>Bumalik sa mga Tala</value></data>
   <data name="Enc_ViewPrescriptions"><value>Tingnan ang mga Reseta</value></data>
-  <data name="Enc_PrintSlip"><value>I-print ang Buod</value></data>
   <data name="Status_Available"><value>Available</value></data>
   <data name="EncounterType_OpdConsultation"><value>Konsultasyong OPD</value></data>
   <data name="EncounterType_Emergency"><value>Emerhensiya</value></data>
@@ -213,6 +192,15 @@
   <data name="Sources_Description" xml:space="preserve"><value>Basahin ang pinakabagong mga publikasyon sa website ng DRMC.</value></data>
   <data name="Sources_Arta" xml:space="preserve"><value>ARTA / Anti-Red Tape Act</value></data>
   <data name="Sources_Charter" xml:space="preserve"><value>Citizen’s Charter</value></data>
+  <data name="OpdGuide_ReminderTitle" xml:space="preserve"><value>Bago Kayo Lumabas</value></data>
+  <data name="OpdGuide_ReminderBody" xml:space="preserve"><value>Paalala: Kung aalis kayo, lalabas, o hindi ninyo makukumpleto ang proseso ng OPD triage, kailangan ninyong simulan muli ang buong sequence mula sa simula.</value></data>
+  <data name="OpdGuide_SelectFacility" xml:space="preserve"><value>Piliin ang Inyong OPD Facility</value></data>
+  <data name="OpdGuide_StepCount" xml:space="preserve"><value>{0} na hakbang</value></data>
+  <data name="OpdGuide_StepCountAfterPre" xml:space="preserve"><value>{0} na hakbang pagkatapos ng pre-registration</value></data>
+  <data name="OpdGuide_ConditionalBadge" xml:space="preserve"><value>Kondisyonal</value></data>
+  <data name="OpdGuide_PanelHeading" xml:space="preserve"><value>Sequence ng Pagbisita sa {0}</value></data>
+  <data name="OpdGuide_PreRegistrationNode" xml:space="preserve"><value>Pre</value></data>
+  <data name="OpdGuide_DestinationsLabel" xml:space="preserve"><value>Mga posibleng destinasyon</value></data>
   <data name="History_Title" xml:space="preserve"><value>Kasaysayang medikal</value></data>
   <data name="History_Description" xml:space="preserve"><value>Mga rekord ng outpatient, emergency, at pagpapaospital na makikita sa portal.</value></data>
   <data name="History_Categories" xml:space="preserve"><value>Mga kategorya ng kasaysayang medikal</value></data>

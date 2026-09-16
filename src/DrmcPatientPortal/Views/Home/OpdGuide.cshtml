@@ -1,6 +1,59 @@
 @model OpdGuideViewModel
 @{
     ViewData["Title"] = "Outpatient Department (OPD) Guide";
+
+    void RenderStep(OpdGuideStep step, string nodeLabel)
+    {
+        <li class="opd-step-item@(step.StepNumber == 0 ? " opd-step-pre" : null)">
+            <div class="opd-step-node" aria-hidden="true">@nodeLabel</div>
+            <div class="opd-step-content">
+                <h4 class="opd-step-title">
+                    @step.Title
+                    @if (step.IsConditional)
+                    {
+                        <span class="badge rounded-pill text-bg-light border fw-normal ms-1">@Loc["OpdGuide_ConditionalBadge"]</span>
+                    }
+                </h4>
+                @if (!string.IsNullOrEmpty(step.Location))
+                {
+                    <div class="opd-step-location">
+                        <i class="bi bi-geo-alt me-1 text-muted" aria-hidden="true"></i>@step.Location
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(step.Detail))
+                {
+                    <p class="opd-step-detail">@step.Detail</p>
+                }
+                @if (step.Branches is { Count: > 0 })
+                {
+                    <ul class="opd-step-branches">
+                        @foreach (var branch in step.Branches)
+                        {
+                            <li><i class="bi bi-arrow-return-right me-1" aria-hidden="true"></i>@branch</li>
+                        }
+                    </ul>
+                }
+                @if (step.Destinations is { Count: > 0 })
+                {
+                    <div class="opd-step-destinations">
+                        <i class="bi bi-card-checklist" aria-hidden="true"></i>
+                        <ul aria-label="@Loc["OpdGuide_DestinationsLabel"]">
+                            @foreach (var destination in step.Destinations)
+                            {
+                                <li>@destination</li>
+                            }
+                        </ul>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(step.RequirementNote))
+                {
+                    <div class="opd-step-requirement">
+                        <i class="bi bi-card-checklist me-1" aria-hidden="true"></i>@step.RequirementNote
+                    </div>
+                }
+            </div>
+        </li>
+    }
 }
 
 <!-- Hero / Header Banner -->
@@ -8,12 +61,7 @@
     <div class="container">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
             <div>
-                <div class="d-flex align-items-center gap-2 mb-1">
-                    <span class="badge bg-white text-primary-drmc fw-bold px-3 py-1 rounded-pill small">
-                        <i class="bi bi-compass me-1"></i> Patient Orientation
-                    </span>
-                    <span class="small text-white text-opacity-75">Outpatient Visit Sequence</span>
-                </div>
+                <p class="small text-white text-opacity-75 mb-1">Outpatient Visit Sequence</p>
                 <h1 class="display-6 fw-bold mb-0">Outpatient Department (OPD) Guide</h1>
             </div>
             <div>
@@ -28,93 +76,79 @@
 <!-- Main Guide Content -->
 <section class="section py-5 bg-light">
     <div class="container" style="max-width: 1140px;">
-        
+
         <partial name="_OfficialDrmcSources" />
 
-        <!-- Plain Language Intro Line -->
-        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white border-start border-4 border-primary">
+        <!-- Restart Reminder -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white" role="note">
             <div class="d-flex align-items-start gap-3">
-                <div class="p-2 rounded-circle bg-primary-subtle text-primary-drmc d-inline-flex" style="flex-shrink:0;">
-                    <i class="bi bi-info-circle-fill fs-4"></i>
+                <div class="p-2 rounded-circle bg-warning-subtle text-warning-emphasis d-inline-flex" style="flex-shrink:0;">
+                    <i class="bi bi-exclamation-triangle-fill fs-4" aria-hidden="true"></i>
                 </div>
                 <div>
-                    <h2 class="h5 fw-bold text-dark mb-1">Patient Consultation Sequence</h2>
-                    <p class="text-muted mb-0 leading-relaxed">
-                        @Model.IntroLine
-                    </p>
+                    <h2 class="h5 fw-bold text-dark mb-1">@Loc["OpdGuide_ReminderTitle"]</h2>
+                    <p class="text-muted mb-0">@Loc["OpdGuide_ReminderBody"]</p>
                 </div>
             </div>
         </div>
 
-        <!-- Linear Visual Stepper Container -->
-        <div class="opd-stepper-container mb-4">
-            <h3 class="h6 text-uppercase fw-bold text-muted mb-0" style="font-size: 0.78rem; letter-spacing: 0.5px;">
-                Outpatient Visit Sequence (Steps 1 to 6)
-            </h3>
-
-            <ol class="opd-stepper">
-                @foreach (var step in Model.Steps)
-                {
-                    <li class="opd-step-item">
-                        <div class="opd-step-node" aria-hidden="true">
-                            @step.StepNumber
-                        </div>
-                        <div class="opd-step-content">
-                            <h4 class="opd-step-title">@step.Title</h4>
-                            <div class="opd-step-location">
-                                <i class="bi bi-geo-alt me-1 text-muted"></i>@step.Location
-                            </div>
-                            @if (!string.IsNullOrEmpty(step.RequirementNote))
+        <!-- Facility Selector and Inline Step Flows -->
+        <h2 id="opd-facility-heading" class="h6 text-uppercase fw-bold text-muted mb-2" style="font-size: 0.78rem; letter-spacing: 0.5px;">
+            @Loc["OpdGuide_SelectFacility"]
+        </h2>
+        <div id="opd-facility-accordion"
+             class="opd-facility-accordion mb-4"
+            aria-labelledby="opd-facility-heading">
+            @foreach (var flow in Model.Facilities)
+            {
+                var stepHint = flow.PreRegistration is null
+                    ? Loc["OpdGuide_StepCount", flow.Steps.Count].Value
+                    : Loc["OpdGuide_StepCountAfterPre", flow.Steps.Count].Value;
+                <section id="opd-item-@flow.Key" class="opd-facility-item">
+                    <h3 class="m-0">
+                        <button type="button"
+                                id="opd-trigger-@flow.Key"
+                                class="opd-facility-trigger collapsed"
+                                aria-expanded="false"
+                                aria-controls="opd-panel-@flow.Key"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#opd-panel-@flow.Key">
+                            <span class="opd-facility-label">
+                                <span class="opd-facility-name">@flow.Name</span>
+                                <span class="opd-facility-hint">@stepHint</span>
+                            </span>
+                            <i class="bi bi-chevron-right opd-facility-chevron" aria-hidden="true"></i>
+                        </button>
+                    </h3>
+                    <div id="opd-panel-@flow.Key"
+                         class="opd-facility-panel collapse"
+                         role="region"
+                         aria-labelledby="opd-trigger-@flow.Key"
+                         data-bs-parent="#opd-facility-accordion">
+                        <div class="opd-stepper-container">
+                            <p class="text-uppercase fw-bold text-muted mb-0" style="font-size: 0.78rem; letter-spacing: 0.5px;">
+                                @Loc["OpdGuide_PanelHeading", flow.ShortName]
+                            </p>
+                            <ol class="opd-stepper">
+                                @if (flow.PreRegistration is not null)
+                                {
+                                    RenderStep(flow.PreRegistration, Loc["OpdGuide_PreRegistrationNode"].Value);
+                                }
+                                @foreach (var step in flow.Steps)
+                                {
+                                    RenderStep(step, step.StepNumber.ToString());
+                                }
+                            </ol>
+                            @if (!string.IsNullOrEmpty(flow.VerificationNote))
                             {
-                                <div class="opd-step-requirement">
-                                    <i class="bi bi-card-checklist me-1"></i>@step.RequirementNote
-                                </div>
+                                <p class="opd-verification-note text-muted small mb-0">
+                                    <i class="bi bi-info-circle me-1" aria-hidden="true"></i>@flow.VerificationNote
+                                </p>
                             }
                         </div>
-                    </li>
-                }
-            </ol>
-        </div>
-
-        <!-- Plain Language Outro Line (Wayfinder Kiosk Referral) -->
-        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
-            <div class="d-flex align-items-center gap-3">
-                <div class="p-3 rounded-circle bg-light text-primary-drmc border d-inline-flex" style="flex-shrink:0;">
-                    <i class="bi bi-signpost-2-fill fs-3"></i>
-                </div>
-                <div>
-                    <h2 class="h6 fw-bold text-dark mb-1">Need Turn-by-Turn Indoor Directions?</h2>
-                    <p class="text-muted small mb-0">
-                        @Model.KioskReferralLine
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Clinic Hours & Operational Notes -->
-        <div class="row g-3">
-            <div class="col-md-6">
-                <div class="card border-0 rounded-4 p-3 bg-white shadow-xs h-100">
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        <i class="bi bi-clock-fill text-primary-drmc"></i>
-                        <h3 class="h6 fw-bold text-dark mb-0">OPD Consultation Schedule</h3>
                     </div>
-                    <p class="small text-muted mb-0">
-                        Monday to Friday: 8:00 AM – 5:00 PM (Excluding Official National Holidays).
-                    </p>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card border-0 rounded-4 p-3 bg-white shadow-xs h-100">
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        <i class="bi bi-telephone-fill text-primary-drmc"></i>
-                        <h3 class="h6 fw-bold text-dark mb-0">Hospital Information Assistance</h3>
-                    </div>
-                    <p class="small text-muted mb-0">
-                        For inquiries, visit the Public Assistance and Complaints Desk (PACD) at the main entrance or call (084) 216-9120.
-                    </p>
-                </div>
-            </div>
+                </section>
+            }
         </div>
 
     </div>

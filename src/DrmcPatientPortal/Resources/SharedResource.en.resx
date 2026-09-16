@@ -39,7 +39,6 @@
   <data name="Nav_FinancialAssistance"><value>Financial Assistance / Malasakit</value></data>
   <data name="Nav_MoreServices"><value>More Services</value></data>
   <data name="Nav_OpdGuide"><value>OPD Guide</value></data>
-  <data name="Nav_Queue"><value>OPD Queue</value></data>
   <data name="Nav_Appointments"><value>Book Appointment</value></data>
   <data name="Nav_Directory"><value>Doctors &amp; Clinics</value></data>
   <data name="Nav_Advisories"><value>Advisories</value></data>
@@ -64,7 +63,6 @@
   <!-- Common Actions & Buttons -->
   <data name="Action_Search"><value>Search</value></data>
   <data name="Action_Filter"><value>Filter</value></data>
-  <data name="Action_Print"><value>Print / Save as PDF</value></data>
   <data name="Action_ViewDetails"><value>View Details</value></data>
   <data name="Action_ReturnDashboard"><value>Return to Dashboard</value></data>
   <data name="Action_Cancel"><value>Cancel</value></data>
@@ -95,7 +93,6 @@
   <data name="Error_ServiceUnavailableBody"><value>We could not complete the required security audit. No protected information was released. Please try again.</value></data>
   <data name="Enc_Title"><value>After-Visit Summaries &amp; Care Notes</value></data>
   <data name="Enc_Subtitle"><value>Outpatient &amp; Clinical Encounters</value></data>
-  <data name="Enc_Record"><value>Electronic Medical Record</value></data>
   <data name="Enc_BookFollowUp"><value>Book Follow-Up</value></data>
   <data name="Enc_AllDepartments"><value>All Departments</value></data>
   <data name="Enc_None"><value>No consultation encounters recorded</value></data>
@@ -114,7 +111,6 @@
   <data name="Enc_CarePlan"><value>Physician Care Plan &amp; Patient Home Instructions</value></data>
   <data name="Enc_Labs"><value>Lab Results from this Visit</value></data>
   <data name="Enc_NoLabs"><value>No lab results were ordered during this visit.</value></data>
-  <data name="Enc_Print"><value>Print consultation summary</value></data>
   <data name="Enc_ReturnSummary"><value>Return to Summary</value></data>
   <data name="Enc_OfficialSummary"><value>Official Outpatient Consultation Summary &amp; Clinical Care Plan</value></data>
   <data name="Enc_PatientName"><value>Patient Name</value></data>
@@ -125,23 +121,7 @@
   <data name="Enc_PatientRepresentative"><value>Patient / Authorized Representative</value></data>
   <data name="Enc_AttendingSpecialist"><value>Attending Medical Specialist · DRMC</value></data>
   <data name="Enc_Generated"><value>Generated from Davao Regional Medical Center Electronic Health Records on {0}.</value></data>
-  <data name="Queue_Title"><value>Outpatient Clinic Queue Tracker</value></data>
-  <data name="Queue_Live"><value>Live Feed</value></data>
-  <data name="Queue_UpdatedAt"><value>Updated at {0}</value></data>
-  <data name="Queue_Track"><value>Track Your Ticket</value></data>
-  <data name="Queue_Enter"><value>Enter the ticket number on your clinic pass.</value></data>
-  <data name="Queue_Check"><value>Check</value></data>
-  <data name="Queue_All"><value>All Clinics</value></data>
-  <data name="Queue_Refresh"><value>Refresh Board</value></data>
-  <data name="Queue_Waiting"><value>Waiting</value></data>
-  <data name="Queue_NowServing"><value>Now Serving</value></data>
-  <data name="Queue_NextCalled"><value>Next Called</value></data>
-  <data name="Queue_InQueue"><value>In Queue</value></data>
-  <data name="Queue_Patients"><value>Patients</value></data>
-  <data name="Queue_Updated"><value>Queue board updated.</value></data>
-  <data name="Queue_Failed"><value>Queue update failed. Existing values remain visible.</value></data>
   <data name="Rx_Title"><value>Active Prescriptions &amp; Medications</value></data>
-  <data name="Rx_Record"><value>Pharmacy Health Record</value></data>
   <data name="Rx_Pharmacy"><value>DRMC Outpatient Pharmacy</value></data>
   <data name="Rx_Active"><value>Active Prescriptions</value></data>
   <data name="Rx_SafetyAlert"><value>Patient Safety Alert</value></data>
@@ -167,7 +147,6 @@
   <data name="Enc_BookFollowUpSlot"><value>Book Follow-Up Slot</value></data>
   <data name="Enc_BackNotes"><value>Back to Notes</value></data>
   <data name="Enc_ViewPrescriptions"><value>View Prescriptions</value></data>
-  <data name="Enc_PrintSlip"><value>Print Summary Slip</value></data>
   <data name="Status_Available"><value>Available</value></data>
   <data name="EncounterType_OpdConsultation"><value>OPD Consultation</value></data>
   <data name="EncounterType_Emergency"><value>Emergency</value></data>
@@ -213,6 +192,15 @@
   <data name="Sources_Description" xml:space="preserve"><value>Read the latest publications directly on the DRMC website.</value></data>
   <data name="Sources_Arta" xml:space="preserve"><value>ARTA / Anti-Red Tape Act</value></data>
   <data name="Sources_Charter" xml:space="preserve"><value>Citizen’s Charter</value></data>
+  <data name="OpdGuide_ReminderTitle" xml:space="preserve"><value>Before You Step Out</value></data>
+  <data name="OpdGuide_ReminderBody" xml:space="preserve"><value>Reminder: If you leave, step out, or do not complete the OPD triage process, you must start the entire sequence over from the beginning.</value></data>
+  <data name="OpdGuide_SelectFacility" xml:space="preserve"><value>Select Your OPD Facility</value></data>
+  <data name="OpdGuide_StepCount" xml:space="preserve"><value>{0} steps</value></data>
+  <data name="OpdGuide_StepCountAfterPre" xml:space="preserve"><value>{0} steps after pre-registration</value></data>
+  <data name="OpdGuide_ConditionalBadge" xml:space="preserve"><value>Conditional</value></data>
+  <data name="OpdGuide_PanelHeading" xml:space="preserve"><value>{0} Visit Sequence</value></data>
+  <data name="OpdGuide_PreRegistrationNode" xml:space="preserve"><value>Pre</value></data>
+  <data name="OpdGuide_DestinationsLabel" xml:space="preserve"><value>Possible destinations</value></data>
   <data name="History_Title" xml:space="preserve"><value>Medical history</value></data>
   <data name="History_Description" xml:space="preserve"><value>Your outpatient, emergency, and admission records available in this portal.</value></data>
   <data name="History_Categories" xml:space="preserve"><value>Medical history categories</value></data>
