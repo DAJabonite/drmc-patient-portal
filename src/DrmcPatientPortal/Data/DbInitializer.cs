@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DrmcPatientPortal.Data;
 
 // Seeds the database with realistic patient accounts, clinical staff roster,
-// live queue boards, assistance guidelines, and advisories. Runs only in Development.
+// assistance guidelines, and advisories. Runs only in Development.
 // Seed credentials are documented in README.md; nothing "seed"-like is ever
 // rendered in patient-facing UI text.
 public static class DbInitializer
@@ -414,31 +414,7 @@ public static class DbInitializer
             db.SaveChanges();
         }
 
-        // 4. Seed Live OPD Queue Tickets across multiple clinical departments
-        if (!db.QueueTickets.Any())
-        {
-            var now = DateTime.UtcNow;
-            var tickets = new List<QueueTicket>
-            {
-                new() { TicketNumber = "IM-102", Department = "Internal Medicine", ClinicRoom = "Room 201 - Dr. Llanos", Status = QueueTicketStatus.Serving, IsPriority = false, IssuedAt = now.AddMinutes(-45), CalledAt = now.AddMinutes(-8), ServedAt = now.AddMinutes(-6), EstimatedWaitMinutes = 0 },
-                new() { TicketNumber = "IM-103", Department = "Internal Medicine", ClinicRoom = "Room 202 - Dr. Cruz", Status = QueueTicketStatus.Called, IsPriority = false, IssuedAt = now.AddMinutes(-35), CalledAt = now.AddMinutes(-2), EstimatedWaitMinutes = 5 },
-                new() { TicketNumber = "IM-104", Department = "Internal Medicine", ClinicRoom = "Room 201 - Dr. Llanos", Status = QueueTicketStatus.Waiting, IsPriority = true, IssuedAt = now.AddMinutes(-20), EstimatedWaitMinutes = 15 },
-                new() { TicketNumber = "PED-018", Department = "Pediatrics", ClinicRoom = "Room 101 - Dr. Bautista", Status = QueueTicketStatus.Serving, IsPriority = false, IssuedAt = now.AddMinutes(-50), CalledAt = now.AddMinutes(-12), ServedAt = now.AddMinutes(-10), EstimatedWaitMinutes = 0 },
-                new() { TicketNumber = "PED-019", Department = "Pediatrics", ClinicRoom = "Room 104 - Dr. Ruiz", Status = QueueTicketStatus.Called, IsPriority = false, IssuedAt = now.AddMinutes(-30), CalledAt = now.AddMinutes(-1), EstimatedWaitMinutes = 5 },
-                new() { TicketNumber = "PED-020", Department = "Pediatrics", ClinicRoom = "Room 101 - Dr. Bautista", Status = QueueTicketStatus.Waiting, IsPriority = false, IssuedAt = now.AddMinutes(-15), EstimatedWaitMinutes = 20 },
-                new() { TicketNumber = "SUR-007", Department = "Surgery", ClinicRoom = "Room 101 - Dr. Valderama", Status = QueueTicketStatus.Serving, IsPriority = false, IssuedAt = now.AddMinutes(-60), CalledAt = now.AddMinutes(-15), ServedAt = now.AddMinutes(-12), EstimatedWaitMinutes = 0 },
-                new() { TicketNumber = "SUR-008", Department = "Surgery", ClinicRoom = "Room 103 - Dr. Alcantara", Status = QueueTicketStatus.Waiting, IsPriority = false, IssuedAt = now.AddMinutes(-25), EstimatedWaitMinutes = 15 },
-                new() { TicketNumber = "OBG-022", Department = "OB-Gyne", ClinicRoom = "Room 201 - Dr. Garcia", Status = QueueTicketStatus.Serving, IsPriority = true, IssuedAt = now.AddMinutes(-40), CalledAt = now.AddMinutes(-5), ServedAt = now.AddMinutes(-3), EstimatedWaitMinutes = 0 },
-                new() { TicketNumber = "OBG-023", Department = "OB-Gyne", ClinicRoom = "Room 203 - Dr. Morales", Status = QueueTicketStatus.Waiting, IsPriority = false, IssuedAt = now.AddMinutes(-20), EstimatedWaitMinutes = 20 },
-                new() { TicketNumber = "FCM-031", Department = "Family & Community Medicine", ClinicRoom = "Room 101 - Dr. Ramos", Status = QueueTicketStatus.Serving, IsPriority = false, IssuedAt = now.AddMinutes(-30), CalledAt = now.AddMinutes(-7), ServedAt = now.AddMinutes(-5), EstimatedWaitMinutes = 0 },
-                new() { TicketNumber = "RAD-042", Department = "Radiology", ClinicRoom = "X-Ray Room 1", Status = QueueTicketStatus.Called, IsPriority = false, IssuedAt = now.AddMinutes(-25), CalledAt = now.AddMinutes(-3), EstimatedWaitMinutes = 5 }
-            };
-
-            db.QueueTickets.AddRange(tickets);
-            db.SaveChanges();
-        }
-
-        // 5. Seed Users & Patient Accounts
+        // 4. Seed Users & Patient Accounts
         var seededUsers = new List<(string email, string password, string firstName, string? middleName, string lastName, string contact, string idType, string idNumber)>
         {
             ("patient@drmc.doh.gov.ph", "P@tient2026", "Maria Clara", "D.", "Santos", "0917 123 4567", "Philippine National ID (PhilSys)", "1234-5678-9012-3456"),
@@ -472,7 +448,7 @@ public static class DbInitializer
             userManager.CreateAsync(user, password).GetAwaiter().GetResult();
         }
 
-        // 6. Seed reviewer patient data for current portal features.
+        // 5. Seed reviewer patient data for current portal features.
         var primary = db.Users.FirstOrDefault(u => u.Email == "patient@drmc.doh.gov.ph");
         if (primary is not null)
         {
@@ -525,22 +501,6 @@ public static class DbInitializer
             foreach (var appointment in db.Appointments.Where(a => a.PatientUserId == primary.Id && a.QrCodePayload.Contains("|PAT:")))
             {
                 appointment.QrCodePayload = $"DRMC|REF:{appointment.BookingReference}|PURPOSE:CHECKIN";
-            }
-
-            // Link a queue ticket to Maria Clara Santos so she can test the ticket lookup
-            if (!db.QueueTickets.Any(q => q.PatientUserId == primary.Id))
-            {
-                db.QueueTickets.Add(new QueueTicket
-                {
-                    TicketNumber = "IM-105",
-                    Department = "Internal Medicine",
-                    ClinicRoom = "Room 201 - Dr. Llanos",
-                    Status = QueueTicketStatus.Waiting,
-                    IsPriority = false,
-                    IssuedAt = DateTime.UtcNow.AddMinutes(-10),
-                    EstimatedWaitMinutes = 25,
-                    PatientUserId = primary.Id
-                });
             }
 
             var encounterIm = db.ClinicalEncounters.FirstOrDefault(e => e.EncounterReference == "DRMC-ENC-2026-0412");

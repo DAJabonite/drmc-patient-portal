@@ -7,12 +7,7 @@
     <div class="container">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
             <div>
-                <div class="d-flex align-items-center gap-2 mb-1">
-                    <span class="badge bg-white text-primary-drmc fw-bold px-3 py-1 rounded-pill small">
-                        <i class="bi bi-journal-medical me-1"></i> @Loc["Enc_Record"]
-                    </span>
-                    <span class="small text-white text-opacity-75">@Loc["Enc_Subtitle"]</span>
-                </div>
+                <p class="small text-white text-opacity-75 mb-1">@Loc["Enc_Subtitle"]</p>
                 <h1 class="display-6 fw-bold mb-0">@Loc["Enc_Title"]</h1>
             </div>
 
@@ -97,9 +92,6 @@
                                 <div class="d-flex gap-2 justify-content-md-end">
                                     <a asp-action="Details" asp-route-id="@enc.Id" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold shadow-xs">
                                         <i class="bi bi-file-earmark-text me-1"></i> @Loc["Enc_ViewSummary"]
-                                    </a>
-                                    <a asp-action="Print" asp-route-id="@enc.Id" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold">
-                                        <i class="bi bi-printer"></i><span class="visually-hidden">@Loc["Enc_Print"]</span>
                                     </a>
                                 </div>
                                 @if (enc.FollowUpDate.HasValue)

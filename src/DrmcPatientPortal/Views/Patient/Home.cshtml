@@ -32,9 +32,7 @@
         <nav class="dashboard-shortcuts mb-3" aria-label="Patient shortcuts">
             <a asp-controller="Encounters" asp-action="Index"><i class="bi bi-journal-medical" aria-hidden="true"></i><span>Visits</span></a>
             <a asp-controller="MedicalHistory" asp-action="Index"><i class="bi bi-clock-history" aria-hidden="true"></i><span>@Loc["History_Title"]</span></a>
-            <a asp-controller="Queue" asp-action="Index"><i class="bi bi-people" aria-hidden="true"></i><span>Live queue</span></a>
             <a asp-action="Audit"><i class="bi bi-shield-check" aria-hidden="true"></i><span>Access history</span></a>
-            <a asp-area="Identity" asp-page="/Account/Manage/Index"><i class="bi bi-gear" aria-hidden="true"></i><span>Settings</span></a>
         </nav>
 
         <div class="row g-3">
@@ -85,7 +83,6 @@
 
                         <div class="summary-card-actions mt-auto">
                             <a asp-controller="Appointments" asp-action="Book"><i class="bi bi-calendar-plus" aria-hidden="true"></i> Book appointment</a>
-                            <a asp-controller="Queue" asp-action="Index"><i class="bi bi-broadcast" aria-hidden="true"></i> Live queue</a>
                         </div>
                     </div>
                 </article>

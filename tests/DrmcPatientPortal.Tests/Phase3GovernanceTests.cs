@@ -105,17 +105,16 @@ public class Phase3GovernanceTests
     }
 
     [Fact]
-    public void HomeController_OpdGuide_ReturnsAllStepsAndMetadata()
+    public void HomeController_OpdGuide_ReturnsAllFacilityFlows()
     {
         var controller = new HomeController();
         var result = controller.OpdGuide() as ViewResult;
         Assert.NotNull(result);
 
         var model = Assert.IsType<OpdGuideViewModel>(result.Model);
-        Assert.Equal(6, model.Steps.Count);
-        Assert.Equal("OPD Triage & Screening Desk", model.Steps[0].Title);
-        Assert.Equal("OPD Pharmacy Dispensing Window", model.Steps[5].Title);
-        Assert.False(string.IsNullOrWhiteSpace(model.IntroLine));
-        Assert.False(string.IsNullOrWhiteSpace(model.KioskReferralLine));
+        Assert.Equal(["main", "bucas", "ccm", "acc"], model.Facilities.Select(flow => flow.Key));
+        Assert.Equal([6, 9, 5, 5], model.Facilities.Select(flow => flow.Steps.Count));
+        Assert.NotNull(model.Facilities[0].PreRegistration);
+        Assert.True(model.Facilities[1].Steps[8].IsConditional);
     }
 }

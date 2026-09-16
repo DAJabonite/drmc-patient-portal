@@ -1,6 +1,6 @@
 # Current Implementation Status
 
-Last reconciled: 2026-09-13. This is the source of truth for current code; historical plans and logs are not current product scope.
+Last reconciled: 2026-09-16. This is the source of truth for current code; historical plans and logs are not current product scope.
 
 ## Implemented
 
@@ -12,17 +12,17 @@ Last reconciled: 2026-09-13. This is the source of truth for current code; histo
 - Public booking with server-side department, type, doctor, doctor/department, slot, and conflict validation.
 - Capability-protected appointment confirmation, check-in, and cancellation; hashed tokens expire 24 hours after the visit and revoke on cancellation.
 - Authenticated dashboard, lab results, restored encounter summaries, medications, triage, and audit history.
-- Encounter ownership, linked labs, printable views, development seeds, and view/print audit events.
+- Encounter ownership, linked labs, development seeds, and view audit events.
 - Refill requests start `Requested`; Requested/Approved/Ready-for-Pickup block duplicates; refill counts do not change before dispensing.
 - Persisted medication dose schedules and an explicit no-exact-schedule state.
 - Persistent emergency triage, range validation, duplicate prevention, and fail-closed auditing.
-- Full queue-card refresh, accessible status, manual refresh, 30-second polling, and visibility throttling.
 - Encrypted ID storage, verified images, signed session tokens, cleanup, and metadata-first legacy migration.
 - Identity lockout, security headers, secure cookies, local Bootstrap Icons, and validated Production notification adapters.
 - English, Filipino, and Cebuano shared resources for navigation and restored clinical flows; clinical content stays verbatim.
 
 ## Deliberately not implemented
 
+- Online OPD queue tracking is removed because DRMC does not provide a queue-tracking source of truth. The OPD guide still describes physical, on-site queue steps where applicable.
 - Messaging and caregiver/proxy access remain removed.
 - HIS, pharmacy, and SIEM connectivity require DRMC interfaces and credentials. No simulated synchronization is shown.
 - Refill dispensing/inventory changes require a pharmacy adapter or staff workflow.
@@ -34,9 +34,8 @@ Last reconciled: 2026-09-13. This is the source of truth for current code; histo
 |---|---|---|
 | GET | `/Patient/Encounters` | Authenticated patient |
 | GET | `/Patient/Encounters/Details/{id}` | Authenticated owner |
-| GET | `/Patient/Encounters/Print/{id}` | Authenticated owner |
 
-Latest migration: `20260913120223_AddSubsidyApplications`.
+Latest migration: `20260916095804_RemoveOpdQueue`.
 
 See [September 13 client requirements](docs/CLIENT_REQUIREMENTS_2026-09-13.md) for routes, verification, and the outstanding institutional billing/social-work integration.
 

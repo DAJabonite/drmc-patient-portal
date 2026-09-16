@@ -416,6 +416,10 @@ textarea:focus-visible,
     gap: 0.65rem;
 }
 
+.mobile-more-grid > :only-child {
+    grid-column: 1 / -1;
+}
+
 .mobile-more-link {
     min-width: 0;
     min-height: 58px;
@@ -444,6 +448,7 @@ textarea:focus-visible,
 }
 
 .mobile-menu-section {
+    margin-top: 0.75rem;
     border: 1px solid var(--drmc-border);
     border-radius: var(--drmc-radius-md);
     background: #fff;
@@ -743,7 +748,7 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
 
 .dashboard-shortcuts {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.6rem;
 }
 
@@ -1371,7 +1376,91 @@ code,
     cursor: pointer;
 }
 
-/* OPD guide stepper */
+/* OPD guide facility selector — a single-open disclosure keeps each long flow
+   directly beneath the facility that controls it. */
+.opd-facility-accordion {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.opd-facility-item {
+    overflow: clip;
+    scroll-margin-top: calc(var(--mobile-header-height) + 1rem);
+    background: var(--drmc-surface);
+    border: 1px solid var(--drmc-border);
+    border-radius: var(--drmc-radius-lg);
+}
+
+.opd-facility-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 48px;
+    padding: 0.7rem 1rem;
+    text-align: left;
+    color: var(--drmc-primary-deep);
+    background: var(--drmc-surface);
+    border: 0;
+    border-radius: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.opd-facility-trigger:hover {
+    color: var(--drmc-primary);
+    background: var(--drmc-surface-soft);
+}
+
+.opd-facility-trigger[aria-expanded="true"] {
+    color: #fff;
+    background: var(--drmc-primary);
+    border-radius: var(--drmc-radius-lg) var(--drmc-radius-lg) 0 0;
+}
+
+.opd-facility-label {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.opd-facility-name {
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+.opd-facility-hint {
+    display: block;
+    margin-top: 0.1rem;
+    color: var(--drmc-text-muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.opd-facility-trigger[aria-expanded="true"] .opd-facility-hint {
+    color: #fff;
+    opacity: 0.8;
+}
+
+.opd-facility-chevron {
+    margin-left: auto;
+    flex-shrink: 0;
+    color: var(--drmc-text-muted);
+    transition: transform 150ms ease;
+}
+
+.opd-facility-trigger[aria-expanded="true"] .opd-facility-chevron {
+    color: #fff;
+    transform: rotate(90deg);
+}
+
+.opd-facility-panel .opd-stepper-container {
+    border: 0;
+    border-top: 1px solid var(--drmc-border);
+    border-radius: 0;
+}
+
+/* OPD guide stepper — vertical spine at every width so 5–9 prose-rich
+   steps stay readable and never overflow horizontally. */
 .opd-stepper-container {
     padding: 2rem 1.25rem;
     background: #fff;
@@ -1382,11 +1471,11 @@ code,
 .opd-stepper {
     position: relative;
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: stretch;
     list-style: none;
     padding: 0;
-    margin: 2rem 0 1rem;
+    margin: 1.5rem 0 1rem;
 }
 
 .opd-stepper::before {
@@ -1394,29 +1483,32 @@ code,
     position: absolute;
     z-index: 1;
     top: 22px;
-    left: 42px;
-    right: 42px;
-    height: 3px;
+    bottom: 22px;
+    left: 21px;
+    width: 3px;
+    height: auto;
     background: #c7d3de;
 }
 
 .opd-step-item {
     position: relative;
     z-index: 2;
-    flex: 1;
+    width: 100%;
+    min-width: 0;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0 0.4rem;
-    text-align: center;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 0.7rem 0;
+    text-align: left;
 }
 
 .opd-step-node {
+    flex: 0 0 46px;
     width: 46px;
     height: 46px;
     display: grid;
     place-items: center;
-    margin-bottom: 0.8rem;
+    margin: 0 1rem 0 0;
     color: #fff;
     background: var(--drmc-primary);
     border: 4px solid #fff;
@@ -1425,10 +1517,25 @@ code,
     font-weight: 750;
 }
 
-.opd-step-content { max-width: 170px; }
-.opd-step-title { color: var(--drmc-primary-deep); font-size: 0.92rem; font-weight: 750; line-height: 1.3; }
-.opd-step-location { color: var(--drmc-text-muted); font-size: 0.8rem; line-height: 1.35; }
-.opd-step-requirement { display: inline-block; margin-top: 0.35rem; padding: 0.2rem 0.5rem; color: var(--drmc-primary); background: #eef6fc; border: 1px solid #cfdfec; border-radius: 999px; font-size: 0.72rem; }
+.opd-step-pre .opd-step-node {
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+}
+
+.opd-step-content { flex: 1; min-width: 0; max-width: 42rem; }
+.opd-step-title { color: var(--drmc-primary-deep); font-size: 0.92rem; font-weight: 750; line-height: 1.3; overflow-wrap: anywhere; }
+.opd-step-location { color: var(--drmc-text-muted); font-size: 0.8rem; line-height: 1.35; overflow-wrap: anywhere; }
+.opd-step-detail { color: var(--drmc-text-muted); font-size: 0.875rem; line-height: 1.45; margin: 0.15rem 0 0; overflow-wrap: anywhere; }
+.opd-step-requirement { display: flex; align-items: flex-start; gap: 0.3rem; width: fit-content; max-width: 100%; margin-top: 0.35rem; padding: 0.3rem 0.55rem; color: var(--drmc-primary); background: #eef6fc; border: 1px solid #cfdfec; border-radius: var(--drmc-radius-md); font-size: 0.72rem; line-height: 1.45; overflow-wrap: anywhere; }
+.opd-step-requirement i { flex: 0 0 auto; margin-top: 0.12em; margin-right: 0 !important; }
+.opd-step-branches { flex: 1; min-width: 0; margin: 0.5rem 0 0; padding: 0.5rem 0.75rem; list-style: none; background: var(--drmc-surface-soft); border-left: 3px solid var(--drmc-primary); border-radius: 0 var(--drmc-radius-sm) var(--drmc-radius-sm) 0; }
+.opd-step-branches li { min-width: 0; color: var(--drmc-text); font-size: 0.85rem; line-height: 1.45; overflow-wrap: anywhere; }
+.opd-step-branches li + li { margin-top: 0.25rem; }
+.opd-step-destinations { display: flex; align-items: baseline; gap: 0.35rem; margin-top: 0.45rem; color: var(--drmc-primary); font-size: 0.75rem; }
+.opd-step-destinations > i { flex-shrink: 0; }
+.opd-step-destinations ul { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0; padding: 0; list-style: none; }
+.opd-step-destinations li { min-width: 0; max-width: 100%; padding: 0.15rem 0.45rem; background: #eef6fc; border: 1px solid #cfdfec; border-radius: 999px; overflow-wrap: anywhere; }
+.opd-verification-note { margin: 1rem 0 0; padding-top: 0.75rem; border-top: 1px dashed var(--drmc-border); overflow-wrap: anywhere; }
 
 @media (max-width: 1199.98px) and (min-width: 992px) {
     .navbar-drmc .nav-link {
@@ -1452,11 +1559,7 @@ code,
     }
 
     .dashboard-shortcuts {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .dashboard-shortcuts a:last-child {
-        grid-column: 1 / -1;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .container,
@@ -1524,52 +1627,9 @@ code,
     .footer-bottom {
         margin-top: 1rem;
     }
-
-    .opd-stepper {
-        flex-direction: column;
-        align-items: stretch;
-        margin: 1rem 0;
-    }
-
-    .opd-stepper::before {
-        top: 22px;
-        bottom: 22px;
-        left: 21px;
-        right: auto;
-        width: 3px;
-        height: auto;
-    }
-
-    .opd-step-item {
-        width: 100%;
-        flex-direction: row;
-        align-items: flex-start;
-        padding: 0.7rem 0;
-        text-align: left;
-    }
-
-    .opd-step-node {
-        flex: 0 0 46px;
-        margin: 0 1rem 0 0;
-    }
-
-    .opd-step-content {
-        flex: 1;
-        max-width: none;
-    }
 }
 
 @media (max-width: 767.98px) {
-    .print-hospital-heading {
-        flex-wrap: wrap;
-    }
-
-    .print-hospital-heading > div {
-        order: 1;
-        flex: 0 0 100%;
-        overflow-wrap: normal;
-    }
-
     .appointment-summary .summary-card-heading {
         display: grid;
         grid-template-columns: 42px minmax(0, 1fr);
@@ -1713,11 +1773,11 @@ code,
     }
 
     .dashboard-shortcuts {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 0.35rem;
     }
 
-    .dashboard-shortcuts a:not(:last-child) {
+    .dashboard-shortcuts a {
         min-height: 58px;
         flex-direction: column;
         gap: 0.15rem;
@@ -1725,10 +1785,6 @@ code,
         font-size: 0.66rem;
         line-height: 1.1;
         text-align: center;
-    }
-
-    .dashboard-shortcuts a:last-child {
-        justify-content: flex-start;
     }
 
     .dashboard-shortcuts i {
@@ -1752,7 +1808,6 @@ code,
         columns: 1;
     }
 }
-
 @media (max-width: 359.98px) {
     :root {
         --mobile-nav-height: 64px;
@@ -1791,28 +1846,5 @@ code,
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
-    }
-}
-
-@media print {
-    .masthead,
-    .mobile-header,
-    .navbar-drmc,
-    .mobile-tab-bar,
-    .mobile-utility-sheet,
-    .footer-drmc,
-    .d-print-none {
-        display: none !important;
-    }
-
-    body {
-        display: block;
-        min-width: 0;
-        padding: 0 !important;
-        background: #fff;
-    }
-
-    main {
-        display: block;
     }
 }

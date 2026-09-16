@@ -27,7 +27,7 @@ Results, screenshots, route logs, browser metrics, and accessibility reports are
 | Access history and Settings appeared twice on the dashboard | Remove welcome-banner duplicates; keep shortcuts and account/utility access. |
 | Appointment titles and encounter references collapsed into narrow columns | Reflow heading/status, wrap metadata, and give references a separate phone row; assert readable geometry. |
 | Dashboard cards became cramped at 992–1024px | Use three columns from the extra-large breakpoint; retain wider rows below it. |
-| Long specialties, print headings, and form actions overflowed or broke words | Allow badge wrapping and flexible card children; wrap action groups and reduce excessive phone button padding. Check element bounds and mid-word line breaks, not only document width. |
+| Long specialties and form actions overflowed or broke words | Allow flexible card children; wrap action groups and reduce excessive phone button padding. Check element bounds and mid-word line breaks, not only document width. |
 | Laboratory search and several form labels lacked usable accessible names | Bound the search width, name its control/button, and connect labels to custom input IDs in login, registration, booking, and triage. |
 | Footer and semantic status text had insufficient contrast | Remove the obsolete scoped link-color override; darken semantic text on pale surfaces and secondary-outline button text. |
 | Related advisories had unnamed stretched links | Give links the associated advisory title as their accessible name. |
@@ -40,7 +40,7 @@ Routes, form handlers, authentication, clinical data, database schema, and produ
 
 ## Coverage
 
-The layout matrix visits 42 screens per profile: **756 screen visits across 18 browser/device/language profiles**, plus interaction scenarios and automated accessibility checks on 84 desktop/mobile screen states.
+The layout matrix visits 41 screens per profile: **738 screen visits across 18 browser/device/language profiles**, plus interaction scenarios and automated accessibility checks.
 
 | Browser/profile | Configuration |
 | --- | --- |
@@ -57,9 +57,9 @@ Mobile contexts are newly created with Playwright device descriptors, including 
 
 Screen inventory:
 
-- Public: home; directory/list/physician/department; OPD guide; advisories/list/detail; queue/list/ticket/missing ticket; privacy; service-unavailable and error pages; Malasakit/list/program/navigator; booking; unavailable check-in; login; registration; forgot-password; access-denied.
-- Signed in: dashboard; encounter list/detail/print; laboratory list/detail/print/trends; medication list/detail/refill status; audit; profile; 2FA settings/setup; appointment confirmation/check-in; triage form/summary/emergency warning.
-- Interactions: guest return URL, empty accounts, search, language persistence, profile save, booking validation/submission/check-in/cancellation, routine and emergency triage, assistance questionnaire/results, refill submission, queue refresh success/failure, registration capture-step/manual-step navigation and validation, authenticator enrollment and 2FA sign-in, dropdown/offcanvas behavior, keyboard skip link, print chrome, and effective 200% desktop reflow with reduced motion.
+- Public: home; directory/list/physician/department; OPD guide; advisories/list/detail; privacy; service-unavailable and error pages; Malasakit/list/program/navigator; booking; unavailable check-in; login; registration; forgot-password; access-denied.
+- Signed in: dashboard; encounter list/detail; laboratory list/detail/trends; medication list/detail/refill status; audit; profile; 2FA settings/setup; appointment confirmation/check-in; triage form/summary/emergency warning.
+- Interactions: guest return URL, empty accounts, search, language persistence, profile save, booking validation/submission/check-in/cancellation, routine and emergency triage, assistance questionnaire/results, refill submission, registration capture-step/manual-step navigation and validation, authenticator enrollment and 2FA sign-in, dropdown/offcanvas behavior, keyboard skip link, and effective 200% desktop reflow with reduced motion.
 
 ## Results and evidence
 
@@ -68,7 +68,7 @@ Final combined run (`pwsh scripts/test-ui.ps1 -SkipBrowserInstall`): **passed**.
 - Release build: **0 warnings, 0 errors**.
 - Existing backend tests: **25 passed, 0 failed, 0 skipped**.
 - Browser tests: **31 passed, 0 failed, 0 skipped** (about 2 minutes 34 seconds).
-- All 18 layout profiles completed all 42 routes without detected overflow, clipping, split heading/button words, unexpected status/redirects, or uncaught page-script errors.
+- All 18 layout profiles completed all 41 routes without detected overflow, clipping, split heading/button words, unexpected status/redirects, or uncaught page-script errors.
 - Automated accessibility: **0 violations across 84 screen states**. Separately recorded `incomplete` checks remain subject to the limits below.
 - Local TRX evidence: `User_ANGELO_2026-09-13_01_44_11_net10.0.trx` (backend) and `User_ANGELO_2026-09-13_01_44_16_net10.0.trx` (browser).
 
@@ -80,12 +80,12 @@ The checked-in screenshots use synthetic development records:
 | [320px dashboard](screenshots/ui-validation/before-mobile-dashboard.png) | [320px dashboard](screenshots/ui-validation/after-mobile-dashboard.png) |
 | [320px encounters](screenshots/ui-validation/before-mobile-encounters.png) | [320px encounters](screenshots/ui-validation/after-mobile-encounters.png) |
 
-Additional examples: [iPhone dashboard](screenshots/ui-validation/after-iphone-dashboard.png), [320px print preview](screenshots/ui-validation/after-mobile-print.png).
+Additional example: [iPhone dashboard](screenshots/ui-validation/after-iphone-dashboard.png).
 
 ## Limits
 
 - Mobile results are **device emulation**, not physical iOS/Android certification. Physical camera capture, virtual-keyboard behavior, and real assistive-technology sessions were not exercised.
 - The 200% check uses the equivalent CSS layout viewport and device scale; it does not claim an operating-system browser zoom interaction.
 - axe checks the WCAG 2 A/AA, 2.1 A/AA, and 2.2 AA rules it can automate. Image-backed/gradient contrast, clipping in scroll regions, and some native-control cases produce `incomplete` results requiring human review. These are saved separately; a zero-violation result is not a claim of complete WCAG certification.
-- Visual review includes the supplied defects, desktop account navigation in the in-app browser, and representative mobile record, profile, form, and print screenshots. Automated geometry and accessibility checks cover the full inventory. Fixed navigation appears at the initial viewport position in full-page screenshots; content remains scrollable beneath it.
+- Visual review includes the supplied defects, desktop account navigation in the in-app browser, and representative mobile record, profile, and form screenshots. Automated geometry and accessibility checks cover the full inventory. Fixed navigation appears at the initial viewport position in full-page screenshots; content remains scrollable beneath it.
 - Registration exercises capture UI and manual entry, not a physical ID or camera/OCR integration. The existing backend/OCR tests run separately. No production SMS/email, HIS, or pharmacy integration is claimed.

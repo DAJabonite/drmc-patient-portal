@@ -77,34 +77,6 @@ public class EncountersController : Controller
 
         return View(encounter);
     }
-
-    // GET /Patient/Encounters/Print/{id}
-    [HttpGet("Print/{id:int}")]
-    public async Task<IActionResult> Print(int id)
-    {
-        var user = await _userManager.GetUserAsync(User);
-        if (user is null) return Challenge();
-
-        var encounter = await _db.ClinicalEncounters
-            .FirstOrDefaultAsync(e => e.Id == id && e.PatientUserId == user.Id);
-
-        if (encounter is null)
-        {
-            return NotFound();
-        }
-
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
-        await _auditLog.LogAsync(user.Id, "PRINT_ENCOUNTER_SUMMARY", $"ClinicalEncounter/{id}", "Printed an owned encounter summary.", ip);
-
-        var model = new EncounterPrintViewModel
-        {
-            Encounter = encounter,
-            Patient = user,
-            PrintedAt = DateTime.UtcNow
-        };
-
-        return View(model);
-    }
 }
 
 public class EncountersIndexViewModel
@@ -112,11 +84,4 @@ public class EncountersIndexViewModel
     public string? SelectedDepartment { get; set; }
     public IReadOnlyList<ClinicalEncounter> Encounters { get; set; } = Array.Empty<ClinicalEncounter>();
     public IReadOnlyList<ClinicalDepartment> Departments { get; set; } = Array.Empty<ClinicalDepartment>();
-}
-
-public class EncounterPrintViewModel
-{
-    public ClinicalEncounter Encounter { get; set; } = null!;
-    public ApplicationUser Patient { get; set; } = null!;
-    public DateTime PrintedAt { get; set; }
 }

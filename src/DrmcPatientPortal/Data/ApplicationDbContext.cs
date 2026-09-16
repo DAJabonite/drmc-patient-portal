@@ -8,7 +8,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     : IdentityDbContext<ApplicationUser>(options)
 {
     public DbSet<Appointment> Appointments => Set<Appointment>();
-    public DbSet<QueueTicket> QueueTickets => Set<QueueTicket>();
     public DbSet<Doctor> Doctors => Set<Doctor>();
     public DbSet<AssistanceProgram> AssistancePrograms => Set<AssistanceProgram>();
     public DbSet<SubsidyApplication> SubsidyApplications => Set<SubsidyApplication>();
@@ -50,17 +49,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .OnDelete(DeleteBehavior.SetNull);
 
             e.HasIndex(x => x.BookingReference).IsUnique();
-        });
-
-        builder.Entity<QueueTicket>(e =>
-        {
-            e.HasOne(x => x.Patient)
-                .WithMany(u => u.QueueTickets)
-                .HasForeignKey(x => x.PatientUserId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            e.HasIndex(x => x.TicketNumber);
-            e.HasIndex(x => x.Department);
         });
 
         builder.Entity<Doctor>(e =>

@@ -52,4 +52,4 @@ dotnet test DrmcPatientPortal.slnx --no-build
 dotnet list DrmcPatientPortal.slnx package --vulnerable --include-transitive
 ```
 
-Smoke-test capability exchange and revocation, Encounters, ID retrieval, triage, refills, queue polling, languages, and error telemetry before traffic is enabled.
+Smoke-test capability exchange and revocation, Encounters, ID retrieval, triage, refills, languages, and error telemetry before traffic is enabled.

@@ -9,8 +9,8 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
 {
     internal static IEnumerable<string> PublicScreens => PublicRoutes;
     internal static IEnumerable<string> PatientScreens => PatientRoutes;
-    private static readonly string[] PublicRoutes = ["/", "/Directory", "/Directory/Doctor/1", "/Directory/Department?name=Internal%20Medicine", "/OpdGuide", "/Advisories", "/Advisories/Details?slug=dengue-4s-prevention-alert", "/Queue", "/Queue/Status?ticketNumber=IM-104", "/Queue/Status?ticketNumber=missing", "/Home/Privacy", "/Home/ServiceUnavailable", "/Malasakit", "/Malasakit/Program?code=MALASAKIT", "/Malasakit/Navigator", "/Appointments/Book", "/Appointments/CheckIn?reference=missing", "/Identity/Account/Login", "/Identity/Account/Register", "/Identity/Account/ForgotPassword", "/Identity/Account/AccessDenied", "/Home/Error"];
-    private static readonly string[] PatientRoutes = ["/Patient/MedicalHistory", "/Patient/MedicalHistory?category=ADMITTED", "/Malasakit/Apply", "/Malasakit/Status", "/Patient/Home", "/Patient/Encounters", "/Patient/Encounters/Details/1", "/Patient/Encounters/Print/1", "/Patient/LabResults", "/Patient/LabResults/Details/1", "/Patient/LabResults/Print/1", "/Patient/LabResults/Trends", "/Patient/Medications", "/Patient/Medications/Details/1", "/Patient/Audit", "/Identity/Account/Manage", "/Identity/Account/Manage/TwoFactorAuthentication", "/Identity/Account/Manage/EnableAuthenticator", "/Appointments/Confirmation?reference=DRMC-2026-IM-0192", "/Appointments/CheckIn?reference=DRMC-2026-IM-0192", "/Patient/Triage/Start/2", "/Patient/Triage/Summary/1", "/Patient/Triage/EmergencyWarning"];
+    private static readonly string[] PublicRoutes = ["/", "/Directory", "/Directory/Doctor/1", "/Directory/Department?name=Internal%20Medicine", "/OpdGuide", "/Advisories", "/Advisories/Details?slug=dengue-4s-prevention-alert", "/Home/Privacy", "/Home/ServiceUnavailable", "/Malasakit", "/Malasakit/Program?code=MALASAKIT", "/Malasakit/Navigator", "/Appointments/Book", "/Appointments/CheckIn?reference=missing", "/Identity/Account/Login", "/Identity/Account/Register", "/Identity/Account/ForgotPassword", "/Identity/Account/AccessDenied", "/Home/Error"];
+    private static readonly string[] PatientRoutes = ["/Patient/MedicalHistory", "/Patient/MedicalHistory?category=ADMITTED", "/Malasakit/Apply", "/Malasakit/Status", "/Patient/Home", "/Patient/Encounters", "/Patient/Encounters/Details/1", "/Patient/LabResults", "/Patient/LabResults/Details/1", "/Patient/LabResults/Trends", "/Patient/Medications", "/Patient/Medications/Details/1", "/Patient/Audit", "/Identity/Account/Manage", "/Identity/Account/Manage/TwoFactorAuthentication", "/Identity/Account/Manage/EnableAuthenticator", "/Appointments/Confirmation?reference=DRMC-2026-IM-0192", "/Appointments/CheckIn?reference=DRMC-2026-IM-0192", "/Patient/Triage/Start/2", "/Patient/Triage/Summary/1", "/Patient/Triage/EmergencyWarning"];
 
     public static TheoryData<string, string, string> Matrix
     {
@@ -129,6 +129,85 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
         await page.Locator(".offcanvas-backdrop").ClickAsync();
         await Expect(menu).ToBeHiddenAsync();
         Assert.Equal(0, await page.Locator(".dashboard-hero a").CountAsync());
+    }
+
+    [Fact]
+    public async Task Removed_queue_feature_is_not_linked_and_routes_return_not_found()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+        await using var context = await browser.NewContextAsync(app.Context("small"));
+        var page = await context.NewPageAsync();
+
+        await page.GotoAsync("/");
+        Assert.Equal(0, await page.Locator("a[href^='/Queue']").CountAsync());
+
+        foreach (var route in new[] { "/Queue", "/Queue/Status?ticketNumber=IM-104", "/Queue/Live" })
+        {
+            var response = await page.GotoAsync(route);
+            Assert.Equal(404, response?.Status);
+        }
+    }
+
+    [Fact]
+    public async Task Removed_print_features_are_not_linked_and_routes_return_not_found()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+        await using var context = await browser.NewContextAsync(app.Context("small"));
+        var page = await context.NewPageAsync();
+        await PortalFixture.SignIn(page);
+
+        foreach (var route in new[]
+                 {
+                     "/Patient/Encounters",
+                     "/Patient/Encounters/Details/1",
+                     "/Patient/LabResults",
+                     "/Patient/LabResults/Details/1",
+                     "/Patient/Audit",
+                     "/Advisories/Details?slug=dengue-4s-prevention-alert",
+                     "/Malasakit/Navigator",
+                     "/Appointments/Confirmation?reference=DRMC-2026-IM-0192"
+                 })
+        {
+            var response = await page.GotoAsync(route);
+            Assert.Equal(200, response?.Status);
+            Assert.Equal(0, await page.Locator("a[href*='/Print'], button[onclick*='print'], button[onclick*='Print']").CountAsync());
+        }
+
+        foreach (var route in new[] { "/Patient/Encounters/Print/1", "/Patient/LabResults/Print/1" })
+        {
+            var response = await page.GotoAsync(route);
+            Assert.Equal(404, response?.Status);
+        }
+    }
+
+    [Fact]
+    public async Task Page_headers_do_not_use_decorative_label_badges()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+        await using var context = await browser.NewContextAsync(app.Context("small"));
+        var page = await context.NewPageAsync();
+        await PortalFixture.SignIn(page);
+
+        var labelsByRoute = new Dictionary<string, string>
+        {
+            ["/Patient/Encounters"] = "Electronic Medical Record",
+            ["/Patient/LabResults"] = "Patient Health Records",
+            ["/Patient/Medications"] = "Pharmacy Health Record",
+            ["/Patient/Audit"] = "Data Privacy & Security",
+            ["/Identity/Account/Manage"] = "Patient Account Security",
+            ["/OpdGuide"] = "Patient Orientation",
+            ["/Advisories"] = "Official Announcements",
+            ["/Malasakit"] = "Republic Act No. 11463",
+            ["/Appointments/Book"] = "Self-Service Booking",
+            ["/Directory"] = "Medical Staff Directory"
+        };
+
+        foreach (var (route, label) in labelsByRoute)
+        {
+            var response = await page.GotoAsync(route);
+            Assert.Equal(200, response?.Status);
+            await Expect(page.Locator(".page-header .badge").Filter(new() { HasText = label })).ToHaveCountAsync(0);
+        }
     }
 
     [Fact]

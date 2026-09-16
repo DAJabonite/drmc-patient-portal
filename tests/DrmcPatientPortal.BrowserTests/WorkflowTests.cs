@@ -156,7 +156,7 @@ public sealed class WorkflowTests(PortalFixture app)
     }
 
     [Fact]
-    public async Task Assistance_medication_information_and_queue_states()
+    public async Task Assistance_and_medication_information()
     {
         await using var browser = await app.Playwright.Chromium.LaunchAsync();
         await using var context = await browser.NewContextAsync(app.Context("small"));
@@ -172,17 +172,10 @@ public sealed class WorkflowTests(PortalFixture app)
         await Expect(page.Locator("main")).Not.ToContainTextAsync("Refill");
         Assert.Equal(0, await page.Locator("form[action*='RequestRefill']").CountAsync());
         Assert.Empty(await ResponsiveTests.LayoutProblems(page));
-        await page.GotoAsync("/Queue");
-        await page.Locator("#refreshQueueBtn").ClickAsync();
-        await Expect(page.Locator("#queueRefreshStatus")).Not.ToBeEmptyAsync();
-        await page.RouteAsync("**/Queue/Live", route => route.FulfillAsync(new() { Status = 503, Body = "Unavailable" }));
-        await page.Locator("#refreshQueueBtn").ClickAsync();
-        await Expect(page.Locator("#queueRefreshStatus")).ToContainTextAsync("failed");
-        Assert.Empty(await ResponsiveTests.LayoutProblems(page));
     }
 
     [Fact]
-    public async Task Keyboard_reflow_reduced_motion_and_print()
+    public async Task Keyboard_reflow_and_reduced_motion()
     {
         await using var browser = await app.Playwright.Chromium.LaunchAsync();
         // A 1280px desktop zoomed to 200% has a 640 CSS-pixel layout viewport.
@@ -202,10 +195,5 @@ public sealed class WorkflowTests(PortalFixture app)
             await page.GotoAsync(route);
             Assert.Empty(await ResponsiveTests.LayoutProblems(page));
         }
-        await page.GotoAsync("/Patient/Encounters/Print/1");
-        await page.EmulateMediaAsync(new() { Media = Media.Print });
-        await Expect(page.Locator(".mobile-tab-bar")).ToBeHiddenAsync();
-        await Expect(page.Locator(".mobile-header")).ToBeHiddenAsync();
-        await Expect(page.Locator(".print-container")).ToContainTextAsync("DRMC-ENC-2026-0412");
     }
 }
