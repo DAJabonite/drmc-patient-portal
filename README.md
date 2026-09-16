@@ -11,7 +11,7 @@ ASP.NET Core 10 patient portal for Davao Regional Medical Center. It provides pu
 | Malasakit application | Authenticated | Saved subsidy request, document preparation checklist, and separate eligibility, coverage, reported payment, and confirmed payment states. Institutional review is still required. |
 | Official DRMC references | Public | Direct ARTA and Citizen's Charter landing-page links show the publisher's current content. |
 | Encounters | Authenticated | Patient-owned list, details, linked labs, and fail-closed auditing. |
-| Laboratory results | Authenticated | Patient-owned results, details, trends, and access auditing. |
+| Laboratory results | Authenticated | Patient-owned results, details, and access auditing. |
 | Medications | Authenticated | Active prescriptions, persisted dose times, and local refill requests. New requests remain `Requested` pending institutional pharmacy review. |
 | Triage | Authenticated | Validated, one-per-appointment intake. Emergency red flags persist as `UrgentEmergency` before the warning is shown. |
 | ID documents | Authenticated owner | Verified JPEG/PNG, 10 MB limit, encrypted storage, signed 30-minute staging tokens, ownership checks, and plaintext legacy migration. |
@@ -68,7 +68,7 @@ Never copy development seed credentials into a deployed environment.
 | `POST /Malasakit/Requirements` | Save document preparation checklist |
 | `GET /Patient/Encounters` | Encounter timeline |
 | `GET /Patient/Encounters/Details/{id}` | Owned encounter with linked labs |
-| `GET /Patient/LabResults` | Laboratory results and trends |
+| `GET /Patient/LabResults` | Laboratory results |
 | `GET /Patient/Medications` | Prescriptions, exact schedules, and refill status |
 | `GET/POST /Patient/Triage/*` | Pre-consultation intake |
 | `GET /Patient/Audit` | Patient access history |
