@@ -89,41 +89,6 @@ public class LabResultsController : Controller
 
         return View(result);
     }
-
-    // GET /Patient/LabResults/Trends
-    [HttpGet("Trends")]
-    public async Task<IActionResult> Trends(string? parameter)
-    {
-        var user = await _userManager.GetUserAsync(User);
-        if (user is null) return Challenge();
-
-        var targetParam = parameter ?? "Fasting Blood Glucose";
-
-        var allItems = await _db.LabResultItems
-            .Include(i => i.LabResult)
-            .Where(i => i.LabResult.PatientUserId == user.Id)
-            .OrderBy(i => i.LabResult.CollectedAt)
-            .ToListAsync();
-
-        var distinctParams = allItems
-            .Select(i => i.ParameterName)
-            .Distinct()
-            .ToList();
-
-        var trendItems = allItems
-            .Where(i => string.Equals(i.ParameterName, targetParam, StringComparison.OrdinalIgnoreCase))
-            .OrderBy(i => i.LabResult.CollectedAt)
-            .ToList();
-
-        var model = new LabTrendsViewModel
-        {
-            SelectedParameter = targetParam,
-            AvailableParameters = distinctParams,
-            TrendItems = trendItems
-        };
-
-        return View(model);
-    }
 }
 
 public class LabResultsIndexViewModel
@@ -134,11 +99,4 @@ public class LabResultsIndexViewModel
     public int TotalCount { get; set; }
     public int TotalAvailable { get; set; }
     public int TotalInProgress { get; set; }
-}
-
-public class LabTrendsViewModel
-{
-    public string SelectedParameter { get; set; } = string.Empty;
-    public IReadOnlyList<string> AvailableParameters { get; set; } = Array.Empty<string>();
-    public IReadOnlyList<LabResultItem> TrendItems { get; set; } = Array.Empty<LabResultItem>();
 }

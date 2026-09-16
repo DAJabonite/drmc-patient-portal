@@ -10,7 +10,7 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
     internal static IEnumerable<string> PublicScreens => PublicRoutes;
     internal static IEnumerable<string> PatientScreens => PatientRoutes;
     private static readonly string[] PublicRoutes = ["/", "/Directory", "/Directory/Doctor/1", "/Directory/Department?name=Internal%20Medicine", "/OpdGuide", "/Advisories", "/Advisories/Details?slug=dengue-4s-prevention-alert", "/Home/Privacy", "/Home/ServiceUnavailable", "/Malasakit", "/Malasakit/Program?code=MALASAKIT", "/Malasakit/Navigator", "/Appointments/Book", "/Appointments/CheckIn?reference=missing", "/Identity/Account/Login", "/Identity/Account/Register", "/Identity/Account/ForgotPassword", "/Identity/Account/AccessDenied", "/Home/Error"];
-    private static readonly string[] PatientRoutes = ["/Patient/MedicalHistory", "/Patient/MedicalHistory?category=ADMITTED", "/Malasakit/Apply", "/Malasakit/Status", "/Patient/Home", "/Patient/Encounters", "/Patient/Encounters/Details/1", "/Patient/LabResults", "/Patient/LabResults/Details/1", "/Patient/LabResults/Trends", "/Patient/Medications", "/Patient/Medications/Details/1", "/Patient/Audit", "/Identity/Account/Manage", "/Identity/Account/Manage/TwoFactorAuthentication", "/Identity/Account/Manage/EnableAuthenticator", "/Appointments/Confirmation?reference=DRMC-2026-IM-0192", "/Appointments/CheckIn?reference=DRMC-2026-IM-0192", "/Patient/Triage/Start/2", "/Patient/Triage/Summary/1", "/Patient/Triage/EmergencyWarning"];
+    private static readonly string[] PatientRoutes = ["/Patient/MedicalHistory", "/Patient/MedicalHistory?category=ADMITTED", "/Malasakit/Apply", "/Malasakit/Status", "/Patient/Home", "/Patient/Encounters", "/Patient/Encounters/Details/1", "/Patient/LabResults", "/Patient/LabResults/Details/1", "/Patient/Medications", "/Patient/Medications/Details/1", "/Patient/Audit", "/Identity/Account/Manage", "/Identity/Account/Manage/TwoFactorAuthentication", "/Identity/Account/Manage/EnableAuthenticator", "/Appointments/Confirmation?reference=DRMC-2026-IM-0192", "/Appointments/CheckIn?reference=DRMC-2026-IM-0192", "/Patient/Triage/Start/2", "/Patient/Triage/Summary/1", "/Patient/Triage/EmergencyWarning"];
 
     public static TheoryData<string, string, string> Matrix
     {
@@ -178,6 +178,27 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
             var response = await page.GotoAsync(route);
             Assert.Equal(404, response?.Status);
         }
+    }
+
+    [Fact]
+    public async Task Removed_biomarker_trends_are_not_linked_and_route_returns_not_found()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+        await using var context = await browser.NewContextAsync(app.Context("small"));
+        var page = await context.NewPageAsync();
+        await PortalFixture.SignIn(page);
+
+        foreach (var route in new[] { "/Patient/LabResults", "/Patient/LabResults/Details/1" })
+        {
+            var response = await page.GotoAsync(route);
+            Assert.Equal(200, response?.Status);
+            Assert.Equal(0, await page.Locator("a[href*='/LabResults/Trends'], a[href*='/Patient/LabResults/Trends']").CountAsync());
+            await Expect(page.GetByText("View Biomarker Trends", new() { Exact = true })).ToHaveCountAsync(0);
+            await Expect(page.GetByText("Track Trend", new() { Exact = true })).ToHaveCountAsync(0);
+        }
+
+        var removedRoute = await page.GotoAsync("/Patient/LabResults/Trends");
+        Assert.Equal(404, removedRoute?.Status);
     }
 
     [Fact]

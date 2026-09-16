@@ -40,7 +40,7 @@ Routes, form handlers, authentication, clinical data, database schema, and produ
 
 ## Coverage
 
-The layout matrix visits 41 screens per profile: **738 screen visits across 18 browser/device/language profiles**, plus interaction scenarios and automated accessibility checks.
+The layout matrix visits 40 screens per profile: **720 screen visits across 18 browser/device/language profiles**, plus interaction scenarios and automated accessibility checks.
 
 | Browser/profile | Configuration |
 | --- | --- |
@@ -58,7 +58,7 @@ Mobile contexts are newly created with Playwright device descriptors, including 
 Screen inventory:
 
 - Public: home; directory/list/physician/department; OPD guide; advisories/list/detail; privacy; service-unavailable and error pages; Malasakit/list/program/navigator; booking; unavailable check-in; login; registration; forgot-password; access-denied.
-- Signed in: dashboard; encounter list/detail; laboratory list/detail/trends; medication list/detail/refill status; audit; profile; 2FA settings/setup; appointment confirmation/check-in; triage form/summary/emergency warning.
+- Signed in: dashboard; encounter list/detail; laboratory list/detail; medication list/detail/refill status; audit; profile; 2FA settings/setup; appointment confirmation/check-in; triage form/summary/emergency warning.
 - Interactions: guest return URL, empty accounts, search, language persistence, profile save, booking validation/submission/check-in/cancellation, routine and emergency triage, assistance questionnaire/results, refill submission, registration capture-step/manual-step navigation and validation, authenticator enrollment and 2FA sign-in, dropdown/offcanvas behavior, keyboard skip link, and effective 200% desktop reflow with reduced motion.
 
 ## Results and evidence
@@ -68,7 +68,7 @@ Final combined run (`pwsh scripts/test-ui.ps1 -SkipBrowserInstall`): **passed**.
 - Release build: **0 warnings, 0 errors**.
 - Existing backend tests: **25 passed, 0 failed, 0 skipped**.
 - Browser tests: **31 passed, 0 failed, 0 skipped** (about 2 minutes 34 seconds).
-- All 18 layout profiles completed all 41 routes without detected overflow, clipping, split heading/button words, unexpected status/redirects, or uncaught page-script errors.
+- All 18 layout profiles completed all 40 routes without detected overflow, clipping, split heading/button words, unexpected status/redirects, or uncaught page-script errors.
 - Automated accessibility: **0 violations across 84 screen states**. Separately recorded `incomplete` checks remain subject to the limits below.
 - Local TRX evidence: `User_ANGELO_2026-09-13_01_44_11_net10.0.trx` (backend) and `User_ANGELO_2026-09-13_01_44_16_net10.0.trx` (browser).
 
