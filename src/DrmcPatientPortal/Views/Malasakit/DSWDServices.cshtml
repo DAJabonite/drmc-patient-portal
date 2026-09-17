@@ -1,0 +1,129 @@
+@{
+    ViewData["Title"] = "DSWD Services & Requirements";
+}
+
+<section class="page-header">
+    <div class="container">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <a asp-action="Index" class="text-white text-opacity-75 text-decoration-none small">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i> Malasakit Center
+            </a>
+            <span class="text-white text-opacity-50" aria-hidden="true">/</span>
+            <span class="small text-white text-opacity-75">DSWD Services</span>
+        </div>
+        <div class="row align-items-center g-3">
+            <div class="col-lg-8">
+                <span class="badge bg-primary-subtle text-primary-drmc rounded-pill mb-2">Assistance to Individuals in Crisis Situation</span>
+                <h1 class="display-6 fw-bold mb-2">DSWD Services &amp; Requirements</h1>
+                <p class="text-white text-opacity-90 mb-0">Prepare the documents that match the type of assistance you need before proceeding to the DSWD desk at the DRMC Malasakit Center.</p>
+            </div>
+            <div class="col-lg-4">
+                <div class="p-3 rounded-4 bg-white bg-opacity-10 border border-white border-opacity-20 d-flex align-items-center gap-3">
+                    <i class="bi bi-geo-alt-fill fs-3 text-primary-drmc" aria-hidden="true"></i>
+                    <div>
+                        <strong class="small d-block text-dark">DSWD AICS Desk</strong>
+                        <span class="small text-white text-opacity-75">Malasakit Center, Ground Floor</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container">
+        <div class="alert alert-primary border-0 rounded-4 d-flex align-items-start gap-3 mb-4" role="note">
+            <i class="bi bi-info-circle-fill fs-5 text-primary-drmc" aria-hidden="true"></i>
+            <div class="small">
+                <strong class="d-block mb-1">Preparation guide</strong>
+                Requirements may vary after the social worker's assessment. Bring original documents and photocopies, and confirm the current checklist with the DSWD AICS desk.
+            </div>
+        </div>
+
+        <div class="row g-4 dswd-requirements-grid">
+            <div class="col-md-6">
+                <article class="dswd-requirement-card card border-0 shadow-sm rounded-4 h-100 p-4 bg-white">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span class="requirement-icon bg-primary-subtle text-primary-drmc"><i class="bi bi-capsule-pill" aria-hidden="true"></i></span>
+                        <div>
+                            <span class="small text-muted text-uppercase fw-semibold">DSWD assistance guide</span>
+                            <h2 class="h5 fw-bold text-primary-drmc mb-0">Medicine Requirements</h2>
+                        </div>
+                    </div>
+                    <ul class="requirement-list mb-0">
+                        <li>Updated Medical Certificate or Medical Abstract <strong>(1 original copy and 1 photocopy)</strong></li>
+                        <li>Medicine prescription <strong>(1 original copy and 2 photocopies)</strong></li>
+                        <li>Authorization letter, if a person who is not an immediate family member will process the medicines <strong>(2 copies)</strong></li>
+                        <li>One valid ID of the patient with three signatures <strong>(2 copies)</strong></li>
+                        <li>One valid ID of the person who will process the request/client with three signatures <strong>(2 copies)</strong></li>
+                    </ul>
+                </article>
+            </div>
+
+            <div class="col-md-6">
+                <article class="dswd-requirement-card card border-0 shadow-sm rounded-4 h-100 p-4 bg-white">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span class="requirement-icon bg-primary-subtle text-primary-drmc"><i class="bi bi-clipboard2-pulse" aria-hidden="true"></i></span>
+                        <div>
+                            <span class="small text-muted text-uppercase fw-semibold">DSWD assistance guide</span>
+                            <h2 class="h5 fw-bold text-primary-drmc mb-0">Laboratory Test Requirements</h2>
+                        </div>
+                    </div>
+                    <ul class="requirement-list mb-0">
+                        <li>Updated Medical Certificate or Medical Abstract <strong>(1 original copy and 1 photocopy)</strong></li>
+                        <li>Laboratory Request from the Doctor <strong>(2 copies)</strong></li>
+                        <li>Price Quotation <strong>(1 original copy and 1 photocopy)</strong></li>
+                        <li>Authorization letter, if a person who is not an immediate family member will process the laboratory test, with a valid ID bearing three signatures <strong>(2 copies)</strong></li>
+                        <li>One valid ID of the patient with three signatures <strong>(2 copies)</strong></li>
+                    </ul>
+                </article>
+            </div>
+
+            <div class="col-md-6">
+                <article class="dswd-requirement-card card border-0 shadow-sm rounded-4 h-100 p-4 bg-white">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span class="requirement-icon bg-primary-subtle text-primary-drmc"><i class="bi bi-receipt-cutoff" aria-hidden="true"></i></span>
+                        <div>
+                            <span class="small text-muted text-uppercase fw-semibold">DSWD assistance guide</span>
+                            <h2 class="h5 fw-bold text-primary-drmc mb-0">Hospital Bill Requirements</h2>
+                        </div>
+                    </div>
+                    <ul class="requirement-list mb-0">
+                        <li>Updated Medical Certificate or Medical Abstract <strong>(1 original copy and 1 photocopy)</strong></li>
+                        <li>Final Hospital Bill or Statement of Account <strong>(1 original copy and 1 photocopy)</strong></li>
+                        <li>Promissory Note, if the patient has already left the hospital without paying the bill completely <strong>(1 original copy and 1 photocopy)</strong></li>
+                        <li>Authorization letter, if a person who is not an immediate family member will process the hospital bill requirements <strong>(2 copies)</strong></li>
+                        <li>One valid ID of the patient with three signatures <strong>(2 copies)</strong></li>
+                        <li>One valid ID of the person who will process the request/client with three signatures <strong>(2 copies)</strong></li>
+                    </ul>
+                </article>
+            </div>
+
+            <div class="col-md-6">
+                <article class="dswd-requirement-card card border-0 shadow-sm rounded-4 h-100 p-4 bg-white">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span class="requirement-icon bg-primary-subtle text-primary-drmc"><i class="bi bi-flower1" aria-hidden="true"></i></span>
+                        <div>
+                            <span class="small text-muted text-uppercase fw-semibold">DSWD assistance guide</span>
+                            <h2 class="h5 fw-bold text-primary-drmc mb-0">Burial Requirements</h2>
+                        </div>
+                    </div>
+                    <ul class="requirement-list mb-0">
+                        <li>Death Certificate <strong>(2 copies)</strong></li>
+                        <li>Service Contract or Funeral Bill <strong>(1 original copy and 1 photocopy)</strong></li>
+                        <li>Authorization letter, if a person who is not an immediate family member will process the burial requirements, with a valid ID bearing three signatures <strong>(2 copies)</strong></li>
+                        <li>One valid ID of the patient with three signatures <strong>(2 copies)</strong></li>
+                        <li>One valid ID of the person who will process the request/client with three signatures <strong>(2 copies)</strong></li>
+                    </ul>
+                </article>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4 pt-4 border-top">
+            <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Back to Malasakit Hub
+            </a>
+            <p class="small text-muted mb-0"><i class="bi bi-clock me-1" aria-hidden="true"></i> DSWD desk hours: Monday to Friday, 8:00 AM–3:00 PM</p>
+        </div>
+    </div>
+</section>

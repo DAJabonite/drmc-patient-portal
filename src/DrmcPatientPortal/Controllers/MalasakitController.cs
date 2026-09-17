@@ -28,6 +28,13 @@ public class MalasakitController : Controller
         return View(programs);
     }
 
+    // GET /Malasakit/DSWDServices
+    [HttpGet]
+    public IActionResult DSWDServices()
+    {
+        return View();
+    }
+
     [Authorize, HttpGet, ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Apply()
     {
