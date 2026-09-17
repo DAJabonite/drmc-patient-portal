@@ -824,32 +824,78 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
     background: var(--drmc-canvas);
 }
 
-.dashboard-shortcuts {
+.dashboard-actions {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.6rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
 }
 
-.dashboard-shortcuts a {
+.dashboard-action-card {
     min-width: 0;
-    min-height: 44px;
-    display: inline-flex;
+    min-height: 96px;
+    display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    padding: 0.55rem 0.75rem;
-    color: var(--drmc-primary);
+    gap: 0.85rem;
+    padding: 1rem 1.1rem;
+    color: var(--drmc-text);
     background: #fff;
     border: 1px solid var(--drmc-border);
-    border-radius: var(--drmc-radius-sm);
-    font-size: 0.82rem;
-    font-weight: 700;
+    border-radius: var(--drmc-radius-lg);
+    box-shadow: 0 4px 14px rgba(14, 78, 135, 0.05);
     text-decoration: none;
+    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
-.dashboard-shortcuts a:hover {
-    border-color: #aac5da;
-    background: #f9fbfd;
+.dashboard-action-card:hover,
+.dashboard-action-card:focus-visible {
+    color: var(--drmc-primary);
+    border-color: #b6cde0;
+    box-shadow: 0 7px 18px rgba(14, 78, 135, 0.08);
+    transform: translateY(-1px);
+}
+
+.dashboard-action-card:focus-visible {
+    outline: 3px solid rgba(13, 110, 253, 0.35);
+    outline-offset: 2px;
+}
+
+.dashboard-action-icon {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    display: grid;
+    place-items: center;
+    color: var(--drmc-primary);
+    background: #e7f0f8;
+    border-radius: var(--drmc-radius-sm);
+    font-size: 1.2rem;
+}
+
+.dashboard-action-content {
+    min-width: 0;
+    flex: 1;
+}
+
+.dashboard-action-content strong,
+.dashboard-action-content small {
+    display: block;
+}
+
+.dashboard-action-content strong {
+    line-height: 1.25;
+}
+
+.dashboard-action-content small {
+    margin-top: 0.25rem;
+    color: var(--drmc-text-muted);
+    font-size: 0.8rem;
+    line-height: 1.35;
+}
+
+.dashboard-action-arrow {
+    flex: 0 0 auto;
+    color: var(--drmc-primary);
+    font-size: 1.1rem;
 }
 
 .summary-card-heading {
@@ -2295,23 +2341,14 @@ code,
         white-space: nowrap;
     }
 
-    .dashboard-shortcuts {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 0.35rem;
+    .dashboard-actions {
+        grid-template-columns: 1fr;
+        gap: 0.6rem;
     }
 
-    .dashboard-shortcuts a {
-        min-height: 58px;
-        flex-direction: column;
-        gap: 0.15rem;
-        padding: 0.4rem 0.2rem;
-        font-size: 0.66rem;
-        line-height: 1.1;
-        text-align: center;
-    }
-
-    .dashboard-shortcuts i {
-        font-size: 1.05rem;
+    .dashboard-action-card {
+        min-height: 78px;
+        padding: 0.85rem 0.9rem;
     }
 
     .appointment-summary-content {
