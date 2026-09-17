@@ -33,6 +33,9 @@ public class PatientDocumentsController : Controller
     [HttpGet]
     public async Task<IActionResult> IdPhoto(int id, string side = "front")
     {
+        Response.Headers.CacheControl = "no-store, max-age=0";
+        Response.Headers.Pragma = "no-cache";
+
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
         {

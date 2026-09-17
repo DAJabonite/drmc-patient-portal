@@ -28,7 +28,7 @@ public class EncountersController : Controller
 
     // GET /Patient/Encounters
     [HttpGet("")]
-    public async Task<IActionResult> Index(string? department)
+    public async Task<IActionResult> Index(string? department, string? dateRange)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
@@ -42,6 +42,19 @@ public class EncountersController : Controller
             query = query.Where(e => e.Department == department);
         }
 
+        if (dateRange == "30d")
+        {
+            query = query.Where(e => e.EncounterDate >= DateTime.Today.AddDays(-30));
+        }
+        else if (dateRange == "6m")
+        {
+            query = query.Where(e => e.EncounterDate >= DateTime.Today.AddMonths(-6));
+        }
+        else if (dateRange == "year")
+        {
+            query = query.Where(e => e.EncounterDate >= new DateTime(DateTime.Today.Year, 1, 1));
+        }
+
         var encounters = await query
             .OrderByDescending(e => e.EncounterDate)
             .ToListAsync();
@@ -49,6 +62,7 @@ public class EncountersController : Controller
         var model = new EncountersIndexViewModel
         {
             SelectedDepartment = department,
+            SelectedDateRange = dateRange,
             Encounters = encounters,
             Departments = ClinicalDepartments.All
         };
@@ -82,6 +96,7 @@ public class EncountersController : Controller
 public class EncountersIndexViewModel
 {
     public string? SelectedDepartment { get; set; }
+    public string? SelectedDateRange { get; set; }
     public IReadOnlyList<ClinicalEncounter> Encounters { get; set; } = Array.Empty<ClinicalEncounter>();
     public IReadOnlyList<ClinicalDepartment> Departments { get; set; } = Array.Empty<ClinicalDepartment>();
 }

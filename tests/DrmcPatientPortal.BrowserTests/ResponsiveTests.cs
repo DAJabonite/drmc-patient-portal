@@ -10,7 +10,7 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
     internal static IEnumerable<string> PublicScreens => PublicRoutes;
     internal static IEnumerable<string> PatientScreens => PatientRoutes;
     private static readonly string[] PublicRoutes = ["/", "/Directory", "/Directory/Doctor/1", "/Directory/Department?name=Internal%20Medicine", "/OpdGuide", "/Advisories", "/Advisories/Details?slug=dengue-4s-prevention-alert", "/Home/Privacy", "/Home/ServiceUnavailable", "/Malasakit", "/Malasakit/Program?code=MALASAKIT", "/Malasakit/Navigator", "/Identity/Account/Login", "/Identity/Account/Register", "/Identity/Account/ForgotPassword", "/Identity/Account/AccessDenied", "/Home/Error"];
-    private static readonly string[] PatientRoutes = ["/Patient/MedicalHistory", "/Patient/MedicalHistory?category=ADMITTED", "/Malasakit/Apply", "/Malasakit/Status", "/Patient/Home", "/Patient/Encounters", "/Patient/Encounters/Details/1", "/Patient/LabResults", "/Patient/LabResults/Details/1", "/Patient/Medications", "/Patient/Medications/Details/1", "/Patient/Audit", "/Identity/Account/Manage", "/Identity/Account/Manage/TwoFactorAuthentication", "/Identity/Account/Manage/EnableAuthenticator", "/Patient/Triage/Start/2", "/Patient/Triage/Summary/1", "/Patient/Triage/EmergencyWarning"];
+    private static readonly string[] PatientRoutes = ["/Patient/MedicalHistory", "/Patient/MedicalHistory?category=ADMITTED", "/Malasakit/Apply", "/Malasakit/Status", "/Patient/Home", "/Patient/Encounters", "/Patient/Encounters/Details/1", "/Patient/LabResults", "/Patient/LabResults/Details/1", "/Patient/Medications", "/Patient/Medications/Details/1", "/Patient/Audit", "/Identity/Account/Manage", "/Identity/Account/Manage/MyIds", "/Identity/Account/Manage/TwoFactorAuthentication", "/Identity/Account/Manage/EnableAuthenticator", "/Patient/Triage/Start/2", "/Patient/Triage/Summary/1", "/Patient/Triage/EmergencyWarning"];
 
     public static TheoryData<string, string, string> Matrix
     {
@@ -261,8 +261,16 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
         foreach (var filter in filters)
         {
             await desktopPage.GotoAsync(filter.Route);
-            await Expect(desktopPage.Locator(filter.SelectId)).ToBeHiddenAsync();
-            await Expect(desktopPage.Locator(".desktop-filter-pills")).ToBeVisibleAsync();
+            if (filter.Route == "/Patient/Encounters")
+            {
+                await Expect(desktopPage.Locator(filter.SelectId)).ToBeVisibleAsync();
+                await Expect(desktopPage.Locator("#encounterDateFilter")).ToBeVisibleAsync();
+            }
+            else
+            {
+                await Expect(desktopPage.Locator(filter.SelectId)).ToBeHiddenAsync();
+                await Expect(desktopPage.Locator(".desktop-filter-pills")).ToBeVisibleAsync();
+            }
         }
     }
 

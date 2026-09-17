@@ -9,6 +9,11 @@
         </a>
     </li>
     <li class="nav-item">
+        <a class="nav-link rounded-3 fw-semibold @(ManageNavPages.MyIdsNavClass(ViewContext) == "active" ? "active bg-primary-drmc text-white" : "text-dark bg-light")" id="my-ids" asp-page="./MyIds">
+            <i class="bi bi-person-vcard me-2"></i> @Loc["Nav_MyIds"]
+        </a>
+    </li>
+    <li class="nav-item">
         <a class="nav-link rounded-3 fw-semibold @(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("TwoFactor") == true || ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Authenticator") == true ? "active bg-primary-drmc text-white" : "text-dark bg-light")" id="two-factor" asp-page="./TwoFactorAuthentication">
             <i class="bi bi-shield-lock me-2"></i> Two-Factor Auth (2FA)
         </a>
