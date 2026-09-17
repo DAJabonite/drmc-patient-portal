@@ -1454,6 +1454,123 @@ code,
     cursor: pointer;
 }
 
+/* Patient audit history */
+.audit-date-group + .audit-date-group {
+    margin-top: 1.5rem;
+}
+
+.audit-date-heading {
+    margin: 0 0 .65rem;
+    color: var(--drmc-navy, #12385b);
+    font-size: .8rem;
+    font-weight: 700;
+    letter-spacing: .035em;
+    text-transform: uppercase;
+}
+
+.audit-event-list {
+    display: grid;
+    gap: .75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.audit-event-card {
+    padding: 1rem;
+    border: 1px solid #dce5ee;
+    border-radius: .9rem;
+    background: #fff;
+}
+
+.audit-event-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .75rem;
+    margin-bottom: .85rem;
+}
+
+.audit-event-header .badge {
+    max-width: calc(100% - 5.5rem);
+    overflow-wrap: anywhere;
+    white-space: normal;
+    text-align: left;
+}
+
+.audit-event-header time {
+    flex: 0 0 auto;
+    color: #65758b;
+    font-size: .75rem;
+    white-space: nowrap;
+}
+
+.audit-event-summary,
+.audit-technical-details dl {
+    margin: 0;
+}
+
+.audit-event-summary > div + div,
+.audit-technical-details dl > div + div {
+    margin-top: .7rem;
+}
+
+.audit-event-summary dt,
+.audit-technical-details dt {
+    color: #65758b;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .035em;
+    text-transform: uppercase;
+}
+
+.audit-event-summary dd,
+.audit-technical-details dd {
+    margin: .15rem 0 0;
+    overflow-wrap: anywhere;
+    color: #26384b;
+    font-size: .875rem;
+}
+
+.audit-event-summary > div:first-child dd {
+    font-weight: 700;
+}
+
+.audit-technical-details {
+    margin-top: .85rem;
+    padding-top: .75rem;
+    border-top: 1px solid #e4eaf0;
+}
+
+.audit-technical-details summary {
+    color: var(--drmc-blue, #075a9c);
+    cursor: pointer;
+    font-size: .8rem;
+    font-weight: 700;
+}
+
+.audit-technical-details dl {
+    margin-top: .75rem;
+    padding: .75rem;
+    border-radius: .65rem;
+    background: #f5f8fb;
+}
+
+@media (max-width: 575.98px) {
+    .audit-account-heading {
+        align-items: flex-start !important;
+    }
+
+    .audit-account-heading > div,
+    .audit-account-heading .badge {
+        width: 100%;
+    }
+
+    .audit-account-heading .badge {
+        text-align: left;
+    }
+}
+
 /* OPD guide facility selector — a single-open disclosure keeps each long flow
    directly beneath the facility that controls it. */
 .opd-facility-accordion {

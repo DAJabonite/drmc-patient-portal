@@ -5,17 +5,9 @@
 
 <section class="page-header">
     <div class="container">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-            <div>
-                <p class="small text-white text-opacity-75 mb-1">@Loc["Enc_Subtitle"]</p>
-                <h1 class="display-6 fw-bold mb-0">@Loc["Enc_Title"]</h1>
-            </div>
-
-            <div>
-                <a asp-controller="MedicalHistory" asp-action="Index" class="btn btn-outline-light rounded-pill px-4 fw-semibold">
-                    <i class="bi bi-clock-history me-1"></i> @Loc["History_Title"]
-                </a>
-            </div>
+        <div>
+            <p class="small text-white text-opacity-75 mb-1">@Loc["Enc_Subtitle"]</p>
+            <h1 class="display-6 fw-bold mb-0">@Loc["Enc_Title"]</h1>
         </div>
     </div>
 </section>
@@ -23,7 +15,18 @@
 <!-- Department Filter Bar -->
 <section class="py-3 bg-white border-bottom sticky-top shadow-xs" style="z-index: 1020;">
     <div class="container">
-        <div class="d-flex align-items-center gap-1 overflow-x-auto pb-1" style="max-width: 100%;">
+        <form asp-action="Index" method="get" class="d-md-none">
+            <label for="encounterDepartmentFilter" class="form-label small fw-semibold text-dark mb-1">Filter visits by department</label>
+            <select id="encounterDepartmentFilter" name="department" class="form-select" onchange="this.form.submit()">
+                <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDepartment))">@Loc["Enc_AllDepartments"] (@Model.Encounters.Count)</option>
+                @foreach (var dept in Model.Departments)
+                {
+                    <option value="@dept.Name" selected="@(Model.SelectedDepartment == dept.Name)">@dept.Name</option>
+                }
+            </select>
+        </form>
+
+        <div class="desktop-filter-pills d-none d-md-flex align-items-center gap-1 overflow-x-auto pb-1" style="max-width: 100%;">
             <a asp-action="Index"
                class="btn btn-sm @(string.IsNullOrEmpty(Model.SelectedDepartment) ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
                 @Loc["Enc_AllDepartments"] (@Model.Encounters.Count)

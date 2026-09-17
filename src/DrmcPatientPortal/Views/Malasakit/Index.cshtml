@@ -6,38 +6,15 @@
 <!-- Hero Section -->
 <section class="page-header">
     <div class="container">
-        <div class="row align-items-center g-4">
-            <div class="col-lg-8">
-                <p class="small text-white text-opacity-75 mb-2">Republic Act No. 11463 · Malasakit Centers Act</p>
-                <h1 class="display-6 fw-bold mb-3">Malasakit Center &amp; Social Services</h1>
-                <div class="d-flex flex-wrap gap-2">
-                    <a asp-action="Apply" class="btn btn-warning fw-semibold">@Loc["Subsidy_Apply"]</a>
-                    <a asp-action="Status" class="btn btn-outline-light">@Loc["Subsidy_Status"]</a>
-                    <a asp-action="Navigator" class="btn btn-warning text-dark fw-bold rounded-pill px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2">
-                        <i class="bi bi-compass-fill"></i> Launch Eligibility Navigator
-                    </a>
-                </div>
-            </div>
-
-            <div class="col-lg-4 text-center">
-                <div class="p-4 rounded-4 bg-white bg-opacity-10 border border-white border-opacity-20 text-white">
-                    <i class="bi bi-geo-alt-fill fs-2 text-warning mb-2 d-block"></i>
-                    <h2 class="h6 fw-bold mb-1">Malasakit Center Location</h2>
-                    <p class="small text-white text-opacity-85 mb-2">
-                        Ground Floor, DRMC Main Hospital Building<br />
-                        (Adjacent to OPD Registration Atrium)
-                    </p>
-                    <span class="badge bg-white text-primary-drmc fw-semibold px-3 py-1 rounded-pill small">
-                        Mon - Fri: 7:00 AM - 5:00 PM
-                    </span>
-                </div>
-            </div>
+        <div>
+            <p class="small text-white text-opacity-75 mb-2">Republic Act No. 11463 · Malasakit Centers Act</p>
+            <h1 class="display-6 fw-bold mb-0">Malasakit Center &amp; Social Services</h1>
         </div>
     </div>
 </section>
 
-<!-- Participating Government Agencies Band -->
-<section class="py-3 bg-white border-bottom">
+<!-- Participating service providers -->
+<section class="malasakit-provider-band py-3 bg-white border-bottom">
     <div class="container">
         <div class="d-flex align-items-center justify-content-around flex-wrap gap-3 text-center">
             <div class="d-flex align-items-center gap-2">
@@ -45,16 +22,16 @@
                 <span class="small fw-bold text-dark">DOH MAIP</span>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-hospital fs-4 text-primary-drmc"></i>
+                <i class="bi bi-hospital fs-4 text-primary-drmc" aria-hidden="true"></i>
                 <span class="small fw-bold text-dark">PhilHealth Konsulta</span>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-people-fill fs-4 text-primary-drmc"></i>
+                <i class="bi bi-people-fill fs-4 text-primary-drmc" aria-hidden="true"></i>
                 <span class="small fw-bold text-dark">DSWD AICS</span>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-heart-pulse-fill fs-4 text-danger"></i>
-                <span class="small fw-bold text-dark">PCSO IMAP</span>
+                <img src="~/images/drmc-seal.png" alt="DRMC" style="height: 36px; width: auto;" />
+                <span class="small fw-bold text-dark">DRMC</span>
             </div>
         </div>
     </div>
@@ -63,23 +40,13 @@
 <!-- How to Avail Step-by-Step Guide -->
 <section class="section py-5 bg-light">
     <div class="container">
-        <partial name="_OfficialDrmcSources" />
-        <div class="text-center mb-5">
-            <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill fw-semibold mb-2">Preparation guide</span>
-            <h2 class="h3 fw-bold text-primary-drmc mb-2">How to Avail Medical Assistance at DRMC</h2>
-            <p class="text-muted small mx-auto" style="max-width: 600px;">
-                Follow these 4 simple steps to receive coverage for your hospital bills, laboratory tests, and medicines.
-            </p>
-        </div>
-
-        <div class="mb-5">
-            <div class="mb-3">
-                <h2 class="h4 fw-bold text-primary-drmc mb-1">Government Service Guides</h2>
-                <p class="text-muted small mb-0">Open a service guide to prepare the documents commonly requested at the Malasakit Center.</p>
+        <div>
+            <div class="mb-4">
+                <h2 class="h4 fw-bold text-primary-drmc mb-0">Government Service Guides</h2>
             </div>
 
             <div class="row g-4">
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-3">
                     <a asp-action="DSWDServices" class="dswd-service-tile card border-0 shadow-sm rounded-4 h-100 p-4 bg-white text-decoration-none" aria-label="Open DSWD services and requirements guide">
                         <div class="d-flex align-items-start gap-3">
                             <span class="dswd-service-icon" aria-hidden="true">
@@ -94,7 +61,7 @@
                         </div>
                     </a>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-3">
                     <a asp-action="DRMCMalasakitServices" class="dswd-service-tile card border-0 shadow-sm rounded-4 h-100 p-4 bg-white text-decoration-none" aria-label="Open DRMC Malasakit Services document preparation guide">
                         <div class="d-flex align-items-start gap-3">
                             <span class="dswd-service-icon" aria-hidden="true">
@@ -109,111 +76,38 @@
                         </div>
                     </a>
                 </div>
-            </div>
-        </div>
-
-        <div class="row g-4 mb-5">
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 text-center">
-                    <div class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width: 44px; height: 44px;">
-                        <span class="fs-5 fw-bold">1</span>
-                    </div>
-                    <h3 class="h6 fw-bold text-dark mb-2">Secure Doctor's Order</h3>
-                    <p class="small text-muted mb-0">
-                        Obtain a clinical abstract, prescription, or laboratory order signed by your DRMC attending physician.
-                    </p>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 text-center">
-                    <div class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width: 44px; height: 44px;">
-                        <span class="fs-5 fw-bold">2</span>
-                    </div>
-                    <h3 class="h6 fw-bold text-dark mb-2">Get Cost Quotation</h3>
-                    <p class="small text-muted mb-0">
-                        Request a statement of account, pharmacy medicine quote, or diagnostic exam fee slip from the hospital billing counter.
-                    </p>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 text-center">
-                    <div class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width: 44px; height: 44px;">
-                        <span class="fs-5 fw-bold">3</span>
-                    </div>
-                    <h3 class="h6 fw-bold text-dark mb-2">Malasakit Assessment</h3>
-                    <p class="small text-muted mb-0">
-                        Submit your unified document envelope at the Malasakit Center desk. The intake officer computes multi-agency assistance.
-                    </p>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 text-center">
-                    <div class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width: 44px; height: 44px;">
-                        <span class="fs-5 fw-bold">4</span>
-                    </div>
-                    <h3 class="h6 fw-bold text-dark mb-2">Receive Guarantee Slip</h3>
-                    <p class="small text-muted mb-0">
-                        Present the approved Malasakit guarantee letter to the pharmacy or cashier for zero balance / discounted billing.
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Assistance Programs Catalog -->
-        <div class="mb-4">
-            <h2 class="h4 fw-bold text-primary-drmc mb-1">Available Medical Safety-Net Programs</h2>
-            <p class="text-muted small">Select any program to view full documentary requirements and statutory guidelines.</p>
-        </div>
-
-        <div class="row g-4">
-            @foreach (var prog in Model)
-            {
-                <div class="col-md-6 col-lg-4">
-                    <div class="card border-0 shadow-sm rounded-4 h-100 p-4 bg-white d-flex flex-column">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="badge bg-primary-subtle text-primary-drmc rounded-pill small">
-                                @prog.ManagingAgency
+                <div class="col-md-6 col-lg-3">
+                    <a asp-action="MaifipRequirements" class="dswd-service-tile card border-0 shadow-sm rounded-4 h-100 p-4 bg-white text-decoration-none" aria-label="Open DOH MAIFIP requirements guide">
+                        <div class="d-flex align-items-start gap-3">
+                            <span class="dswd-service-icon" aria-hidden="true">
+                                <i class="bi bi-file-earmark-medical"></i>
                             </span>
-                            <span class="small text-muted" style="font-size:0.75rem;">@prog.Code</span>
+                            <span class="flex-grow-1">
+                                <span class="badge bg-primary-subtle text-primary-drmc rounded-pill mb-2">DOH MAIFIP</span>
+                                <span class="h5 fw-bold text-dark d-block mb-2">DOH-MAIFIP Requirements</span>
+                                <span class="small text-muted d-block mb-3">Prepare the medical documents, valid IDs, and price quotation needed when requesting DOH assistance.</span>
+                                <span class="small text-primary-drmc fw-semibold">View requirements <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i></span>
+                            </span>
                         </div>
-                        
-                        <h3 class="h6 fw-bold text-dark mb-2">@prog.Title</h3>
-                        <p class="small text-muted mb-3 flex-grow-1">@prog.Description</p>
-
-                        <div class="p-2 rounded-3 bg-light border mb-3 small text-dark">
-                            <strong>Covers:</strong> @prog.CoverageScope
-                        </div>
-
-                        <div class="mt-auto pt-2 border-top">
-                            <a asp-action="Program" asp-route-code="@prog.Code" class="small text-primary-drmc fw-semibold text-decoration-none">
-                                View Requirements &amp; Guidelines &rarr;
-                            </a>
-                        </div>
-                    </div>
+                    </a>
                 </div>
-            }
-        </div>
-
-    </div>
-</section>
-
-<!-- Interactive Navigator Banner -->
-<section class="py-5 bg-white border-top">
-    <div class="container">
-        <div class="card border-0 rounded-4 p-4 p-md-5 bg-primary-drmc text-white shadow-sm text-center position-relative overflow-hidden">
-            <div class="position-relative z-1">
-                <i class="bi bi-card-checklist fs-1 text-warning mb-2 d-block"></i>
-                <h2 class="h3 fw-bold mb-2">Need Help Preparing Your Malasakit Documents?</h2>
-                <p class="text-white text-opacity-90 mx-auto mb-4" style="max-width: 600px;">
-                    Answer 4 quick questions to generate a personalized checklist of required documents and explore programs for discussion with a social worker before visiting the hospital desk.
-                </p>
-                <a asp-action="Navigator" class="btn btn-warning btn-lg text-dark fw-bold rounded-pill px-5 shadow">
-                    <i class="bi bi-play-circle-fill me-1"></i> Start Interactive Navigator
-                </a>
+                <div class="col-md-6 col-lg-3">
+                    <a asp-action="Philhealth" class="dswd-service-tile card border-0 shadow-sm rounded-4 h-100 p-4 bg-white text-decoration-none" aria-label="Open PhilHealth requirements guide">
+                        <div class="d-flex align-items-start gap-3">
+                            <span class="dswd-service-icon" aria-hidden="true">
+                                <i class="bi bi-hospital"></i>
+                            </span>
+                            <span class="flex-grow-1">
+                                <span class="badge bg-primary-subtle text-primary-drmc rounded-pill mb-2">PhilHealth</span>
+                                <span class="h5 fw-bold text-dark d-block mb-2">PhilHealth Requirements</span>
+                                <span class="small text-muted d-block mb-3">Review the birth certificate, member ID, representative ID, and marriage document requirements.</span>
+                                <span class="small text-primary-drmc fw-semibold">View requirements <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i></span>
+                            </span>
+                        </div>
+                    </a>
+                </div>
             </div>
         </div>
+
     </div>
 </section>

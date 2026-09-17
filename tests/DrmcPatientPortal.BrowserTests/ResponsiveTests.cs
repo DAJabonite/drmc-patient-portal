@@ -201,7 +201,7 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
     }
 
     [Fact]
-    public async Task Lab_results_protect_patient_privacy_and_display_claiming_guidance()
+    public async Task Lab_results_hide_sensitive_values_and_display_claiming_guidance()
     {
         await using var browser = await app.Playwright.Chromium.LaunchAsync();
         await using var context = await browser.NewContextAsync(app.Context("small"));
@@ -210,8 +210,7 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
 
         // Index page
         await page.GotoAsync("/Patient/LabResults");
-        await Expect(page.GetByText("Patient Health Data Privacy Notice")).ToBeVisibleAsync();
-        await Expect(page.GetByText("Data Privacy Act of 2012 (RA 10173)")).ToBeVisibleAsync();
+        await Expect(page.GetByText("Patient Health Data Privacy Notice")).ToHaveCountAsync(0);
         await Expect(page.Locator("text=Ready for Claiming").First).ToBeVisibleAsync();
         await Expect(page.Locator("text=Claiming Unit:").First).ToBeVisibleAsync();
 
@@ -226,6 +225,45 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
         await Expect(page.Locator("table")).ToHaveCountAsync(0);
         await Expect(page.GetByText("Quantitative Analyte Breakdown")).ToHaveCountAsync(0);
         await Expect(page.GetByText("Biological Reference Ranges")).ToHaveCountAsync(0);
+    }
+
+    [Fact]
+    public async Task Mobile_filter_navigation_uses_dropdowns_instead_of_scrolling_pills()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+        await using var mobileContext = await browser.NewContextAsync(app.Context("small"));
+        var mobilePage = await mobileContext.NewPageAsync();
+        await PortalFixture.SignIn(mobilePage);
+
+        var filters = new[]
+        {
+            (Route: "/Patient/LabResults", SelectId: "#labCategoryFilter", Parameter: "category"),
+            (Route: "/Advisories", SelectId: "#advisoryCategoryFilter", Parameter: "category"),
+            (Route: "/Directory", SelectId: "#directoryDepartmentFilter", Parameter: "department"),
+            (Route: "/Patient/Encounters", SelectId: "#encounterDepartmentFilter", Parameter: "department")
+        };
+
+        foreach (var filter in filters)
+        {
+            await mobilePage.GotoAsync(filter.Route);
+            var select = mobilePage.Locator(filter.SelectId);
+            await Expect(select).ToBeVisibleAsync();
+            await Expect(mobilePage.Locator(".desktop-filter-pills")).ToBeHiddenAsync();
+            await select.SelectOptionAsync(new SelectOptionValue { Index = 1 });
+            await mobilePage.WaitForURLAsync(url => url.Contains($"{filter.Parameter}="));
+            Assert.Empty(await LayoutProblems(mobilePage));
+        }
+
+        await using var desktopContext = await browser.NewContextAsync(app.Context("1440"));
+        var desktopPage = await desktopContext.NewPageAsync();
+        await PortalFixture.SignIn(desktopPage);
+
+        foreach (var filter in filters)
+        {
+            await desktopPage.GotoAsync(filter.Route);
+            await Expect(desktopPage.Locator(filter.SelectId)).ToBeHiddenAsync();
+            await Expect(desktopPage.Locator(".desktop-filter-pills")).ToBeVisibleAsync();
+        }
     }
 
     [Fact]
@@ -278,7 +316,7 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
         await Expect(menu).ToHaveAttributeAsync("aria-modal", "true");
         await Expect(menu.Locator("#mobileHospitalServicesHeading")).ToBeVisibleAsync();
         await Expect(menu.Locator(".mobile-more-link[href='/Directory']")).ToBeVisibleAsync();
-        await Expect(menu.Locator(".mobile-more-link[href='/Patient/MedicalHistory']")).ToBeVisibleAsync();
+        await Expect(menu.Locator(".mobile-more-link[href='/Patient/MedicalHistory']")).ToHaveCountAsync(0);
         await Expect(menu.GetByRole(AriaRole.Link, new() { Name = "Two-Factor Auth (2FA)" })).ToBeVisibleAsync();
         await page.ScreenshotAsync(new() { Path = Path.Combine(app.Artifacts, "desktop-menu-drawer.png") });
         await menu.GetByRole(AriaRole.Button, new() { Name = "Close", Exact = true }).ClickAsync();

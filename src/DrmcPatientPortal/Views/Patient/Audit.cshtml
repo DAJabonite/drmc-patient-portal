@@ -24,7 +24,7 @@
     <div class="container" style="max-width: 960px;">
         
         <!-- Privacy Notice Banner -->
-        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4 border-start border-4 border-primary">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
             <div class="d-flex align-items-start gap-3">
                 <div class="p-2 rounded-circle bg-primary-subtle text-primary-drmc d-inline-flex" style="flex-shrink:0;">
                     <i class="bi bi-shield-lock-fill fs-3"></i>
@@ -39,14 +39,14 @@
         </div>
 
         <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-3 mb-4 border-bottom">
+            <div class="audit-account-heading d-flex align-items-center justify-content-between flex-wrap gap-2 pb-3 mb-4 border-bottom">
                 <div>
                     <span class="small text-muted d-block" style="font-size: 0.75rem;">AUTHENTICATED ACCOUNT:</span>
                     <h3 class="h5 fw-bold text-dark mb-0">@Model.PatientName</h3>
                     <span class="small text-muted">@Model.Email</span>
                 </div>
                 <span class="badge bg-light text-dark border px-3 py-2 rounded-pill small">
-                    Showing @Model.Logs.Count Security Events
+                    @Model.Logs.Count activities
                 </span>
             </div>
 
@@ -59,7 +59,58 @@
             }
             else
             {
-                <div class="table-responsive rounded-3 border" tabindex="0" role="region" aria-label="Access history records">
+                <div class="audit-mobile-list d-md-none" aria-label="Access history records">
+                    @foreach (var dateGroup in Model.Logs.GroupBy(log => log.Timestamp.Date))
+                    {
+                        <section class="audit-date-group" aria-labelledby="audit-date-@dateGroup.Key.ToString("yyyyMMdd")">
+                            <h4 class="audit-date-heading" id="audit-date-@dateGroup.Key.ToString("yyyyMMdd")">
+                                @dateGroup.Key.ToString("MMMM d, yyyy")
+                            </h4>
+                            <ol class="audit-event-list">
+                                @foreach (var log in dateGroup)
+                                {
+                                    var isView = log.Action.Contains("VIEW");
+                                    var isSubmit = log.Action.Contains("SUBMIT");
+                                    <li class="audit-event-card">
+                                        <div class="audit-event-header">
+                                            <span class="badge @(isView ? "bg-info-subtle text-info-emphasis" : isSubmit ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary") rounded-pill px-2">
+                                                @if (isView)
+                                                {
+                                                    <i class="bi bi-eye me-1" aria-hidden="true"></i>
+                                                }
+                                                else if (isSubmit)
+                                                {
+                                                    <i class="bi bi-check2-circle me-1" aria-hidden="true"></i>
+                                                }
+                                                @log.Action.Replace('_', ' ')
+                                            </span>
+                                            <time datetime="@log.Timestamp.ToString("O")">@log.Timestamp.ToString("h:mm tt")</time>
+                                        </div>
+                                        <dl class="audit-event-summary">
+                                            <div>
+                                                <dt>Resource</dt>
+                                                <dd>@log.Resource</dd>
+                                            </div>
+                                            <div>
+                                                <dt>Activity</dt>
+                                                <dd>@log.Details</dd>
+                                            </div>
+                                        </dl>
+                                        <details class="audit-technical-details">
+                                            <summary>Technical details</summary>
+                                            <dl>
+                                                <div><dt>Full timestamp</dt><dd>@log.Timestamp.ToString("MMM d, yyyy h:mm:ss tt") PST</dd></div>
+                                                <div><dt>IP address</dt><dd>@log.IpAddress</dd></div>
+                                            </dl>
+                                        </details>
+                                    </li>
+                                }
+                            </ol>
+                        </section>
+                    }
+                </div>
+
+                <div class="table-responsive rounded-3 border d-none d-md-block" tabindex="0" role="region" aria-label="Access history records">
                     <table class="table table-hover align-middle mb-0 small">
                         <thead class="table-light text-uppercase" style="font-size: 0.75rem;">
                             <tr>
