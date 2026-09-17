@@ -1,0 +1,68 @@
+@{
+    ViewData["Title"] = "PhilHealth Requirements";
+}
+
+<section class="page-header">
+    <div class="container">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <a asp-action="Index" class="text-white text-opacity-75 text-decoration-none small">
+                <i class="bi bi-arrow-left"></i> Malasakit Center
+            </a>
+            <span class="text-white text-opacity-50">/</span>
+            <span class="small text-white text-opacity-75">Requirements Guide</span>
+        </div>
+        <h1 class="display-6 fw-bold mb-1">PHILHEALTH REQUIREMENTS</h1>
+        <p class="text-white text-opacity-90 mb-0">Please prepare the applicable documents before visiting the Malasakit Center.</p>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container" style="max-width: 860px;">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+            <div class="d-flex align-items-center gap-2 mb-4">
+                <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">1</span>
+                <h2 class="h4 fw-bold text-primary-drmc mb-0">Required Documents</h2>
+            </div>
+
+            <div class="d-flex flex-column gap-3">
+                <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
+                    <i class="bi bi-file-earmark-person fs-5 text-primary-drmc"></i>
+                    <div>
+                        <h3 class="h6 fw-bold text-dark mb-1">Birth Certificate</h3>
+                        <p class="small text-muted mb-0">Required for the baby.</p>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
+                    <i class="bi bi-person-vcard fs-5 text-primary-drmc"></i>
+                    <div>
+                        <h3 class="h6 fw-bold text-dark mb-1">Valid ID of the PhilHealth member</h3>
+                        <p class="small text-muted mb-0">Bring a valid identification card belonging to the PhilHealth member.</p>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
+                    <i class="bi bi-person-check fs-5 text-primary-drmc"></i>
+                    <div>
+                        <h3 class="h6 fw-bold text-dark mb-1">Valid ID of the authorized representative</h3>
+                        <p class="small text-muted mb-0">Bring a valid identification card belonging to the person processing the request.</p>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
+                    <i class="bi bi-heart fs-5 text-primary-drmc"></i>
+                    <div>
+                        <h3 class="h6 fw-bold text-dark mb-1">Marriage Contract</h3>
+                        <p class="small text-muted mb-0">Required if married.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center pt-4 mt-4 border-top">
+                <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Malasakit Center
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
