@@ -661,6 +661,67 @@ textarea:focus-visible,
     box-shadow: 0 6px 16px rgba(14, 78, 135, 0.06);
 }
 
+.dswd-service-tile {
+    color: inherit;
+    border: 1px solid transparent !important;
+    transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.dswd-service-tile:hover,
+.dswd-service-tile:focus-visible {
+    color: inherit;
+    transform: translateY(-2px);
+    border-color: #b6cde0 !important;
+    box-shadow: 0 10px 24px rgba(14, 78, 135, 0.1) !important;
+}
+
+.dswd-service-tile:focus-visible {
+    outline: 3px solid rgba(14, 78, 135, 0.24);
+    outline-offset: 3px;
+}
+
+.dswd-service-icon,
+.requirement-icon {
+    width: 3rem;
+    height: 3rem;
+    flex: 0 0 3rem;
+    border-radius: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    color: var(--drmc-primary);
+    background: var(--drmc-surface-soft);
+}
+
+.dswd-requirement-card {
+    border-top: 4px solid var(--drmc-primary) !important;
+}
+
+.requirement-list {
+    padding-left: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.7rem;
+}
+
+.requirement-list li {
+    position: relative;
+    padding-left: 1.65rem;
+    color: var(--drmc-text-muted);
+    font-size: 0.9rem;
+    line-height: 1.55;
+}
+
+.requirement-list li::before {
+    content: "\2713";
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--drmc-primary);
+    font-weight: 700;
+}
+
 /* Reusable page and data surfaces */
 .page-header,
 main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-hero) {

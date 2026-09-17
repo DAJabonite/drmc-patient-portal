@@ -54,6 +54,17 @@ public class ClientRequirementsTests
     }
 
     [Fact]
+    public void DswdServices_ReturnsInformationalRequirementsView()
+    {
+        using var db = Database();
+        var controller = Context(new MalasakitController(db, Users(), Mock.Of<IAuditLogService>()));
+
+        var result = Assert.IsType<ViewResult>(controller.DSWDServices());
+
+        Assert.Null(result.Model);
+    }
+
+    [Fact]
     public async Task History_IsOwnerOnly_AndGroupsOutpatientEmergencyAndAdmissions()
     {
         using var db = Database();
