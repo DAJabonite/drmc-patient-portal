@@ -18,21 +18,14 @@
 
 <section class="section py-5 bg-light">
     <div class="container" style="max-width: 960px;">
-        <div class="alert alert-warning border-0 rounded-4 shadow-sm d-flex gap-3 align-items-start mb-4" role="alert">
-            <i class="bi bi-exclamation-circle-fill fs-4 text-warning-emphasis"></i>
-            <div>
-                <h2 class="h6 fw-bold mb-1">READ THE INSTRUCTIONS CAREFULLY TO AVOID MAKING ANOTHER TRIP</h2>
-                <p class="small mb-0">Please prepare all applicable documents and follow the instructions below before visiting the Malasakit Center. Thank you.</p>
-            </div>
-        </div>
-
-        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4">
-            <div class="d-flex align-items-center gap-2 mb-3">
+        <details class="requirement-disclosure card border-0 shadow-sm rounded-4 bg-white mb-4">
+            <summary class="requirement-disclosure-summary p-4 p-md-5">
                 <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">1</span>
-                <h2 class="h4 fw-bold text-primary-drmc mb-0">Required Documents</h2>
-            </div>
+                <span class="h4 fw-bold text-primary-drmc mb-0 flex-grow-1">Required Documents</span>
+                <i class="bi bi-chevron-down requirement-disclosure-chevron" aria-hidden="true"></i>
+            </summary>
 
-            <div class="d-flex flex-column gap-3">
+            <div class="d-flex flex-column gap-3 px-4 px-md-5 pb-4 pb-md-5">
                 <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
                     <i class="bi bi-prescription2 fs-5 text-primary-drmc"></i>
                     <div>
@@ -70,25 +63,29 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </details>
 
-        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4">
-            <div class="d-flex align-items-center gap-2 mb-3">
+        <details class="requirement-disclosure card border-0 shadow-sm rounded-4 bg-white mb-4">
+            <summary class="requirement-disclosure-summary p-4 p-md-5">
                 <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">2</span>
-                <h2 class="h4 fw-bold text-primary-drmc mb-0">How to Request a Price Quotation</h2>
+                <span class="h4 fw-bold text-primary-drmc mb-0 flex-grow-1">How to Request a Price Quotation</span>
+                <i class="bi bi-chevron-down requirement-disclosure-chevron" aria-hidden="true"></i>
+            </summary>
+            <div class="px-4 px-md-5 pb-4 pb-md-5">
+                <div class="p-3 rounded-3 bg-primary-subtle border border-primary-subtle">
+                    <p class="small text-dark mb-2">Go to the <strong>private hospital's pharmacy</strong> and bring the prescription stamped <strong>NOT AVAILABLE</strong> so the medicines can be priced.</p>
+                    <p class="small text-dark mb-0">Tell the pharmacy staff: <strong>“I would like to request a printed price quotation.”</strong></p>
+                </div>
             </div>
-            <div class="p-3 rounded-3 bg-primary-subtle border border-primary-subtle">
-                <p class="small text-dark mb-2">Go to the <strong>private hospital's pharmacy</strong> and bring the prescription stamped <strong>NOT AVAILABLE</strong> so the medicines can be priced.</p>
-                <p class="small text-dark mb-0">Tell the pharmacy staff: <strong>“I would like to request a printed price quotation.”</strong></p>
-            </div>
-        </div>
+        </details>
 
-        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
-            <div class="d-flex align-items-center gap-2 mb-3">
+        <details class="requirement-disclosure card border-0 shadow-sm rounded-4 bg-white">
+            <summary class="requirement-disclosure-summary p-4 p-md-5">
                 <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">3</span>
-                <h2 class="h4 fw-bold text-primary-drmc mb-0">Private Hospitals and Where to Go Next</h2>
-            </div>
-            <div class="table-responsive">
+                <span class="h4 fw-bold text-primary-drmc mb-0 flex-grow-1">Private Hospitals and Where to Go Next</span>
+                <i class="bi bi-chevron-down requirement-disclosure-chevron" aria-hidden="true"></i>
+            </summary>
+            <div class="table-responsive mx-4 mx-md-5 mb-4 mb-md-5">
                 <table class="table table-sm align-middle mb-0">
                     <thead>
                         <tr>
@@ -108,7 +105,7 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+        </details>
 
         <div class="text-center mt-4">
             <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">

@@ -47,6 +47,7 @@
   <data name="Nav_Medications"><value>Mga Aktibong Reseta</value></data>
   <data name="Nav_Audit"><value>Kasaysayan ng Pag-access</value></data>
   <data name="Nav_Settings"><value>Mga Setting ng Account</value></data>
+  <data name="Nav_MyIds"><value>Aking mga ID</value></data>
   <data name="Nav_SignOut"><value>Mag-logout</value></data>
   <data name="Nav_LogIn"><value>Mag-login</value></data>
   <data name="Nav_Register"><value>Magparehistro</value></data>
@@ -193,6 +194,36 @@
   <data name="Sources_Description" xml:space="preserve"><value>Basahin ang pinakabagong mga publikasyon sa website ng DRMC.</value></data>
   <data name="Sources_Arta" xml:space="preserve"><value>ARTA / Anti-Red Tape Act</value></data>
   <data name="Sources_Charter" xml:space="preserve"><value>Citizen’s Charter</value></data>
+  <data name="Ids_Eyebrow" xml:space="preserve"><value>Pagkakakilanlan at beripikasyon</value></data>
+  <data name="Ids_Title" xml:space="preserve"><value>Aking mga ID</value></data>
+  <data name="Ids_Description" xml:space="preserve"><value>Suriin ang government ID na naka-save sa inyong DRMC patient account.</value></data>
+  <data name="Ids_ProtectionTitle" xml:space="preserve"><value>Protektado ang inyong mga larawan ng ID</value></data>
+  <data name="Ids_ProtectionDescription" xml:space="preserve"><value>Makukuha lamang ang mga larawan habang naka-sign in kayo. Naitatala sa audit trail ang pagbubukas ng larawan.</value></data>
+  <data name="Ids_EmptyTitle" xml:space="preserve"><value>Walang naka-save na ID</value></data>
+  <data name="Ids_EmptyDescription" xml:space="preserve"><value>Walang government ID na nakakabit sa patient account na ito.</value></data>
+  <data name="Ids_GovernmentIssuer" xml:space="preserve"><value>Government-issued na pagkakakilanlan</value></data>
+  <data name="Ids_NoImage" xml:space="preserve"><value>Walang naka-save na larawan</value></data>
+  <data name="Ids_NoImageDescription" xml:space="preserve"><value>May detalye ng ID ang lumang record na ito, ngunit walang larawan ng harap o likod.</value></data>
+  <data name="Ids_Front" xml:space="preserve"><value>Harap</value></data>
+  <data name="Ids_Back" xml:space="preserve"><value>Likod</value></data>
+  <data name="Ids_ShowBack" xml:space="preserve"><value>Ipakita ang likod</value></data>
+  <data name="Ids_ShowFront" xml:space="preserve"><value>Ipakita ang harap</value></data>
+  <data name="Ids_FrontOnly" xml:space="preserve"><value>Harap lamang</value></data>
+  <data name="Ids_ViewLarger" xml:space="preserve"><value>Palakihin ang view</value></data>
+  <data name="Ids_IDNumber" xml:space="preserve"><value>Numero ng ID</value></data>
+  <data name="Ids_Show" xml:space="preserve"><value>Ipakita</value></data>
+  <data name="Ids_Hide" xml:space="preserve"><value>Itago</value></data>
+  <data name="Ids_RecordSource" xml:space="preserve"><value>Pinagmulan ng record</value></data>
+  <data name="Ids_SourceManual" xml:space="preserve"><value>Detalye mula sa pasyente</value></data>
+  <data name="Ids_SourceVerified" xml:space="preserve"><value>Na-verify na ID capture</value></data>
+  <data name="Ids_Added" xml:space="preserve"><value>Idinagdag sa account</value></data>
+  <data name="Ids_SecurePreview" xml:space="preserve"><value>Ligtas na preview ng ID</value></data>
+  <data name="Ids_Image" xml:space="preserve"><value>Larawan ng ID</value></data>
+  <data name="Ids_ClosePreview" xml:space="preserve"><value>Isara ang preview ng ID</value></data>
+  <data name="Ids_ZoomOut" xml:space="preserve"><value>Liitan</value></data>
+  <data name="Ids_ZoomIn" xml:space="preserve"><value>Palakihin</value></data>
+  <data name="Ids_Reset" xml:space="preserve"><value>I-reset</value></data>
+  <data name="Ids_ZoomInstruction" xml:space="preserve"><value>Gamitin ang mga control o mouse wheel para mag-zoom. Pindutin ang Escape para isara.</value></data>
   <data name="OpdGuide_ReminderTitle" xml:space="preserve"><value>Bago Kayo Lumabas</value></data>
   <data name="OpdGuide_ReminderBody" xml:space="preserve"><value>Paalala: Kung aalis kayo, lalabas, o hindi ninyo makukumpleto ang proseso ng OPD triage, kailangan ninyong simulan muli ang buong sequence mula sa simula.</value></data>
   <data name="OpdGuide_SelectFacility" xml:space="preserve"><value>Piliin ang Inyong OPD Facility</value></data>

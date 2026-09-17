@@ -47,6 +47,7 @@
   <data name="Nav_Medications"><value>Active Prescriptions</value></data>
   <data name="Nav_Audit"><value>Access Audit History</value></data>
   <data name="Nav_Settings"><value>Account Settings</value></data>
+  <data name="Nav_MyIds"><value>My IDs</value></data>
   <data name="Nav_SignOut"><value>Sign out</value></data>
   <data name="Nav_LogIn"><value>Log in</value></data>
   <data name="Nav_Register"><value>Register</value></data>
@@ -193,6 +194,36 @@
   <data name="Sources_Description" xml:space="preserve"><value>Read the latest publications directly on the DRMC website.</value></data>
   <data name="Sources_Arta" xml:space="preserve"><value>ARTA / Anti-Red Tape Act</value></data>
   <data name="Sources_Charter" xml:space="preserve"><value>Citizen’s Charter</value></data>
+  <data name="Ids_Eyebrow" xml:space="preserve"><value>Identity and verification</value></data>
+  <data name="Ids_Title" xml:space="preserve"><value>My IDs</value></data>
+  <data name="Ids_Description" xml:space="preserve"><value>Review the government identification saved with your DRMC patient account.</value></data>
+  <data name="Ids_ProtectionTitle" xml:space="preserve"><value>Your ID images are protected</value></data>
+  <data name="Ids_ProtectionDescription" xml:space="preserve"><value>Images are retrieved only while you are signed in. Opening an image is recorded in your access audit trail.</value></data>
+  <data name="Ids_EmptyTitle" xml:space="preserve"><value>No saved ID found</value></data>
+  <data name="Ids_EmptyDescription" xml:space="preserve"><value>No government ID is currently attached to this patient account.</value></data>
+  <data name="Ids_GovernmentIssuer" xml:space="preserve"><value>Government-issued identification</value></data>
+  <data name="Ids_NoImage" xml:space="preserve"><value>No saved image</value></data>
+  <data name="Ids_NoImageDescription" xml:space="preserve"><value>This older account record contains ID details, but no front or back photo.</value></data>
+  <data name="Ids_Front" xml:space="preserve"><value>Front</value></data>
+  <data name="Ids_Back" xml:space="preserve"><value>Back</value></data>
+  <data name="Ids_ShowBack" xml:space="preserve"><value>Show back</value></data>
+  <data name="Ids_ShowFront" xml:space="preserve"><value>Show front</value></data>
+  <data name="Ids_FrontOnly" xml:space="preserve"><value>Front only</value></data>
+  <data name="Ids_ViewLarger" xml:space="preserve"><value>View larger</value></data>
+  <data name="Ids_IDNumber" xml:space="preserve"><value>ID number</value></data>
+  <data name="Ids_Show" xml:space="preserve"><value>Show</value></data>
+  <data name="Ids_Hide" xml:space="preserve"><value>Hide</value></data>
+  <data name="Ids_RecordSource" xml:space="preserve"><value>Record source</value></data>
+  <data name="Ids_SourceManual" xml:space="preserve"><value>Patient-provided details</value></data>
+  <data name="Ids_SourceVerified" xml:space="preserve"><value>Verified ID capture</value></data>
+  <data name="Ids_Added" xml:space="preserve"><value>Added to account</value></data>
+  <data name="Ids_SecurePreview" xml:space="preserve"><value>Secure ID preview</value></data>
+  <data name="Ids_Image" xml:space="preserve"><value>ID image</value></data>
+  <data name="Ids_ClosePreview" xml:space="preserve"><value>Close ID preview</value></data>
+  <data name="Ids_ZoomOut" xml:space="preserve"><value>Zoom out</value></data>
+  <data name="Ids_ZoomIn" xml:space="preserve"><value>Zoom in</value></data>
+  <data name="Ids_Reset" xml:space="preserve"><value>Reset</value></data>
+  <data name="Ids_ZoomInstruction" xml:space="preserve"><value>Use the controls or mouse wheel to zoom. Press Escape to close.</value></data>
   <data name="OpdGuide_ReminderTitle" xml:space="preserve"><value>Before You Step Out</value></data>
   <data name="OpdGuide_ReminderBody" xml:space="preserve"><value>Reminder: If you leave, step out, or do not complete the OPD triage process, you must start the entire sequence over from the beginning.</value></data>
   <data name="OpdGuide_SelectFacility" xml:space="preserve"><value>Select Your OPD Facility</value></data>

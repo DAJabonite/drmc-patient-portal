@@ -207,6 +207,30 @@ public sealed class WorkflowTests(PortalFixture app)
     }
 
     [Fact]
+    public async Task Malasakit_requirement_guides_use_collapsible_sections()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+        await using var context = await browser.NewContextAsync(app.Context("small"));
+        var page = await context.NewPageAsync();
+
+        await page.GotoAsync("/Malasakit/DSWDServices");
+        await Expect(page.Locator("details.requirement-disclosure")).ToHaveCountAsync(4);
+        var medicine = page.Locator("details.requirement-disclosure").First;
+        await Expect(medicine).Not.ToHaveAttributeAsync("open", "");
+        await medicine.Locator("summary").ClickAsync();
+        await Expect(medicine).ToHaveAttributeAsync("open", "");
+        await Expect(medicine.GetByText("Medicine prescription", new() { Exact = false })).ToBeVisibleAsync();
+
+        await page.GotoAsync("/Malasakit/MaifipRequirements");
+        await Expect(page.Locator("[role='alert']")).ToHaveCountAsync(0);
+        await Expect(page.Locator("details.requirement-disclosure")).ToHaveCountAsync(3);
+        var requiredDocuments = page.Locator("details.requirement-disclosure").First;
+        await requiredDocuments.Locator("summary").ClickAsync();
+        await Expect(requiredDocuments.GetByText("DRMC prescription or request", new() { Exact = false })).ToBeVisibleAsync();
+        Assert.Empty(await ResponsiveTests.LayoutProblems(page));
+    }
+
+    [Fact]
     public async Task Keyboard_reflow_and_reduced_motion()
     {
         await using var browser = await app.Playwright.Chromium.LaunchAsync();
@@ -227,5 +251,27 @@ public sealed class WorkflowTests(PortalFixture app)
             await page.GotoAsync(route);
             Assert.Empty(await ResponsiveTests.LayoutProblems(page));
         }
+    }
+
+    [Theory]
+    [InlineData("chromium", "1440")]
+    [InlineData("webkit", "iphone")]
+    public async Task My_ids_masks_account_identifier_and_handles_legacy_records_without_images(string engine, string device)
+    {
+        await using var browser = await app.Engine(engine).LaunchAsync();
+        await using var context = await browser.NewContextAsync(app.Context(device));
+        var page = await context.NewPageAsync();
+        await PortalFixture.SignIn(page);
+
+        await page.GotoAsync("/Identity/Account/Manage/MyIds");
+
+        await Expect(page.GetByRole(AriaRole.Heading, new() { Name = "My IDs", Exact = true })).ToBeVisibleAsync();
+        await Expect(page.Locator("#my-ids")).ToHaveClassAsync(new Regex("active"));
+        await Expect(page.Locator(".id-image-unavailable")).ToBeVisibleAsync();
+        await Expect(page.Locator("[data-id-number]")).Not.ToHaveTextAsync("1234-5678-9012-3456");
+
+        await page.Locator("[data-id-number-toggle]").ClickAsync();
+        await Expect(page.Locator("[data-id-number]")).ToHaveTextAsync("1234-5678-9012-3456");
+        Assert.Empty(await ResponsiveTests.LayoutProblems(page));
     }
 }

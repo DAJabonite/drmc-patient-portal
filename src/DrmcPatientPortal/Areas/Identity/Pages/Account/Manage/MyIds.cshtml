@@ -1,0 +1,144 @@
+@page
+@model MyIdsModel
+@{
+    ViewData["Title"] = Loc["Ids_Title"];
+    ViewData["ActivePage"] = ManageNavPages.MyIds;
+}
+
+<header class="mb-4">
+    <p class="eyebrow mb-1">@Loc["Ids_Eyebrow"]</p>
+    <h2 class="h4 fw-bold text-primary-drmc mb-2">@Loc["Ids_Title"]</h2>
+    <p class="text-muted mb-0">@Loc["Ids_Description"]</p>
+</header>
+
+<div class="alert alert-primary border-0 rounded-4 d-flex gap-3 align-items-start" role="note">
+    <i class="bi bi-shield-lock-fill fs-4" aria-hidden="true"></i>
+    <div>
+        <strong class="d-block">@Loc["Ids_ProtectionTitle"]</strong>
+        <span class="small">@Loc["Ids_ProtectionDescription"]</span>
+    </div>
+</div>
+
+@if (Model.Documents.Count == 0)
+{
+    <div class="id-wallet-empty text-center rounded-4 p-4 p-md-5">
+        <i class="bi bi-person-vcard" aria-hidden="true"></i>
+        <h3 class="h5 fw-bold mt-3">@Loc["Ids_EmptyTitle"]</h3>
+        <p class="text-muted mb-0">@Loc["Ids_EmptyDescription"]</p>
+    </div>
+}
+else
+{
+    <div class="id-wallet-list">
+        @foreach (var document in Model.Documents)
+        {
+            var cardId = $"id-card-{document.Id}";
+            var frontUrl = document.HasFrontPhoto
+                ? Url.Action("IdPhoto", "PatientDocuments", new { id = document.Id, side = "front" })
+                : null;
+            var backUrl = document.HasBackPhoto
+                ? Url.Action("IdPhoto", "PatientDocuments", new { id = document.Id, side = "back" })
+                : null;
+
+            <article class="id-wallet-entry rounded-4" aria-labelledby="@cardId-title">
+                <div class="id-wallet-heading">
+                    <span class="id-wallet-icon"><i class="bi bi-person-vcard" aria-hidden="true"></i></span>
+                    <div class="min-w-0">
+                        <p class="eyebrow mb-1">@document.Issuer</p>
+                        <h3 class="h5 fw-bold mb-0" id="@cardId-title">@document.IdType</h3>
+                    </div>
+                </div>
+
+                @if (document.HasFrontPhoto)
+                {
+                    <div class="id-card-stage" id="@cardId" data-id-card>
+                        <div class="id-card-rotator">
+                            <figure class="id-card-face id-card-front mb-0">
+                                <img src="@frontUrl" alt="Front of @document.IdType" loading="lazy" />
+                                <figcaption>@Loc["Ids_Front"]</figcaption>
+                            </figure>
+                            @if (document.HasBackPhoto)
+                            {
+                                <figure class="id-card-face id-card-back mb-0">
+                                    <img src="@backUrl" alt="Back of @document.IdType" loading="lazy" />
+                                    <figcaption>@Loc["Ids_Back"]</figcaption>
+                                </figure>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="id-wallet-controls" aria-label="ID image controls">
+                        <button type="button" class="btn btn-outline-drmc" data-id-flip data-show-back="@Loc["Ids_ShowBack"]" data-show-front="@Loc["Ids_ShowFront"]" aria-controls="@cardId" aria-pressed="false" @(!document.HasBackPhoto ? "disabled" : null)>
+                            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                            <span>@(document.HasBackPhoto ? Loc["Ids_ShowBack"] : Loc["Ids_FrontOnly"])</span>
+                        </button>
+                        <button type="button" class="btn btn-outline-drmc" data-id-zoom data-front-url="@frontUrl" data-back-url="@backUrl" data-id-title="@document.IdType">
+                            <i class="bi bi-zoom-in" aria-hidden="true"></i> @Loc["Ids_ViewLarger"]
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="id-image-unavailable rounded-4">
+                        <i class="bi bi-image" aria-hidden="true"></i>
+                        <div>
+                            <strong>@Loc["Ids_NoImage"]</strong>
+                            <span>@Loc["Ids_NoImageDescription"]</span>
+                        </div>
+                    </div>
+                }
+
+                <dl class="id-wallet-details mb-0">
+                    <div>
+                        <dt>@Loc["Ids_IDNumber"]</dt>
+                        <dd>
+                            <span data-id-number data-masked-number="@document.MaskedIdNumber" data-full-number="@document.IdNumber">@document.MaskedIdNumber</span>
+                            @if (!string.IsNullOrWhiteSpace(document.IdNumber))
+                            {
+                                <button type="button" class="id-number-toggle" data-id-number-toggle data-show-text="@Loc["Ids_Show"]" data-hide-text="@Loc["Ids_Hide"]" aria-pressed="false">@Loc["Ids_Show"]</button>
+                            }
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>@Loc["Ids_RecordSource"]</dt>
+                        <dd>@(document.IsManualEntry ? Loc["Ids_SourceManual"] : Loc["Ids_SourceVerified"])</dd>
+                    </div>
+                    @if (document.CapturedAt.HasValue)
+                    {
+                        <div>
+                            <dt>@Loc["Ids_Added"]</dt>
+                            <dd>@document.CapturedAt.Value.ToLocalTime().ToString("MMMM d, yyyy")</dd>
+                        </div>
+                    }
+                </dl>
+            </article>
+        }
+    </div>
+}
+
+<dialog class="id-zoom-dialog" id="idZoomDialog" aria-labelledby="idZoomTitle">
+    <div class="id-zoom-shell">
+        <header class="id-zoom-header">
+            <div>
+                <p class="eyebrow mb-1">@Loc["Ids_SecurePreview"]</p>
+                <h3 class="h5 fw-bold mb-0" id="idZoomTitle">@Loc["Ids_Image"]</h3>
+            </div>
+            <button type="button" class="btn-close" data-id-zoom-close aria-label="@Loc["Ids_ClosePreview"]"></button>
+        </header>
+        <div class="id-zoom-toolbar" aria-label="Zoom controls">
+            <button type="button" class="btn btn-light" data-id-zoom-out aria-label="@Loc["Ids_ZoomOut"]"><i class="bi bi-dash-lg" aria-hidden="true"></i></button>
+            <output data-id-zoom-level aria-live="polite">100%</output>
+            <button type="button" class="btn btn-light" data-id-zoom-in aria-label="@Loc["Ids_ZoomIn"]"><i class="bi bi-plus-lg" aria-hidden="true"></i></button>
+            <button type="button" class="btn btn-light" data-id-zoom-reset>@Loc["Ids_Reset"]</button>
+            <button type="button" class="btn btn-outline-light ms-auto" data-id-zoom-side data-show-back="@Loc["Ids_ShowBack"]" data-show-front="@Loc["Ids_ShowFront"]" hidden><i class="bi bi-arrow-repeat" aria-hidden="true"></i> @Loc["Ids_ShowBack"]</button>
+        </div>
+        <div class="id-zoom-viewport">
+            <img src="" alt="" data-id-zoom-image />
+        </div>
+        <p class="small text-white-50 text-center mb-0">@Loc["Ids_ZoomInstruction"]</p>
+    </div>
+</dialog>
+
+@section Scripts {
+    <script src="~/js/id-wallet.js" asp-append-version="true"></script>
+}

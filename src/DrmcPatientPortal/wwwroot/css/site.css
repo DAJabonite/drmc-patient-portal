@@ -1510,6 +1510,334 @@ code,
     margin: 0;
 }
 
+/* Native disclosure cards keep long assistance checklists manageable while
+   preserving keyboard and screen-reader behavior without custom JavaScript. */
+.requirement-disclosure {
+    overflow: hidden;
+}
+
+.requirement-disclosure-summary {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    min-height: 64px;
+    cursor: pointer;
+    list-style: none;
+}
+
+.requirement-disclosure-summary::-webkit-details-marker {
+    display: none;
+}
+
+.requirement-disclosure-summary::marker {
+    content: "";
+}
+
+.requirement-disclosure-summary:focus-visible {
+    outline: 3px solid #ffbf47;
+    outline-offset: -3px;
+}
+
+.requirement-disclosure-chevron {
+    flex: 0 0 auto;
+    color: var(--drmc-primary);
+    transition: transform .2s ease;
+}
+
+.requirement-disclosure[open] .requirement-disclosure-chevron {
+    transform: rotate(180deg);
+}
+
+.requirement-disclosure[open] .requirement-disclosure-summary {
+    padding-bottom: 1rem !important;
+}
+
+/* Secure patient ID wallet */
+.id-wallet-list {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.id-wallet-entry {
+    padding: clamp(1rem, 3vw, 1.5rem);
+    border: 1px solid var(--drmc-border);
+    background: #f8fafc;
+}
+
+.id-wallet-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.id-wallet-icon,
+.id-wallet-empty > i {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    color: var(--drmc-primary);
+    background: #e5f0fa;
+    border-radius: 14px;
+    font-size: 1.35rem;
+}
+
+.id-wallet-empty {
+    border: 1px dashed #b8c8d8;
+    background: #f8fafc;
+}
+
+.id-wallet-empty > i {
+    margin-inline: auto;
+    width: 64px;
+    height: 64px;
+    font-size: 1.8rem;
+}
+
+.id-card-stage {
+    width: min(100%, 560px);
+    margin-inline: auto;
+    aspect-ratio: 1.586 / 1;
+    perspective: 1200px;
+}
+
+.id-card-rotator {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.45s ease;
+}
+
+.id-card-stage.is-flipped .id-card-rotator {
+    transform: rotateY(180deg);
+}
+
+.id-card-face {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    backface-visibility: hidden;
+    background: #dce6ef;
+    border: 1px solid #b7c8d8;
+    border-radius: 18px;
+    box-shadow: 0 12px 28px rgba(16, 49, 78, 0.16);
+}
+
+.id-card-back {
+    transform: rotateY(180deg);
+}
+
+.id-card-face img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.id-card-face figcaption {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    padding: 0.25rem 0.6rem;
+    color: #fff;
+    background: rgba(4, 35, 61, 0.82);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.id-wallet-controls {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-top: 1rem;
+}
+
+.id-wallet-controls .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 44px;
+}
+
+.id-image-unavailable {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 1.1rem;
+    color: var(--drmc-text-muted);
+    background: #edf2f7;
+    border: 1px dashed #b8c8d8;
+}
+
+.id-image-unavailable > i {
+    font-size: 1.6rem;
+}
+
+.id-image-unavailable strong,
+.id-image-unavailable span {
+    display: block;
+}
+
+.id-image-unavailable strong {
+    color: var(--drmc-text);
+}
+
+.id-wallet-details {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    overflow: hidden;
+    margin-top: 1.25rem;
+    background: var(--drmc-border);
+    border: 1px solid var(--drmc-border);
+    border-radius: 14px;
+}
+
+.id-wallet-details > div {
+    min-width: 0;
+    padding: 0.85rem 1rem;
+    background: #fff;
+}
+
+.id-wallet-details dt {
+    margin-bottom: 0.15rem;
+    color: var(--drmc-text-muted);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.id-wallet-details dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+    font-weight: 650;
+}
+
+.id-number-toggle {
+    margin-left: 0.4rem;
+    padding: 0.1rem 0.35rem;
+    color: var(--drmc-primary);
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 750;
+    text-decoration: underline;
+}
+
+.id-zoom-dialog {
+    width: min(96vw, 1100px);
+    max-width: none;
+    height: min(92vh, 800px);
+    max-height: none;
+    padding: 0;
+    color: #fff;
+    background: #081725;
+    border: 0;
+    border-radius: 18px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+
+.id-zoom-dialog::backdrop {
+    background: rgba(0, 12, 24, 0.82);
+    backdrop-filter: blur(3px);
+}
+
+.id-zoom-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 1rem;
+}
+
+.id-zoom-header,
+.id-zoom-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.id-zoom-header {
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.id-zoom-header .btn-close {
+    filter: invert(1) grayscale(1);
+}
+
+.id-zoom-toolbar {
+    margin-bottom: 0.75rem;
+}
+
+.id-zoom-toolbar output {
+    width: 3.7rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.id-zoom-viewport {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    margin-bottom: 0.65rem;
+    background-color: #13283a;
+    background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.035) 25%, transparent 25%), linear-gradient(-45deg, rgba(255, 255, 255, 0.035) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.035) 75%), linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.035) 75%);
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    background-size: 16px 16px;
+    border-radius: 12px;
+}
+
+.id-zoom-viewport img {
+    display: block;
+    width: 100%;
+    max-width: none;
+    min-height: 100%;
+    margin: auto;
+    object-fit: contain;
+    transform-origin: center;
+}
+
+@media (max-width: 767.98px) {
+    .id-wallet-details {
+        grid-template-columns: 1fr;
+    }
+
+    .id-wallet-controls .btn {
+        flex: 1 1 calc(50% - 0.35rem);
+    }
+
+    .id-zoom-dialog {
+        width: 100vw;
+        height: calc(100dvh - var(--mobile-nav-height));
+        margin: 0;
+        max-height: none;
+        border-radius: 0;
+    }
+
+    .id-zoom-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .id-zoom-toolbar [data-id-zoom-side] {
+        width: 100%;
+        margin-left: 0 !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .requirement-disclosure-chevron {
+        transition: none;
+    }
+}
+
 .audit-event-summary > div + div,
 .audit-technical-details dl > div + div {
     margin-top: .7rem;

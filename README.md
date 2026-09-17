@@ -67,7 +67,7 @@ The portal gives the public hospital information (departments, OPD guidance, adv
 | Medications | Own prescriptions with persisted exact dose schedules and allergy list; detail views are audited |
 | Triage intake | Validated digital pre-consultation intake with 0–10 pain scale, symptoms, comorbidities, reported vitals, and an emergency red-flag path that persists `UrgentEmergency` **before** the warning screen is shown |
 | Malasakit application | One current application per patient, a document-preparation checklist, and clearly separated *patient-reported* versus *hospital-confirmed* payment/eligibility/coverage states |
-| Government-ID documents | Owner-only retrieval of encrypted JPEG/PNG ID images through an authorized endpoint; audited on every read |
+| Government-ID documents | Owner-only ID wallet with saved ID details, masked reference numbers, encrypted JPEG/PNG image retrieval, front/back preview, and zoom; image reads are audited |
 | Access history | The patient's own most recent 50 audit entries |
 
 ### Deliberately **not** implemented
@@ -322,6 +322,7 @@ Routing is conventional (`{controller=Home}/{action=Index}/{id?}`) plus attribut
 |---|---|---|
 | GET | `/Patient/Home` | Dashboard: encounters, labs, active prescriptions, subsidy status |
 | GET | `/Patient/Audit` | Own last 50 audit entries |
+| GET | `/Identity/Account/Manage/MyIds` | Own saved government IDs with masked details and secure front/back image preview |
 | GET | `/Patient/MedicalHistory?category=OPD\|ER\|ADMITTED` | Owned history; audited, `NoStore`; invalid category returns `400` |
 | GET | `/Patient/Encounters?department=` | Owned encounter timeline |
 | GET | `/Patient/Encounters/Details/{id}` | Owned encounter + linked labs (audited) |
@@ -336,7 +337,7 @@ Routing is conventional (`{controller=Home}/{action=Index}/{id?}`) plus attribut
 | GET/POST | `/Malasakit/Apply` | Create the current application (repeat visits redirect to Status) |
 | GET | `/Malasakit/Status` | Own application, eligibility, coverage, reported vs. confirmed payment (audited, `NoStore`) |
 | POST | `/Malasakit/Requirements` | Save the document-preparation checklist |
-| GET | `/PatientDocuments/IdPhoto/{id}?side=front\|back` | Owner-only decrypted ID image (audited; lazily migrates legacy plaintext) |
+| GET | `/PatientDocuments/IdPhoto/{id}?side=front\|back` | Owner-only decrypted ID image (audited, `no-store`; lazily migrates legacy plaintext) |
 
 ### Retired (returns `404` by design)
 

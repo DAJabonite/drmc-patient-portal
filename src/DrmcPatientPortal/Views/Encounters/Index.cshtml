@@ -12,33 +12,30 @@
     </div>
 </section>
 
-<!-- Department Filter Bar -->
+<!-- Visit filters -->
 <section class="py-3 bg-white border-bottom sticky-top shadow-xs" style="z-index: 1020;">
     <div class="container">
-        <form asp-action="Index" method="get" class="d-md-none">
-            <label for="encounterDepartmentFilter" class="form-label small fw-semibold text-dark mb-1">Filter visits by department</label>
-            <select id="encounterDepartmentFilter" name="department" class="form-select" onchange="this.form.submit()">
-                <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDepartment))">@Loc["Enc_AllDepartments"] (@Model.Encounters.Count)</option>
-                @foreach (var dept in Model.Departments)
-                {
-                    <option value="@dept.Name" selected="@(Model.SelectedDepartment == dept.Name)">@dept.Name</option>
-                }
-            </select>
+        <form asp-action="Index" method="get" class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label for="encounterDepartmentFilter" class="form-label small fw-semibold text-dark mb-1">Filter visits by department</label>
+                <select id="encounterDepartmentFilter" name="department" class="form-select" onchange="this.form.submit()">
+                    <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDepartment))">@Loc["Enc_AllDepartments"] (@Model.Encounters.Count)</option>
+                    @foreach (var dept in Model.Departments)
+                    {
+                        <option value="@dept.Name" selected="@(Model.SelectedDepartment == dept.Name)">@dept.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="encounterDateFilter" class="form-label small fw-semibold text-dark mb-1">Filter by date</label>
+                <select id="encounterDateFilter" name="dateRange" class="form-select" onchange="this.form.submit()">
+                    <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDateRange))">Any date</option>
+                    <option value="30d" selected="@(Model.SelectedDateRange == "30d")">Last 30 days</option>
+                    <option value="6m" selected="@(Model.SelectedDateRange == "6m")">Last 6 months</option>
+                    <option value="year" selected="@(Model.SelectedDateRange == "year")">This year</option>
+                </select>
+            </div>
         </form>
-
-        <div class="desktop-filter-pills d-none d-md-flex align-items-center gap-1 overflow-x-auto pb-1" style="max-width: 100%;">
-            <a asp-action="Index"
-               class="btn btn-sm @(string.IsNullOrEmpty(Model.SelectedDepartment) ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
-                @Loc["Enc_AllDepartments"] (@Model.Encounters.Count)
-            </a>
-            @foreach (var dept in Model.Departments)
-            {
-                <a asp-action="Index" asp-route-department="@dept.Name"
-                   class="btn btn-sm @(Model.SelectedDepartment == dept.Name ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
-                    @dept.Name
-                </a>
-            }
-        </div>
     </div>
 </section>
 

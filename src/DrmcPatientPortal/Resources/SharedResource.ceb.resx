@@ -47,6 +47,7 @@
   <data name="Nav_Medications"><value>Aktibong mga Reseta</value></data>
   <data name="Nav_Audit"><value>Kasaysayan sa Pag-abli</value></data>
   <data name="Nav_Settings"><value>Mga Setting sa Account</value></data>
+  <data name="Nav_MyIds"><value>Akong mga ID</value></data>
   <data name="Nav_SignOut"><value>Gawas</value></data>
   <data name="Nav_LogIn"><value>Sulod</value></data>
   <data name="Nav_Register"><value>Pagparehistro</value></data>
@@ -193,6 +194,36 @@
   <data name="Sources_Description" xml:space="preserve"><value>Basaha ang pinakabag-ong mga publikasyon sa website sa DRMC.</value></data>
   <data name="Sources_Arta" xml:space="preserve"><value>ARTA / Anti-Red Tape Act</value></data>
   <data name="Sources_Charter" xml:space="preserve"><value>Citizen’s Charter</value></data>
+  <data name="Ids_Eyebrow" xml:space="preserve"><value>Pag-ila ug beripikasyon</value></data>
+  <data name="Ids_Title" xml:space="preserve"><value>Akong mga ID</value></data>
+  <data name="Ids_Description" xml:space="preserve"><value>Susiha ang government ID nga naka-save sa inyong DRMC patient account.</value></data>
+  <data name="Ids_ProtectionTitle" xml:space="preserve"><value>Protektado ang inyong mga hulagway sa ID</value></data>
+  <data name="Ids_ProtectionDescription" xml:space="preserve"><value>Makuha ra ang mga hulagway samtang naka-sign in. Ang pag-abli sa hulagway ma-record sa access audit trail.</value></data>
+  <data name="Ids_EmptyTitle" xml:space="preserve"><value>Walay na-save nga ID</value></data>
+  <data name="Ids_EmptyDescription" xml:space="preserve"><value>Walay government ID nga naka-attach sa niini nga patient account.</value></data>
+  <data name="Ids_GovernmentIssuer" xml:space="preserve"><value>Government-issued nga pagkaila</value></data>
+  <data name="Ids_NoImage" xml:space="preserve"><value>Walay na-save nga hulagway</value></data>
+  <data name="Ids_NoImageDescription" xml:space="preserve"><value>Kining daang account record adunay detalye sa ID, apan walay hulagway sa atubangan o likod.</value></data>
+  <data name="Ids_Front" xml:space="preserve"><value>Atubangan</value></data>
+  <data name="Ids_Back" xml:space="preserve"><value>Likod</value></data>
+  <data name="Ids_ShowBack" xml:space="preserve"><value>Ipakita ang likod</value></data>
+  <data name="Ids_ShowFront" xml:space="preserve"><value>Ipakita ang atubangan</value></data>
+  <data name="Ids_FrontOnly" xml:space="preserve"><value>Atubangan lamang</value></data>
+  <data name="Ids_ViewLarger" xml:space="preserve"><value>Tan-awa nga mas dako</value></data>
+  <data name="Ids_IDNumber" xml:space="preserve"><value>Numero sa ID</value></data>
+  <data name="Ids_Show" xml:space="preserve"><value>Ipakita</value></data>
+  <data name="Ids_Hide" xml:space="preserve"><value>Tagoa</value></data>
+  <data name="Ids_RecordSource" xml:space="preserve"><value>Gigikanan sa record</value></data>
+  <data name="Ids_SourceManual" xml:space="preserve"><value>Detalye nga gihatag sa pasyente</value></data>
+  <data name="Ids_SourceVerified" xml:space="preserve"><value>Na-verify nga ID capture</value></data>
+  <data name="Ids_Added" xml:space="preserve"><value>Gidugang sa account</value></data>
+  <data name="Ids_SecurePreview" xml:space="preserve"><value>Luwas nga preview sa ID</value></data>
+  <data name="Ids_Image" xml:space="preserve"><value>Hulagway sa ID</value></data>
+  <data name="Ids_ClosePreview" xml:space="preserve"><value>Sira ang preview sa ID</value></data>
+  <data name="Ids_ZoomOut" xml:space="preserve"><value>Pagamayi</value></data>
+  <data name="Ids_ZoomIn" xml:space="preserve"><value>Padak-a</value></data>
+  <data name="Ids_Reset" xml:space="preserve"><value>I-reset</value></data>
+  <data name="Ids_ZoomInstruction" xml:space="preserve"><value>Gamita ang mga control o mouse wheel para mag-zoom. Pindota ang Escape aron mosira.</value></data>
   <data name="OpdGuide_ReminderTitle" xml:space="preserve"><value>Sa Wala Pa Kamu Mogawas</value></data>
   <data name="OpdGuide_ReminderBody" xml:space="preserve"><value>Pahinumdom: Kung mogawas ka, molayas, o dili nimo makompleto ang proseso sa OPD triage, kinahanglan nimo sugdan pag-usab ang tibuok nga sequence gikan sa sinugdanan.</value></data>
   <data name="OpdGuide_SelectFacility" xml:space="preserve"><value>Pilia ang Imong OPD Facility</value></data>

@@ -88,6 +88,15 @@
     </div>
 </section>
 
+@if (!signedIn)
+{
+    <section class="landing-official-sources pb-5" aria-label="@Loc["Sources_Title"]">
+        <div class="container">
+            <partial name="_OfficialDrmcSources" />
+        </div>
+    </section>
+}
+
 <section class="pb-5" aria-label="Hospital information">
     <div class="container">
         <div class="service-link-grid">
