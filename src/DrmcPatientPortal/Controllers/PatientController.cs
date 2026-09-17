@@ -27,16 +27,10 @@ public class PatientController : Controller
             return Challenge();
         }
 
-        var nextAppointment = await _db.Appointments
-            .Where(a => a.PatientUserId == user.Id && a.Status != "Cancelled")
-            .OrderBy(a => a.ScheduledAt)
-            .FirstOrDefaultAsync();
-
-        bool hasTriage = false;
-        if (nextAppointment is not null)
-        {
-            hasTriage = await _db.TriageIntakes.AnyAsync(t => t.AppointmentId == nextAppointment.Id);
-        }
+        var encounters = await _db.ClinicalEncounters
+            .Where(e => e.PatientUserId == user.Id)
+            .OrderByDescending(e => e.EncounterDate)
+            .ToListAsync();
 
         var latestLab = await _db.LabResults
             .Where(l => l.PatientUserId == user.Id)
@@ -46,16 +40,19 @@ public class PatientController : Controller
         var activePrescriptions = await _db.Prescriptions
             .CountAsync(p => p.PatientUserId == user.Id && p.Status == PrescriptionStatus.Active);
 
+        var subsidyApp = await _db.SubsidyApplications
+            .FirstOrDefaultAsync(s => s.PatientUserId == user.Id);
+
         var model = new PatientDashboardViewModel
         {
             FullName = user.FullName,
             Email = user.Email ?? string.Empty,
             ContactNumber = user.ContactNumber,
             CreatedAt = user.CreatedAt,
-            NextAppointment = nextAppointment,
-            HasTriageForNextAppointment = hasTriage,
+            Encounters = encounters,
             LabResults = latestLab,
             ActivePrescriptionsCount = activePrescriptions,
+            SubsidyApplication = subsidyApp,
             Departments = ClinicalDepartments.All,
         };
 
@@ -97,8 +94,10 @@ public class PatientDashboardViewModel
     public DateTime CreatedAt { get; set; }
     public Appointment? NextAppointment { get; set; }
     public bool HasTriageForNextAppointment { get; set; }
+    public IReadOnlyList<ClinicalEncounter> Encounters { get; set; } = Array.Empty<ClinicalEncounter>();
     public IReadOnlyList<LabResult> LabResults { get; set; } = Array.Empty<LabResult>();
     public int ActivePrescriptionsCount { get; set; }
+    public SubsidyApplication? SubsidyApplication { get; set; }
     public IReadOnlyList<ClinicalDepartment> Departments { get; set; } = Array.Empty<ClinicalDepartment>();
 }
 

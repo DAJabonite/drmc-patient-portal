@@ -9,19 +9,19 @@
         <div class="hero-content">
             <h1 class="hero-title fw-bold text-white mb-3">Caring for Life, Changing Lives.</h1>
             <div class="hero-actions">
-                <a class="btn btn-warning btn-lg text-dark" asp-controller="Appointments" asp-action="Book">
-                    <i class="bi bi-calendar-plus" aria-hidden="true"></i> Book appointment
-                </a>
                 @if (signedIn)
                 {
-                    <a class="btn btn-outline-light btn-lg" asp-controller="Patient" asp-action="Home">
+                    <a class="btn btn-warning btn-lg text-dark fw-bold" asp-controller="Patient" asp-action="Home">
                         <i class="bi bi-house-heart" aria-hidden="true"></i> My dashboard
                     </a>
                 }
                 else
                 {
-                    <a class="btn btn-outline-light btn-lg" asp-area="Identity" asp-page="/Account/Login">
-                        <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Sign in
+                    <a class="btn btn-warning btn-lg text-dark fw-bold" asp-area="Identity" asp-page="/Account/Login">
+                        <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Sign in to Portal
+                    </a>
+                    <a class="btn btn-outline-light btn-lg" asp-area="Identity" asp-page="/Account/Register">
+                        <i class="bi bi-person-plus" aria-hidden="true"></i> Register
                     </a>
                 }
             </div>

@@ -6,18 +6,17 @@ ASP.NET Core 10 patient portal for Davao Regional Medical Center. It provides pu
 
 | Area | Access | Current behavior |
 |---|---|---|
-| Appointments | Public booking; protected follow-up | Confirmation, check-in, and cancellation require the authenticated owner or a 256-bit capability delivered by email/SMS/QR. Only the SHA-256 hash is stored; access expires 24 hours after the visit. |
 | Medical history | Authenticated | OPD, ER, and Admitted categories from owned encounters; available through account and contextual links, outside the five primary destinations. |
 | Malasakit application | Authenticated | Saved subsidy request, document preparation checklist, and separate eligibility, coverage, reported payment, and confirmed payment states. Institutional review is still required. |
 | Official DRMC references | Public | Direct ARTA and Citizen's Charter landing-page links show the publisher's current content. |
 | Encounters | Authenticated | Patient-owned list, details, linked labs, and fail-closed auditing. |
 | Laboratory results | Authenticated | Patient-owned results, details, and access auditing. |
 | Medications | Authenticated | Active prescriptions, persisted dose times, and local refill requests. New requests remain `Requested` pending institutional pharmacy review. |
-| Triage | Authenticated | Validated, one-per-appointment intake. Emergency red flags persist as `UrgentEmergency` before the warning is shown. |
+| Triage | Authenticated | Validated digital intake. Emergency red flags persist as `UrgentEmergency` before the warning is shown. |
 | ID documents | Authenticated owner | Verified JPEG/PNG, 10 MB limit, encrypted storage, signed 30-minute staging tokens, ownership checks, and plaintext legacy migration. |
 | Localization | Shared shell and restored clinical flows | English (`en`), Filipino (`fil`), and Cebuano (`ceb`). Patient-entered and clinical-record content is intentionally not translated. |
 
-Messaging and caregiver/proxy access are not in the current product. Historical phase documents mentioning them are retained as project history and marked superseded.
+Appointments, online queue tracking, messaging, and caregiver/proxy access are not in the current product scope. Outpatient visits follow on-site scheduling as described in the OPD guide. Historical phase documents mentioning them are retained as project history and marked superseded.
 
 ## Technology
 
@@ -39,23 +38,18 @@ Development startup applies migrations and idempotently seeds local data.
 
 | Account | Password | Purpose |
 |---|---|---|
-| `patient@drmc.doh.gov.ph` | `P@tient2026` | Patient with appointments, encounters, results, and prescriptions |
+| `patient@drmc.doh.gov.ph` | `P@tient2026` | Patient with encounters, results, and prescriptions |
 | `juan@drmc.doh.gov.ph` | `J@uan2026` | New-patient workflow checks |
 
 Never copy development seed credentials into a deployed environment.
 
 ## Routes
 
-### Public and appointment routes
+### Public routes
 
 | Route | Purpose |
 |---|---|
 | `GET /`, `/OpdGuide`, `/Directory`, `/Malasakit`, `/Advisories` | Public services and information |
-| `GET/POST /Appointments/Book` | Public booking |
-| `GET /Appointments/Access` | URL token exchange into an encrypted HttpOnly access cookie |
-| `GET /Appointments/Confirmation` | Owner/capability-protected confirmation |
-| `GET /Appointments/CheckIn` | Owner/capability-protected check-in |
-| `POST /Appointments/Cancel` | Owner/capability-protected cancellation and capability revocation |
 
 ### Authenticated patient routes
 

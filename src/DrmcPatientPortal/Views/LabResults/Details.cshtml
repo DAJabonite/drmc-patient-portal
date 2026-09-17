@@ -1,6 +1,6 @@
 @model LabResult
 @{
-    ViewData["Title"] = $"{Model.TestName} — Diagnostic Report";
+    ViewData["Title"] = $"{Model.TestName} — Result Availability & Claiming Guide";
 }
 
 <section class="page-header">
@@ -12,7 +12,7 @@
             <span class="text-white text-opacity-50">/</span>
             <span class="small text-white text-opacity-75">@Model.Category</span>
         </div>
-        <h1 class="display-6 fw-bold mb-1">Diagnostic Laboratory Report</h1>
+        <h1 class="display-6 fw-bold mb-1">Result Availability &amp; Claiming Guide</h1>
         <p class="text-white text-opacity-90 mb-0">Accession Number: <strong>@Model.AccessionNumber</strong> &middot; Davao Regional Medical Center</p>
     </div>
 </section>
@@ -21,126 +21,171 @@
     <div class="container" style="max-width: 920px;">
         <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
             
-            <!-- Report Meta Header -->
-            <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 pb-4 mb-4 border-bottom">
+            <!-- Availability Status Banner -->
+            @if (Model.Status == "Available")
+            {
+                <div class="alert alert-success d-flex align-items-start gap-3 rounded-4 border-0 shadow-xs p-3 p-md-4 mb-4" role="status">
+                    <div class="p-2 rounded-circle bg-success text-white d-inline-flex fs-4" style="flex-shrink:0;">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+                    <div>
+                        <h2 class="h5 fw-bold text-success-emphasis mb-1">Official Result is Ready for Claiming</h2>
+                        <p class="mb-0 small text-success-emphasis">
+                            Your diagnostic test has been completed, validated, and signed by the clinical pathologist. Official sealed physical reports are available for claiming at the hospital releasing window.
+                        </p>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-warning d-flex align-items-start gap-3 rounded-4 border-0 shadow-xs p-3 p-md-4 mb-4" role="status">
+                    <div class="p-2 rounded-circle bg-warning text-dark d-inline-flex fs-4" style="flex-shrink:0;">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                    <div>
+                        <h2 class="h5 fw-bold text-warning-emphasis mb-1">Specimen Processing in Progress</h2>
+                        <p class="mb-0 small text-warning-emphasis">
+                            Your diagnostic order is currently undergoing laboratory processing and clinical validation. Once completed, your status will update to "Ready for Claiming".
+                        </p>
+                    </div>
+                </div>
+            }
+
+            <!-- Test Order Metadata Header -->
+            <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 pb-3 mb-4 border-bottom">
                 <div>
                     <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill small fw-semibold mb-2">
                         @Model.Category Panel
                     </span>
                     <h2 class="h4 fw-bold text-dark mb-1">@Model.TestName</h2>
-                    <p class="text-muted small mb-0">Performing Unit: <strong>@Model.PerformingUnit</strong></p>
+                    <p class="text-muted small mb-0">
+                        Accession Code: <strong class="text-dark font-monospace">@Model.AccessionNumber</strong>
+                    </p>
                 </div>
 
                 <div class="text-md-end">
-                    <span class="badge bg-success px-3 py-1 rounded-pill mb-1">
-                        @Model.Status
-                    </span>
-                    <div class="small text-muted" style="font-size: 0.8rem;">
-                        Collected: @Model.CollectedAt.ToString("MMM d, yyyy h:mm tt")
+                    <div class="small text-muted" style="font-size: 0.85rem;">
+                        <i class="bi bi-calendar3 me-1"></i> Collected: <strong>@Model.CollectedAt.ToString("MMM d, yyyy h:mm tt")</strong>
                     </div>
                     @if (Model.ReleasedAt.HasValue)
                     {
-                        <div class="small text-muted" style="font-size: 0.8rem;">
-                            Released: @Model.ReleasedAt.Value.ToString("MMM d, yyyy h:mm tt")
+                        <div class="small text-muted mt-1" style="font-size: 0.85rem;">
+                            <i class="bi bi-check2-circle me-1 text-success"></i> Released: <strong>@Model.ReleasedAt.Value.ToString("MMM d, yyyy h:mm tt")</strong>
                         </div>
                     }
                 </div>
             </div>
 
-            <!-- Clinical Physicians Attribution -->
+            <!-- Physician Attribution -->
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
                     <div class="p-3 bg-light rounded-3 border">
                         <span class="small text-muted d-block" style="font-size: 0.75rem;">Requesting / Ordering Physician</span>
-                        <strong class="small text-dark">@Model.OrderingPhysician</strong>
+                        <strong class="small text-dark">@(string.IsNullOrEmpty(Model.OrderingPhysician) ? "Attending OPD Physician" : Model.OrderingPhysician)</strong>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="p-3 bg-light rounded-3 border">
-                        <span class="small text-muted d-block" style="font-size: 0.75rem;">Attending Clinical Pathologist</span>
-                        <strong class="small text-dark">@Model.PathologistName</strong>
+                        <span class="small text-muted d-block" style="font-size: 0.75rem;">Designated Performing Facility</span>
+                        <strong class="small text-dark">@(string.IsNullOrEmpty(Model.PerformingUnit) ? "DRMC Central Clinical Diagnostic Laboratory" : Model.PerformingUnit)</strong>
                     </div>
                 </div>
             </div>
 
-            <!-- Analyte Values Breakdown Table -->
-            <div class="mb-4">
-                <h3 class="h6 fw-bold text-primary-drmc mb-3">
-                    <i class="bi bi-list-check me-1"></i> Quantitative Analyte Breakdown &amp; Biological Reference Ranges
-                </h3>
-
-                <div class="table-responsive rounded-3 border" tabindex="0" role="region" aria-label="Laboratory measurements">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light small text-muted text-uppercase">
-                            <tr>
-                                <th style="min-width: 220px;">Analyte / Parameter</th>
-                                <th>Result Value</th>
-                                <th>Unit</th>
-                                <th>Reference Range</th>
-                                <th>Diagnostic Flag</th>
-                            </tr>
-                        </thead>
-                        <tbody class="small">
-                            @foreach (var item in Model.Items)
-                            {
-                                <tr>
-                                    <td class="fw-semibold text-dark">@item.ParameterName</td>
-                                    <td class="fw-bold @(item.Flag == LabFlag.High ? "text-danger" : item.Flag == LabFlag.Low ? "text-primary" : "text-dark")">
-                                        @item.Value
-                                    </td>
-                                    <td class="text-muted">@item.Unit</td>
-                                    <td class="text-muted">@item.ReferenceRange</td>
-                                    <td>
-                                        @if (item.Flag == LabFlag.Normal)
-                                        {
-                                            <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-2">
-                                                Normal
-                                            </span>
-                                        }
-                                        else if (item.Flag == LabFlag.High)
-                                        {
-                                            <span class="badge bg-danger text-white rounded-pill px-2">
-                                                <i class="bi bi-arrow-up"></i> High
-                                            </span>
-                                        }
-                                        else if (item.Flag == LabFlag.Low)
-                                        {
-                                            <span class="badge bg-primary text-white rounded-pill px-2">
-                                                <i class="bi bi-arrow-down"></i> Low
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-danger text-white rounded-pill px-2">
-                                                Critical
-                                            </span>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+            <!-- Privacy Notice Card -->
+            <div class="p-3 bg-light-subtle rounded-3 border border-primary border-opacity-25 mb-4" role="note">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="text-primary-drmc fs-4 mt-1" style="flex-shrink:0;">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div>
+                        <h3 class="h6 fw-bold text-dark mb-1">Patient Health Data Privacy &amp; Protection</h3>
+                        <p class="small text-muted mb-0">
+                            In strict compliance with the <strong>Data Privacy Act of 2012 (RA 10173)</strong>, numerical laboratory values, clinical analyte measurements, and diagnostic impressions are withheld from online display. This ensures that sensitive medical data remains strictly confidential and is only released directly to you or your verified attending physician.
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Pathologist Summary & Notes -->
-            @if (!string.IsNullOrEmpty(Model.ClinicalNotes) || !string.IsNullOrEmpty(Model.ResultSummary))
-            {
-                <div class="p-3 bg-light rounded-3 border mb-4">
-                    <h4 class="h6 fw-bold text-dark mb-1">
-                        <i class="bi bi-chat-left-text me-1 text-primary-drmc"></i> Diagnostic Interpretation &amp; Clinical Notes
-                    </h4>
-                    <p class="small text-muted mb-0 leading-relaxed">
-                        @(string.IsNullOrEmpty(Model.ClinicalNotes) ? Model.ResultSummary : Model.ClinicalNotes)
-                    </p>
-                </div>
-            }
+            <!-- Where & How to Claim Guide -->
+            <div class="mb-4">
+                <h3 class="h6 fw-bold text-primary-drmc mb-3">
+                    <i class="bi bi-geo-alt-fill me-1"></i> Where &amp; How to Claim Your Official Results
+                </h3>
 
-            <!-- Verification & Action Footer -->
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card h-100 border rounded-3 p-3 bg-light">
+                            <h4 class="h6 fw-bold text-dark mb-2">
+                                <i class="bi bi-building me-1 text-primary-drmc"></i> Releasing Location
+                            </h4>
+                            <ul class="list-unstyled small text-muted mb-0 d-flex flex-column gap-2">
+                                <li>
+                                    <strong>Unit:</strong> @(string.IsNullOrEmpty(Model.PerformingUnit) ? "DRMC Central Clinical Diagnostic Laboratory" : Model.PerformingUnit)
+                                </li>
+                                <li>
+                                    <strong>Window:</strong> Laboratory Releasing Window &amp; HIMD Records
+                                </li>
+                                <li>
+                                    <strong>Facility:</strong> Ground Floor, Clinical Laboratory Building
+                                </li>
+                                <li>
+                                    <strong>Address:</strong> Davao Regional Medical Center, Apokon, Tagum City, Davao del Norte
+                                </li>
+                                <li>
+                                    <strong>Schedule:</strong> Monday to Friday, 8:00 AM – 5:00 PM (Outpatient Releasing)
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card h-100 border rounded-3 p-3 bg-light">
+                            <h4 class="h6 fw-bold text-dark mb-2">
+                                <i class="bi bi-card-checklist me-1 text-primary-drmc"></i> Claiming Requirements
+                            </h4>
+                            <ul class="list-unstyled small text-muted mb-0 d-flex flex-column gap-2">
+                                <li>
+                                    <i class="bi bi-check2 text-success me-1"></i> <strong>Valid Photo ID:</strong> Any government ID (PhilSys, Driver's License, PRC, UMID) or DRMC Hospital Card.
+                                </li>
+                                <li>
+                                    <i class="bi bi-check2 text-success me-1"></i> <strong>Accession Slip:</strong> Present Accession Number <code>@Model.AccessionNumber</code>.
+                                </li>
+                                <li>
+                                    <i class="bi bi-check2 text-success me-1"></i> <strong>Authorized Representative:</strong> If claimed by family or representative, bring a signed Authorization Letter, patient's valid ID, and representative's valid ID.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Follow-up Recommendation -->
+            <div class="p-3 bg-primary-subtle rounded-3 text-primary-emphasis mb-4">
+                <div class="d-flex align-items-start gap-2">
+                    <i class="bi bi-info-circle-fill fs-5 mt-1" aria-hidden="true"></i>
+                    <div>
+                        <h4 class="h6 fw-bold mb-1">Doctor's Consultation &amp; Interpretation</h4>
+                        <p class="small mb-0">
+                            Please bring your physical official diagnostic report to your attending physician <strong>@(string.IsNullOrEmpty(Model.OrderingPhysician) ? "" : $"({Model.OrderingPhysician})")</strong> during your scheduled clinic follow-up for professional medical interpretation and personalized clinical guidance.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Actions -->
             <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center pt-3 border-top">
                 <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
                     <i class="bi bi-arrow-left me-1"></i> Back to Results
                 </a>
+                <div class="d-flex gap-2">
+                    <a asp-controller="Home" asp-action="OpdGuide" class="btn btn-outline-drmc rounded-pill px-3 fw-semibold small">
+                        <i class="bi bi-signpost-split me-1"></i> OPD Wayfinding Guide
+                    </a>
+                    <a asp-controller="Directory" asp-action="Index" class="btn btn-outline-drmc rounded-pill px-3 fw-semibold small">
+                        <i class="bi bi-person-badge me-1"></i> Doctor Directory
+                    </a>
+                </div>
             </div>
 
         </div>

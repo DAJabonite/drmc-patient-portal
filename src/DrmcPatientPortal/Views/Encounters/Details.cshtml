@@ -140,16 +140,11 @@
             <!-- Scheduled Follow-Up -->
             @if (Model.FollowUpDate.HasValue)
             {
-                <div class="p-3 bg-light rounded-3 border mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <div>
-                        <strong class="text-dark small d-block">
-                            <i class="bi bi-calendar-event text-primary-drmc me-1"></i> @Loc["Enc_RecommendedFollowUp"]:
-                        </strong>
-                        <span class="small text-muted">@Model.FollowUpDate.Value.ToString("D") &middot; @Model.FollowUpNotes</span>
-                    </div>
-                    <a asp-controller="Appointments" asp-action="Book" asp-route-department="@Model.Department" class="btn btn-sm btn-primary-drmc rounded-pill px-3 fw-semibold shadow-xs">
-                        @Loc["Enc_BookFollowUpSlot"]
-                    </a>
+                <div class="p-3 bg-light rounded-3 border mb-4">
+                    <strong class="text-dark small d-block">
+                        <i class="bi bi-calendar-event text-primary-drmc me-1"></i> @Loc["Enc_RecommendedFollowUp"]:
+                    </strong>
+                    <span class="small text-muted">@Model.FollowUpDate.Value.ToString("D") &middot; @Model.FollowUpNotes</span>
                 </div>
             }
 

@@ -10,48 +10,25 @@ namespace DrmcPatientPortal.BrowserTests;
 public sealed class WorkflowTests(PortalFixture app)
 {
     [Theory]
-    [InlineData("chromium", "1440", false)]
-    [InlineData("webkit", "iphone", true)]
-    public async Task Booking_triage_checkin_and_cancellation(string engine, string device, bool emergency)
+    [InlineData("chromium", "1440")]
+    [InlineData("webkit", "iphone")]
+    public async Task Retired_appointments_returns_notfound_and_dashboard_shows_core_pillars(string engine, string device)
     {
         await using var browser = await app.Engine(engine).LaunchAsync();
         await using var context = await browser.NewContextAsync(app.Context(device));
         var page = await context.NewPageAsync();
         await PortalFixture.SignIn(page);
-        await page.GotoAsync("/Appointments/Book");
-        await page.Locator("#bookingForm button[type=submit]").ClickAsync();
-        await Expect(page.Locator("[data-valmsg-for=ChiefComplaint]")).Not.ToBeEmptyAsync();
-        await page.Locator("#ChiefComplaint").FillAsync("Browser regression test follow-up consultation");
-        await page.Locator("#AppointmentDate").FillAsync(DateTime.Today.AddDays(3).ToString("yyyy-MM-dd"));
-        await page.Locator("#bookingForm button[type=submit]").ClickAsync();
-        await page.WaitForURLAsync("**/Appointments/Confirmation?*");
+
+        var response = await page.GotoAsync("/Appointments/Book");
+        Assert.Equal(404, response?.Status);
+
+        await page.GotoAsync("/Patient/Home");
+        await Expect(page.Locator("main")).ToContainTextAsync("Visits");
+        await Expect(page.Locator("main")).ToContainTextAsync("Lab results");
+        await Expect(page.Locator("main")).ToContainTextAsync("Medications");
+        await Expect(page.Locator("main")).ToContainTextAsync("Malasakit");
+        await Expect(page.Locator(".appointment-summary")).ToHaveCountAsync(0);
         Assert.Empty(await ResponsiveTests.LayoutProblems(page));
-        var confirmation = page.Url;
-        var cancelAction = await page.Locator("form[action*='/Cancel']").GetAttributeAsync("action");
-        var id = Regex.Match(cancelAction!, @"(?:/|id=)(\d+)(?:$|&)").Groups[1].Value;
-        Assert.NotEmpty(id);
-        await page.Locator("a[href*='/Appointments/CheckIn']").ClickAsync();
-        await Expect(page.Locator("main")).ToContainTextAsync("DRMC-");
-        Assert.Empty(await ResponsiveTests.LayoutProblems(page));
-        await page.GotoAsync("/Patient/Triage/Start/" + id);
-        await page.Locator("#ChiefComplaint").FillAsync("Test symptoms for triage regression");
-        await page.Locator("#SymptomDurationDays").FillAsync("2");
-        if (emergency) await page.Locator("#redChest").CheckAsync();
-        await page.Locator("main button[type=submit]").ClickAsync();
-        await page.WaitForURLAsync(emergency ? "**/Patient/Triage/EmergencyWarning*" : "**/Patient/Triage/Summary/*");
-        Assert.Empty(await ResponsiveTests.LayoutProblems(page));
-        await page.ScreenshotAsync(new() { Path = Path.Combine(app.Artifacts, $"triage-{device}.png"), FullPage = true });
-        await page.GotoAsync(confirmation);
-        page.Dialog += async (_, dialog) => await dialog.AcceptAsync();
-        await page.RunAndWaitForResponseAsync(() => page.Locator("form[action*='/Cancel'] button").ClickAsync(),
-            response => response.Url.Contains("/Appointments/Cancel") && response.Request.Method == "POST");
-        await page.GotoAsync(confirmation);
-        await Expect(page.Locator("main")).ToContainTextAsync("Cancelled");
-        await Expect(page.Locator("form[action*='/Cancel']")).ToHaveCountAsync(0);
-        await Expect(page.Locator(".page-header")).Not.ToContainTextAsync("Booking Confirmed");
-        await page.Locator("a[href*='/Appointments/CheckIn']").ClickAsync();
-        await Expect(page.Locator("main")).ToContainTextAsync("Cancelled");
-        await Expect(page.Locator("main")).Not.ToContainTextAsync("Valid Confirmed Appointment");
     }
 
     [Theory]
@@ -89,7 +66,7 @@ public sealed class WorkflowTests(PortalFixture app)
         await page.Locator("#regConfirmPassword").FillAsync("Browser!2026Test");
         await page.Locator("#registerSubmit").ClickAsync();
         await page.WaitForURLAsync("**/Patient/Home");
-        await Expect(page.Locator("main")).ToContainTextAsync("No upcoming appointment");
+        await Expect(page.Locator("main")).ToContainTextAsync("Visits");
         await page.GotoAsync("/Identity/Account/Manage/EnableAuthenticator");
         var key = await page.Locator("kbd").InnerTextAsync();
         await page.Locator("input[name='Input.Code']").FillAsync(Totp(key));
@@ -190,7 +167,7 @@ public sealed class WorkflowTests(PortalFixture app)
         await page.Keyboard.PressAsync("Enter");
         await Expect(page.Locator("main")).ToBeFocusedAsync();
         await PortalFixture.SignIn(page);
-        foreach (var route in new[] { "/Patient/Home", "/Patient/Encounters", "/Appointments/Book", "/Identity/Account/Manage" })
+        foreach (var route in new[] { "/Patient/Home", "/Patient/Encounters", "/Patient/LabResults", "/Identity/Account/Manage" })
         {
             await page.GotoAsync(route);
             Assert.Empty(await ResponsiveTests.LayoutProblems(page));
