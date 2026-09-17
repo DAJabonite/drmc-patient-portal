@@ -29,10 +29,27 @@
             </div>
         }
 
-        <nav class="dashboard-shortcuts mb-3" aria-label="Patient shortcuts">
-            <a asp-controller="Encounters" asp-action="Index"><i class="bi bi-journal-medical" aria-hidden="true"></i><span>Visits</span></a>
-            <a asp-action="Audit"><i class="bi bi-shield-check" aria-hidden="true"></i><span>Access history</span></a>
-        </nav>
+        <section class="dashboard-actions-section mb-4" aria-labelledby="dashboardActionsHeading">
+            <h2 class="h6 fw-bold mb-3" id="dashboardActionsHeading">Plan your visit</h2>
+            <nav class="dashboard-actions" aria-label="Visit planning">
+                <a class="dashboard-action-card" asp-controller="Directory" asp-action="Index">
+                    <span class="dashboard-action-icon"><i class="bi bi-person-badge" aria-hidden="true"></i></span>
+                    <span class="dashboard-action-content">
+                        <strong>Find doctors &amp; clinics</strong>
+                        <small>Browse departments and specialists</small>
+                    </span>
+                    <i class="bi bi-arrow-right dashboard-action-arrow" aria-hidden="true"></i>
+                </a>
+                <a class="dashboard-action-card" asp-controller="Home" asp-action="OpdGuide">
+                    <span class="dashboard-action-icon"><i class="bi bi-signpost-split" aria-hidden="true"></i></span>
+                    <span class="dashboard-action-content">
+                        <strong>OPD visit guide</strong>
+                        <small>Know where to go and what to bring</small>
+                    </span>
+                    <i class="bi bi-arrow-right dashboard-action-arrow" aria-hidden="true"></i>
+                </a>
+            </nav>
+        </section>
 
         <div class="row g-3">
             <div class="col-md-6 col-xl-3">
