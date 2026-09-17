@@ -32,7 +32,7 @@
 
   <!-- Navigation -->
   <data name="Nav_Home"><value>Home</value></data>
-  <data name="Nav_Encounters"><value>Encounters</value></data>
+  <data name="Nav_Encounters"><value>Visits</value></data>
   <data name="Nav_Results"><value>Results</value></data>
   <data name="Nav_Medication"><value>Medication</value></data>
   <data name="Nav_Malasakit"><value>Malasakit</value></data>
@@ -52,7 +52,7 @@
   <data name="Nav_Register"><value>Register</value></data>
   <data name="Nav_Language"><value>Language</value></data>
   <data name="Mobile_Home"><value>Home</value></data>
-  <data name="Mobile_Encounters"><value>Encounters</value></data>
+  <data name="Mobile_Encounters"><value>Visits</value></data>
   <data name="Mobile_Results"><value>Results</value></data>
   <data name="Mobile_Medication"><value>Medication</value></data>
   <data name="Mobile_Malasakit"><value>Malasakit</value></data>
@@ -91,20 +91,20 @@
   <data name="Med_EmergencyWarning"><value>For medical emergencies, proceed immediately to the DRMC Emergency Department or call 1555.</value></data>
   <data name="Error_ServiceUnavailableTitle"><value>Security service temporarily unavailable</value></data>
   <data name="Error_ServiceUnavailableBody"><value>We could not complete the required security audit. No protected information was released. Please try again.</value></data>
-  <data name="Enc_Title"><value>After-Visit Summaries &amp; Care Notes</value></data>
-  <data name="Enc_Subtitle"><value>Outpatient &amp; Clinical Encounters</value></data>
+  <data name="Enc_Title"><value>Visits &amp; Care Notes</value></data>
+  <data name="Enc_Subtitle"><value>Outpatient and hospital visits</value></data>
   <data name="Enc_BookFollowUp"><value>Book Follow-Up</value></data>
   <data name="Enc_AllDepartments"><value>All Departments</value></data>
-  <data name="Enc_None"><value>No consultation encounters recorded</value></data>
-  <data name="Enc_NoneBody"><value>No medical encounters match the selected clinical department.</value></data>
-  <data name="Enc_ViewAll"><value>View All Encounters</value></data>
+  <data name="Enc_None"><value>No visits recorded</value></data>
+  <data name="Enc_NoneBody"><value>No visits match the selected clinical department.</value></data>
+  <data name="Enc_ViewAll"><value>View All Visits</value></data>
   <data name="Enc_Reference"><value>Reference</value></data>
   <data name="Enc_VisitDate"><value>Visit Date</value></data>
   <data name="Enc_Attending"><value>Attending</value></data>
   <data name="Enc_ViewSummary"><value>View Summary</value></data>
   <data name="Enc_FollowUp"><value>Follow-Up</value></data>
-  <data name="Enc_ClinicalSummary"><value>After-Visit Clinical Summary</value></data>
-  <data name="Enc_Completed"><value>Completed Encounter</value></data>
+  <data name="Enc_ClinicalSummary"><value>Visit Summary</value></data>
+  <data name="Enc_Completed"><value>Completed Visit</value></data>
   <data name="Enc_Physician"><value>Attending Physician</value></data>
   <data name="Enc_Vitals"><value>Recorded Vital Signs</value></data>
   <data name="Enc_Complaint"><value>Chief Complaint &amp; Clinical Progress Notes</value></data>
@@ -133,7 +133,7 @@
   <data name="Rx_Prescriber"><value>Prescriber</value></data>
   <data name="Rx_ValidUntil"><value>Valid Until</value></data>
   <data name="Rx_Details"><value>Details</value></data>
-  <data name="Enc_AllNotes"><value>All Clinical Notes</value></data>
+  <data name="Enc_AllNotes"><value>All Visits</value></data>
   <data name="Enc_Secondary"><value>Secondary</value></data>
   <data name="Enc_OutpatientClinic"><value>{0} Outpatient Clinic</value></data>
   <data name="Enc_PresentingComplaint"><value>Presenting Complaint</value></data>
@@ -145,7 +145,8 @@
   <data name="Enc_ViewReport"><value>View Report</value></data>
   <data name="Enc_RecommendedFollowUp"><value>Recommended Next Follow-Up</value></data>
   <data name="Enc_BookFollowUpSlot"><value>Book Follow-Up Slot</value></data>
-  <data name="Enc_BackNotes"><value>Back to Notes</value></data>
+  <data name="Enc_BackNotes"><value>Back to Visits</value></data>
+  <data name="Enc_ViewAllResults"><value>View all results</value></data>
   <data name="Enc_ViewPrescriptions"><value>View Prescriptions</value></data>
   <data name="Status_Available"><value>Available</value></data>
   <data name="EncounterType_OpdConsultation"><value>OPD Consultation</value></data>

@@ -48,7 +48,26 @@
 <!-- Department Filter Bar -->
 <section class="py-3 bg-white border-bottom sticky-top shadow-xs" style="z-index: 1020;">
     <div class="container">
-        <div class="d-flex align-items-center gap-1 overflow-x-auto pb-1" style="max-width: 100%;">
+        <form asp-action="Index" method="get" class="d-md-none">
+            @if (!string.IsNullOrEmpty(Model.SearchTerm))
+            {
+                <input type="hidden" name="search" value="@Model.SearchTerm" />
+            }
+            @if (Model.TeleconsultOnly)
+            {
+                <input type="hidden" name="teleconsultOnly" value="true" />
+            }
+            <label for="directoryDepartmentFilter" class="form-label small fw-semibold text-dark mb-1">Filter doctors by department</label>
+            <select id="directoryDepartmentFilter" name="department" class="form-select" onchange="this.form.submit()">
+                <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDepartment))">All Departments (@Model.Doctors.Count)</option>
+                @foreach (var dept in Model.Departments)
+                {
+                    <option value="@dept.Name" selected="@(Model.SelectedDepartment == dept.Name)">@dept.Name</option>
+                }
+            </select>
+        </form>
+
+        <div class="desktop-filter-pills d-none d-md-flex align-items-center gap-1 overflow-x-auto pb-1" style="max-width: 100%;">
             <a asp-action="Index" asp-route-search="@Model.SearchTerm" asp-route-teleconsultOnly="@Model.TeleconsultOnly"
                class="btn btn-sm @(string.IsNullOrEmpty(Model.SelectedDepartment) ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
                 All Departments (@Model.Doctors.Count)

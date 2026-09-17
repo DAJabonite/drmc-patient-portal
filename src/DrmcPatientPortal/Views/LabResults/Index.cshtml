@@ -16,7 +16,21 @@
 <section class="py-3 bg-white border-bottom sticky-top shadow-xs" style="z-index: 1020;">
     <div class="container">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-            <div class="d-flex align-items-center gap-2 overflow-x-auto pb-1" style="max-width: 100%;">
+            <form asp-action="Index" method="get" class="d-md-none w-100">
+                @if (!string.IsNullOrEmpty(Model.SearchTerm))
+                {
+                    <input type="hidden" name="search" value="@Model.SearchTerm" />
+                }
+                <label for="labCategoryFilter" class="form-label small fw-semibold text-dark mb-1">Filter by test category</label>
+                <select id="labCategoryFilter" name="category" class="form-select" onchange="this.form.submit()">
+                    <option value="" selected="@(!Model.SelectedCategory.HasValue)">All Tests (@Model.TotalCount)</option>
+                    <option value="@LabCategory.Hematology" selected="@(Model.SelectedCategory == LabCategory.Hematology)">Hematology</option>
+                    <option value="@LabCategory.ClinicalChemistry" selected="@(Model.SelectedCategory == LabCategory.ClinicalChemistry)">Clinical Chemistry</option>
+                    <option value="@LabCategory.SpecialDiagnostics" selected="@(Model.SelectedCategory == LabCategory.SpecialDiagnostics)">Special Diagnostics</option>
+                </select>
+            </form>
+
+            <div class="desktop-filter-pills d-none d-md-flex align-items-center gap-2 overflow-x-auto pb-1" style="max-width: 100%;">
                 <a asp-action="Index" asp-route-search="@Model.SearchTerm"
                    class="btn btn-sm @(!Model.SelectedCategory.HasValue ? "btn-primary-drmc shadow-xs" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
                     All Tests (@Model.TotalCount)
@@ -52,21 +66,6 @@
 
 <section class="section py-5 bg-light">
     <div class="container">
-        <!-- Patient Privacy & RA 10173 Notice -->
-        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white" role="note">
-            <div class="d-flex align-items-start gap-3">
-                <div class="p-2 rounded-circle bg-primary-subtle text-primary-drmc d-inline-flex" style="flex-shrink:0;">
-                    <i class="bi bi-shield-lock-fill fs-4" aria-hidden="true"></i>
-                </div>
-                <div>
-                    <h2 class="h6 fw-bold text-dark mb-1">Patient Health Data Privacy Notice</h2>
-                    <p class="text-muted small mb-0">
-                        In compliance with the <strong>Data Privacy Act of 2012 (RA 10173)</strong> and DRMC health confidentiality regulations, numerical laboratory values, clinical analyte measurements, and diagnostic impressions are not displayed online. This portal tracks the availability of your orders and guides you on claiming your official, sealed physical reports.
-                    </p>
-                </div>
-            </div>
-        </div>
-
         @if (Model.LabResults.Count == 0)
         {
             <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">

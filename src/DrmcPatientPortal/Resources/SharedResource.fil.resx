@@ -32,7 +32,7 @@
 
   <!-- Navigation -->
   <data name="Nav_Home"><value>Tahanan</value></data>
-  <data name="Nav_Encounters"><value>Mga Konsultasyon</value></data>
+  <data name="Nav_Encounters"><value>Mga Pagbisita</value></data>
   <data name="Nav_Results"><value>Mga Resulta</value></data>
   <data name="Nav_Medication"><value>Gamot</value></data>
   <data name="Nav_Malasakit"><value>Malasakit</value></data>
@@ -52,7 +52,7 @@
   <data name="Nav_Register"><value>Magparehistro</value></data>
   <data name="Nav_Language"><value>Wika</value></data>
   <data name="Mobile_Home"><value>Tahanan</value></data>
-  <data name="Mobile_Encounters"><value>Konsulta</value></data>
+  <data name="Mobile_Encounters"><value>Pagbisita</value></data>
   <data name="Mobile_Results"><value>Resulta</value></data>
   <data name="Mobile_Medication"><value>Gamot</value></data>
   <data name="Mobile_Malasakit"><value>Malasakit</value></data>
@@ -91,20 +91,20 @@
   <data name="Med_EmergencyWarning"><value>Para sa mga emerhensiya, magtungo agad sa DRMC Emergency Room o tumawag sa 1555.</value></data>
   <data name="Error_ServiceUnavailableTitle"><value>Pansamantalang hindi magagamit ang serbisyong panseguridad</value></data>
   <data name="Error_ServiceUnavailableBody"><value>Hindi makumpleto ang kinakailangang tala ng seguridad. Walang protektadong impormasyon ang inilabas. Pakisubukang muli.</value></data>
-  <data name="Enc_Title"><value>Buod at Tala Pagkatapos ng Konsultasyon</value></data>
-  <data name="Enc_Subtitle"><value>Mga Konsultasyon sa Outpatient at Klinika</value></data>
+  <data name="Enc_Title"><value>Mga Pagbisita at Tala sa Pangangalaga</value></data>
+  <data name="Enc_Subtitle"><value>Mga pagbisita sa outpatient at ospital</value></data>
   <data name="Enc_BookFollowUp"><value>Magpa-iskedyul ng Follow-Up</value></data>
   <data name="Enc_AllDepartments"><value>Lahat ng Departamento</value></data>
-  <data name="Enc_None"><value>Walang nakatalang konsultasyon</value></data>
-  <data name="Enc_NoneBody"><value>Walang konsultasyong tumutugma sa napiling departamento.</value></data>
-  <data name="Enc_ViewAll"><value>Tingnan Lahat ng Konsultasyon</value></data>
+  <data name="Enc_None"><value>Walang nakatalang pagbisita</value></data>
+  <data name="Enc_NoneBody"><value>Walang pagbisitang tumutugma sa napiling departamento.</value></data>
+  <data name="Enc_ViewAll"><value>Tingnan Lahat ng Pagbisita</value></data>
   <data name="Enc_Reference"><value>Reference</value></data>
   <data name="Enc_VisitDate"><value>Petsa ng Konsultasyon</value></data>
   <data name="Enc_Attending"><value>Doktor</value></data>
   <data name="Enc_ViewSummary"><value>Tingnan ang Buod</value></data>
   <data name="Enc_FollowUp"><value>Follow-Up</value></data>
-  <data name="Enc_ClinicalSummary"><value>Buod Klinikal Pagkatapos ng Konsultasyon</value></data>
-  <data name="Enc_Completed"><value>Tapos na Konsultasyon</value></data>
+  <data name="Enc_ClinicalSummary"><value>Buod ng Pagbisita</value></data>
+  <data name="Enc_Completed"><value>Tapos na Pagbisita</value></data>
   <data name="Enc_Physician"><value>Doktor na Tumitingin</value></data>
   <data name="Enc_Vitals"><value>Natalang Vital Signs</value></data>
   <data name="Enc_Complaint"><value>Pangunahing Reklamo at Tala Klinikal</value></data>
@@ -133,7 +133,7 @@
   <data name="Rx_Prescriber"><value>Nagreseta</value></data>
   <data name="Rx_ValidUntil"><value>Balido Hanggang</value></data>
   <data name="Rx_Details"><value>Mga Detalye</value></data>
-  <data name="Enc_AllNotes"><value>Lahat ng Talang Klinikal</value></data>
+  <data name="Enc_AllNotes"><value>Lahat ng Pagbisita</value></data>
   <data name="Enc_Secondary"><value>Pangalawa</value></data>
   <data name="Enc_OutpatientClinic"><value>Outpatient Clinic ng {0}</value></data>
   <data name="Enc_PresentingComplaint"><value>Inilahad na Reklamo</value></data>
@@ -145,7 +145,8 @@
   <data name="Enc_ViewReport"><value>Tingnan ang Ulat</value></data>
   <data name="Enc_RecommendedFollowUp"><value>Inirerekomendang Susunod na Follow-Up</value></data>
   <data name="Enc_BookFollowUpSlot"><value>Mag-book ng Follow-Up</value></data>
-  <data name="Enc_BackNotes"><value>Bumalik sa mga Tala</value></data>
+  <data name="Enc_BackNotes"><value>Bumalik sa mga Pagbisita</value></data>
+  <data name="Enc_ViewAllResults"><value>Tingnan lahat ng resulta</value></data>
   <data name="Enc_ViewPrescriptions"><value>Tingnan ang mga Reseta</value></data>
   <data name="Status_Available"><value>Available</value></data>
   <data name="EncounterType_OpdConsultation"><value>Konsultasyong OPD</value></data>

@@ -6,6 +6,65 @@ namespace DrmcPatientPortal.BrowserTests;
 [Collection("Portal")]
 public sealed class ClientRequirementsTests(PortalFixture app)
 {
+    [Fact]
+    public async Task Encounters_does_not_offer_a_duplicate_medical_history_shortcut()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+        await using var context = await browser.NewContextAsync(app.Context("small"));
+        var page = await context.NewPageAsync();
+        await PortalFixture.SignIn(page);
+        await page.GotoAsync("/Patient/Encounters");
+
+        await Expect(page.Locator("main a[href='/Patient/MedicalHistory']")).ToHaveCountAsync(0);
+    }
+
+    [Fact]
+    public async Task Patient_navigation_uses_visits_and_hides_duplicate_medical_history_shortcuts()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+        await using var context = await browser.NewContextAsync(app.Context("small"));
+        var page = await context.NewPageAsync();
+        await PortalFixture.SignIn(page);
+        await page.GotoAsync("/Patient/Encounters");
+
+        await Expect(page.Locator("h1")).ToHaveTextAsync("Visits & Care Notes");
+        await Expect(page.Locator(".mobile-tab-bar a[href='/Patient/Encounters'] span")).ToHaveTextAsync("Visits");
+
+        await page.Locator(".mobile-menu-trigger").ClickAsync();
+        await Expect(page.Locator("#mobileUtilityMenu a[href='/Patient/MedicalHistory']")).ToHaveCountAsync(0);
+
+        await page.GotoAsync("/Patient/Home");
+        await Expect(page.Locator("main a[href='/Patient/MedicalHistory']")).ToHaveCountAsync(0);
+    }
+
+    [Fact]
+    public async Task Audit_history_uses_cards_on_mobile_and_table_on_desktop()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+
+        await using (var mobileContext = await browser.NewContextAsync(app.Context("small")))
+        {
+            var page = await mobileContext.NewPageAsync();
+            await PortalFixture.SignIn(page);
+            await page.GotoAsync("/Patient/Audit");
+
+            await Expect(page.Locator(".audit-mobile-list")).ToBeVisibleAsync();
+            await Expect(page.Locator(".audit-event-card").First).ToBeVisibleAsync();
+            await Expect(page.Locator(".table-responsive")).ToBeHiddenAsync();
+            await Expect(page.Locator(".audit-technical-details").First).Not.ToHaveAttributeAsync("open", "");
+        }
+
+        await using (var desktopContext = await browser.NewContextAsync(app.Context("1440")))
+        {
+            var page = await desktopContext.NewPageAsync();
+            await PortalFixture.SignIn(page);
+            await page.GotoAsync("/Patient/Audit");
+
+            await Expect(page.Locator(".audit-mobile-list")).ToBeHiddenAsync();
+            await Expect(page.Locator(".table-responsive")).ToBeVisibleAsync();
+        }
+    }
+
     [Theory]
     [InlineData("chromium", "1440")]
     [InlineData("webkit", "iphone")]

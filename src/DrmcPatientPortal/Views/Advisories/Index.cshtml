@@ -33,7 +33,23 @@
 <!-- Category Filter Pills -->
 <section class="py-3 bg-white border-bottom sticky-top shadow-xs" style="z-index: 1020;">
     <div class="container">
-        <div class="d-flex align-items-center gap-1 overflow-x-auto pb-1" style="max-width: 100%;">
+        <form asp-action="Index" method="get" class="d-md-none">
+            @if (!string.IsNullOrEmpty(Model.SearchTerm))
+            {
+                <input type="hidden" name="search" value="@Model.SearchTerm" />
+            }
+            <label for="advisoryCategoryFilter" class="form-label small fw-semibold text-dark mb-1">Filter bulletins by category</label>
+            <select id="advisoryCategoryFilter" name="category" class="form-select" onchange="this.form.submit()">
+                <option value="" selected="@(!Model.SelectedCategory.HasValue)">All Bulletins (@Model.Advisories.Count)</option>
+                <option value="@AdvisoryCategory.HealthAlert" selected="@(Model.SelectedCategory == AdvisoryCategory.HealthAlert)">Health Alerts</option>
+                <option value="@AdvisoryCategory.Vaccination" selected="@(Model.SelectedCategory == AdvisoryCategory.Vaccination)">Vaccination Drives</option>
+                <option value="@AdvisoryCategory.HospitalNotice" selected="@(Model.SelectedCategory == AdvisoryCategory.HospitalNotice)">Hospital Notices</option>
+                <option value="@AdvisoryCategory.SeasonalHealth" selected="@(Model.SelectedCategory == AdvisoryCategory.SeasonalHealth)">Seasonal Health</option>
+                <option value="@AdvisoryCategory.Advisory" selected="@(Model.SelectedCategory == AdvisoryCategory.Advisory)">General Advisories</option>
+            </select>
+        </form>
+
+        <div class="desktop-filter-pills d-none d-md-flex align-items-center gap-1 overflow-x-auto pb-1" style="max-width: 100%;">
             <a asp-action="Index" asp-route-search="@Model.SearchTerm"
                class="btn btn-sm @(!Model.SelectedCategory.HasValue ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
                 All Bulletins (@Model.Advisories.Count)
