@@ -154,9 +154,7 @@ drmc-patient-portal/
 ├── DrmcPatientPortal.slnx              # Solution: 1 web project + 2 test projects
 ├── README.md                           # This document
 ├── STATUS.md                           # Source of truth for what is implemented today
-├── GAUNTLET_STATE.md                   # Acceptance-pass record + superseded-history notes
-├── run.ps1 / run.bat                   # Convenience launchers (resolve dotnet, run the web project)
-├── .dotnet-env.sh                      # Shell helper for the .NET environment
+├── run.ps1                             # Convenience launcher (resolves dotnet, runs the web project)
 ├── .gitignore                          # Ignores bin/obj/output, *.db, App_Data secrets & documents
 │
 ├── scripts/
@@ -167,15 +165,11 @@ drmc-patient-portal/
 │   ├── DEPLOYMENT.md                        # Migrations, key ring, notifications, release checks
 │   ├── SECURITY_REVIEW_TODO.md              # Implemented controls vs. open institutional work
 │   ├── COMPLIANCE_REPORT.md                 # Compliance readiness (not certification)
-│   ├── UI_VALIDATION.md                     # Browser/accessibility coverage and limitations
-│   ├── SIGNUP_VALIDATION.md                 # Registration + ID capture validation notes
+│   ├── VALIDATION.md                        # UI, accessibility, and signup validation + limits
 │   ├── design.md                            # Adopted design system (tokens, layout, a11y rules)
 │   ├── ux-notes.md                          # UX decisions
-│   ├── critique-rubric.md                   # Internal review rubric
 │   ├── opd-guide-content-sources.md         # Provenance of OPD guide content
-│   ├── PHASE3_PLAN.md                       # Historical plan (partly superseded)
-│   ├── phase-logs/                          # Historical phase logs
-│   └── screenshots/                         # Reference screenshots
+│   └── screenshots/                         # Reference screenshots used by VALIDATION.md
 │
 ├── src/DrmcPatientPortal/              # The web application
 │   ├── Program.cs                      # DI registration + middleware pipeline (single entry point)
@@ -439,7 +433,7 @@ dotnet ef database update --project src/DrmcPatientPortal/DrmcPatientPortal.cspr
 dotnet run --project src/DrmcPatientPortal/DrmcPatientPortal.csproj
 ```
 
-`run.ps1` / `run.bat` do the same thing and also try to locate `dotnet` on Windows if it is not on `PATH`.
+`run.ps1` does the same thing and also tries to locate `dotnet` on Windows if it is not on `PATH`.
 
 In **Development** only, startup runs `DbInitializer.Initialize`, which idempotently seeds review users, clinical records, doctors, assistance programs, and advisories.
 
@@ -467,7 +461,7 @@ pwsh scripts/test-ui.ps1               # add -SkipBrowserInstall after the first
 ```
 
 - The browser suite starts its **own** server with a temporary SQLite database, key ring, and document directories (`PortalFixture`). It never touches your normal `app.db` or your running development server.
-- Last recorded client validation: **34 backend tests and 46 browser tests passing** on .NET 10 with no build warnings, across Chromium, Firefox, and WebKit, including a fresh migration chain, an existing-database upgrade, the responsive matrix down to 320px, and automated WCAG AA checks. NuGet reported no known vulnerable packages. Details: [`docs/CLIENT_REQUIREMENTS_2026-09-13.md`](docs/CLIENT_REQUIREMENTS_2026-09-13.md) and [`docs/UI_VALIDATION.md`](docs/UI_VALIDATION.md).
+- Last recorded client validation: **34 backend tests and 46 browser tests passing** on .NET 10 with no build warnings, across Chromium, Firefox, and WebKit, including a fresh migration chain, an existing-database upgrade, the responsive matrix down to 320px, and automated WCAG AA checks. NuGet reported no known vulnerable packages. Details: [`docs/CLIENT_REQUIREMENTS_2026-09-13.md`](docs/CLIENT_REQUIREMENTS_2026-09-13.md) and [`docs/VALIDATION.md`](docs/VALIDATION.md).
 - The OCR image-generation fixture is **Windows-only** because it uses `System.Drawing`; production code itself is platform-neutral.
 - Because these figures come from a recorded validation run rather than CI, re-run the commands above to confirm current numbers. There is no GitHub Actions workflow in this repository — verification is local and script-driven.
 
@@ -547,15 +541,14 @@ This is the section clients and client developers should read most carefully.
 | Document | Use it for |
 |---|---|
 | [`STATUS.md`](STATUS.md) | **Source of truth** for what is implemented, what is deliberately not, and the latest migration |
-| [`GAUNTLET_STATE.md`](GAUNTLET_STATE.md) | Acceptance-pass record and explicitly superseded historical claims |
 | [`docs/CLIENT_REQUIREMENTS_2026-09-13.md`](docs/CLIENT_REQUIREMENTS_2026-09-13.md) | Latest client requirements, route decisions, and the verification report |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Migrations, key ring, document paths, notifications, release checks |
 | [`docs/SECURITY_REVIEW_TODO.md`](docs/SECURITY_REVIEW_TODO.md) | Implemented controls vs. open institutional security work |
 | [`docs/COMPLIANCE_REPORT.md`](docs/COMPLIANCE_REPORT.md) | Compliance readiness (not certification) |
-| [`docs/UI_VALIDATION.md`](docs/UI_VALIDATION.md) | Browser and accessibility coverage, plus known limitations |
-| [`docs/SIGNUP_VALIDATION.md`](docs/SIGNUP_VALIDATION.md) | Registration and ID-capture validation |
+| [`docs/VALIDATION.md`](docs/VALIDATION.md) | UI, accessibility, and signup validation coverage, results, and known limits |
 | [`docs/design.md`](docs/design.md) and [`docs/ux-notes.md`](docs/ux-notes.md) | Design system, tokens, layout, accessibility rules, UX decisions |
 | [`docs/opd-guide-content-sources.md`](docs/opd-guide-content-sources.md) | Provenance of OPD guide content |
-| [`docs/PHASE3_PLAN.md`](docs/PHASE3_PLAN.md) and [`docs/phase-logs/`](docs/phase-logs) | Project history. **Partly superseded** — trust `STATUS.md` over these |
 
 When documents disagree, precedence is: **code, then `STATUS.md`, then the latest client requirements, then everything else.**
+
+Historical planning documents (phase plans, phase logs, the acceptance-gauntlet record, and the internal critique rubric) were removed during repository cleanup. They remain in git history if you need them.
