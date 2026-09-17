@@ -125,13 +125,9 @@
                                     </span>
                                 </div>
 
-                                <div class="mt-auto pt-3 border-top d-flex gap-2">
-                                    <a asp-action="Doctor" asp-route-id="@doctor.Id" class="btn btn-sm btn-outline-secondary flex-fill rounded-pill fw-semibold">
-                                        Profile
-                                    </a>
-                                    <a asp-controller="Appointments" asp-action="Book" asp-route-department="@doctor.Department" asp-route-doctorId="@doctor.Id"
-                                       class="btn btn-sm btn-primary-drmc flex-fill rounded-pill fw-semibold">
-                                        Book Visit
+                                <div class="mt-auto pt-3 border-top">
+                                    <a asp-action="Doctor" asp-route-id="@doctor.Id" class="btn btn-sm btn-outline-secondary w-100 rounded-pill fw-semibold">
+                                        View Profile &amp; Schedule
                                     </a>
                                 </div>
 

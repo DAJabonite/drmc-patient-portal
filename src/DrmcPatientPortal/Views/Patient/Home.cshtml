@@ -36,54 +36,32 @@
         </nav>
 
         <div class="row g-3">
-            <div class="col-xl-6">
-                <article class="card summary-card appointment-summary h-100">
+            <div class="col-md-6 col-xl-3">
+                <article class="card summary-card h-100">
                     <div class="card-body p-4 d-flex flex-column">
                         <div class="summary-card-heading">
-                            <span class="card-icon"><i class="bi bi-calendar-event" aria-hidden="true"></i></span>
+                            <span class="card-icon"><i class="bi bi-journal-medical" aria-hidden="true"></i></span>
                             <div>
-                                <p class="eyebrow mb-1">Next step</p>
-                                <h2 class="h5 fw-bold mb-0">Upcoming appointment</h2>
+                                <p class="eyebrow mb-1">Clinical care</p>
+                                <h2 class="h6 fw-bold mb-0">Visits</h2>
                             </div>
-                            @if (Model.NextAppointment is not null)
-                            {
-                                <span class="badge status-badge @(Model.NextAppointment.Status == "Confirmed" ? "text-bg-success" : "text-bg-warning")">@Model.NextAppointment.Status</span>
-                            }
+                            <span class="summary-count">@Model.Encounters.Count</span>
                         </div>
-
-                        @if (Model.NextAppointment is not null)
+                        @if (Model.Encounters.Count > 0)
                         {
-                            var appt = Model.NextAppointment;
-                            <div class="appointment-summary-content">
-                                <div>
-                                    <strong class="d-block fs-5 text-primary-drmc">@appt.Department</strong>
-                                    <span class="d-block mt-1"><i class="bi bi-clock me-2 text-muted" aria-hidden="true"></i>@appt.ScheduledAt.ToString("ddd, MMM d, yyyy") at @appt.ScheduledAt.ToString("h:mm tt")</span>
-                                    <span class="d-block mt-1 text-muted"><i class="bi bi-person-badge me-2" aria-hidden="true"></i>@appt.DoctorName</span>
-                                </div>
-                                @if (Model.HasTriageForNextAppointment)
-                                {
-                                    <div class="status-note status-note-success"><i class="bi bi-check2-circle" aria-hidden="true"></i>Pre-triage completed</div>
-                                }
-                                else
-                                {
-                                    <a asp-controller="Triage" asp-action="Start" asp-route-appointmentId="@appt.Id" class="btn btn-primary-drmc">
-                                        <i class="bi bi-clipboard-pulse" aria-hidden="true"></i> Complete pre-triage
-                                    </a>
-                                }
+                            var latestEnc = Model.Encounters.First();
+                            <div class="record-preview-list">
+                                <a asp-controller="Encounters" asp-action="Details" asp-route-id="@latestEnc.Id" class="record-preview">
+                                    <span><strong>@latestEnc.Department</strong><small>@latestEnc.EncounterDate.ToString("MMM d, yyyy")</small></span>
+                                    <span class="badge status-badge text-bg-primary">@latestEnc.Type</span>
+                                </a>
                             </div>
                         }
                         else
                         {
-                            <div class="empty-state flex-grow-1">
-                                <i class="bi bi-calendar2-plus" aria-hidden="true"></i>
-                                <strong>No upcoming appointment</strong>
-                                <span>Choose a clinic and time that works for you.</span>
-                            </div>
+                            <div class="empty-state compact"><span>No recent clinical encounters.</span></div>
                         }
-
-                        <div class="summary-card-actions mt-auto">
-                            <a asp-controller="Appointments" asp-action="Book"><i class="bi bi-calendar-plus" aria-hidden="true"></i> Book appointment</a>
-                        </div>
+                        <a asp-controller="Encounters" asp-action="Index" class="summary-primary-link mt-auto">View all visits <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                     </div>
                 </article>
             </div>
@@ -135,6 +113,26 @@
                         </div>
                         <p class="text-muted small mb-3">Review dose times, safety instructions, and prescription details.</p>
                         <a asp-controller="Medications" asp-action="Index" class="summary-primary-link mt-auto">Open medications <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                    </div>
+                </article>
+            </div>
+
+            <div class="col-md-6 col-xl-3">
+                <article class="card summary-card h-100">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="summary-card-heading">
+                            <span class="card-icon"><i class="bi bi-heart-pulse" aria-hidden="true"></i></span>
+                            <div>
+                                <p class="eyebrow mb-1">Assistance</p>
+                                <h2 class="h6 fw-bold mb-0">Malasakit</h2>
+                            </div>
+                            @if (Model.SubsidyApplication is not null)
+                            {
+                                <span class="badge status-badge text-bg-info">@Model.SubsidyApplication.Eligibility</span>
+                            }
+                        </div>
+                        <p class="text-muted small mb-3">Check medical assistance programs, document checklists, and application status.</p>
+                        <a asp-controller="Malasakit" asp-action="Index" class="summary-primary-link mt-auto">Malasakit assistance <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                     </div>
                 </article>
             </div>

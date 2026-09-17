@@ -9,8 +9,6 @@ Last reconciled: 2026-09-16. This is the source of truth for current code; histo
 - Audited medical history grouped into OPD, ER, and Admitted, outside the five primary destinations.
 - Persisted Malasakit applications and preparation checklists with separate reported and confirmed payment/eligibility/coverage states.
 
-- Public booking with server-side department, type, doctor, doctor/department, slot, and conflict validation.
-- Capability-protected appointment confirmation, check-in, and cancellation; hashed tokens expire 24 hours after the visit and revoke on cancellation.
 - Authenticated dashboard, lab results, restored encounter summaries, medications, triage, and audit history.
 - Encounter ownership, linked labs, development seeds, and view audit events.
 - Refill requests start `Requested`; Requested/Approved/Ready-for-Pickup block duplicates; refill counts do not change before dispensing.
@@ -22,6 +20,7 @@ Last reconciled: 2026-09-16. This is the source of truth for current code; histo
 
 ## Deliberately not implemented
 
+- Online appointment booking and self-service check-in workflows are retired and backburned per client directive. Outpatient visits follow the physical, on-site OPD Guide.
 - Online OPD queue tracking is removed because DRMC does not provide a queue-tracking source of truth. The OPD guide still describes physical, on-site queue steps where applicable.
 - Messaging and caregiver/proxy access remain removed.
 - HIS, pharmacy, and SIEM connectivity require DRMC interfaces and credentials. No simulated synchronization is shown.

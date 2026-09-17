@@ -9,8 +9,8 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
 {
     internal static IEnumerable<string> PublicScreens => PublicRoutes;
     internal static IEnumerable<string> PatientScreens => PatientRoutes;
-    private static readonly string[] PublicRoutes = ["/", "/Directory", "/Directory/Doctor/1", "/Directory/Department?name=Internal%20Medicine", "/OpdGuide", "/Advisories", "/Advisories/Details?slug=dengue-4s-prevention-alert", "/Home/Privacy", "/Home/ServiceUnavailable", "/Malasakit", "/Malasakit/Program?code=MALASAKIT", "/Malasakit/Navigator", "/Appointments/Book", "/Appointments/CheckIn?reference=missing", "/Identity/Account/Login", "/Identity/Account/Register", "/Identity/Account/ForgotPassword", "/Identity/Account/AccessDenied", "/Home/Error"];
-    private static readonly string[] PatientRoutes = ["/Patient/MedicalHistory", "/Patient/MedicalHistory?category=ADMITTED", "/Malasakit/Apply", "/Malasakit/Status", "/Patient/Home", "/Patient/Encounters", "/Patient/Encounters/Details/1", "/Patient/LabResults", "/Patient/LabResults/Details/1", "/Patient/Medications", "/Patient/Medications/Details/1", "/Patient/Audit", "/Identity/Account/Manage", "/Identity/Account/Manage/TwoFactorAuthentication", "/Identity/Account/Manage/EnableAuthenticator", "/Appointments/Confirmation?reference=DRMC-2026-IM-0192", "/Appointments/CheckIn?reference=DRMC-2026-IM-0192", "/Patient/Triage/Start/2", "/Patient/Triage/Summary/1", "/Patient/Triage/EmergencyWarning"];
+    private static readonly string[] PublicRoutes = ["/", "/Directory", "/Directory/Doctor/1", "/Directory/Department?name=Internal%20Medicine", "/OpdGuide", "/Advisories", "/Advisories/Details?slug=dengue-4s-prevention-alert", "/Home/Privacy", "/Home/ServiceUnavailable", "/Malasakit", "/Malasakit/Program?code=MALASAKIT", "/Malasakit/Navigator", "/Identity/Account/Login", "/Identity/Account/Register", "/Identity/Account/ForgotPassword", "/Identity/Account/AccessDenied", "/Home/Error"];
+    private static readonly string[] PatientRoutes = ["/Patient/MedicalHistory", "/Patient/MedicalHistory?category=ADMITTED", "/Malasakit/Apply", "/Malasakit/Status", "/Patient/Home", "/Patient/Encounters", "/Patient/Encounters/Details/1", "/Patient/LabResults", "/Patient/LabResults/Details/1", "/Patient/Medications", "/Patient/Medications/Details/1", "/Patient/Audit", "/Identity/Account/Manage", "/Identity/Account/Manage/TwoFactorAuthentication", "/Identity/Account/Manage/EnableAuthenticator", "/Patient/Triage/Start/2", "/Patient/Triage/Summary/1", "/Patient/Triage/EmergencyWarning"];
 
     public static TheoryData<string, string, string> Matrix
     {
@@ -164,8 +164,7 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
                      "/Patient/LabResults/Details/1",
                      "/Patient/Audit",
                      "/Advisories/Details?slug=dengue-4s-prevention-alert",
-                     "/Malasakit/Navigator",
-                     "/Appointments/Confirmation?reference=DRMC-2026-IM-0192"
+                     "/Malasakit/Navigator"
                  })
         {
             var response = await page.GotoAsync(route);
@@ -202,6 +201,34 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task Lab_results_protect_patient_privacy_and_display_claiming_guidance()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+        await using var context = await browser.NewContextAsync(app.Context("small"));
+        var page = await context.NewPageAsync();
+        await PortalFixture.SignIn(page);
+
+        // Index page
+        await page.GotoAsync("/Patient/LabResults");
+        await Expect(page.GetByText("Patient Health Data Privacy Notice")).ToBeVisibleAsync();
+        await Expect(page.GetByText("Data Privacy Act of 2012 (RA 10173)")).ToBeVisibleAsync();
+        await Expect(page.Locator("text=Ready for Claiming").First).ToBeVisibleAsync();
+        await Expect(page.Locator("text=Claiming Unit:").First).ToBeVisibleAsync();
+
+        // Details page
+        await page.GotoAsync("/Patient/LabResults/Details/1");
+        await Expect(page.GetByText("Result Availability & Claiming Guide")).ToBeVisibleAsync();
+        await Expect(page.GetByText("Where & How to Claim Your Official Results")).ToBeVisibleAsync();
+        await Expect(page.GetByText("Releasing Location")).ToBeVisibleAsync();
+        await Expect(page.GetByText("Claiming Requirements")).ToBeVisibleAsync();
+
+        // Privacy assertion: NO numerical analyte breakdown table or clinical notes
+        await Expect(page.Locator("table")).ToHaveCountAsync(0);
+        await Expect(page.GetByText("Quantitative Analyte Breakdown")).ToHaveCountAsync(0);
+        await Expect(page.GetByText("Biological Reference Ranges")).ToHaveCountAsync(0);
+    }
+
+    [Fact]
     public async Task Page_headers_do_not_use_decorative_label_badges()
     {
         await using var browser = await app.Playwright.Chromium.LaunchAsync();
@@ -219,7 +246,6 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
             ["/OpdGuide"] = "Patient Orientation",
             ["/Advisories"] = "Official Announcements",
             ["/Malasakit"] = "Republic Act No. 11463",
-            ["/Appointments/Book"] = "Self-Service Booking",
             ["/Directory"] = "Medical Staff Directory"
         };
 
@@ -250,7 +276,6 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
         var menuBox = (await menu.BoundingBoxAsync())!;
         Assert.True(menuBox.Width <= 360 && Math.Abs(menuBox.X + menuBox.Width - viewport.Width) <= 1, $"Drawer box {menuBox.Width}x@{menuBox.X} in {viewport.Width}px viewport");
         await Expect(menu).ToHaveAttributeAsync("aria-modal", "true");
-        await Expect(menu.Locator("#mobileQuickTasksHeading")).ToBeVisibleAsync();
         await Expect(menu.Locator("#mobileHospitalServicesHeading")).ToBeVisibleAsync();
         await Expect(menu.Locator(".mobile-more-link[href='/Directory']")).ToBeVisibleAsync();
         await Expect(menu.Locator(".mobile-more-link[href='/Patient/MedicalHistory']")).ToBeVisibleAsync();
@@ -291,8 +316,30 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
         Assert.True((await reference.BoundingBoxAsync())!.Height < 70);
         Assert.Empty(await LayoutProblems(page));
         await page.Locator(".mobile-tab-bar a[href='/Patient/Home']").TapAsync();
-        var heading = page.Locator(".appointment-summary h2");
-        Assert.True((await heading.BoundingBoxAsync())!.Width >= 180);
+        var heading = page.Locator(".summary-card h2").First;
+        Assert.True((await heading.BoundingBoxAsync())!.Width >= 40);
         Assert.True((await heading.BoundingBoxAsync())!.Height < 80);
+    }
+
+    [Fact]
+    public async Task Appointments_routes_and_ui_are_retired_and_hidden()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+        await using var context = await browser.NewContextAsync(app.Context("1440"));
+        var page = await context.NewPageAsync();
+
+        var response = await page.GotoAsync("/Appointments/Book");
+        Assert.Equal(404, response?.Status);
+
+        await page.GotoAsync("/");
+        await Expect(page.Locator("a[href*='/Appointments']")).ToHaveCountAsync(0);
+
+        await page.GotoAsync("/Directory");
+        await Expect(page.Locator("a[href*='/Appointments']")).ToHaveCountAsync(0);
+
+        await PortalFixture.SignIn(page);
+        await page.GotoAsync("/Patient/Home");
+        await Expect(page.Locator("a[href*='/Appointments']")).ToHaveCountAsync(0);
+        await Expect(page.Locator(".appointment-summary")).ToHaveCountAsync(0);
     }
 }

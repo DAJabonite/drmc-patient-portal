@@ -283,26 +283,15 @@ public class Phase3AuthenticatedFeaturesTests
     }
 
     [Fact]
-    public async Task AppointmentsController_AllowsLegacyOwnerButDeniesReferenceOnlyAccess()
+    public void AppointmentsController_IsRetiredAndFailsClosedWithNotFound()
     {
-        using var db = CreateInMemoryDbContext();
-        var (userManager, user) = CreateMockUserManager(db);
-        var ownerAppointment = new Appointment { PatientUserId = user.Id, BookingReference = "DRMC-OWNER", ScheduledAt = DateTime.Now.AddDays(1) };
-        var otherAppointment = new Appointment { PatientUserId = "other-user", BookingReference = "DRMC-OTHER", ScheduledAt = DateTime.Now.AddDays(1) };
-        db.Appointments.AddRange(ownerAppointment, otherAppointment);
-        await db.SaveChangesAsync();
-
-        var access = new Mock<IAppointmentAccessService>();
-        var qr = new Mock<IQrCodeService>();
-        qr.Setup(x => x.GenerateSvgQrCode(It.IsAny<string>())).Returns("<svg></svg>");
-        var controller = new AppointmentsController(db, userManager, Mock.Of<ISmsSender>(), Mock.Of<IEmailSender>(), qr.Object, access.Object)
-        {
-            ControllerContext = CreateControllerContext()
-        };
-
-        Assert.IsType<ViewResult>(await controller.Confirmation(ownerAppointment.BookingReference));
-        Assert.IsType<NotFoundResult>(await controller.Confirmation(otherAppointment.BookingReference));
-        Assert.IsType<NotFoundResult>(await controller.Cancel(otherAppointment.Id));
-        Assert.NotEqual("Cancelled", otherAppointment.Status);
+        var controller = new AppointmentsController();
+        Assert.IsType<NotFoundResult>(controller.Book(null, null, null));
+        Assert.IsType<NotFoundResult>(controller.Book(new BookingFormViewModel()));
+        Assert.IsType<NotFoundResult>(controller.Confirmation("DRMC-OWNER"));
+        Assert.IsType<NotFoundResult>(controller.CheckIn("DRMC-OWNER"));
+        Assert.IsType<NotFoundResult>(controller.Cancel(1));
+        Assert.IsType<NotFoundResult>(controller.Doctors("Internal Medicine"));
+        Assert.IsType<NotFoundResult>(controller.AvailableSlots("Internal Medicine", 1, DateTime.Today));
     }
 }
