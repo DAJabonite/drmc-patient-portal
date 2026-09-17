@@ -114,6 +114,12 @@ public class MalasakitController : Controller
         return View();
     }
 
+    // GET /Malasakit/Philhealth
+    public IActionResult Philhealth()
+    {
+        return View();
+    }
+
     private Task AuditAsync(string userId, string action) => _audit.LogAsync(userId, action,
         "SubsidyApplication", "Accessed own subsidy application.", HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
 
