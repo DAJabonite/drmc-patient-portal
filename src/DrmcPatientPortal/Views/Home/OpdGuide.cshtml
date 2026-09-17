@@ -59,15 +59,10 @@
 <!-- Hero / Header Banner -->
 <section class="page-header">
     <div class="container">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
             <div>
                 <p class="small text-white text-opacity-75 mb-1">Outpatient Visit Sequence</p>
                 <h1 class="display-6 fw-bold mb-0">Outpatient Department (OPD) Guide</h1>
-            </div>
-            <div>
-                <a asp-controller="Directory" asp-action="Index" class="btn btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm">
-                    <i class="bi bi-person-badge me-1"></i> View Doctor Directory
-                </a>
             </div>
         </div>
     </div>
@@ -76,9 +71,6 @@
 <!-- Main Guide Content -->
 <section class="section py-5 bg-light">
     <div class="container" style="max-width: 1140px;">
-
-        <partial name="_OfficialDrmcSources" />
-
         <!-- Restart Reminder -->
         <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white" role="note">
             <div class="d-flex align-items-start gap-3">

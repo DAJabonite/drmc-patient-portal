@@ -9,7 +9,7 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
 {
     internal static IEnumerable<string> PublicScreens => PublicRoutes;
     internal static IEnumerable<string> PatientScreens => PatientRoutes;
-    private static readonly string[] PublicRoutes = ["/", "/Directory", "/Directory/Doctor/1", "/Directory/Department?name=Internal%20Medicine", "/OpdGuide", "/Advisories", "/Advisories/Details?slug=dengue-4s-prevention-alert", "/Home/Privacy", "/Home/ServiceUnavailable", "/Malasakit", "/Malasakit/Program?code=MALASAKIT", "/Malasakit/Navigator", "/Identity/Account/Login", "/Identity/Account/Register", "/Identity/Account/ForgotPassword", "/Identity/Account/AccessDenied", "/Home/Error"];
+    private static readonly string[] PublicRoutes = ["/", "/Directory", "/Directory/Doctor/1", "/Directory/Department?name=Internal%20Medicine", "/OpdGuide", "/Advisories", "/Advisories/Details?slug=dengue-4s-prevention-alert", "/Home/Privacy", "/Home/ServiceUnavailable", "/Malasakit", "/Malasakit/Program?code=MALASAKIT", "/Identity/Account/Login", "/Identity/Account/Register", "/Identity/Account/ForgotPassword", "/Identity/Account/AccessDenied", "/Home/Error"];
     private static readonly string[] PatientRoutes = ["/Patient/MedicalHistory", "/Patient/MedicalHistory?category=ADMITTED", "/Malasakit/Apply", "/Malasakit/Status", "/Patient/Home", "/Patient/Encounters", "/Patient/Encounters/Details/1", "/Patient/LabResults", "/Patient/LabResults/Details/1", "/Patient/Medications", "/Patient/Medications/Details/1", "/Patient/Audit", "/Identity/Account/Manage", "/Identity/Account/Manage/MyIds", "/Identity/Account/Manage/TwoFactorAuthentication", "/Identity/Account/Manage/EnableAuthenticator", "/Patient/Triage/Start/2", "/Patient/Triage/Summary/1", "/Patient/Triage/EmergencyWarning"];
 
     public static TheoryData<string, string, string> Matrix
@@ -88,7 +88,7 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
                 var problems = await LayoutProblems(page);
                 failures.AddRange(problems.Select(p => route + ": " + p));
                 routes.Add(route);
-                if (problems.Length > 0 || (culture == "en" && device is "1440" or "small" or "iphone") || route is "/Patient/Home" or "/Patient/Encounters" or "/" or "/Malasakit/Navigator")
+                if (problems.Length > 0 || (culture == "en" && device is "1440" or "small" or "iphone") || route is "/Patient/Home" or "/Patient/Encounters" or "/")
                 {
                     // CSS pixels avoid WebKit's 32767-pixel image limit on high-DPI phones.
                     // Layout checks still inspect the entire page, including long audit histories.
@@ -149,6 +149,26 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task Removed_malasakit_navigator_is_not_linked_and_routes_return_not_found()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+        await using var context = await browser.NewContextAsync(app.Context("small"));
+        var page = await context.NewPageAsync();
+
+        foreach (var route in new[] { "/", "/Malasakit", "/Malasakit/Program?code=MALASAKIT" })
+        {
+            await page.GotoAsync(route);
+            Assert.Equal(0, await page.Locator("a[href*='/Malasakit/Navigator'], form[action*='/Malasakit/Assess']").CountAsync());
+        }
+
+        foreach (var route in new[] { "/Malasakit/Navigator", "/Malasakit/Assess" })
+        {
+            var response = await page.GotoAsync(route);
+            Assert.Equal(404, response?.Status);
+        }
+    }
+
+    [Fact]
     public async Task Removed_print_features_are_not_linked_and_routes_return_not_found()
     {
         await using var browser = await app.Playwright.Chromium.LaunchAsync();
@@ -163,8 +183,7 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
                      "/Patient/LabResults",
                      "/Patient/LabResults/Details/1",
                      "/Patient/Audit",
-                     "/Advisories/Details?slug=dengue-4s-prevention-alert",
-                     "/Malasakit/Navigator"
+                     "/Advisories/Details?slug=dengue-4s-prevention-alert"
                  })
         {
             var response = await page.GotoAsync(route);

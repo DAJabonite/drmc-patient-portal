@@ -29,24 +29,16 @@
             </div>
         }
 
-        <section class="dashboard-actions-section mb-4" aria-labelledby="dashboardActionsHeading">
-            <h2 class="h6 fw-bold mb-3" id="dashboardActionsHeading">Plan your visit</h2>
-            <nav class="dashboard-actions" aria-label="Visit planning">
+        <section class="dashboard-actions-section mb-3" aria-labelledby="dashboardActionsHeading">
+            <h2 class="visually-hidden" id="dashboardActionsHeading">Quick actions</h2>
+            <nav class="dashboard-actions" aria-label="Quick actions">
                 <a class="dashboard-action-card" asp-controller="Directory" asp-action="Index">
                     <span class="dashboard-action-icon"><i class="bi bi-person-badge" aria-hidden="true"></i></span>
-                    <span class="dashboard-action-content">
-                        <strong>Find doctors &amp; clinics</strong>
-                        <small>Browse departments and specialists</small>
-                    </span>
-                    <i class="bi bi-arrow-right dashboard-action-arrow" aria-hidden="true"></i>
+                    <span class="dashboard-action-content"><strong>Doctors &amp; clinics</strong></span>
                 </a>
                 <a class="dashboard-action-card" asp-controller="Home" asp-action="OpdGuide">
                     <span class="dashboard-action-icon"><i class="bi bi-signpost-split" aria-hidden="true"></i></span>
-                    <span class="dashboard-action-content">
-                        <strong>OPD visit guide</strong>
-                        <small>Know where to go and what to bring</small>
-                    </span>
-                    <i class="bi bi-arrow-right dashboard-action-arrow" aria-hidden="true"></i>
+                    <span class="dashboard-action-content"><strong>OPD guide</strong></span>
                 </a>
             </nav>
         </section>
@@ -77,7 +69,7 @@
                         {
                             <div class="empty-state compact"><span>No recent clinical encounters.</span></div>
                         }
-                        <a asp-controller="Encounters" asp-action="Index" class="summary-primary-link mt-auto">View all visits <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                        <a asp-controller="Encounters" asp-action="Index" class="btn btn-primary-drmc dashboard-summary-button mt-auto">View all visits <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                     </div>
                 </article>
             </div>
@@ -111,7 +103,7 @@
                             <div class="empty-state compact"><span>No recent laboratory records.</span></div>
                         }
 
-                        <a asp-controller="LabResults" asp-action="Index" class="summary-primary-link mt-auto">View all results <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                        <a asp-controller="LabResults" asp-action="Index" class="btn btn-primary-drmc dashboard-summary-button mt-auto">View all results <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                     </div>
                 </article>
             </div>
@@ -128,7 +120,7 @@
                             <span class="summary-count">@Model.ActivePrescriptionsCount</span>
                         </div>
                         <p class="text-muted small mb-3">Review dose times, safety instructions, and prescription details.</p>
-                        <a asp-controller="Medications" asp-action="Index" class="summary-primary-link mt-auto">Open medications <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                        <a asp-controller="Medications" asp-action="Index" class="btn btn-primary-drmc dashboard-summary-button mt-auto">Open medications <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                     </div>
                 </article>
             </div>
@@ -148,7 +140,7 @@
                             }
                         </div>
                         <p class="text-muted small mb-3">Check medical assistance programs, document checklists, and application status.</p>
-                        <a asp-controller="Malasakit" asp-action="Index" class="summary-primary-link mt-auto">Malasakit assistance <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                        <a asp-controller="Malasakit" asp-action="Index" class="btn btn-primary-drmc dashboard-summary-button mt-auto">Malasakit assistance <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                     </div>
                 </article>
             </div>

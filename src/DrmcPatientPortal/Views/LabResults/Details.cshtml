@@ -92,21 +92,6 @@
                 </div>
             </div>
 
-            <!-- Privacy Notice Card -->
-            <div class="p-3 bg-light-subtle rounded-3 border border-primary border-opacity-25 mb-4" role="note">
-                <div class="d-flex align-items-start gap-3">
-                    <div class="text-primary-drmc fs-4 mt-1" style="flex-shrink:0;">
-                        <i class="bi bi-shield-check"></i>
-                    </div>
-                    <div>
-                        <h3 class="h6 fw-bold text-dark mb-1">Patient Health Data Privacy &amp; Protection</h3>
-                        <p class="small text-muted mb-0">
-                            In strict compliance with the <strong>Data Privacy Act of 2012 (RA 10173)</strong>, numerical laboratory values, clinical analyte measurements, and diagnostic impressions are withheld from online display. This ensures that sensitive medical data remains strictly confidential and is only released directly to you or your verified attending physician.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
             <!-- Where & How to Claim Guide -->
             <div class="mb-4">
                 <h3 class="h6 fw-bold text-primary-drmc mb-3">
@@ -160,33 +145,18 @@
                 </div>
             </div>
 
-            <!-- Follow-up Recommendation -->
-            <div class="p-3 bg-primary-subtle rounded-3 text-primary-emphasis mb-4">
-                <div class="d-flex align-items-start gap-2">
-                    <i class="bi bi-info-circle-fill fs-5 mt-1" aria-hidden="true"></i>
-                    <div>
-                        <h4 class="h6 fw-bold mb-1">Doctor's Consultation &amp; Interpretation</h4>
-                        <p class="small mb-0">
-                            Please bring your physical official diagnostic report to your attending physician <strong>@(string.IsNullOrEmpty(Model.OrderingPhysician) ? "" : $"({Model.OrderingPhysician})")</strong> during your scheduled clinic follow-up for professional medical interpretation and personalized clinical guidance.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
             <!-- Footer Actions -->
-            <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center pt-3 border-top">
-                <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
+            <nav class="lab-result-actions pt-3 border-top" aria-label="Result actions">
+                <a asp-action="Index" class="btn btn-outline-secondary fw-semibold">
                     <i class="bi bi-arrow-left me-1"></i> Back to Results
                 </a>
-                <div class="d-flex gap-2">
-                    <a asp-controller="Home" asp-action="OpdGuide" class="btn btn-outline-drmc rounded-pill px-3 fw-semibold small">
-                        <i class="bi bi-signpost-split me-1"></i> OPD Wayfinding Guide
-                    </a>
-                    <a asp-controller="Directory" asp-action="Index" class="btn btn-outline-drmc rounded-pill px-3 fw-semibold small">
-                        <i class="bi bi-person-badge me-1"></i> Doctor Directory
-                    </a>
-                </div>
-            </div>
+                <a asp-controller="Home" asp-action="OpdGuide" class="btn btn-outline-drmc fw-semibold">
+                    <i class="bi bi-signpost-split me-1"></i> OPD Wayfinding Guide
+                </a>
+                <a asp-controller="Directory" asp-action="Index" class="btn btn-outline-drmc fw-semibold">
+                    <i class="bi bi-person-badge me-1"></i> Doctor Directory
+                </a>
+            </nav>
 
         </div>
     </div>

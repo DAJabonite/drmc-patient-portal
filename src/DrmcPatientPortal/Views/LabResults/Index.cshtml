@@ -12,57 +12,86 @@
     </div>
 </section>
 
-<!-- Filter & Search Bar -->
+<!-- Result filters -->
 <section class="py-3 bg-white border-bottom sticky-top shadow-xs" style="z-index: 1020;">
     <div class="container">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-            <form asp-action="Index" method="get" class="d-md-none w-100">
-                @if (!string.IsNullOrEmpty(Model.SearchTerm))
-                {
-                    <input type="hidden" name="search" value="@Model.SearchTerm" />
-                }
-                <label for="labCategoryFilter" class="form-label small fw-semibold text-dark mb-1">Filter by test category</label>
-                <select id="labCategoryFilter" name="category" class="form-select" onchange="this.form.submit()">
-                    <option value="" selected="@(!Model.SelectedCategory.HasValue)">All Tests (@Model.TotalCount)</option>
-                    <option value="@LabCategory.Hematology" selected="@(Model.SelectedCategory == LabCategory.Hematology)">Hematology</option>
-                    <option value="@LabCategory.ClinicalChemistry" selected="@(Model.SelectedCategory == LabCategory.ClinicalChemistry)">Clinical Chemistry</option>
-                    <option value="@LabCategory.SpecialDiagnostics" selected="@(Model.SelectedCategory == LabCategory.SpecialDiagnostics)">Special Diagnostics</option>
-                </select>
-            </form>
-
-            <div class="desktop-filter-pills d-none d-md-flex align-items-center gap-2 overflow-x-auto pb-1" style="max-width: 100%;">
-                <a asp-action="Index" asp-route-search="@Model.SearchTerm"
-                   class="btn btn-sm @(!Model.SelectedCategory.HasValue ? "btn-primary-drmc shadow-xs" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
-                    All Tests (@Model.TotalCount)
-                </a>
-                <a asp-action="Index" asp-route-category="@LabCategory.Hematology" asp-route-search="@Model.SearchTerm"
-                   class="btn btn-sm @(Model.SelectedCategory == LabCategory.Hematology ? "btn-primary-drmc shadow-xs" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
-                    Hematology
-                </a>
-                <a asp-action="Index" asp-route-category="@LabCategory.ClinicalChemistry" asp-route-search="@Model.SearchTerm"
-                   class="btn btn-sm @(Model.SelectedCategory == LabCategory.ClinicalChemistry ? "btn-primary-drmc shadow-xs" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
-                    Clinical Chemistry
-                </a>
-                <a asp-action="Index" asp-route-category="@LabCategory.SpecialDiagnostics" asp-route-search="@Model.SearchTerm"
-                   class="btn btn-sm @(Model.SelectedCategory == LabCategory.SpecialDiagnostics ? "btn-primary-drmc shadow-xs" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
-                    Special Diagnostics
-                </a>
+        <form asp-action="Index" method="get" class="lab-filter-form" id="labResultFilterForm">
+            <div class="lab-filter-toolbar">
+                <div class="lab-category-field">
+                    <label for="labCategoryFilter" class="form-label small fw-semibold text-dark mb-1 lab-filter-label">Test category</label>
+                    <select id="labCategoryFilter" name="category" class="form-select" aria-label="Filter by test category">
+                        <option value="" selected="@(!Model.SelectedCategory.HasValue)">All Tests (@Model.TotalCount)</option>
+                        <option value="@LabCategory.Hematology" selected="@(Model.SelectedCategory == LabCategory.Hematology)">Hematology</option>
+                        <option value="@LabCategory.ClinicalChemistry" selected="@(Model.SelectedCategory == LabCategory.ClinicalChemistry)">Clinical Chemistry</option>
+                        <option value="@LabCategory.SpecialDiagnostics" selected="@(Model.SelectedCategory == LabCategory.SpecialDiagnostics)">Special Diagnostics</option>
+                    </select>
+                </div>
+                <button type="button"
+                        class="btn btn-outline-drmc lab-date-toggle d-md-none"
+                        id="labDateToggle"
+                        aria-expanded="@(Model.SelectedDateRange is not null ? "true" : "false")"
+                        aria-controls="labDatePanel">
+                    <i class="bi bi-calendar3" aria-hidden="true"></i>
+                    <span>Date</span>
+                    @if (!string.IsNullOrEmpty(Model.SelectedDateRange))
+                    {
+                        <span class="filter-active-dot" aria-label="Date filter active"></span>
+                    }
+                </button>
             </div>
 
-            <form asp-action="Index" method="get" class="record-search d-flex gap-2" role="search">
-                @if (Model.SelectedCategory.HasValue)
-                {
-                    <input type="hidden" name="category" value="@Model.SelectedCategory.Value" />
-                }
-                <input type="text" name="search" value="@Model.SearchTerm" class="form-control form-control-sm"
-                       placeholder="Search test name or accession..." aria-label="Search test name or accession" />
-                <button type="submit" class="btn btn-sm btn-primary-drmc px-3 fw-semibold" aria-label="Search results">
-                    <i class="bi bi-search"></i>
-                </button>
-            </form>
-        </div>
+            <div id="labDatePanel" class="lab-date-panel @(Model.SelectedDateRange is not null ? "is-open" : null)">
+                <div class="lab-date-field">
+                    <label for="labDateFilter" class="form-label small fw-semibold text-dark mb-1">Date</label>
+                    <select id="labDateFilter" name="dateRange" class="form-select">
+                        <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDateRange))">Any date</option>
+                        <option value="30d" selected="@(Model.SelectedDateRange == "30d")">Last 30 days</option>
+                        <option value="6m" selected="@(Model.SelectedDateRange == "6m")">Last 6 months</option>
+                        <option value="year" selected="@(Model.SelectedDateRange == "year")">This year</option>
+                    </select>
+                </div>
+                <div class="lab-filter-actions">
+                    <button type="submit" class="btn btn-primary-drmc fw-semibold">
+                        <i class="bi bi-funnel me-1" aria-hidden="true"></i> Apply
+                    </button>
+                    @if (Model.SelectedCategory.HasValue || !string.IsNullOrEmpty(Model.SelectedDateRange))
+                    {
+                        <a asp-action="Index" class="btn btn-outline-secondary fw-semibold">Clear</a>
+                    }
+                </div>
+            </div>
+        </form>
     </div>
 </section>
+
+@section Scripts {
+    <script>
+        (() => {
+            const filterForm = document.getElementById("labResultFilterForm");
+            const categorySelect = document.getElementById("labCategoryFilter");
+            const dateToggle = document.getElementById("labDateToggle");
+            const datePanel = document.getElementById("labDatePanel");
+
+            const setDatePanelOpen = (open) => {
+                datePanel?.classList.toggle("is-open", open);
+                dateToggle?.setAttribute("aria-expanded", open ? "true" : "false");
+            };
+
+            dateToggle?.addEventListener("click", () => {
+                setDatePanelOpen(dateToggle.getAttribute("aria-expanded") !== "true");
+            });
+            datePanel?.addEventListener("keydown", (event) => {
+                if (event.key === "Escape" && window.matchMedia("(max-width: 767.98px)").matches) {
+                    setDatePanelOpen(false);
+                    dateToggle?.focus();
+                }
+            });
+            categorySelect?.addEventListener("change", () => {
+                if (window.matchMedia("(max-width: 767.98px)").matches) filterForm?.requestSubmit();
+            });
+        })();
+    </script>
+}
 
 <section class="section py-5 bg-light">
     <div class="container">
