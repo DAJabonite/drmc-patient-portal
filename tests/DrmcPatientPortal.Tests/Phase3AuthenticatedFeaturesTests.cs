@@ -151,6 +151,32 @@ public class Phase3AuthenticatedFeaturesTests
     }
 
     [Fact]
+    public async Task LabResultsController_Index_FiltersByDateRange()
+    {
+        using var db = CreateInMemoryDbContext();
+        var (userManager, user) = CreateMockUserManager(db);
+        var auditMock = new Mock<IAuditLogService>();
+
+        db.LabResults.AddRange(
+            new LabResult { PatientUserId = user.Id, TestName = "Recent CBC", Category = LabCategory.Hematology, Status = "Available", AccessionNumber = "DATE-1", CollectedAt = DateTime.Today.AddDays(-10) },
+            new LabResult { PatientUserId = user.Id, TestName = "Older CBC", Category = LabCategory.Hematology, Status = "Available", AccessionNumber = "DATE-2", CollectedAt = DateTime.Today.AddDays(-45) }
+        );
+        await db.SaveChangesAsync();
+
+        var controller = new LabResultsController(db, userManager, auditMock.Object)
+        {
+            ControllerContext = CreateControllerContext()
+        };
+
+        var result = Assert.IsType<ViewResult>(await controller.Index(null, null, "30d"));
+        var model = Assert.IsType<LabResultsIndexViewModel>(result.Model);
+
+        Assert.Single(model.LabResults);
+        Assert.Equal("Recent CBC", model.LabResults[0].TestName);
+        Assert.Equal("30d", model.SelectedDateRange);
+    }
+
+    [Fact]
     public async Task LabResultsController_Details_ReturnsLabResultAndLogsAudit()
     {
         using var db = CreateInMemoryDbContext();

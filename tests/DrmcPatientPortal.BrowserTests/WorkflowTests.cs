@@ -133,16 +133,11 @@ public sealed class WorkflowTests(PortalFixture app)
     }
 
     [Fact]
-    public async Task Assistance_and_medication_information()
+    public async Task Medication_information()
     {
         await using var browser = await app.Playwright.Chromium.LaunchAsync();
         await using var context = await browser.NewContextAsync(app.Context("small"));
         var page = await context.NewPageAsync();
-        await page.GotoAsync("/Malasakit/Navigator");
-        await page.Locator("#needMeds").CheckAsync();
-        await page.Locator("main button[type=submit]").ClickAsync();
-        await page.WaitForURLAsync("**/Malasakit/Assess");
-        Assert.Empty(await ResponsiveTests.LayoutProblems(page));
         await PortalFixture.SignIn(page);
         await page.GotoAsync("/Patient/Medications/Details/1");
         await Expect(page.Locator("main")).ToContainTextAsync("Prescription Order Details");

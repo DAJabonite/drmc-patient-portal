@@ -48,7 +48,7 @@
 <!-- Department Filter Bar -->
 <section class="py-3 bg-white border-bottom sticky-top shadow-xs" style="z-index: 1020;">
     <div class="container">
-        <form asp-action="Index" method="get" class="d-md-none">
+        <form asp-action="Index" method="get">
             @if (!string.IsNullOrEmpty(Model.SearchTerm))
             {
                 <input type="hidden" name="search" value="@Model.SearchTerm" />
@@ -66,20 +66,6 @@
                 }
             </select>
         </form>
-
-        <div class="desktop-filter-pills d-none d-md-flex align-items-center gap-1 overflow-x-auto pb-1" style="max-width: 100%;">
-            <a asp-action="Index" asp-route-search="@Model.SearchTerm" asp-route-teleconsultOnly="@Model.TeleconsultOnly"
-               class="btn btn-sm @(string.IsNullOrEmpty(Model.SelectedDepartment) ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
-                All Departments (@Model.Doctors.Count)
-            </a>
-            @foreach (var dept in Model.Departments)
-            {
-                <a asp-action="Index" asp-route-department="@dept.Name" asp-route-search="@Model.SearchTerm" asp-route-teleconsultOnly="@Model.TeleconsultOnly"
-                   class="btn btn-sm @(Model.SelectedDepartment == dept.Name ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
-                    @dept.Name
-                </a>
-            }
-        </div>
     </div>
 </section>
 

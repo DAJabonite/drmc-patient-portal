@@ -28,7 +28,7 @@ public class LabResultsController : Controller
 
     // GET /Patient/LabResults
     [HttpGet("")]
-    public async Task<IActionResult> Index(LabCategory? category, string? search)
+    public async Task<IActionResult> Index(LabCategory? category, string? search, string? dateRange = null)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
@@ -49,6 +49,19 @@ public class LabResultsController : Controller
             query = query.Where(l => l.TestName.ToLower().Contains(s) || l.AccessionNumber.ToLower().Contains(s));
         }
 
+        if (dateRange == "30d")
+        {
+            query = query.Where(l => l.CollectedAt >= DateTime.Today.AddDays(-30));
+        }
+        else if (dateRange == "6m")
+        {
+            query = query.Where(l => l.CollectedAt >= DateTime.Today.AddMonths(-6));
+        }
+        else if (dateRange == "year")
+        {
+            query = query.Where(l => l.CollectedAt >= new DateTime(DateTime.Today.Year, 1, 1));
+        }
+
         var allCount = await _db.LabResults.CountAsync(l => l.PatientUserId == user.Id);
 
         var results = await query
@@ -59,6 +72,7 @@ public class LabResultsController : Controller
         {
             SelectedCategory = category,
             SearchTerm = search,
+            SelectedDateRange = dateRange,
             LabResults = results,
             TotalCount = allCount,
             TotalAvailable = results.Count(r => r.Status == "Available"),
@@ -95,6 +109,7 @@ public class LabResultsIndexViewModel
 {
     public LabCategory? SelectedCategory { get; set; }
     public string? SearchTerm { get; set; }
+    public string? SelectedDateRange { get; set; }
     public IReadOnlyList<LabResult> LabResults { get; set; } = Array.Empty<LabResult>();
     public int TotalCount { get; set; }
     public int TotalAvailable { get; set; }

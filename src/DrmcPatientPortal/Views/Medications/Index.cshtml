@@ -26,17 +26,24 @@
         <!-- Allergy Alert Banner -->
         @if (Model.Allergies.Count > 0)
         {
-            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-danger text-white mb-4 position-relative overflow-hidden">
-                <div class="d-flex align-items-start gap-3">
-                    <div class="p-2 rounded-circle bg-white text-danger d-inline-flex" style="flex-shrink:0;">
-                        <i class="bi bi-exclamation-octagon-fill fs-3"></i>
+            <aside class="medication-safety-card mb-4" aria-labelledby="medicationSafetyHeading">
+                <div class="medication-safety-summary">
+                    <div class="medication-safety-icon">
+                        <i class="bi bi-exclamation-octagon-fill" aria-hidden="true"></i>
                     </div>
-                    <div>
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="badge bg-white text-danger fw-bold rounded-pill small">@Loc["Rx_SafetyAlert"]</span>
-                            <span class="small text-white text-opacity-85">Documented Drug Allergies</span>
-                        </div>
-                        <h2 class="h6 fw-bold mb-2">@Loc["Rx_Allergies"]:</h2>
+                    <div class="min-w-0">
+                        <p class="eyebrow text-danger mb-1">@Loc["Rx_SafetyAlert"]</p>
+                        <h2 class="h6 fw-bold text-dark mb-1" id="medicationSafetyHeading">
+                            @(Model.Allergies.Count == 1 ? "1 documented drug allergy" : $"{Model.Allergies.Count} documented drug allergies")
+                        </h2>
+                        <p class="small text-muted mb-0 text-wrap-pretty">
+                            @string.Join(", ", Model.Allergies.Select(a => a.Allergen))
+                        </p>
+                    </div>
+                </div>
+                <details class="medication-allergy-details">
+                    <summary>View reaction details</summary>
+                    <div class="medication-allergy-body">
                         <ul class="mb-0 small ps-3">
                             @foreach (var a in Model.Allergies)
                             {
@@ -46,8 +53,8 @@
                             }
                         </ul>
                     </div>
-                </div>
-            </div>
+                </details>
+            </aside>
         }
 
         <!-- Data-backed daily medication schedule -->

@@ -217,7 +217,7 @@
                                 <span asp-validation-for="Input.FirstName" class="field-validation-error"></span>
                             </div>
                             <div class="col-md-4">
-                                <label asp-for="Input.MiddleName" for="txtMiddleName" class="form-label fw-semibold">Middle name</label>
+                                <label asp-for="Input.MiddleName" for="txtMiddleName" class="form-label fw-semibold">Middle name <span class="registration-optional">(Optional)</span></label>
                                 <input asp-for="Input.MiddleName" id="txtMiddleName" class="form-control" autocomplete="additional-name" placeholder="Santos" />
                                 <span asp-validation-for="Input.MiddleName" class="field-validation-error"></span>
                             </div>
@@ -254,7 +254,7 @@
 
                             <!-- Blood Type -->
                             <div class="col-md-6">
-                                <label asp-for="Input.BloodType" for="txtBloodType" class="form-label fw-semibold">Blood type</label>
+                                <label asp-for="Input.BloodType" for="txtBloodType" class="form-label fw-semibold">Blood type <span class="registration-optional">(Optional)</span></label>
                                 <select asp-for="Input.BloodType" id="txtBloodType" class="form-select">
                                     <option value="">Select blood type...</option>
                                     <option value="A+">A+</option>
@@ -271,7 +271,7 @@
 
                             <!-- Address -->
                             <div class="col-12">
-                                <label asp-for="Input.Address" for="txtAddress" class="form-label fw-semibold">Residential address</label>
+                                <label asp-for="Input.Address" for="txtAddress" class="form-label fw-semibold">Residential address <span class="registration-optional">(Optional)</span></label>
                                 <input asp-for="Input.Address" id="txtAddress" class="form-control" placeholder="House/Unit No., Street, Barangay, City/Municipality, Province" />
                                 <span asp-validation-for="Input.Address" class="field-validation-error"></span>
                             </div>

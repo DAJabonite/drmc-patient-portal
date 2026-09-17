@@ -824,6 +824,10 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
     background: var(--drmc-canvas);
 }
 
+.dashboard-actions-section {
+    max-width: 520px;
+}
+
 .dashboard-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -832,16 +836,16 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
 
 .dashboard-action-card {
     min-width: 0;
-    min-height: 96px;
+    min-height: 52px;
     display: flex;
     align-items: center;
-    gap: 0.85rem;
-    padding: 1rem 1.1rem;
+    gap: 0.55rem;
+    padding: 0.55rem 0.7rem;
     color: var(--drmc-text);
     background: #fff;
     border: 1px solid var(--drmc-border);
-    border-radius: var(--drmc-radius-lg);
-    box-shadow: 0 4px 14px rgba(14, 78, 135, 0.05);
+    border-radius: var(--drmc-radius-sm);
+    box-shadow: 0 2px 8px rgba(14, 78, 135, 0.04);
     text-decoration: none;
     transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
@@ -860,9 +864,9 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
 }
 
 .dashboard-action-icon {
-    width: 44px;
-    height: 44px;
-    flex: 0 0 44px;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
     display: grid;
     place-items: center;
     color: var(--drmc-primary);
@@ -882,7 +886,9 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
 }
 
 .dashboard-action-content strong {
+    font-size: 0.82rem;
     line-height: 1.25;
+    text-wrap: balance;
 }
 
 .dashboard-action-content small {
@@ -890,12 +896,129 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
     color: var(--drmc-text-muted);
     font-size: 0.8rem;
     line-height: 1.35;
+    text-wrap: pretty;
 }
 
 .dashboard-action-arrow {
     flex: 0 0 auto;
     color: var(--drmc-primary);
     font-size: 1.1rem;
+}
+
+.encounter-filter-form {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
+    gap: 0.75rem;
+    align-items: end;
+}
+
+.encounter-department-field,
+.encounter-date-field {
+    min-width: 0;
+}
+
+.encounter-filter-toolbar,
+.encounter-date-panel {
+    display: contents;
+}
+
+.encounter-department-field {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.encounter-date-field {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.encounter-custom-date {
+    grid-column: 2 / 4;
+    grid-row: 2;
+}
+
+.encounter-filter-actions {
+    grid-column: 3;
+    grid-row: 1;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.encounter-filter-actions .btn {
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 1rem;
+}
+
+.encounter-date-toggle {
+    min-width: 82px;
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    position: relative;
+}
+
+.filter-active-dot {
+    width: 7px;
+    height: 7px;
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    background: var(--drmc-primary);
+    border-radius: 50%;
+}
+
+.lab-filter-form {
+    width: min(100%, 820px);
+    display: grid;
+    grid-template-columns: minmax(240px, 1fr) minmax(200px, 0.8fr) auto;
+    gap: 0.75rem;
+    align-items: end;
+}
+
+.lab-category-field,
+.lab-date-field {
+    min-width: 0;
+}
+
+.lab-filter-toolbar,
+.lab-date-panel {
+    display: contents;
+}
+
+.lab-category-field {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.lab-date-field {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.lab-filter-actions {
+    grid-column: 3;
+    grid-row: 1;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.lab-filter-actions .btn,
+.lab-date-toggle {
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lab-date-toggle {
+    min-width: 82px;
+    gap: 0.4rem;
+    position: relative;
 }
 
 .summary-card-heading {
@@ -1001,8 +1124,7 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
     border-top: 1px solid var(--drmc-border);
 }
 
-.summary-card-actions a,
-.summary-primary-link {
+.summary-card-actions a {
     min-height: 44px;
     display: inline-flex;
     align-items: center;
@@ -1011,6 +1133,113 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
     font-size: 0.84rem;
     font-weight: 750;
     text-decoration: none;
+}
+
+.dashboard-summary-button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border-radius: var(--drmc-radius-sm);
+    font-size: 0.84rem;
+    font-weight: 750;
+}
+
+.custom-date-range {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0.85rem;
+    background: var(--drmc-surface-soft);
+    border: 1px solid var(--drmc-border);
+    border-radius: var(--drmc-radius-md);
+}
+
+.lab-result-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem;
+}
+
+.lab-result-actions .btn {
+    min-width: 0;
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.65rem 0.75rem;
+    border-radius: var(--drmc-radius-sm);
+    line-height: 1.25;
+    text-wrap: balance;
+}
+
+.medication-safety-card {
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #efc5ca;
+    border-radius: var(--drmc-radius-lg);
+    box-shadow: 0 4px 14px rgba(139, 24, 38, 0.06);
+}
+
+.medication-safety-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 1rem;
+}
+
+.medication-safety-icon {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    display: grid;
+    place-items: center;
+    color: #b42335;
+    background: #fde8eb;
+    border-radius: 50%;
+    font-size: 1rem;
+}
+
+.medication-allergy-details {
+    border-top: 1px solid #f3d8dc;
+}
+
+.medication-allergy-details summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0.7rem 1rem;
+    color: #9f1f31;
+    font-size: 0.84rem;
+    font-weight: 750;
+    cursor: pointer;
+    list-style: none;
+}
+
+.medication-allergy-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.medication-allergy-details summary::after {
+    content: "\F282";
+    margin-left: auto;
+    font-family: "bootstrap-icons";
+    transition: transform 160ms ease;
+}
+
+.medication-allergy-details[open] summary::after {
+    transform: rotate(180deg);
+}
+
+.medication-allergy-body {
+    padding: 0 1rem 1rem;
+    color: var(--drmc-text-muted);
+}
+
+.text-wrap-pretty {
+    text-wrap: pretty;
 }
 
 .record-preview-list {
@@ -1274,16 +1503,35 @@ code,
 .registration-consent .form-check { padding-left: 1.6rem; }
 .registration-consent .form-check-label { cursor: pointer; }
 .registration-consent .form-check-input:disabled ~ .form-check-label { opacity: 1; }
+.registration-optional { margin-left: .18rem; color: var(--drmc-text-muted); font-size: .74rem; font-weight: 400; white-space: nowrap; }
 @media (max-width: 575.98px) {
     .registration-stepper li { font-size: .72rem; }
     .registration-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
     .registration-action-group { display: grid; grid-template-columns: minmax(0, 1fr); }
     .registration-actions .btn { width: 100%; }
+    .registration-consent .modal-dialog { margin: .5rem; }
+    .registration-consent .modal-content { max-height: calc(100dvh - 1rem); border-radius: .75rem; }
     .registration-consent .modal-header,
-    .registration-consent .modal-footer { padding: .75rem; }
-    .registration-consent .modal-title { font-size: 1.15rem; }
+    .registration-consent .modal-footer { padding: .65rem .8rem; }
+    .registration-consent .modal-title { font-size: 1rem; line-height: 1.25; }
+    .registration-consent #consentHint,
+    .registration-consent #consentReadStatus { font-size: .75rem; line-height: 1.35; }
+    .registration-consent .modal-body { padding: .75rem .9rem; font-size: .86rem; line-height: 1.5; }
+    .registration-consent .modal-body > .h5,
+    .registration-consent .modal-body .privacy-content .h5 { font-size: 1rem; }
+    .registration-consent .modal-body .h6 { font-size: .9rem; }
+    .registration-consent .modal-body .lead { margin-bottom: 1rem !important; font-size: .94rem; line-height: 1.5; }
+    .registration-consent .privacy-content .mt-4 { margin-top: 1rem !important; }
+    .registration-consent .privacy-content .mb-3 { margin-bottom: .55rem !important; }
+    .registration-consent .privacy-content .mb-4 { margin-bottom: 1rem !important; }
+    .registration-consent .privacy-content ul { padding-left: 1.2rem; }
+    .registration-consent .privacy-content li + li { margin-top: .3rem; }
+    .registration-consent .privacy-content .p-4 { padding: .8rem !important; }
+    .registration-consent #portal-terms { margin-top: 1rem !important; padding-top: .75rem !important; }
+    .registration-consent .form-check { margin-bottom: .65rem !important; }
+    .registration-consent .form-check-label { font-size: .78rem; line-height: 1.4; }
     .registration-consent .registration-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
-    .registration-consent .registration-actions .btn { font-size: .85rem; padding: .5rem; }
+    .registration-consent .registration-actions .btn { min-height: 44px; font-size: .8rem; padding: .4rem .5rem; }
 }
 @media (max-height: 500px) {
     .registration-consent .modal-header { padding: .5rem .75rem; }
@@ -2127,10 +2375,6 @@ code,
         padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
     }
 
-    .dashboard-shortcuts {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
     .container,
     .container-fluid {
         --bs-gutter-x: 2rem;
@@ -2342,13 +2586,122 @@ code,
     }
 
     .dashboard-actions {
-        grid-template-columns: 1fr;
-        gap: 0.6rem;
+        gap: 0.5rem;
     }
 
     .dashboard-action-card {
-        min-height: 78px;
-        padding: 0.85rem 0.9rem;
+        min-height: 52px;
+        padding: 0.5rem 0.6rem;
+    }
+
+    .encounter-filter-section {
+        padding-block: 0.75rem !important;
+    }
+
+    .encounter-filter-form {
+        display: block;
+    }
+
+    .encounter-filter-toolbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.5rem;
+        align-items: end;
+    }
+
+    .encounter-filter-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .encounter-date-panel {
+        display: none;
+        grid-template-columns: 1fr;
+        gap: 0.65rem;
+        margin-top: 0.65rem;
+        padding: 0.75rem;
+        background: var(--drmc-surface-soft);
+        border: 1px solid var(--drmc-border);
+        border-radius: var(--drmc-radius-md);
+    }
+
+    .encounter-date-panel.is-open {
+        display: grid;
+    }
+
+    .encounter-date-field,
+    .encounter-custom-date,
+    .encounter-filter-actions {
+        grid-column: 1;
+        grid-row: auto;
+    }
+
+    .encounter-filter-actions .btn {
+        flex: 1;
+    }
+
+    .lab-filter-form {
+        display: block;
+    }
+
+    .lab-filter-toolbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.5rem;
+        align-items: end;
+    }
+
+    .lab-filter-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .lab-date-panel {
+        display: none;
+        grid-template-columns: 1fr;
+        gap: 0.65rem;
+        margin-top: 0.65rem;
+        padding: 0.75rem;
+        background: var(--drmc-surface-soft);
+        border: 1px solid var(--drmc-border);
+        border-radius: var(--drmc-radius-md);
+    }
+
+    .lab-date-panel.is-open {
+        display: grid;
+    }
+
+    .lab-date-field,
+    .lab-filter-actions {
+        grid-column: 1;
+        grid-row: auto;
+    }
+
+    .lab-filter-actions .btn {
+        flex: 1;
+    }
+
+    .custom-date-range,
+    .lab-result-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .lab-result-actions .btn {
+        width: 100%;
     }
 
     .appointment-summary-content {

@@ -28,7 +28,11 @@ public class EncountersController : Controller
 
     // GET /Patient/Encounters
     [HttpGet("")]
-    public async Task<IActionResult> Index(string? department, string? dateRange)
+    public async Task<IActionResult> Index(
+        string? department,
+        string? dateRange,
+        DateTime? startDate = null,
+        DateTime? endDate = null)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
@@ -54,6 +58,27 @@ public class EncountersController : Controller
         {
             query = query.Where(e => e.EncounterDate >= new DateTime(DateTime.Today.Year, 1, 1));
         }
+        else if (dateRange == "custom")
+        {
+            if (!startDate.HasValue || !endDate.HasValue)
+            {
+                ViewData["DateRangeError"] = "Choose both a start date and an end date.";
+            }
+            else if (startDate.Value.Date > endDate.Value.Date)
+            {
+                ViewData["DateRangeError"] = "The start date must be on or before the end date.";
+            }
+            else if (startDate.Value.Date > DateTime.Today || endDate.Value.Date > DateTime.Today)
+            {
+                ViewData["DateRangeError"] = "Visit dates cannot be in the future.";
+            }
+            else
+            {
+                var inclusiveStart = startDate.Value.Date;
+                var exclusiveEnd = endDate.Value.Date.AddDays(1);
+                query = query.Where(e => e.EncounterDate >= inclusiveStart && e.EncounterDate < exclusiveEnd);
+            }
+        }
 
         var encounters = await query
             .OrderByDescending(e => e.EncounterDate)
@@ -63,6 +88,8 @@ public class EncountersController : Controller
         {
             SelectedDepartment = department,
             SelectedDateRange = dateRange,
+            SelectedStartDate = startDate,
+            SelectedEndDate = endDate,
             Encounters = encounters,
             Departments = ClinicalDepartments.All
         };
@@ -97,6 +124,8 @@ public class EncountersIndexViewModel
 {
     public string? SelectedDepartment { get; set; }
     public string? SelectedDateRange { get; set; }
+    public DateTime? SelectedStartDate { get; set; }
+    public DateTime? SelectedEndDate { get; set; }
     public IReadOnlyList<ClinicalEncounter> Encounters { get; set; } = Array.Empty<ClinicalEncounter>();
     public IReadOnlyList<ClinicalDepartment> Departments { get; set; } = Array.Empty<ClinicalDepartment>();
 }
