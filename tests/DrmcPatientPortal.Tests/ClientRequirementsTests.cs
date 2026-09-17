@@ -65,6 +65,17 @@ public class ClientRequirementsTests
     }
 
     [Fact]
+    public void DrmcMalasakitServices_ReturnsInformationalChecklistView()
+    {
+        using var db = Database();
+        var controller = Context(new MalasakitController(db, Users(), Mock.Of<IAuditLogService>()));
+
+        var result = Assert.IsType<ViewResult>(controller.DRMCMalasakitServices());
+
+        Assert.Null(result.Model);
+    }
+
+    [Fact]
     public async Task History_IsOwnerOnly_AndGroupsOutpatientEmergencyAndAdmissions()
     {
         using var db = Database();
