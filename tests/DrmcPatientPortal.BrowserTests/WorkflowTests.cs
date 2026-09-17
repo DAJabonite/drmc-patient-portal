@@ -152,6 +152,34 @@ public sealed class WorkflowTests(PortalFixture app)
     }
 
     [Fact]
+    public async Task Malasakit_hub_links_every_merged_service_guide()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+        await using var context = await browser.NewContextAsync(app.Context("small"));
+        var page = await context.NewPageAsync();
+        await page.GotoAsync("/Malasakit");
+
+        var guides = new Dictionary<string, string>
+        {
+            ["/Malasakit/DSWDServices"] = "DSWD Services",
+            ["/Malasakit/DRMCMalasakitServices"] = "DRMC Malasakit Services",
+            ["/Malasakit/MaifipRequirements"] = "DOH - MAIFIP Requirements",
+            ["/Malasakit/Philhealth"] = "PhilHealth Requirements"
+        };
+
+        foreach (var (route, heading) in guides)
+        {
+            var guideLink = page.Locator($"a[href='{route}']");
+            await Expect(guideLink).ToBeVisibleAsync();
+            await guideLink.ClickAsync();
+            await Expect(page.Locator("main h1")).ToContainTextAsync(heading, new() { IgnoreCase = true });
+            await page.GoBackAsync();
+        }
+
+        Assert.Empty(await ResponsiveTests.LayoutProblems(page));
+    }
+
+    [Fact]
     public async Task Keyboard_reflow_and_reduced_motion()
     {
         await using var browser = await app.Playwright.Chromium.LaunchAsync();
