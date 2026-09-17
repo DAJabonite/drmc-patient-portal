@@ -1,0 +1,119 @@
+@{
+    ViewData["Title"] = "DOH - MAIFIP Requirements";
+}
+
+<section class="page-header">
+    <div class="container">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <a asp-action="Index" class="text-white text-opacity-75 text-decoration-none small">
+                <i class="bi bi-arrow-left"></i> Malasakit Center
+            </a>
+            <span class="text-white text-opacity-50">/</span>
+            <span class="small text-white text-opacity-75">Requirements Guide</span>
+        </div>
+        <h1 class="display-6 fw-bold mb-1">DOH - MAIFIP REQUIREMENTS</h1>
+        <p class="text-white text-opacity-90 mb-0">Please read the requirements carefully before returning to the Malasakit Center.</p>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container" style="max-width: 960px;">
+        <div class="alert alert-warning border-0 rounded-4 shadow-sm d-flex gap-3 align-items-start mb-4" role="alert">
+            <i class="bi bi-exclamation-circle-fill fs-4 text-warning-emphasis"></i>
+            <div>
+                <h2 class="h6 fw-bold mb-1">READ THE INSTRUCTIONS CAREFULLY TO AVOID MAKING ANOTHER TRIP</h2>
+                <p class="small mb-0">Please prepare all applicable documents and follow the instructions below before visiting the Malasakit Center. Thank you.</p>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">1</span>
+                <h2 class="h4 fw-bold text-primary-drmc mb-0">Required Documents</h2>
+            </div>
+
+            <div class="d-flex flex-column gap-3">
+                <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
+                    <i class="bi bi-prescription2 fs-5 text-primary-drmc"></i>
+                    <div>
+                        <h3 class="h6 fw-bold text-dark mb-1">DRMC prescription or request for an unavailable item</h3>
+                        <p class="small text-muted mb-0">Have the prescription or request stamped <strong>NOT AVAILABLE</strong> at the DRMC Pharmacy.</p>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
+                    <i class="bi bi-file-earmark-medical fs-5 text-primary-drmc"></i>
+                    <div>
+                        <h3 class="h6 fw-bold text-dark mb-1">Medical Certificate or Medical Abstract</h3>
+                        <p class="small text-muted mb-2">Submit the original document or a Certified True Copy.</p>
+                        <div class="small text-dark border-start border-3 border-warning ps-3">
+                            <strong>If you do not have one yet, request it from:</strong><br />
+                            Medical Certificate — OPD Window 1<br />
+                            Medical Abstract — Nurse Station
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
+                    <i class="bi bi-person-vcard fs-5 text-primary-drmc"></i>
+                    <div>
+                        <h3 class="h6 fw-bold text-dark mb-1">Valid IDs of the patient and watcher</h3>
+                        <p class="small text-muted mb-0">Bring one photocopy of the patient's valid ID and one photocopy of the watcher's valid ID.</p>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
+                    <i class="bi bi-receipt fs-5 text-primary-drmc"></i>
+                    <div>
+                        <h3 class="h6 fw-bold text-dark mb-1">Printed price quotation from a private hospital</h3>
+                        <p class="small text-muted mb-0">Request a printed price quotation from the private hospital's pharmacy.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">2</span>
+                <h2 class="h4 fw-bold text-primary-drmc mb-0">How to Request a Price Quotation</h2>
+            </div>
+            <div class="p-3 rounded-3 bg-primary-subtle border border-primary-subtle">
+                <p class="small text-dark mb-2">Go to the <strong>private hospital's pharmacy</strong> and bring the prescription stamped <strong>NOT AVAILABLE</strong> so the medicines can be priced.</p>
+                <p class="small text-dark mb-0">Tell the pharmacy staff: <strong>“I would like to request a printed price quotation.”</strong></p>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">3</span>
+                <h2 class="h4 fw-bold text-primary-drmc mb-0">Private Hospitals and Where to Go Next</h2>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">Private Hospital</th>
+                            <th scope="col">Next Step</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Medical Mission Group Hospital</td><td>Return to the Malasakit Center for the UIS</td></tr>
+                        <tr><td>Tagum Medical City</td><td>Return to the Malasakit Center for the UIS</td></tr>
+                        <tr><td>Tagum Global Medical Center</td><td>Proceed directly to the social worker at Global for the UIS</td></tr>
+                        <tr><td>Tagum Doctor's Hospital</td><td>Proceed directly to the social worker at Tagum Doc for the UIS</td></tr>
+                        <tr><td>Good Shepherd of Panabo</td><td>Proceed directly to the social worker at Good Shepherd for the UIS</td></tr>
+                        <tr><td>Rivera Medical Center, Inc.</td><td>Proceed directly to the social worker at Rivera for the UIS</td></tr>
+                        <tr><td>J.A. Alegre Hospital</td><td>Proceed directly to the social worker at Rivera for the UIS</td></tr>
+                        <tr><td>Aquino Medical Specialists Hospital</td><td>No UIS destination was included in the provided instructions</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
+                <i class="bi bi-arrow-left me-1"></i> Back to Malasakit Center
+            </a>
+        </div>
+    </div>
+</section>
