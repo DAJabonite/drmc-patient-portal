@@ -722,6 +722,23 @@ textarea:focus-visible,
     font-weight: 700;
 }
 
+.requirement-list-spacious {
+    gap: 1rem;
+}
+
+.requirement-list-spacious li {
+    padding: 0.85rem 1rem 0.85rem 2.75rem;
+    color: var(--drmc-text);
+    background: var(--drmc-surface-soft);
+    border: 1px solid var(--drmc-border);
+    border-radius: 0.75rem;
+}
+
+.requirement-list-spacious li::before {
+    left: 1rem;
+    top: 0.85rem;
+}
+
 /* Reusable page and data surfaces */
 .page-header,
 main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-hero) {

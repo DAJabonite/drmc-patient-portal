@@ -1,0 +1,67 @@
+@{
+    ViewData["Title"] = "DRMC Malasakit Services";
+}
+
+<section class="page-header">
+    <div class="container">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <a asp-action="Index" class="text-white text-opacity-75 text-decoration-none small">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i> Malasakit Center
+            </a>
+            <span class="text-white text-opacity-50" aria-hidden="true">/</span>
+            <span class="small text-white text-opacity-75">DRMC Malasakit Services</span>
+        </div>
+        <div class="row align-items-center g-3">
+            <div class="col-lg-8">
+                <span class="badge bg-primary-subtle text-primary-drmc rounded-pill mb-2">DRMC Malasakit Center</span>
+                <h1 class="display-6 fw-bold mb-2">DRMC Malasakit Services</h1>
+                <p class="text-white text-opacity-90 mb-0">Prepare these basic documents when requesting assistance for prescribed medicines, laboratory tests, imaging, and other medical procedures.</p>
+            </div>
+            <div class="col-lg-4">
+                <div class="p-3 rounded-4 bg-white bg-opacity-10 border border-white border-opacity-20 d-flex align-items-center gap-3">
+                    <i class="bi bi-folder2-open fs-3 text-primary-drmc" aria-hidden="true"></i>
+                    <div>
+                        <strong class="small d-block text-dark">Before your visit</strong>
+                        <span class="small text-white text-opacity-75">Prepare clear and readable photocopies</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section py-5 bg-light">
+    <div class="container" style="max-width: 860px;">
+        <div class="alert alert-primary border-0 rounded-4 d-flex align-items-start gap-3 mb-4" role="note">
+            <i class="bi bi-info-circle-fill fs-5 text-primary-drmc" aria-hidden="true"></i>
+            <div class="small">
+                <strong class="d-block mb-1">General preparation checklist</strong>
+                Additional documents may be requested after assessment. Bring the original documents for verification whenever available.
+            </div>
+        </div>
+
+        <article class="dswd-requirement-card card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <span class="requirement-icon bg-primary-subtle text-primary-drmc">
+                    <i class="bi bi-file-earmark-check" aria-hidden="true"></i>
+                </span>
+                <div>
+                    <span class="small text-muted text-uppercase fw-semibold">DRMC Malasakit checklist</span>
+                    <h2 class="h4 fw-bold text-primary-drmc mb-0">Documents to Prepare</h2>
+                </div>
+            </div>
+
+            <ul class="requirement-list requirement-list-spacious mb-0">
+                <li>Photocopy of the request or prescription, such as laboratory, X-ray, prescription, ultrasound, or other medical requests</li>
+                <li>Valid ID of the patient; if the patient is a child, provide the child's birth certificate</li>
+                <li>Valid ID of the person who will process the request/client</li>
+            </ul>
+        </article>
+
+        <div class="mt-4 pt-4 border-top">
+            <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Back to Malasakit Hub
+            </a>
+        </div>
+    </div>
+</section>

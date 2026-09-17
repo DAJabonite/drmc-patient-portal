@@ -35,6 +35,13 @@ public class MalasakitController : Controller
         return View();
     }
 
+    // GET /Malasakit/DRMCMalasakitServices
+    [HttpGet]
+    public IActionResult DRMCMalasakitServices()
+    {
+        return View();
+    }
+
     [Authorize, HttpGet, ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Apply()
     {
