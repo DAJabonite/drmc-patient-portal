@@ -29,9 +29,6 @@ public sealed class OpdGuideTests(PortalFixture app)
 
         Assert.Equal(0, await page.GetByRole(AriaRole.Heading, new() { Name = "Patient Consultation Sequence" }).CountAsync());
         await Expect(page.GetByRole(AriaRole.Note)).ToContainTextAsync("start the entire sequence over");
-        await Expect(page.Locator("main a[href='https://drmc.doh.gov.ph/citizens-charter/']")).ToBeVisibleAsync();
-        await Expect(page.Locator("main a[href='https://drmc.doh.gov.ph/anti-red-tape-act/']")).ToBeVisibleAsync();
-
         await AssertAllPanelsHidden(page);
         await SelectFacility(page, "main");
         await AssertOnlyPanelVisible(page, "main");

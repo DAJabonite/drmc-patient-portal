@@ -10,11 +10,12 @@ For scope and requirement sign-off, see [`CLIENT_REQUIREMENTS_2026-09-13.md`](CL
 
 | Run | Backend tests | Browser tests | Build |
 |---|---|---|---|
-| September 13 client update (**latest**) | 34 passed | 46 passed | 0 warnings, 0 errors |
+| September 18 patient UI feedback (**latest**) | 38 passed | 68 passed | 0 warnings, 0 errors |
+| September 13 client update | 34 passed | 46 passed | 0 warnings, 0 errors |
 | Signup follow-up | 25 passed | 42 passed | 0 warnings, 0 errors |
 | Initial desktop/mobile audit | 25 passed | 31 passed | 0 warnings, 0 errors |
 
-The latest run adds medical history, other government IDs, Malasakit applications, database-upgrade verification, and the expanded responsive/accessibility matrix. NuGet reported no known vulnerable packages.
+The latest run validates the public-first home page, streamlined registration and Malasakit guidance, patient record filters, and the expanded responsive/accessibility matrix. NuGet reported no known vulnerable packages.
 
 > These are recorded local runs, not CI results. There is no GitHub Actions workflow in this repository — re-run the commands below to confirm current numbers.
 
@@ -55,9 +56,9 @@ Mobile contexts are created with Playwright device descriptors (screen, viewport
 
 ### Screen inventory
 
-- **Public:** home; directory list/physician/department; OPD guide; advisories list/detail; privacy; service-unavailable and error pages; Malasakit list/program/navigator; login; registration; forgot-password; access-denied.
+- **Public:** home; directory list/physician/department; OPD guide; advisories list/detail; privacy; service-unavailable and error pages; Malasakit hub/program/requirement guides; login; registration; forgot-password; access-denied.
 - **Signed in:** dashboard; encounter list/detail; laboratory list/detail; medication list/detail; audit; profile; 2FA settings/setup; triage form/summary/emergency warning.
-- **Interactions:** guest return URL, empty accounts, search, language persistence, profile save, routine and emergency triage, assistance questionnaire/results, registration capture-step and manual-step navigation and validation, authenticator enrollment and 2FA sign-in, dropdown/offcanvas behavior, keyboard skip link, and effective 200% desktop reflow with reduced motion.
+- **Interactions:** guest return URL, empty accounts, search, language persistence, profile save, routine and emergency triage, Malasakit service-guide navigation and retired-route checks, registration capture-step and manual-step navigation and validation, authenticator enrollment and 2FA sign-in, dropdown/offcanvas behavior, keyboard skip link, and effective 200% desktop reflow with reduced motion.
 
 > Some screens exercised in earlier runs (appointment booking, confirmation, check-in, cancellation, refill submission, OPD queue) belong to features that have since been retired. See `README.md` for the current route map.
 

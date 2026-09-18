@@ -280,10 +280,13 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
         foreach (var filter in filters)
         {
             await desktopPage.GotoAsync(filter.Route);
-            if (filter.Route == "/Patient/Encounters")
+            if (filter.Route != "/Advisories")
             {
                 await Expect(desktopPage.Locator(filter.SelectId)).ToBeVisibleAsync();
-                await Expect(desktopPage.Locator("#encounterDateFilter")).ToBeVisibleAsync();
+                if (filter.Route == "/Patient/Encounters")
+                    await Expect(desktopPage.Locator("#encounterDateFilter")).ToBeVisibleAsync();
+                if (filter.Route == "/Patient/LabResults")
+                    await Expect(desktopPage.Locator("#labDateFilter")).ToBeVisibleAsync();
             }
             else
             {

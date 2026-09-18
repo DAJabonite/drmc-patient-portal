@@ -1,11 +1,13 @@
 # Current Implementation Status
 
-Last reconciled: 2026-09-16. This is the source of truth for current code; historical plans and logs are not current product scope.
+Last reconciled: 2026-09-18. This is the source of truth for current code; historical plans and logs are not current product scope.
 
 ## Implemented
 
 - Official DRMC ARTA and Citizen's Charter landing-page references, verified live on September 13.
 - Any government-issued ID registration, including a named Other option, Senior Citizen, and PWD IDs.
+- Public-first landing page that exposes services, departments, guidance, and hospital information before the bottom-of-page sign-in/register card.
+- Concise registration and Malasakit requirement screens with clearer consent controls and emphasized document names.
 - Audited medical history grouped into OPD, ER, and Admitted, outside the five primary destinations.
 - Persisted Malasakit applications and preparation checklists with separate reported and confirmed payment/eligibility/coverage states.
 
@@ -40,7 +42,7 @@ See [September 13 client requirements](docs/CLIENT_REQUIREMENTS_2026-09-13.md) f
 
 ## Verification
 
-Current client update: **34 backend and 46 browser tests pass**, including database upgrade and automated accessibility. The table below records the previous baseline; details are in [the requirements report](docs/CLIENT_REQUIREMENTS_2026-09-13.md).
+Current client update: **38 backend and 68 browser tests pass**, including database upgrade and automated accessibility. The table below records the previous baseline; details are in [the requirements report](docs/CLIENT_REQUIREMENTS_2026-09-13.md).
 
 | Check | Result |
 |---|---|
