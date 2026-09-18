@@ -48,11 +48,11 @@ The portal gives the public hospital information (departments, OPD guidance, adv
 
 | Capability | Behavior |
 |---|---|
-| Landing page | Task-first entry point with clinical department overview (`ClinicalDepartments`, static in-code catalog) |
+| Landing page | Public-first entry point with hospital services and clinical departments available before the bottom-of-page sign-in/register card (`ClinicalDepartments`, static in-code catalog) |
 | OPD guide | Step-by-step, on-site outpatient flow per facility (`OpdGuideFlows`, static in-code content) |
 | Doctor / department directory | Filter and search active doctors from the database by department, name, sub-specialty, clinic room, and teleconsult availability |
 | Public advisories | Category + keyword search, pinned urgent alerts, per-advisory view counter |
-| Malasakit / financial-assistance guidance | Program hub, per-program pages (MAIP, PhilHealth, PCSO, DSWD AICS, DRMC Malasakit, DOH-MAIFIP), and a document-preparation "Navigator" that produces a suggested requirements checklist |
+| Malasakit / financial-assistance guidance | Program hub, per-program pages (MAIP, PhilHealth, PCSO, DSWD AICS, DRMC Malasakit, DOH-MAIFIP), and direct document-requirement guides for the services handled at the Malasakit Center |
 | Official DRMC references | Direct links to the publisher's live ARTA and Citizen's Charter landing pages (`OfficialDrmcSources`) — no scraping, no republished PDFs |
 | Language switcher | English, Filipino, Cebuano via a persisted culture cookie |
 
@@ -183,7 +183,7 @@ drmc-patient-portal/
 │   │   ├── HomeController.cs           # /, /OpdGuide, Privacy, ServiceUnavailable, SetLanguage, Error
 │   │   ├── DirectoryController.cs      # Doctor & department directory
 │   │   ├── AdvisoriesController.cs     # Public advisories list/detail (+ view counter)
-│   │   ├── MalasakitController.cs      # Program hub, guidance pages, Navigator, Apply/Status/Requirements
+│   │   ├── MalasakitController.cs      # Program hub, requirement guides, Apply/Status/Requirements
 │   │   ├── PatientController.cs        # Patient dashboard + access history
 │   │   ├── MedicalHistoryController.cs # OPD/ER/ADMITTED grouping over owned encounters
 │   │   ├── EncountersController.cs     # Encounter list + audited detail with linked labs
@@ -312,9 +312,7 @@ Routing is conventional (`{controller=Home}/{action=Index}/{id?}`) plus attribut
 | GET | `/Malasakit` | Assistance program hub |
 | GET | `/Malasakit/Program/{code}` | Program detail (`MAIP`, `PHILHEALTH`, `PCSO`, `DSWD_AICS`, `MALASAKIT`) |
 | GET | `/Malasakit/DRMCMalasakitServices`, `/Malasakit/DSWDServices`, `/Malasakit/MaifipRequirements`, `/Malasakit/Philhealth` | Requirement checklists per program |
-| GET | `/Malasakit/Navigator` | Document-preparation questionnaire |
-| POST | `/Malasakit/Assess` | Returns matched programs + suggested document checklist (guidance only, never an eligibility decision) |
-| — | `/Identity/Account/*` | Register, login, logout, 2FA, account management (Razor Pages) |
+| — | `/Identity/Account/*` | Four-step government-ID registration, login, logout, 2FA, and account management (Razor Pages); signup requires scroll-gated privacy/terms consent |
 
 ### Authenticated patient (`[Authorize]`)
 
@@ -462,7 +460,7 @@ pwsh scripts/test-ui.ps1               # add -SkipBrowserInstall after the first
 ```
 
 - The browser suite starts its **own** server with a temporary SQLite database, key ring, and document directories (`PortalFixture`). It never touches your normal `app.db` or your running development server.
-- Last recorded client validation: **34 backend tests and 46 browser tests passing** on .NET 10 with no build warnings, across Chromium, Firefox, and WebKit, including a fresh migration chain, an existing-database upgrade, the responsive matrix down to 320px, and automated WCAG AA checks. NuGet reported no known vulnerable packages. Details: [`docs/CLIENT_REQUIREMENTS_2026-09-13.md`](docs/CLIENT_REQUIREMENTS_2026-09-13.md) and [`docs/VALIDATION.md`](docs/VALIDATION.md).
+- Last recorded client validation (September 18): **38 backend tests and 68 browser tests passing** on .NET 10 with no build warnings, across Chromium, Firefox, and WebKit, including a fresh migration chain, an existing-database upgrade, the responsive matrix down to 320px, and automated WCAG AA checks. NuGet reported no known vulnerable packages. Details: [`docs/CLIENT_REQUIREMENTS_2026-09-13.md`](docs/CLIENT_REQUIREMENTS_2026-09-13.md) and [`docs/VALIDATION.md`](docs/VALIDATION.md).
 - The OCR image-generation fixture is **Windows-only** because it uses `System.Drawing`; production code itself is platform-neutral.
 - Because these figures come from a recorded validation run rather than CI, re-run the commands above to confirm current numbers. There is no GitHub Actions workflow in this repository — verification is local and script-driven.
 

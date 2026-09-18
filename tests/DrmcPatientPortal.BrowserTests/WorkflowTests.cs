@@ -117,14 +117,14 @@ public sealed class WorkflowTests(PortalFixture app)
             Assert.Empty(await ResponsiveTests.LayoutProblems(page));
         }
         await page.GotoAsync("/Patient/LabResults");
-        await page.Locator("input[name=search]").FillAsync("no-matching-test");
-        await page.Locator(".record-search button").ClickAsync();
+        await page.Locator("#labCategoryFilter").SelectOptionAsync("Hematology");
+        await page.WaitForURLAsync(url => url.Contains("category=Hematology"));
         await Expect(page.Locator("main")).ToContainTextAsync("No laboratory results found");
         await page.Locator(".mobile-menu-trigger").TapAsync();
         await page.Locator("#mobileUtilityMenu details summary").ClickAsync();
         await page.Locator("#mobileUtilityMenu button").Filter(new() { HasText = "Filipino" }).ClickAsync();
         await Expect(page.Locator("html")).ToHaveAttributeAsync("lang", "fil");
-        Assert.Contains("search=no-matching-test", page.Url);
+        Assert.Contains("category=Hematology", page.Url);
         await page.GotoAsync("/Identity/Account/Manage");
         await page.Locator("input[name='Input.FullName']").FillAsync("Juan Browser Test");
         await page.Locator("#update-profile-button").ClickAsync();

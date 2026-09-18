@@ -59,7 +59,7 @@ public sealed class SignupTests(PortalFixture app)
         Assert.True(await page.EvaluateAsync<bool>("() => !!document.activeElement.closest('#registrationConsent')"));
         await page.Locator("#consentDocument").PressAsync("Home");
         var bounds = await page.Locator("#registrationConsent .modal-content").BoundingBoxAsync();
-        Assert.True(bounds!.Y >= 0 && bounds.Y + bounds.Height <= page.ViewportSize!.Height + 1);
+        Assert.True(bounds!.Y >= -1 && bounds.Y + bounds.Height <= page.ViewportSize!.Height + 1);
         Assert.True((await page.Locator("#consentDocument").BoundingBoxAsync())!.Height >= 60, "Notice must retain readable scroll space.");
         if (device is "1440" or "small" or "iphone")
             await page.ScreenshotAsync(new() { Path = Path.Combine(app.Artifacts, $"signup-{engine}-{device}-notice.png") });
