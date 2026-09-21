@@ -40,9 +40,6 @@ public class PatientController : Controller
         var activePrescriptions = await _db.Prescriptions
             .CountAsync(p => p.PatientUserId == user.Id && p.Status == PrescriptionStatus.Active);
 
-        var subsidyApp = await _db.SubsidyApplications
-            .FirstOrDefaultAsync(s => s.PatientUserId == user.Id);
-
         var model = new PatientDashboardViewModel
         {
             FullName = user.FullName,
@@ -52,7 +49,6 @@ public class PatientController : Controller
             Encounters = encounters,
             LabResults = latestLab,
             ActivePrescriptionsCount = activePrescriptions,
-            SubsidyApplication = subsidyApp,
             Departments = ClinicalDepartments.All,
         };
 
@@ -95,7 +91,6 @@ public class PatientDashboardViewModel
     public IReadOnlyList<ClinicalEncounter> Encounters { get; set; } = Array.Empty<ClinicalEncounter>();
     public IReadOnlyList<LabResult> LabResults { get; set; } = Array.Empty<LabResult>();
     public int ActivePrescriptionsCount { get; set; }
-    public SubsidyApplication? SubsidyApplication { get; set; }
     public IReadOnlyList<ClinicalDepartment> Departments { get; set; } = Array.Empty<ClinicalDepartment>();
 }
 

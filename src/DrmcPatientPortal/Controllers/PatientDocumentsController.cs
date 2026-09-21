@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DrmcPatientPortal.Controllers;
 
-// Security Review Boundary Pointer: docs/SECURITY_REVIEW_TODO.md Item 5
 // ID Document photos are stored strictly outside wwwroot and served exclusively through this authorized endpoint.
 [Authorize]
 public class PatientDocumentsController : Controller

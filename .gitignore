@@ -19,3 +19,4 @@ src/DrmcPatientPortal/App_Data/DataProtectionKeys/
 artifacts/
 scratch/
 _verify-comments-*/
+__verify-comments-*/

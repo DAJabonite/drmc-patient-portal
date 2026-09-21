@@ -35,16 +35,10 @@
   <data name="Nav_Encounters"><value>Visits</value></data>
   <data name="Nav_Results"><value>Labs</value></data>
   <data name="Nav_Medication"><value>Medication</value></data>
-  <data name="Nav_Malasakit"><value>Malasakit</value></data>
   <data name="Nav_FinancialAssistance"><value>Malasakit</value></data>
-  <data name="Nav_MoreServices"><value>More Services</value></data>
   <data name="Nav_OpdGuide"><value>OPD Guide</value></data>
-  <data name="Nav_Appointments"><value>Book Appointment</value></data>
   <data name="Nav_Directory"><value>Doctors &amp; Clinics</value></data>
   <data name="Nav_Advisories"><value>Advisories</value></data>
-  <data name="Nav_Dashboard"><value>Patient Dashboard</value></data>
-  <data name="Nav_LabResults"><value>Laboratory Results</value></data>
-  <data name="Nav_Medications"><value>Active Prescriptions</value></data>
   <data name="Nav_Audit"><value>Access Audit History</value></data>
   <data name="Nav_Settings"><value>Account Settings</value></data>
   <data name="Nav_MyIds"><value>My IDs</value></data>
@@ -58,38 +52,14 @@
   <data name="Mobile_Medication"><value>Medication</value></data>
   <data name="Mobile_Malasakit"><value>Malasakit</value></data>
   <data name="Mobile_Menu"><value>Menu</value></data>
-  <data name="Mobile_QuickTasks"><value>Quick tasks</value></data>
   <data name="Mobile_HospitalServices"><value>Hospital services</value></data>
 
   <!-- Common Actions & Buttons -->
-  <data name="Action_Search"><value>Search</value></data>
-  <data name="Action_Filter"><value>Filter</value></data>
-  <data name="Action_ViewDetails"><value>View Details</value></data>
-  <data name="Action_ReturnDashboard"><value>Return to Dashboard</value></data>
-  <data name="Action_Cancel"><value>Cancel</value></data>
-  <data name="Action_Submit"><value>Submit</value></data>
-  <data name="Action_Back"><value>Back</value></data>
 
   <!-- Dashboard & Headers -->
   <data name="Header_Tagline"><value>Caring for Life, Changing Lives.</value></data>
-  <data name="Header_HospitalName"><value>Davao Regional Medical Center</value></data>
-  <data name="Header_SubTitle"><value>Republic of the Philippines · Department of Health</value></data>
-  <data name="Dashboard_Welcome"><value>Welcome</value></data>
-  <data name="Dashboard_UpcomingAppt"><value>Upcoming Appointment</value></data>
-  <data name="Dashboard_LabResults"><value>Diagnostic &amp; Lab Reports</value></data>
-  <data name="Dashboard_Prescriptions"><value>Prescriptions &amp; Pharmacy</value></data>
 
   <!-- Lay Medical Terminology -->
-  <data name="Med_BloodPressure"><value>Blood Pressure</value></data>
-  <data name="Med_HeartRate"><value>Heart Rate / Pulse</value></data>
-  <data name="Med_Temperature"><value>Body Temperature</value></data>
-  <data name="Med_BloodSugar"><value>Blood Sugar Level</value></data>
-  <data name="Med_FastingBloodSugar"><value>Fasting Blood Sugar Test</value></data>
-  <data name="Med_CompleteBloodCount"><value>Complete Blood Count (CBC)</value></data>
-  <data name="Med_LipidProfile"><value>Cholesterol &amp; Lipid Panel</value></data>
-  <data name="Med_Allergy"><value>Known Clinical Allergies</value></data>
-  <data name="Med_PharmacyPickup"><value>OPD Pharmacy Pick-Up Window 2</value></data>
-  <data name="Med_EmergencyWarning"><value>For medical emergencies, proceed immediately to the DRMC Emergency Department or call 1555.</value></data>
   <data name="Error_ServiceUnavailableTitle"><value>Security service temporarily unavailable</value></data>
   <data name="Error_ServiceUnavailableBody"><value>We could not complete the required security audit. No protected information was released. Please try again.</value></data>
   <data name="Enc_Title"><value>Visits &amp; Care Notes</value></data>
@@ -114,21 +84,10 @@
   <data name="Enc_CarePlan"><value>Physician Care Plan &amp; Patient Home Instructions</value></data>
   <data name="Enc_Labs"><value>Lab Results from this Visit</value></data>
   <data name="Enc_NoLabs"><value>No lab results were ordered during this visit.</value></data>
-  <data name="Enc_ReturnSummary"><value>Return to Summary</value></data>
-  <data name="Enc_OfficialSummary"><value>Official Outpatient Consultation Summary &amp; Clinical Care Plan</value></data>
-  <data name="Enc_PatientName"><value>Patient Name</value></data>
-  <data name="Enc_Department"><value>Clinical Department</value></data>
-  <data name="Enc_PrimaryDiagnosis"><value>Primary Clinical Diagnosis</value></data>
-  <data name="Enc_SecondaryDiagnosis"><value>Secondary Diagnosis</value></data>
-  <data name="Enc_ProgressNotes"><value>Clinical Evaluation &amp; Progress Notes</value></data>
-  <data name="Enc_PatientRepresentative"><value>Patient / Authorized Representative</value></data>
-  <data name="Enc_AttendingSpecialist"><value>Attending Medical Specialist · DRMC</value></data>
-  <data name="Enc_Generated"><value>Generated from Davao Regional Medical Center Electronic Health Records on {0}.</value></data>
   <data name="Rx_Title"><value>Active Prescriptions &amp; Medications</value></data>
   <data name="Rx_Pharmacy"><value>DRMC Outpatient Pharmacy</value></data>
   <data name="Rx_Active"><value>Active Prescriptions</value></data>
   <data name="Rx_SafetyAlert"><value>Patient Safety Alert</value></data>
-  <data name="Rx_Allergies"><value>Known Clinical Allergies Recorded</value></data>
   <data name="Rx_DailySchedule"><value>Daily Dosing Schedule</value></data>
   <data name="Rx_NoExactSchedule"><value>No exact dose times are recorded. Follow the frequency and instructions on each prescription.</value></data>
   <data name="Rx_ActiveOrders"><value>Active Medication Orders</value></data>
@@ -161,11 +120,8 @@
   <data name="Ids_Eyebrow" xml:space="preserve"><value>Identity and verification</value></data>
   <data name="Ids_Title" xml:space="preserve"><value>My IDs</value></data>
   <data name="Ids_Description" xml:space="preserve"><value>Review the government identification saved with your DRMC patient account.</value></data>
-  <data name="Ids_ProtectionTitle" xml:space="preserve"><value>Your ID images are protected</value></data>
-  <data name="Ids_ProtectionDescription" xml:space="preserve"><value>Images are retrieved only while you are signed in. Opening an image is recorded in your access audit trail.</value></data>
   <data name="Ids_EmptyTitle" xml:space="preserve"><value>No saved ID found</value></data>
   <data name="Ids_EmptyDescription" xml:space="preserve"><value>No government ID is currently attached to this patient account.</value></data>
-  <data name="Ids_GovernmentIssuer" xml:space="preserve"><value>Government-issued identification</value></data>
   <data name="Ids_NoImage" xml:space="preserve"><value>No saved image</value></data>
   <data name="Ids_NoImageDescription" xml:space="preserve"><value>This older account record contains ID details, but no front or back photo.</value></data>
   <data name="Ids_Front" xml:space="preserve"><value>Front</value></data>
@@ -197,56 +153,4 @@
   <data name="OpdGuide_PanelHeading" xml:space="preserve"><value>{0} Visit Sequence</value></data>
   <data name="OpdGuide_PreRegistrationNode" xml:space="preserve"><value>Pre</value></data>
   <data name="OpdGuide_DestinationsLabel" xml:space="preserve"><value>Possible destinations</value></data>
-  <data name="History_Title" xml:space="preserve"><value>Medical history</value></data>
-  <data name="History_Description" xml:space="preserve"><value>Your outpatient, emergency, and admission records available in this portal.</value></data>
-  <data name="History_Categories" xml:space="preserve"><value>Medical history categories</value></data>
-  <data name="History_All" xml:space="preserve"><value>All records</value></data>
-  <data name="History_OPD" xml:space="preserve"><value>OPD · Outpatient</value></data>
-  <data name="History_ER" xml:space="preserve"><value>ER · Emergency</value></data>
-  <data name="History_ADMITTED" xml:space="preserve"><value>Admitted · Inpatient</value></data>
-  <data name="History_Empty" xml:space="preserve"><value>No records in this category are available in the portal yet.</value></data>
-  <data name="Subsidy_Apply" xml:space="preserve"><value>Apply for subsidy</value></data>
-  <data name="Subsidy_Status" xml:space="preserve"><value>My subsidy status</value></data>
-  <data name="Subsidy_Intro" xml:space="preserve"><value>Save your request and prepare the documents for your Malasakit Center assessment.</value></data>
-  <data name="Subsidy_StatusIntro" xml:space="preserve"><value>Track your application, eligibility, coverage, and payment information.</value></data>
-  <data name="Subsidy_LocalNotice" xml:space="preserve"><value>Applications are saved in this portal. Bring your application reference and documents to the Malasakit Center to request assessment. Online submission does not confirm receipt by DRMC, eligibility, subsidy approval, or payment.</value></data>
-  <data name="Subsidy_Need" xml:space="preserve"><value>What do you need assistance with?</value></data>
-  <data name="Subsidy_Select" xml:space="preserve"><value>Select an option</value></data>
-  <data name="Subsidy_ReportedPayment" xml:space="preserve"><value>Payment status you reported</value></data>
-  <data name="Subsidy_PaymentHelp" xml:space="preserve"><value>Your reported payment is separate from hospital-confirmed payment. Paying a bill does not establish subsidy eligibility or reimbursement.</value></data>
-  <data name="Subsidy_Requirements" xml:space="preserve"><value>Documents to prepare</value></data>
-  <data name="Subsidy_RequirementsHelp" xml:space="preserve"><value>Check documents you have ready; unchecked items remain to prepare. This is your preparation checklist, not proof of submission or compliance. The social worker will confirm which documents apply and any additional requirements.</value></data>
-  <data name="Subsidy_Id" xml:space="preserve"><value>Any valid government-issued ID of the patient</value></data>
-  <data name="Subsidy_Clinical" xml:space="preserve"><value>Medical certificate, clinical abstract, prescription, or diagnostic order relevant to your request</value></data>
-  <data name="Subsidy_Cost" xml:space="preserve"><value>Statement of account or medicine / diagnostic cost quotation; receipts if already paid</value></data>
-  <data name="Subsidy_Indigency" xml:space="preserve"><value>Barangay certificate of indigency, if requested after assessment</value></data>
-  <data name="Subsidy_Acknowledge" xml:space="preserve"><value>I understand that this request requires review at the Malasakit Center and does not guarantee financial assistance.</value></data>
-  <data name="Subsidy_SaveApplication" xml:space="preserve"><value>Save subsidy application</value></data>
-  <data name="Subsidy_SaveRequirements" xml:space="preserve"><value>Save document checklist</value></data>
-  <data name="Subsidy_Saved" xml:space="preserve"><value>Your document checklist has been saved.</value></data>
-  <data name="Subsidy_Empty" xml:space="preserve"><value>No subsidy application yet</value></data>
-  <data name="Subsidy_Application" xml:space="preserve"><value>Application</value></data>
-  <data name="Subsidy_Created" xml:space="preserve"><value>Saved on</value></data>
-  <data name="Subsidy_Eligibility" xml:space="preserve"><value>Eligibility</value></data>
-  <data name="Subsidy_Coverage" xml:space="preserve"><value>Subsidy coverage</value></data>
-  <data name="Subsidy_ConfirmedPayment" xml:space="preserve"><value>Hospital-confirmed payment</value></data>
-  <data name="Subsidy_Reviewed" xml:space="preserve"><value>Reviewed on</value></data>
-  <data name="Subsidy_NextStep" xml:space="preserve"><value>Next step</value></data>
-  <data name="Subsidy_VisitDesk" xml:space="preserve"><value>Prepare the applicable documents and visit the DRMC Malasakit Center. A social worker must assess your request and confirm the requirements, eligibility, and available assistance.</value></data>
-  <data name="Subsidy_Guidance" xml:space="preserve"><value>Explore assistance programs and preparation guidance</value></data>
-  <data name="SubsidyNeed_Medicines" xml:space="preserve"><value>Medicines</value></data>
-  <data name="SubsidyNeed_Diagnostics" xml:space="preserve"><value>Laboratory / diagnostics</value></data>
-  <data name="SubsidyNeed_HospitalCare" xml:space="preserve"><value>Hospital care / admission</value></data>
-  <data name="BillPaymentStatus_Unconfirmed" xml:space="preserve"><value>Not confirmed</value></data>
-  <data name="BillPaymentStatus_Unpaid" xml:space="preserve"><value>Unpaid</value></data>
-  <data name="BillPaymentStatus_PartiallyPaid" xml:space="preserve"><value>Partially paid</value></data>
-  <data name="BillPaymentStatus_Paid" xml:space="preserve"><value>Paid</value></data>
-  <data name="SubsidyEligibility_PendingReview" xml:space="preserve"><value>Pending assessment</value></data>
-  <data name="SubsidyEligibility_RequirementsNeeded" xml:space="preserve"><value>Additional requirements needed</value></data>
-  <data name="SubsidyEligibility_Eligible" xml:space="preserve"><value>Eligible</value></data>
-  <data name="SubsidyEligibility_Ineligible" xml:space="preserve"><value>Not eligible</value></data>
-  <data name="SubsidyCoverage_Unconfirmed" xml:space="preserve"><value>Not yet determined</value></data>
-  <data name="SubsidyCoverage_Subsidised" xml:space="preserve"><value>Subsidised</value></data>
-  <data name="SubsidyCoverage_PartiallySubsidised" xml:space="preserve"><value>Partially subsidised</value></data>
-  <data name="SubsidyCoverage_SelfPay" xml:space="preserve"><value>Patient-paid / self-pay</value></data>
 </root>

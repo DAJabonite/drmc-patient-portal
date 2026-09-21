@@ -35,16 +35,10 @@
   <data name="Nav_Encounters"><value>Mga Pagbisita</value></data>
   <data name="Nav_Results"><value>Mga Resulta</value></data>
   <data name="Nav_Medication"><value>Tambal</value></data>
-  <data name="Nav_Malasakit"><value>Malasakit</value></data>
   <data name="Nav_FinancialAssistance"><value>Tabang Pinansyal / Malasakit</value></data>
-  <data name="Nav_MoreServices"><value>Dugang Serbisyo</value></data>
   <data name="Nav_OpdGuide"><value>Giya sa OPD</value></data>
-  <data name="Nav_Appointments"><value>Pagpa-iskedyul</value></data>
   <data name="Nav_Directory"><value>Mga Doktor ug Klinika</value></data>
   <data name="Nav_Advisories"><value>Mga Pahibalo sa Panglawas</value></data>
-  <data name="Nav_Dashboard"><value>Dashboard sa Pasyente</value></data>
-  <data name="Nav_LabResults"><value>Resulta sa Laboratoryo</value></data>
-  <data name="Nav_Medications"><value>Aktibong mga Reseta</value></data>
   <data name="Nav_Audit"><value>Kasaysayan sa Pag-abli</value></data>
   <data name="Nav_Settings"><value>Mga Setting sa Account</value></data>
   <data name="Nav_MyIds"><value>Akong mga ID</value></data>
@@ -58,38 +52,14 @@
   <data name="Mobile_Medication"><value>Tambal</value></data>
   <data name="Mobile_Malasakit"><value>Malasakit</value></data>
   <data name="Mobile_Menu"><value>Menu</value></data>
-  <data name="Mobile_QuickTasks"><value>Dali nga buluhaton</value></data>
   <data name="Mobile_HospitalServices"><value>Mga serbisyo sa ospital</value></data>
 
   <!-- Common Actions & Buttons -->
-  <data name="Action_Search"><value>Pangitaa</value></data>
-  <data name="Action_Filter"><value>Pilia</value></data>
-  <data name="Action_ViewDetails"><value>Tan-awa ang Detalye</value></data>
-  <data name="Action_ReturnDashboard"><value>Balik sa Dashboard</value></data>
-  <data name="Action_Cancel"><value>Kanselaha</value></data>
-  <data name="Action_Submit"><value>Isumite</value></data>
-  <data name="Action_Back"><value>Balik</value></data>
 
   <!-- Dashboard & Headers -->
   <data name="Header_Tagline"><value>Pag-amping sa Kinabuhi, Pagbag-o sa Kaugmaon.</value></data>
-  <data name="Header_HospitalName"><value>Davao Regional Medical Center</value></data>
-  <data name="Header_SubTitle"><value>Republika sa Pilipinas · Kagawaran sa Panglawas</value></data>
-  <data name="Dashboard_Welcome"><value>Maayong pag-abot</value></data>
-  <data name="Dashboard_UpcomingAppt"><value>Umaabot nga Konsultasyon</value></data>
-  <data name="Dashboard_LabResults"><value>Resulta sa Pagsusi sa Laboratoryo</value></data>
-  <data name="Dashboard_Prescriptions"><value>Reseta ug Parmasya</value></data>
 
   <!-- Lay Medical Terminology -->
-  <data name="Med_BloodPressure"><value>Presyon sa Dugo</value></data>
-  <data name="Med_HeartRate"><value>Kusog sa Pitik sa Kasingkasing</value></data>
-  <data name="Med_Temperature"><value>Kainit sa Lawas</value></data>
-  <data name="Med_BloodSugar"><value>Gidaghanon sa Asukal sa Dugo</value></data>
-  <data name="Med_FastingBloodSugar"><value>Pagsusi sa Asukal sa Dugo (FBS)</value></data>
-  <data name="Med_CompleteBloodCount"><value>Kompletong Ihap sa Dugo (CBC)</value></data>
-  <data name="Med_LipidProfile"><value>Pagsusi sa Kolesterol ug Tambok sa Dugo</value></data>
-  <data name="Med_Allergy"><value>Narekord nga Alerdyi sa Tambal</value></data>
-  <data name="Med_PharmacyPickup"><value>Kuhaanan sa OPD Pharmacy Window 2</value></data>
-  <data name="Med_EmergencyWarning"><value>Alang sa dinalian nga emerhensiya, dumeretso dayon sa DRMC Emergency Room o tawag sa 1555.</value></data>
   <data name="Error_ServiceUnavailableTitle"><value>Dili magamit sa pagkakaron ang serbisyo sa seguridad</value></data>
   <data name="Error_ServiceUnavailableBody"><value>Dili makompleto ang gikinahanglang rekord sa seguridad. Walay gipagawas nga protektadong impormasyon. Sulayi pag-usab.</value></data>
   <data name="Enc_Title"><value>Mga Pagbisita ug Tala</value></data>
@@ -114,21 +84,10 @@
   <data name="Enc_CarePlan"><value>Plano sa Pag-atiman ug mga Instruksyon sa Balay</value></data>
   <data name="Enc_Labs"><value>Mga Resulta sa Laboratoryo gikan niini nga Konsultasyon</value></data>
   <data name="Enc_NoLabs"><value>Walay laboratory test nga gimando niini nga konsultasyon.</value></data>
-  <data name="Enc_ReturnSummary"><value>Balik sa Sumada</value></data>
-  <data name="Enc_OfficialSummary"><value>Opisyal nga Sumada sa Konsultasyon sa Outpatient ug Plano sa Pag-atiman</value></data>
-  <data name="Enc_PatientName"><value>Ngalan sa Pasyente</value></data>
-  <data name="Enc_Department"><value>Klinikal nga Departamento</value></data>
-  <data name="Enc_PrimaryDiagnosis"><value>Pangunang Diyagnosis</value></data>
-  <data name="Enc_SecondaryDiagnosis"><value>Ikaduhang Diyagnosis</value></data>
-  <data name="Enc_ProgressNotes"><value>Klinikal nga Pagsusi ug mga Tala sa Kauswagan</value></data>
-  <data name="Enc_PatientRepresentative"><value>Pasyente / Awtorisadong Representante</value></data>
-  <data name="Enc_AttendingSpecialist"><value>Nag-atiman nga Espesyalistang Medikal · DRMC</value></data>
-  <data name="Enc_Generated"><value>Gihimo gikan sa Electronic Health Records sa Davao Regional Medical Center niadtong {0}.</value></data>
   <data name="Rx_Title"><value>Aktibong mga Reseta ug Tambal</value></data>
   <data name="Rx_Pharmacy"><value>Outpatient Pharmacy sa DRMC</value></data>
   <data name="Rx_Active"><value>Aktibong mga Reseta</value></data>
   <data name="Rx_SafetyAlert"><value>Pasidaan sa Kaluwasan sa Pasyente</value></data>
-  <data name="Rx_Allergies"><value>Narekord nga mga Allergy</value></data>
   <data name="Rx_DailySchedule"><value>Adlaw-adlaw nga Oras sa Pag-inom</value></data>
   <data name="Rx_NoExactSchedule"><value>Walay eksaktong oras sa dosis nga narekord. Sunda ang gidaghanon ug instruksyon sa matag reseta.</value></data>
   <data name="Rx_ActiveOrders"><value>Aktibong mga Order sa Tambal</value></data>
@@ -161,11 +120,8 @@
   <data name="Ids_Eyebrow" xml:space="preserve"><value>Pag-ila ug beripikasyon</value></data>
   <data name="Ids_Title" xml:space="preserve"><value>Akong mga ID</value></data>
   <data name="Ids_Description" xml:space="preserve"><value>Susiha ang government ID nga naka-save sa inyong DRMC patient account.</value></data>
-  <data name="Ids_ProtectionTitle" xml:space="preserve"><value>Protektado ang inyong mga hulagway sa ID</value></data>
-  <data name="Ids_ProtectionDescription" xml:space="preserve"><value>Makuha ra ang mga hulagway samtang naka-sign in. Ang pag-abli sa hulagway ma-record sa access audit trail.</value></data>
   <data name="Ids_EmptyTitle" xml:space="preserve"><value>Walay na-save nga ID</value></data>
   <data name="Ids_EmptyDescription" xml:space="preserve"><value>Walay government ID nga naka-attach sa niini nga patient account.</value></data>
-  <data name="Ids_GovernmentIssuer" xml:space="preserve"><value>Government-issued nga pagkaila</value></data>
   <data name="Ids_NoImage" xml:space="preserve"><value>Walay na-save nga hulagway</value></data>
   <data name="Ids_NoImageDescription" xml:space="preserve"><value>Kining daang account record adunay detalye sa ID, apan walay hulagway sa atubangan o likod.</value></data>
   <data name="Ids_Front" xml:space="preserve"><value>Atubangan</value></data>
@@ -197,56 +153,4 @@
   <data name="OpdGuide_PanelHeading" xml:space="preserve"><value>Sequence sa Pagbisita sa {0}</value></data>
   <data name="OpdGuide_PreRegistrationNode" xml:space="preserve"><value>Pre</value></data>
   <data name="OpdGuide_DestinationsLabel" xml:space="preserve"><value>Posibleng mga destinasyon</value></data>
-  <data name="History_Title" xml:space="preserve"><value>Kasaysayan sa panglawas</value></data>
-  <data name="History_Description" xml:space="preserve"><value>Imong outpatient, emergency, ug admission nga mga rekord nga anaa sa portal.</value></data>
-  <data name="History_Categories" xml:space="preserve"><value>Mga kategoriya sa kasaysayan sa panglawas</value></data>
-  <data name="History_All" xml:space="preserve"><value>Tanang rekord</value></data>
-  <data name="History_OPD" xml:space="preserve"><value>OPD · Outpatient</value></data>
-  <data name="History_ER" xml:space="preserve"><value>ER · Emergency</value></data>
-  <data name="History_ADMITTED" xml:space="preserve"><value>Admitted · Naospital</value></data>
-  <data name="History_Empty" xml:space="preserve"><value>Wala pay rekord niini nga kategoriya sa portal.</value></data>
-  <data name="Subsidy_Apply" xml:space="preserve"><value>Pag-aplay og subsidy</value></data>
-  <data name="Subsidy_Status" xml:space="preserve"><value>Kahimtang sa akong subsidy</value></data>
-  <data name="Subsidy_Intro" xml:space="preserve"><value>I-save ang hangyo ug andama ang mga dokumento alang sa pagsusi sa Malasakit Center.</value></data>
-  <data name="Subsidy_StatusIntro" xml:space="preserve"><value>Tan-awa ang aplikasyon, eligibility, coverage, ug impormasyon sa bayad.</value></data>
-  <data name="Subsidy_LocalNotice" xml:space="preserve"><value>Na-save ang aplikasyon sa portal. Dad-a ang reference ug mga dokumento sa Malasakit Center alang sa pagsusi. Ang online submission dili kumpirmasyon sa pagdawat sa DRMC, eligibility, pag-apruba sa subsidy, o bayad.</value></data>
-  <data name="Subsidy_Need" xml:space="preserve"><value>Asa nimo gikinahanglan ang tabang?</value></data>
-  <data name="Subsidy_Select" xml:space="preserve"><value>Pagpili og opsyon</value></data>
-  <data name="Subsidy_ReportedPayment" xml:space="preserve"><value>Kahimtang sa bayad nga imong gitaho</value></data>
-  <data name="Subsidy_PaymentHelp" xml:space="preserve"><value>Lahi ang imong gitahong bayad sa kumpirmasyon sa ospital. Ang pagbayad sa bill dili garantiya sa subsidy o reimbursement.</value></data>
-  <data name="Subsidy_Requirements" xml:space="preserve"><value>Mga dokumentong andamon</value></data>
-  <data name="Subsidy_RequirementsHelp" xml:space="preserve"><value>Tseki ang mga dokumentong andam na. Checklist kini sa pag-andam, dili pamatuod sa pagsumite o pagsunod. Ang social worker mokumpirma sa angay ug dugang nga mga dokumento.</value></data>
-  <data name="Subsidy_Id" xml:space="preserve"><value>Bisan unsang balidong government-issued ID sa pasyente</value></data>
-  <data name="Subsidy_Clinical" xml:space="preserve"><value>Medical certificate, clinical abstract, reseta, o diagnostic order alang sa hangyo</value></data>
-  <data name="Subsidy_Cost" xml:space="preserve"><value>Statement of account o presyo sa tambal / diagnostic; resibo kon nabayran na</value></data>
-  <data name="Subsidy_Indigency" xml:space="preserve"><value>Barangay certificate of indigency, kon pangayoon human sa pagsusi</value></data>
-  <data name="Subsidy_Acknowledge" xml:space="preserve"><value>Nakasabot ko nga gikinahanglan ang pagsusi sa Malasakit Center ug dili garantiya ang pinansyal nga tabang.</value></data>
-  <data name="Subsidy_SaveApplication" xml:space="preserve"><value>I-save ang aplikasyon</value></data>
-  <data name="Subsidy_SaveRequirements" xml:space="preserve"><value>I-save ang checklist</value></data>
-  <data name="Subsidy_Saved" xml:space="preserve"><value>Na-save na ang checklist sa dokumento.</value></data>
-  <data name="Subsidy_Empty" xml:space="preserve"><value>Wala pay aplikasyon</value></data>
-  <data name="Subsidy_Application" xml:space="preserve"><value>Aplikasyon</value></data>
-  <data name="Subsidy_Created" xml:space="preserve"><value>Na-save niadtong</value></data>
-  <data name="Subsidy_Eligibility" xml:space="preserve"><value>Eligibility</value></data>
-  <data name="Subsidy_Coverage" xml:space="preserve"><value>Coverage sa subsidy</value></data>
-  <data name="Subsidy_ConfirmedPayment" xml:space="preserve"><value>Bayad nga gikumpirma sa ospital</value></data>
-  <data name="Subsidy_Reviewed" xml:space="preserve"><value>Gisusi niadtong</value></data>
-  <data name="Subsidy_NextStep" xml:space="preserve"><value>Sunod nga lakang</value></data>
-  <data name="Subsidy_VisitDesk" xml:space="preserve"><value>Andama ang angay nga mga dokumento ug adto sa DRMC Malasakit Center. Ang social worker mosusi sa hangyo ug mokumpirma sa requirements, eligibility, ug tabang.</value></data>
-  <data name="Subsidy_Guidance" xml:space="preserve"><value>Tan-awa ang mga programa ug giya sa pag-andam</value></data>
-  <data name="SubsidyNeed_Medicines" xml:space="preserve"><value>Mga tambal</value></data>
-  <data name="SubsidyNeed_Diagnostics" xml:space="preserve"><value>Laboratoryo / diagnostics</value></data>
-  <data name="SubsidyNeed_HospitalCare" xml:space="preserve"><value>Pag-atiman / pagpaospital</value></data>
-  <data name="BillPaymentStatus_Unconfirmed" xml:space="preserve"><value>Wala pa makumpirma</value></data>
-  <data name="BillPaymentStatus_Unpaid" xml:space="preserve"><value>Wala pa mabayri</value></data>
-  <data name="BillPaymentStatus_PartiallyPaid" xml:space="preserve"><value>Bahing nabayran</value></data>
-  <data name="BillPaymentStatus_Paid" xml:space="preserve"><value>Nabayran na</value></data>
-  <data name="SubsidyEligibility_PendingReview" xml:space="preserve"><value>Naghulat sa pagsusi</value></data>
-  <data name="SubsidyEligibility_RequirementsNeeded" xml:space="preserve"><value>Gikinahanglan ang dugang nga dokumento</value></data>
-  <data name="SubsidyEligibility_Eligible" xml:space="preserve"><value>Kwalipikado</value></data>
-  <data name="SubsidyEligibility_Ineligible" xml:space="preserve"><value>Dili kwalipikado</value></data>
-  <data name="SubsidyCoverage_Unconfirmed" xml:space="preserve"><value>Wala pa matino</value></data>
-  <data name="SubsidyCoverage_Subsidised" xml:space="preserve"><value>Adunay subsidy</value></data>
-  <data name="SubsidyCoverage_PartiallySubsidised" xml:space="preserve"><value>Adunay bahin nga subsidy</value></data>
-  <data name="SubsidyCoverage_SelfPay" xml:space="preserve"><value>Bayran sa pasyente</value></data>
 </root>

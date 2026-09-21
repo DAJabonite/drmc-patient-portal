@@ -9,8 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DrmcPatientPortal.Controllers;
 
 [Authorize]
-[Route("Patient/Visits", Order = 0)]
-[Route("Patient/Encounters", Order = 1)] // Preserve existing bookmarks.
+[Route("Patient/Visits")]
 public class VisitsController : Controller
 {
     private readonly ApplicationDbContext _db;
