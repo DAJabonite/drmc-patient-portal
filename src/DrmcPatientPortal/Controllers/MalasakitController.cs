@@ -22,11 +22,7 @@ public class MalasakitController : Controller
     }
 
     // GET /Malasakit
-    public async Task<IActionResult> Index()
-    {
-        var programs = await _db.AssistancePrograms.ToListAsync();
-        return View(programs);
-    }
+    public IActionResult Index() => View();
 
     // GET /Malasakit/DSWDServices
     [HttpGet]

@@ -12,3 +12,10 @@ app.db
 src/DrmcPatientPortal/App_Data/TempUploads/
 src/DrmcPatientPortal/App_Data/PatientIdDocuments/
 src/DrmcPatientPortal/App_Data/DataProtectionKeys/
+
+# Local agent, browser, and validation output
+.codex-docs/
+.playwright-cli/
+artifacts/
+scratch/
+_verify-comments-*/

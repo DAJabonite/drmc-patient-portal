@@ -59,9 +59,9 @@
                         {
                             var latestEnc = Model.Encounters.First();
                             <div class="record-preview-list">
-                                <a asp-controller="Encounters" asp-action="Details" asp-route-id="@latestEnc.Id" class="record-preview">
+                                <a asp-controller="Visits" asp-action="Details" asp-route-id="@latestEnc.Id" class="record-preview">
                                     <span><strong>@latestEnc.Department</strong><small>@latestEnc.EncounterDate.ToString("MMM d, yyyy")</small></span>
-                                    <span class="badge status-badge text-bg-primary">@latestEnc.Type</span>
+                                    <span class="badge status-badge text-bg-primary">@Loc[$"EncounterType_{latestEnc.Type}"]</span>
                                 </a>
                             </div>
                         }
@@ -69,7 +69,7 @@
                         {
                             <div class="empty-state compact"><span>No recent clinical encounters.</span></div>
                         }
-                        <a asp-controller="Encounters" asp-action="Index" class="btn btn-primary-drmc dashboard-summary-button mt-auto">View all visits <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                        <a asp-controller="Visits" asp-action="Index" class="btn btn-primary-drmc dashboard-summary-button mt-auto">View all visits <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                     </div>
                 </article>
             </div>
@@ -136,10 +136,10 @@
                             </div>
                             @if (Model.SubsidyApplication is not null)
                             {
-                                <span class="badge status-badge text-bg-info">@Model.SubsidyApplication.Eligibility</span>
+                                <span class="badge status-badge text-bg-info">@Loc[$"SubsidyEligibility_{Model.SubsidyApplication.Eligibility}"]</span>
                             }
                         </div>
-                        <p class="text-muted small mb-3">Check medical assistance programs, document checklists, and application status.</p>
+                        <p class="text-muted small mb-3">Check medical assistance services and document requirements.</p>
                         <a asp-controller="Malasakit" asp-action="Index" class="btn btn-primary-drmc dashboard-summary-button mt-auto">Malasakit assistance <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                     </div>
                 </article>

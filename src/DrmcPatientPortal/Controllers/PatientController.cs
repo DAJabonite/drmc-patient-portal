@@ -92,8 +92,6 @@ public class PatientDashboardViewModel
     public string Email { get; set; } = string.Empty;
     public string ContactNumber { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
-    public Appointment? NextAppointment { get; set; }
-    public bool HasTriageForNextAppointment { get; set; }
     public IReadOnlyList<ClinicalEncounter> Encounters { get; set; } = Array.Empty<ClinicalEncounter>();
     public IReadOnlyList<LabResult> LabResults { get; set; } = Array.Empty<LabResult>();
     public int ActivePrescriptionsCount { get; set; }

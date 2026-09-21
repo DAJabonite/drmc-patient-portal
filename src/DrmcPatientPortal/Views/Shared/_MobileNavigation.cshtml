@@ -11,7 +11,7 @@
     var homeActive = signedIn
         ? currentController == "Patient" && currentAction == "Home"
         : currentController == "Home" && currentAction == "Index";
-    var encountersActive = currentController == "Encounters";
+    var encountersActive = currentController == "Visits";
     var resultsActive = currentController == "LabResults";
     var medicationActive = currentController == "Medications";
     var malasakitActive = currentController == "Malasakit";
@@ -35,7 +35,7 @@
         }
         @if (signedIn)
         {
-            <a class="mobile-tab-item @(encountersActive ? "active" : null)" aria-current="@(encountersActive ? "page" : null)" asp-controller="Encounters" asp-action="Index">
+            <a class="mobile-tab-item @(encountersActive ? "active" : null)" aria-current="@(encountersActive ? "page" : null)" asp-controller="Visits" asp-action="Index">
                 <i class="bi bi-journal-medical" aria-hidden="true"></i>
                 <span>@Loc["Mobile_Encounters"]</span>
             </a>

@@ -17,7 +17,7 @@ public sealed class ClientRequirementsTests(PortalFixture app)
             var page = await context.NewPageAsync();
             await page.GotoAsync("/");
 
-            foreach (var path in new[] { "/Patient/Encounters", "/Patient/LabResults", "/Patient/Medications" })
+            foreach (var path in new[] { "/Patient/Visits", "/Patient/LabResults", "/Patient/Medications" })
             {
                 await Expect(page.Locator($"nav[aria-label='Main navigation'] a[href='{path}'], .mobile-tab-bar a[href='{path}']")).ToHaveCountAsync(0);
             }
@@ -71,7 +71,7 @@ public sealed class ClientRequirementsTests(PortalFixture app)
         await using var context = await browser.NewContextAsync(app.Context("small"));
         var page = await context.NewPageAsync();
         await PortalFixture.SignIn(page);
-        await page.GotoAsync("/Patient/Encounters");
+        await page.GotoAsync("/Patient/Visits");
 
         await Expect(page.Locator("main a[href='/Patient/MedicalHistory']")).ToHaveCountAsync(0);
     }
@@ -83,10 +83,10 @@ public sealed class ClientRequirementsTests(PortalFixture app)
         await using var context = await browser.NewContextAsync(app.Context("small"));
         var page = await context.NewPageAsync();
         await PortalFixture.SignIn(page);
-        await page.GotoAsync("/Patient/Encounters");
+        await page.GotoAsync("/Patient/Visits");
 
         await Expect(page.Locator("h1")).ToHaveTextAsync("Visits & Care Notes");
-        await Expect(page.Locator(".mobile-tab-bar a[href='/Patient/Encounters'] span")).ToHaveTextAsync("Visits");
+        await Expect(page.Locator(".mobile-tab-bar a[href='/Patient/Visits'] span")).ToHaveTextAsync("Visits");
 
         await page.Locator(".mobile-menu-trigger").ClickAsync();
         await Expect(page.Locator("#mobileUtilityMenu a[href='/Patient/MedicalHistory']")).ToHaveCountAsync(0);

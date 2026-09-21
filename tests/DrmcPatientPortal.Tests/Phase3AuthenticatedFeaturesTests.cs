@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -228,7 +227,7 @@ public class Phase3AuthenticatedFeaturesTests
                 Category = LabCategory.Hematology,
                 Status = "Available",
                 AccessionNumber = "YEAR-1",
-                CollectedAt = DateTime.Today.AddDays(-10)
+                CollectedAt = new DateTime(DateTime.Today.Year, 1, 1)
             },
             new LabResult
             {
@@ -354,7 +353,7 @@ public class Phase3AuthenticatedFeaturesTests
     }
 
     [Fact]
-    public async Task EncountersController_Details_IsOwnerIsolatedAndIncludesLabs()
+    public async Task VisitsController_Details_IsOwnerIsolatedAndIncludesLabs()
     {
         using var db = CreateInMemoryDbContext();
         var (userManager, user) = CreateMockUserManager(db);
@@ -364,7 +363,7 @@ public class Phase3AuthenticatedFeaturesTests
         var other = new ClinicalEncounter { PatientUserId = "other", EncounterReference = "ENC-OTHER", Department = "Surgery", PrimaryDiagnosis = "Follow-up" };
         db.ClinicalEncounters.AddRange(owned, other);
         await db.SaveChangesAsync();
-        var controller = new EncountersController(db, userManager, auditMock.Object) { ControllerContext = CreateControllerContext() };
+        var controller = new VisitsController(db, userManager, auditMock.Object) { ControllerContext = CreateControllerContext() };
 
         var result = Assert.IsType<ViewResult>(await controller.Details(owned.Id));
         Assert.Single(Assert.IsType<ClinicalEncounter>(result.Model).LabResults);
@@ -373,25 +372,11 @@ public class Phase3AuthenticatedFeaturesTests
     }
 
     [Fact]
-    public void AppointmentAccessToken_IsHighEntropyAndExpires()
-    {
-        var service = new AppointmentAccessService(new EphemeralDataProtectionProvider());
-        var appointment = new Appointment { Id = 7, ScheduledAt = DateTime.Now.AddDays(2) };
-        var token = service.CreateToken(appointment);
-        Assert.True(token.Length >= 43);
-        Assert.DoesNotContain(token, appointment.PublicAccessTokenHash!, StringComparison.Ordinal);
-        Assert.True(service.ValidateToken(appointment, token));
-        Assert.False(service.ValidateToken(appointment, token + "x"));
-        appointment.PublicAccessExpiresAt = DateTime.UtcNow.AddSeconds(-1);
-        Assert.False(service.ValidateToken(appointment, token));
-    }
-
-    [Fact]
     public void AppointmentsController_IsRetiredAndFailsClosedWithNotFound()
     {
         var controller = new AppointmentsController();
-        Assert.IsType<NotFoundResult>(controller.Book(null, null, null));
-        Assert.IsType<NotFoundResult>(controller.Book(new BookingFormViewModel()));
+        Assert.IsType<NotFoundResult>(controller.Book());
+        Assert.IsType<NotFoundResult>(controller.BookPost());
         Assert.IsType<NotFoundResult>(controller.Confirmation("DRMC-OWNER"));
         Assert.IsType<NotFoundResult>(controller.CheckIn("DRMC-OWNER"));
         Assert.IsType<NotFoundResult>(controller.Cancel(1));

@@ -135,6 +135,7 @@ public sealed class SignupTests(PortalFixture app)
         await page.Locator("#txtFirstName").FillAsync("Signup");
         await page.Locator("#txtLastName").FillAsync("Testpatient");
         await page.Locator("#txtIdNumber").FillAsync("TEST-SIGNUP-01");
+        await page.Locator("#txtAddress").FillAsync("123 Apokon Road, Tagum City");
     }
 
     [Fact]

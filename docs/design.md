@@ -25,7 +25,7 @@ owners: DRMC patient portal team
 | Source | Role | Adapt | Do not copy |
 | --- | --- | --- | --- |
 | Client brief, 2026-09-12 | Product direction | `#0E4E87`, mobile-first, fewer clicks, less visual noise | No requirement to preserve the old website layout |
-| Client navigation clarification, 2026-09-12 | Information architecture | Home, Encounters, Results, Medication, and Financial Assistance / Malasakit as the five permanent primary destinations | Do not replace a requested destination with a generic “More” tab |
+| Client navigation clarification, 2026-09-12 | Information architecture | Home, Visits, Labs, Medication, and Financial Assistance / Malasakit as the five permanent primary destinations | Do not replace a requested destination with a generic “More” tab |
 | `wwwroot/images/drmc-masthead.png` and DRMC seals | Identity | Official marks and institutional name | Do not redraw or decorate the marks |
 | https://drmc.doh.gov.ph/ | Brand reference | DRMC blue and public-service character | Page composition, dense navigation, and dated visual patterns |
 | https://www.nhs.uk/ | Responsive health-service reference | Clear service taxonomy, task-first health links, and separate account/search utilities | NHS branding, page composition, or content |
@@ -68,7 +68,7 @@ The live DRMC site returned HTTP 403 during the 2026-09-12 implementation review
 
 - Mobile is the baseline. Content must reflow without page-level horizontal overflow at 320px.
 - On phones, use a compact 64–72px brand header and a fixed five-item bottom navigation. Utility navigation opens in one accessible offcanvas sheet from the header.
-- The five primary destinations are always Home, Encounters, Results, Medication, and Malasakit. “Financial Assistance / Malasakit” is shortened to “Malasakit” only where mobile width requires it, with the full accessible label retained.
+- The five primary destinations are always Home, Visits, Labs, Medication, and Malasakit. “Financial Assistance / Malasakit” is shortened to “Malasakit” only where mobile width requires it, with the full accessible label retained.
 - Medical History is a secondary authenticated destination in account/utility menus and contextual links. It groups OPD, ER, and Admitted records without adding to or replacing the five primary destinations (client clarification, 2026-09-13).
 - Signed-in Home opens the patient dashboard; signed-out Home opens the public landing page. Protected record destinations retain the existing sign-in redirect and return URL.
 - Booking, directory, OPD guidance, advisories, language, and account actions remain available in the mobile utility menu and as contextual page actions.
