@@ -191,6 +191,7 @@ public sealed class ClientRequirementsTests(PortalFixture app)
         await page.Locator("#txtFirstName").FillAsync("Test");
         await page.Locator("#txtLastName").FillAsync("GovernmentId");
         await page.Locator("#txtIdNumber").FillAsync("TEST-" + Guid.NewGuid().ToString("N")[..8]);
+        await page.Locator("#txtAddress").FillAsync("123 Apokon Road, Tagum City");
         await page.Locator("#btnGoToStep4").ClickAsync();
         await page.Locator("input[name='Input.Email']").FillAsync($"gov-id-{Guid.NewGuid():N}@example.test");
         await page.Locator("input[name='Input.Mobile']").FillAsync("9175550123");
