@@ -96,6 +96,10 @@
   <data name="Enc_Subtitle"><value>Mga pagbisita sa outpatient at ospital</value></data>
   <data name="Enc_BookFollowUp"><value>Magpa-iskedyul ng Follow-Up</value></data>
   <data name="Enc_AllDepartments"><value>Lahat ng Departamento</value></data>
+  <data name="Enc_AllTypes"><value>Lahat ng Uri</value></data>
+  <data name="Enc_TypeOpd"><value>OPD</value></data>
+  <data name="Enc_TypeEmergencyRoom"><value>Emergency Room</value></data>
+  <data name="Enc_TypeInpatient"><value>Inpatient</value></data>
   <data name="Enc_None"><value>Walang nakatalang pagbisita</value></data>
   <data name="Enc_NoneBody"><value>Walang pagbisitang tumutugma sa napiling departamento.</value></data>
   <data name="Enc_ViewAll"><value>Tingnan Lahat ng Pagbisita</value></data>

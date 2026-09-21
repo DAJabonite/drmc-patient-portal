@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -174,6 +175,83 @@ public class Phase3AuthenticatedFeaturesTests
         Assert.Single(model.LabResults);
         Assert.Equal("Recent CBC", model.LabResults[0].TestName);
         Assert.Equal("30d", model.SelectedDateRange);
+    }
+
+    [Fact]
+    public async Task LabResultsController_Index_CustomDateRange_IsInclusiveAndOwnerOnly()
+    {
+        using var db = CreateInMemoryDbContext();
+        var (userManager, user) = CreateMockUserManager(db);
+        var auditMock = new Mock<IAuditLogService>();
+
+        db.LabResults.AddRange(
+            new LabResult { PatientUserId = user.Id, TestName = "Start Date CBC", Category = LabCategory.Hematology, Status = "Available", AccessionNumber = "CUSTOM-1", CollectedAt = new DateTime(2026, 2, 1, 8, 0, 0) },
+            new LabResult { PatientUserId = user.Id, TestName = "End Date CBC", Category = LabCategory.Hematology, Status = "Available", AccessionNumber = "CUSTOM-2", CollectedAt = new DateTime(2026, 2, 28, 17, 30, 0) },
+            new LabResult { PatientUserId = user.Id, TestName = "Outside Date CBC", Category = LabCategory.Hematology, Status = "Available", AccessionNumber = "CUSTOM-3", CollectedAt = new DateTime(2026, 3, 1, 0, 0, 0) },
+            new LabResult { PatientUserId = "other-patient", TestName = "Other Patient CBC", Category = LabCategory.Hematology, Status = "Available", AccessionNumber = "CUSTOM-4", CollectedAt = new DateTime(2026, 2, 15, 12, 0, 0) });
+        await db.SaveChangesAsync();
+
+        var controller = new LabResultsController(db, userManager, auditMock.Object)
+        {
+            ControllerContext = CreateControllerContext()
+        };
+
+        var result = Assert.IsType<ViewResult>(await controller.Index(
+            null,
+            null,
+            "custom",
+            new DateTime(2026, 2, 1),
+            new DateTime(2026, 2, 28)));
+        var model = Assert.IsType<LabResultsIndexViewModel>(result.Model);
+
+        Assert.Equal(2, model.LabResults.Count);
+        Assert.All(model.LabResults, lab => Assert.Equal(user.Id, lab.PatientUserId));
+        Assert.Equal("custom", model.SelectedDateRange);
+    }
+
+    [Fact]
+    public async Task LabResultsController_Index_FiltersByCurrentYear_WithSqlite()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var db = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseSqlite(connection)
+            .Options);
+        await db.Database.EnsureCreatedAsync();
+
+        var (userManager, user) = CreateMockUserManager(db);
+        db.LabResults.AddRange(
+            new LabResult
+            {
+                PatientUserId = user.Id,
+                TestName = "Current Year CBC",
+                Category = LabCategory.Hematology,
+                Status = "Available",
+                AccessionNumber = "YEAR-1",
+                CollectedAt = DateTime.Today.AddDays(-10)
+            },
+            new LabResult
+            {
+                PatientUserId = user.Id,
+                TestName = "Previous Year CBC",
+                Category = LabCategory.Hematology,
+                Status = "Available",
+                AccessionNumber = "YEAR-2",
+                CollectedAt = new DateTime(DateTime.Today.Year - 1, 12, 31)
+            });
+        await db.SaveChangesAsync();
+
+        var controller = new LabResultsController(db, userManager, Mock.Of<IAuditLogService>())
+        {
+            ControllerContext = CreateControllerContext()
+        };
+
+        var result = Assert.IsType<ViewResult>(await controller.Index(null, null, "year"));
+        var model = Assert.IsType<LabResultsIndexViewModel>(result.Model);
+
+        var lab = Assert.Single(model.LabResults);
+        Assert.Equal("Current Year CBC", lab.TestName);
+        Assert.Equal("year", model.SelectedDateRange);
     }
 
     [Fact]

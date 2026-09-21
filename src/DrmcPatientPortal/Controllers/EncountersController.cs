@@ -41,22 +41,39 @@ public class EncountersController : Controller
             .Where(e => e.PatientUserId == user.Id)
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(department))
+        var selectedType = department?.Trim();
+        if (string.Equals(selectedType, "OPD", StringComparison.OrdinalIgnoreCase))
         {
-            query = query.Where(e => e.Department == department);
+            query = query.Where(e => e.Type == EncounterType.OpdConsultation || e.Type == EncounterType.Teleconsultation);
+        }
+        else if (string.Equals(selectedType, "Emergency", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(e => e.Type == EncounterType.Emergency);
+        }
+        else if (string.Equals(selectedType, "Inpatient", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(e => e.Type == EncounterType.Inpatient);
+        }
+        else if (!string.IsNullOrWhiteSpace(selectedType))
+        {
+            query = query.Where(e => false);
         }
 
+        var today = DateTime.Today;
         if (dateRange == "30d")
         {
-            query = query.Where(e => e.EncounterDate >= DateTime.Today.AddDays(-30));
+            var rangeStart = today.AddDays(-30);
+            query = query.Where(e => e.EncounterDate >= rangeStart);
         }
         else if (dateRange == "6m")
         {
-            query = query.Where(e => e.EncounterDate >= DateTime.Today.AddMonths(-6));
+            var rangeStart = today.AddMonths(-6);
+            query = query.Where(e => e.EncounterDate >= rangeStart);
         }
         else if (dateRange == "year")
         {
-            query = query.Where(e => e.EncounterDate >= new DateTime(DateTime.Today.Year, 1, 1));
+            var rangeStart = new DateTime(today.Year, 1, 1);
+            query = query.Where(e => e.EncounterDate >= rangeStart);
         }
         else if (dateRange == "custom")
         {
@@ -68,7 +85,7 @@ public class EncountersController : Controller
             {
                 ViewData["DateRangeError"] = "The start date must be on or before the end date.";
             }
-            else if (startDate.Value.Date > DateTime.Today || endDate.Value.Date > DateTime.Today)
+            else if (startDate.Value.Date > today || endDate.Value.Date > today)
             {
                 ViewData["DateRangeError"] = "Visit dates cannot be in the future.";
             }
@@ -86,12 +103,11 @@ public class EncountersController : Controller
 
         var model = new EncountersIndexViewModel
         {
-            SelectedDepartment = department,
+            SelectedType = selectedType,
             SelectedDateRange = dateRange,
             SelectedStartDate = startDate,
             SelectedEndDate = endDate,
             Encounters = encounters,
-            Departments = ClinicalDepartments.All
         };
 
         return View(model);
@@ -122,10 +138,9 @@ public class EncountersController : Controller
 
 public class EncountersIndexViewModel
 {
-    public string? SelectedDepartment { get; set; }
+    public string? SelectedType { get; set; }
     public string? SelectedDateRange { get; set; }
     public DateTime? SelectedStartDate { get; set; }
     public DateTime? SelectedEndDate { get; set; }
     public IReadOnlyList<ClinicalEncounter> Encounters { get; set; } = Array.Empty<ClinicalEncounter>();
-    public IReadOnlyList<ClinicalDepartment> Departments { get; set; } = Array.Empty<ClinicalDepartment>();
 }
