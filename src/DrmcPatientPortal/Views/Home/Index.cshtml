@@ -12,6 +12,17 @@
                 <span><i class="bi bi-geo-alt" aria-hidden="true"></i> Brgy. Apokon, Tagum City</span>
                 <a class="text-white text-decoration-none" href="tel:1555"><i class="bi bi-telephone" aria-hidden="true"></i> Emergency hotline 1555</a>
             </div>
+            @if (!signedIn)
+            {
+                <div class="hero-actions" aria-label="Patient portal account actions">
+                    <a class="btn btn-sm btn-warning text-dark fw-bold" asp-area="Identity" asp-page="/Account/Login">
+                        <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Log in
+                    </a>
+                    <a class="btn btn-sm btn-outline-light fw-semibold" asp-area="Identity" asp-page="/Account/Register">
+                        <i class="bi bi-person-plus" aria-hidden="true"></i> Register
+                    </a>
+                </div>
+            }
         </div>
     </div>
 </section>

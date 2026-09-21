@@ -102,9 +102,12 @@
                 {
                     <li class="nav-item"><a class="nav-link @(homeActive ? "active" : null)" aria-current="@(homeActive ? "page" : null)" asp-controller="Home" asp-action="Index">@Loc["Nav_Home"]</a></li>
                 }
-                <li class="nav-item"><a class="nav-link @(isEncounters ? "active" : null)" aria-current="@(isEncounters ? "page" : null)" asp-controller="Encounters" asp-action="Index">@Loc["Nav_Encounters"]</a></li>
-                <li class="nav-item"><a class="nav-link @(isResults ? "active" : null)" aria-current="@(isResults ? "page" : null)" asp-controller="LabResults" asp-action="Index">@Loc["Nav_Results"]</a></li>
-                <li class="nav-item"><a class="nav-link @(isMedications ? "active" : null)" aria-current="@(isMedications ? "page" : null)" asp-controller="Medications" asp-action="Index">@Loc["Nav_Medication"]</a></li>
+                @if (signedIn)
+                {
+                    <li class="nav-item"><a class="nav-link @(isEncounters ? "active" : null)" aria-current="@(isEncounters ? "page" : null)" asp-controller="Encounters" asp-action="Index">@Loc["Nav_Encounters"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(isResults ? "active" : null)" aria-current="@(isResults ? "page" : null)" asp-controller="LabResults" asp-action="Index">@Loc["Nav_Results"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(isMedications ? "active" : null)" aria-current="@(isMedications ? "page" : null)" asp-controller="Medications" asp-action="Index">@Loc["Nav_Medication"]</a></li>
+                }
                 <li class="nav-item"><a class="nav-link @(isMalasakit ? "active" : null)" aria-current="@(isMalasakit ? "page" : null)" asp-controller="Malasakit" asp-action="Index">@Loc["Nav_FinancialAssistance"]</a></li>
             </ul>
             <div class="nav-account d-flex align-items-center gap-2">
@@ -146,6 +149,7 @@
                         <li><a href="https://www.gov.ph/" target="_blank" rel="noopener">GOV.PH</a></li>
                         <li><a href="https://www.gov.ph/data" target="_blank" rel="noopener">Open Data Portal</a></li>
                         <li><a href="https://www.officialgazette.gov.ph/" target="_blank" rel="noopener">Official Gazette</a></li>
+                        <li><a href="https://doh.gov.ph/" target="_blank" rel="noopener">DOH</a></li>
                     </ul>
                 </div>
                 <div class="col-md-6">
@@ -169,6 +173,7 @@
                         <li><a href="https://www.gov.ph/" target="_blank" rel="noopener">GOV.PH</a></li>
                         <li><a href="https://www.gov.ph/data" target="_blank" rel="noopener">Open Data Portal</a></li>
                         <li><a href="https://www.officialgazette.gov.ph/" target="_blank" rel="noopener">Official Gazette</a></li>
+                        <li><a href="https://doh.gov.ph/" target="_blank" rel="noopener">DOH</a></li>
                         <li><a href="https://op-proper.gov.ph/" target="_blank" rel="noopener">Office of the President</a></li>
                         <li><a href="https://ovp.gov.ph/" target="_blank" rel="noopener">Office of the Vice President</a></li>
                         <li><a href="https://www.senate.gov.ph/" target="_blank" rel="noopener">Senate of the Philippines</a></li>

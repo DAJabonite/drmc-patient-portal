@@ -18,7 +18,7 @@
 }
 
 <nav class="mobile-tab-bar d-lg-none" aria-label="Primary navigation">
-    <div class="mobile-tab-inner">
+    <div class="mobile-tab-inner @(signedIn ? "mobile-tab-inner-authenticated" : "mobile-tab-inner-public")">
         @if (signedIn)
         {
             <a class="mobile-tab-item @(homeActive ? "active" : null)" aria-current="@(homeActive ? "page" : null)" asp-controller="Patient" asp-action="Home">
@@ -33,18 +33,21 @@
                 <span>@Loc["Mobile_Home"]</span>
             </a>
         }
-        <a class="mobile-tab-item @(encountersActive ? "active" : null)" aria-current="@(encountersActive ? "page" : null)" asp-controller="Encounters" asp-action="Index">
-            <i class="bi bi-journal-medical" aria-hidden="true"></i>
-            <span>@Loc["Mobile_Encounters"]</span>
-        </a>
-        <a class="mobile-tab-item @(resultsActive ? "active" : null)" aria-current="@(resultsActive ? "page" : null)" asp-controller="LabResults" asp-action="Index">
-            <i class="bi bi-file-earmark-medical" aria-hidden="true"></i>
-            <span>@Loc["Mobile_Results"]</span>
-        </a>
-        <a class="mobile-tab-item @(medicationActive ? "active" : null)" aria-current="@(medicationActive ? "page" : null)" asp-controller="Medications" asp-action="Index">
-            <i class="bi bi-capsule" aria-hidden="true"></i>
-            <span>@Loc["Mobile_Medication"]</span>
-        </a>
+        @if (signedIn)
+        {
+            <a class="mobile-tab-item @(encountersActive ? "active" : null)" aria-current="@(encountersActive ? "page" : null)" asp-controller="Encounters" asp-action="Index">
+                <i class="bi bi-journal-medical" aria-hidden="true"></i>
+                <span>@Loc["Mobile_Encounters"]</span>
+            </a>
+            <a class="mobile-tab-item @(resultsActive ? "active" : null)" aria-current="@(resultsActive ? "page" : null)" asp-controller="LabResults" asp-action="Index">
+                <i class="bi bi-file-earmark-medical" aria-hidden="true"></i>
+                <span>@Loc["Mobile_Results"]</span>
+            </a>
+            <a class="mobile-tab-item @(medicationActive ? "active" : null)" aria-current="@(medicationActive ? "page" : null)" asp-controller="Medications" asp-action="Index">
+                <i class="bi bi-capsule" aria-hidden="true"></i>
+                <span>@Loc["Mobile_Medication"]</span>
+            </a>
+        }
         <a class="mobile-tab-item @(malasakitActive ? "active" : null)" aria-current="@(malasakitActive ? "page" : null)" aria-label="@Loc["Nav_FinancialAssistance"]" asp-controller="Malasakit" asp-action="Index">
             <img class="mobile-tab-icon" src="~/images/malasakit-nav-logo.png" alt="" aria-hidden="true" />
             <span>@Loc["Mobile_Malasakit"]</span>
