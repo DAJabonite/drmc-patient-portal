@@ -18,13 +18,12 @@
         <form asp-action="Index" method="get" class="encounter-filter-form" id="encounterFilterForm">
             <div class="encounter-filter-toolbar">
                 <div class="encounter-department-field">
-                    <label for="encounterDepartmentFilter" class="form-label small fw-semibold text-dark mb-1 encounter-filter-label">Department</label>
-                    <select id="encounterDepartmentFilter" name="department" class="form-select" aria-label="Filter visits by department">
-                        <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDepartment))">@Loc["Enc_AllDepartments"] (@Model.Encounters.Count)</option>
-                        @foreach (var dept in Model.Departments)
-                        {
-                            <option value="@dept.Name" selected="@(Model.SelectedDepartment == dept.Name)">@dept.Name</option>
-                        }
+                    <label for="encounterDepartmentFilter" class="form-label small fw-semibold text-dark mb-1 encounter-filter-label">Visit type</label>
+                    <select id="encounterDepartmentFilter" name="department" class="form-select" aria-label="Filter visits by type">
+                        <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedType))">@Loc["Enc_AllTypes"] (@Model.Encounters.Count)</option>
+                        <option value="OPD" selected="@(Model.SelectedType == "OPD")">@Loc["Enc_TypeOpd"]</option>
+                        <option value="Emergency" selected="@(Model.SelectedType == "Emergency")">@Loc["Enc_TypeEmergencyRoom"]</option>
+                        <option value="Inpatient" selected="@(Model.SelectedType == "Inpatient")">@Loc["Enc_TypeInpatient"]</option>
                     </select>
                 </div>
                 <button type="button"
@@ -86,7 +85,7 @@
                     <button type="submit" class="btn btn-primary-drmc fw-semibold">
                         <i class="bi bi-funnel me-1" aria-hidden="true"></i> Apply
                     </button>
-                    @if (!string.IsNullOrEmpty(Model.SelectedDepartment) || !string.IsNullOrEmpty(Model.SelectedDateRange))
+                    @if (!string.IsNullOrEmpty(Model.SelectedType) || !string.IsNullOrEmpty(Model.SelectedDateRange))
                     {
                         <a asp-action="Index" class="btn btn-outline-secondary fw-semibold">Clear</a>
                     }
@@ -104,7 +103,7 @@
             const startDate = document.getElementById("encounterStartDate");
             const endDate = document.getElementById("encounterEndDate");
             const filterForm = document.getElementById("encounterFilterForm");
-            const departmentSelect = document.getElementById("encounterDepartmentFilter");
+            const visitTypeSelect = document.getElementById("encounterDepartmentFilter");
             const dateToggle = document.getElementById("encounterDateToggle");
             const datePanel = document.getElementById("encounterDatePanel");
 
@@ -139,7 +138,7 @@
                     dateToggle?.focus();
                 }
             });
-            departmentSelect?.addEventListener("change", () => {
+            visitTypeSelect?.addEventListener("change", () => {
                 if (window.matchMedia("(max-width: 767.98px)").matches) filterForm?.requestSubmit();
             });
 
@@ -166,15 +165,27 @@
             <div class="d-flex flex-column gap-3">
                 @foreach (var enc in Model.Encounters)
                 {
+                    var encounterTypeLabel = enc.Type switch
+                    {
+                        EncounterType.Emergency => "Enc_TypeEmergencyRoom",
+                        EncounterType.Inpatient => "Enc_TypeInpatient",
+                        _ => "Enc_TypeOpd"
+                    };
+                    var encounterTypeClass = enc.Type switch
+                    {
+                        EncounterType.Emergency => "bg-danger-subtle text-danger-emphasis",
+                        EncounterType.Inpatient => "bg-info-subtle text-info-emphasis",
+                        _ => "bg-success-subtle text-success"
+                    };
                     <div class="card border-0 shadow-sm rounded-4 p-4 bg-white hover-shadow-sm transition">
                         <div class="row align-items-center g-3">
                             <div class="col-md-8">
                                 <div class="record-metadata d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    <span class="badge @encounterTypeClass rounded-pill small fw-semibold">
+                                        @Loc[encounterTypeLabel]
+                                    </span>
                                     <span class="badge bg-primary-subtle text-primary-drmc rounded-pill small fw-semibold">
                                         @enc.Department
-                                    </span>
-                                    <span class="badge bg-light text-secondary border rounded-pill small">
-                                        @Loc[$"EncounterType_{enc.Type}"]
                                     </span>
                                     <span class="encounter-reference record-reference small text-muted" style="font-size: 0.75rem;">
                                         @Loc["Enc_Reference"]: <strong>@enc.EncounterReference</strong>

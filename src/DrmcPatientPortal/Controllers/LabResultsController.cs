@@ -28,7 +28,12 @@ public class LabResultsController : Controller
 
     // GET /Patient/LabResults
     [HttpGet("")]
-    public async Task<IActionResult> Index(LabCategory? category, string? search, string? dateRange = null)
+    public async Task<IActionResult> Index(
+        LabCategory? category,
+        string? search,
+        string? dateRange = null,
+        DateTime? startDate = null,
+        DateTime? endDate = null)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
@@ -49,17 +54,43 @@ public class LabResultsController : Controller
             query = query.Where(l => l.TestName.ToLower().Contains(s) || l.AccessionNumber.ToLower().Contains(s));
         }
 
+        var today = DateTime.Today;
+
         if (dateRange == "30d")
         {
-            query = query.Where(l => l.CollectedAt >= DateTime.Today.AddDays(-30));
+            var rangeStart = today.AddDays(-30);
+            query = query.Where(l => l.CollectedAt >= rangeStart);
         }
         else if (dateRange == "6m")
         {
-            query = query.Where(l => l.CollectedAt >= DateTime.Today.AddMonths(-6));
+            var rangeStart = today.AddMonths(-6);
+            query = query.Where(l => l.CollectedAt >= rangeStart);
         }
         else if (dateRange == "year")
         {
-            query = query.Where(l => l.CollectedAt >= new DateTime(DateTime.Today.Year, 1, 1));
+            var rangeStart = new DateTime(today.Year, 1, 1);
+            query = query.Where(l => l.CollectedAt >= rangeStart);
+        }
+        else if (dateRange == "custom")
+        {
+            if (!startDate.HasValue || !endDate.HasValue)
+            {
+                ViewData["DateRangeError"] = "Choose both a start date and an end date.";
+            }
+            else if (startDate.Value.Date > endDate.Value.Date)
+            {
+                ViewData["DateRangeError"] = "The start date must be on or before the end date.";
+            }
+            else if (startDate.Value.Date > today || endDate.Value.Date > today)
+            {
+                ViewData["DateRangeError"] = "Laboratory result dates cannot be in the future.";
+            }
+            else
+            {
+                var inclusiveStart = startDate.Value.Date;
+                var exclusiveEnd = endDate.Value.Date.AddDays(1);
+                query = query.Where(l => l.CollectedAt >= inclusiveStart && l.CollectedAt < exclusiveEnd);
+            }
         }
 
         var allCount = await _db.LabResults.CountAsync(l => l.PatientUserId == user.Id);
@@ -73,6 +104,8 @@ public class LabResultsController : Controller
             SelectedCategory = category,
             SearchTerm = search,
             SelectedDateRange = dateRange,
+            SelectedStartDate = startDate,
+            SelectedEndDate = endDate,
             LabResults = results,
             TotalCount = allCount,
             TotalAvailable = results.Count(r => r.Status == "Available"),
@@ -110,6 +143,8 @@ public class LabResultsIndexViewModel
     public LabCategory? SelectedCategory { get; set; }
     public string? SearchTerm { get; set; }
     public string? SelectedDateRange { get; set; }
+    public DateTime? SelectedStartDate { get; set; }
+    public DateTime? SelectedEndDate { get; set; }
     public IReadOnlyList<LabResult> LabResults { get; set; } = Array.Empty<LabResult>();
     public int TotalCount { get; set; }
     public int TotalAvailable { get; set; }

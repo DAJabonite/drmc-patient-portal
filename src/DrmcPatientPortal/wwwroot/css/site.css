@@ -1069,9 +1069,9 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
 }
 
 .lab-filter-form {
-    width: min(100%, 820px);
+    width: 100%;
     display: grid;
-    grid-template-columns: minmax(240px, 1fr) minmax(200px, 0.8fr) auto;
+    grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
     gap: 0.75rem;
     align-items: end;
 }
@@ -1094,6 +1094,11 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
 .lab-date-field {
     grid-column: 2;
     grid-row: 1;
+}
+
+.lab-custom-date {
+    grid-column: 2 / 4;
+    grid-row: 2;
 }
 
 .lab-filter-actions {
@@ -2797,6 +2802,7 @@ code,
     }
 
     .lab-date-field,
+    .lab-custom-date,
     .lab-filter-actions {
         grid-column: 1;
         grid-row: auto;

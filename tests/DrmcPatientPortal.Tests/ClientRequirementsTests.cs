@@ -124,6 +124,28 @@ public class ClientRequirementsTests
     }
 
     [Fact]
+    public async Task Encounters_TypeFilter_GroupsOpdTeleconsultationEmergencyAndInpatient()
+    {
+        using var db = Database();
+        db.ClinicalEncounters.AddRange(
+            new ClinicalEncounter { PatientUserId = "patient-a", Type = EncounterType.OpdConsultation },
+            new ClinicalEncounter { PatientUserId = "patient-a", Type = EncounterType.Teleconsultation },
+            new ClinicalEncounter { PatientUserId = "patient-a", Type = EncounterType.Emergency },
+            new ClinicalEncounter { PatientUserId = "patient-a", Type = EncounterType.Inpatient },
+            new ClinicalEncounter { PatientUserId = "patient-b", Type = EncounterType.OpdConsultation });
+        await db.SaveChangesAsync();
+
+        var controller = Context(new EncountersController(db, Users(), Mock.Of<IAuditLogService>()));
+        var result = Assert.IsType<ViewResult>(await controller.Index("OPD", null));
+        var model = Assert.IsType<EncountersIndexViewModel>(result.Model);
+
+        Assert.Equal(2, model.Encounters.Count);
+        Assert.All(model.Encounters, encounter => Assert.Equal("patient-a", encounter.PatientUserId));
+        Assert.All(model.Encounters, encounter => Assert.Contains(encounter.Type, new[] { EncounterType.OpdConsultation, EncounterType.Teleconsultation }));
+        Assert.Equal("OPD", model.SelectedType);
+    }
+
+    [Fact]
     public async Task Application_PersistsPendingOutcomes_AndDuplicateSubmissionKeepsOriginal()
     {
         using var db = Database();

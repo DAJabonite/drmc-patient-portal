@@ -29,7 +29,7 @@
                 <button type="button"
                         class="btn btn-outline-drmc lab-date-toggle d-md-none"
                         id="labDateToggle"
-                        aria-expanded="@(Model.SelectedDateRange is not null ? "true" : "false")"
+                        aria-expanded="@(Model.SelectedDateRange is not null || ViewData["DateRangeError"] is not null ? "true" : "false")"
                         aria-controls="labDatePanel">
                     <i class="bi bi-calendar3" aria-hidden="true"></i>
                     <span>Date</span>
@@ -40,15 +40,44 @@
                 </button>
             </div>
 
-            <div id="labDatePanel" class="lab-date-panel @(Model.SelectedDateRange is not null ? "is-open" : null)">
+            <div id="labDatePanel" class="lab-date-panel @(Model.SelectedDateRange is not null || ViewData["DateRangeError"] is not null ? "is-open" : null)">
                 <div class="lab-date-field">
                     <label for="labDateFilter" class="form-label small fw-semibold text-dark mb-1">Date</label>
-                    <select id="labDateFilter" name="dateRange" class="form-select">
+                    <select id="labDateFilter" name="dateRange" class="form-select" aria-controls="customLabDateRange">
                         <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDateRange))">Any date</option>
                         <option value="30d" selected="@(Model.SelectedDateRange == "30d")">Last 30 days</option>
                         <option value="6m" selected="@(Model.SelectedDateRange == "6m")">Last 6 months</option>
                         <option value="year" selected="@(Model.SelectedDateRange == "year")">This year</option>
+                        <option value="custom" selected="@(Model.SelectedDateRange == "custom")">Custom date range</option>
                     </select>
+                </div>
+                <div id="customLabDateRange" class="lab-custom-date @(Model.SelectedDateRange == "custom" ? null : "d-none")">
+                    <fieldset class="custom-date-range">
+                        <legend class="visually-hidden">Custom laboratory result date range</legend>
+                        <div>
+                            <label for="labStartDate" class="form-label small fw-semibold text-dark mb-1">From</label>
+                            <input id="labStartDate"
+                                   name="startDate"
+                                   type="date"
+                                   value="@Model.SelectedStartDate?.ToString("yyyy-MM-dd")"
+                                   max="@(Model.SelectedEndDate?.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd"))"
+                                   class="form-control" />
+                        </div>
+                        <div>
+                            <label for="labEndDate" class="form-label small fw-semibold text-dark mb-1">To</label>
+                            <input id="labEndDate"
+                                   name="endDate"
+                                   type="date"
+                                   value="@Model.SelectedEndDate?.ToString("yyyy-MM-dd")"
+                                   min="@Model.SelectedStartDate?.ToString("yyyy-MM-dd")"
+                                   max="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                   class="form-control" />
+                        </div>
+                    </fieldset>
+                    @if (ViewData["DateRangeError"] is string dateRangeError)
+                    {
+                        <p class="small text-danger mt-2 mb-0" role="alert">@dateRangeError</p>
+                    }
                 </div>
                 <div class="lab-filter-actions">
                     <button type="submit" class="btn btn-primary-drmc fw-semibold">
@@ -69,13 +98,35 @@
         (() => {
             const filterForm = document.getElementById("labResultFilterForm");
             const categorySelect = document.getElementById("labCategoryFilter");
+            const rangeSelect = document.getElementById("labDateFilter");
+            const customRange = document.getElementById("customLabDateRange");
+            const startDate = document.getElementById("labStartDate");
+            const endDate = document.getElementById("labEndDate");
             const dateToggle = document.getElementById("labDateToggle");
             const datePanel = document.getElementById("labDatePanel");
+
+            if (!rangeSelect || !customRange || !startDate || !endDate) return;
 
             const setDatePanelOpen = (open) => {
                 datePanel?.classList.toggle("is-open", open);
                 dateToggle?.setAttribute("aria-expanded", open ? "true" : "false");
             };
+
+            const syncRangeVisibility = () => {
+                const isCustom = rangeSelect.value === "custom";
+                customRange.classList.toggle("d-none", !isCustom);
+                startDate.required = isCustom;
+                endDate.required = isCustom;
+            };
+
+            rangeSelect.addEventListener("change", syncRangeVisibility);
+            startDate.addEventListener("change", () => {
+                endDate.min = startDate.value;
+                if (endDate.value && endDate.value < startDate.value) endDate.value = startDate.value;
+            });
+            endDate.addEventListener("change", () => {
+                startDate.max = endDate.value || "@DateTime.Today.ToString("yyyy-MM-dd")";
+            });
 
             dateToggle?.addEventListener("click", () => {
                 setDatePanelOpen(dateToggle.getAttribute("aria-expanded") !== "true");
@@ -89,6 +140,8 @@
             categorySelect?.addEventListener("change", () => {
                 if (window.matchMedia("(max-width: 767.98px)").matches) filterForm?.requestSubmit();
             });
+
+            syncRangeVisibility();
         })();
     </script>
 }
