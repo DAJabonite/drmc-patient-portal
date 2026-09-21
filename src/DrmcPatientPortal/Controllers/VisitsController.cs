@@ -9,14 +9,15 @@ using Microsoft.EntityFrameworkCore;
 namespace DrmcPatientPortal.Controllers;
 
 [Authorize]
-[Route("Patient/Encounters")]
-public class EncountersController : Controller
+[Route("Patient/Visits", Order = 0)]
+[Route("Patient/Encounters", Order = 1)] // Preserve existing bookmarks.
+public class VisitsController : Controller
 {
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IAuditLogService _auditLog;
 
-    public EncountersController(
+    public VisitsController(
         ApplicationDbContext db,
         UserManager<ApplicationUser> userManager,
         IAuditLogService auditLog)
@@ -26,7 +27,7 @@ public class EncountersController : Controller
         _auditLog = auditLog;
     }
 
-    // GET /Patient/Encounters
+    // GET /Patient/Visits
     [HttpGet("")]
     public async Task<IActionResult> Index(
         string? department,
@@ -101,7 +102,7 @@ public class EncountersController : Controller
             .OrderByDescending(e => e.EncounterDate)
             .ToListAsync();
 
-        var model = new EncountersIndexViewModel
+        var model = new VisitsIndexViewModel
         {
             SelectedType = selectedType,
             SelectedDateRange = dateRange,
@@ -113,7 +114,7 @@ public class EncountersController : Controller
         return View(model);
     }
 
-    // GET /Patient/Encounters/Details/{id}
+    // GET /Patient/Visits/Details/{id}
     [HttpGet("Details/{id:int}")]
     public async Task<IActionResult> Details(int id)
     {
@@ -136,7 +137,7 @@ public class EncountersController : Controller
     }
 }
 
-public class EncountersIndexViewModel
+public class VisitsIndexViewModel
 {
     public string? SelectedType { get; set; }
     public string? SelectedDateRange { get; set; }

@@ -10,7 +10,7 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
     internal static IEnumerable<string> PublicScreens => PublicRoutes;
     internal static IEnumerable<string> PatientScreens => PatientRoutes;
     private static readonly string[] PublicRoutes = ["/", "/Directory", "/Directory/Doctor/1", "/Directory/Department?name=Internal%20Medicine", "/OpdGuide", "/Advisories", "/Advisories/Details?slug=dengue-4s-prevention-alert", "/Home/Privacy", "/Home/ServiceUnavailable", "/Malasakit", "/Malasakit/Program?code=MALASAKIT", "/Identity/Account/Login", "/Identity/Account/Register", "/Identity/Account/ForgotPassword", "/Identity/Account/AccessDenied", "/Home/Error"];
-    private static readonly string[] PatientRoutes = ["/Patient/MedicalHistory", "/Patient/MedicalHistory?category=ADMITTED", "/Malasakit/Apply", "/Malasakit/Status", "/Patient/Home", "/Patient/Encounters", "/Patient/Encounters/Details/1", "/Patient/LabResults", "/Patient/LabResults/Details/1", "/Patient/Medications", "/Patient/Medications/Details/1", "/Patient/Audit", "/Identity/Account/Manage", "/Identity/Account/Manage/MyIds", "/Identity/Account/Manage/TwoFactorAuthentication", "/Identity/Account/Manage/EnableAuthenticator", "/Patient/Triage/Start/2", "/Patient/Triage/Summary/1", "/Patient/Triage/EmergencyWarning"];
+    private static readonly string[] PatientRoutes = ["/Patient/MedicalHistory", "/Patient/MedicalHistory?category=ADMITTED", "/Malasakit/Apply", "/Malasakit/Status", "/Patient/Home", "/Patient/Visits", "/Patient/Visits/Details/1", "/Patient/LabResults", "/Patient/LabResults/Details/1", "/Patient/Medications", "/Patient/Medications/Details/1", "/Patient/Audit", "/Identity/Account/Manage", "/Identity/Account/Manage/MyIds", "/Identity/Account/Manage/TwoFactorAuthentication", "/Identity/Account/Manage/EnableAuthenticator", "/Patient/Triage/Start/2", "/Patient/Triage/Summary/1", "/Patient/Triage/EmergencyWarning"];
 
     public static TheoryData<string, string, string> Matrix
     {
@@ -88,7 +88,7 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
                 var problems = await LayoutProblems(page);
                 failures.AddRange(problems.Select(p => route + ": " + p));
                 routes.Add(route);
-                if (problems.Length > 0 || (culture == "en" && device is "1440" or "small" or "iphone") || route is "/Patient/Home" or "/Patient/Encounters" or "/")
+                if (problems.Length > 0 || (culture == "en" && device is "1440" or "small" or "iphone") || route is "/Patient/Home" or "/Patient/Visits" or "/")
                 {
                     // CSS pixels avoid WebKit's 32767-pixel image limit on high-DPI phones.
                     // Layout checks still inspect the entire page, including long audit histories.
@@ -178,8 +178,8 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
 
         foreach (var route in new[]
                  {
-                     "/Patient/Encounters",
-                     "/Patient/Encounters/Details/1",
+                     "/Patient/Visits",
+                     "/Patient/Visits/Details/1",
                      "/Patient/LabResults",
                      "/Patient/LabResults/Details/1",
                      "/Patient/Audit",
@@ -191,7 +191,7 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
             Assert.Equal(0, await page.Locator("a[href*='/Print'], button[onclick*='print'], button[onclick*='Print']").CountAsync());
         }
 
-        foreach (var route in new[] { "/Patient/Encounters/Print/1", "/Patient/LabResults/Print/1" })
+        foreach (var route in new[] { "/Patient/Visits/Print/1", "/Patient/LabResults/Print/1" })
         {
             var response = await page.GotoAsync(route);
             Assert.Equal(404, response?.Status);
@@ -259,7 +259,7 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
             (Route: "/Patient/LabResults", SelectId: "#labCategoryFilter", Parameter: "category"),
             (Route: "/Advisories", SelectId: "#advisoryCategoryFilter", Parameter: "category"),
             (Route: "/Directory", SelectId: "#directoryDepartmentFilter", Parameter: "department"),
-            (Route: "/Patient/Encounters", SelectId: "#encounterDepartmentFilter", Parameter: "department")
+            (Route: "/Patient/Visits", SelectId: "#encounterDepartmentFilter", Parameter: "department")
         };
 
         foreach (var filter in filters)
@@ -283,7 +283,7 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
             if (filter.Route != "/Advisories")
             {
                 await Expect(desktopPage.Locator(filter.SelectId)).ToBeVisibleAsync();
-                if (filter.Route == "/Patient/Encounters")
+                if (filter.Route == "/Patient/Visits")
                     await Expect(desktopPage.Locator("#encounterDateFilter")).ToBeVisibleAsync();
                 if (filter.Route == "/Patient/LabResults")
                     await Expect(desktopPage.Locator("#labDateFilter")).ToBeVisibleAsync();
@@ -306,7 +306,7 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
 
         var labelsByRoute = new Dictionary<string, string>
         {
-            ["/Patient/Encounters"] = "Electronic Medical Record",
+            ["/Patient/Visits"] = "Electronic Medical Record",
             ["/Patient/LabResults"] = "Patient Health Records",
             ["/Patient/Medications"] = "Pharmacy Health Record",
             ["/Patient/Audit"] = "Data Privacy & Security",
@@ -377,8 +377,8 @@ public sealed class ResponsiveTests(PortalFixture app, ITestOutputHelper output)
         await menu.GetByRole(AriaRole.Button, new() { Name = "Close", Exact = true }).ClickAsync();
         await Expect(menu).ToBeHiddenAsync();
         await Expect(trigger).ToBeFocusedAsync();
-        await page.Locator(".mobile-tab-bar a[href='/Patient/Encounters']").TapAsync();
-        await Expect(page.Locator(".mobile-tab-bar [aria-current='page']")).ToHaveAttributeAsync("href", "/Patient/Encounters");
+        await page.Locator(".mobile-tab-bar a[href='/Patient/Visits']").TapAsync();
+        await Expect(page.Locator(".mobile-tab-bar [aria-current='page']")).ToHaveAttributeAsync("href", "/Patient/Visits");
         var reference = page.Locator(".encounter-reference").First;
         Assert.True((await reference.BoundingBoxAsync())!.Width >= 200);
         Assert.True((await reference.BoundingBoxAsync())!.Height < 70);

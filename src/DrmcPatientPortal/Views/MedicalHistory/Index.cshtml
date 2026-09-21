@@ -34,7 +34,7 @@
                         </div>
                         <h3 class="h6 fw-bold">@record.PrimaryDiagnosis</h3>
                         <p class="mb-2">@record.ClinicalSummary</p>
-                        <a asp-controller="Encounters" asp-action="Details" asp-route-id="@record.Id">@Loc["Enc_ViewSummary"]<span class="visually-hidden">: @record.EncounterReference</span></a>
+                        <a asp-controller="Visits" asp-action="Details" asp-route-id="@record.Id">@Loc["Enc_ViewSummary"]<span class="visually-hidden">: @record.EncounterReference</span></a>
                     </article>
                 }
             </section>

@@ -67,12 +67,11 @@ else
     builder.Services.AddHttpClient<ISmsSender, HttpSmsSender>();
 }
 
-// In-process vector QR code generator for appointment check-in slips
+// Local vector QR codes for authenticator enrollment.
 builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
 
 // PHI and security access audit logging service
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
-builder.Services.AddSingleton<IAppointmentAccessService, AppointmentAccessService>();
 builder.Services.Configure<PatientDocumentStorageOptions>(builder.Configuration.GetSection("PatientDocuments"));
 builder.Services.AddScoped<IPatientDocumentStorage, PatientDocumentStorage>();
 builder.Services.AddHostedService<TemporaryDocumentCleanupService>();

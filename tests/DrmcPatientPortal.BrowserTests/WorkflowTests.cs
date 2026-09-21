@@ -53,6 +53,7 @@ public sealed class WorkflowTests(PortalFixture app)
         await page.Locator("#txtFirstName").FillAsync("Browser");
         await page.Locator("#txtLastName").FillAsync("Testpatient");
         await page.Locator("#txtIdNumber").FillAsync("TEST" + Guid.NewGuid().ToString("N")[..8]);
+        await page.Locator("#txtAddress").FillAsync("123 Apokon Road, Tagum City");
         await page.Locator("#btnGoToStep4").ClickAsync();
         await Expect(page.Locator("#wizardStep4")).ToBeVisibleAsync();
         Assert.Empty(await ResponsiveTests.LayoutProblems(page));
@@ -104,12 +105,12 @@ public sealed class WorkflowTests(PortalFixture app)
         await using var browser = await app.Playwright.Chromium.LaunchAsync();
         await using var context = await browser.NewContextAsync(app.Context("small"));
         var page = await context.NewPageAsync();
-        await page.GotoAsync("/Patient/Encounters");
+        await page.GotoAsync("/Patient/Visits");
         Assert.Contains("ReturnUrl", page.Url);
         await page.Locator("input[name='Input.Email']").FillAsync("juan@drmc.doh.gov.ph");
         await page.Locator("input[name='Input.Password']").FillAsync("J@uan2026");
         await page.Locator("#login-submit").ClickAsync();
-        await page.WaitForURLAsync("**/Patient/Encounters");
+        await page.WaitForURLAsync("**/Patient/Visits");
         await Expect(page.Locator("main .card")).ToContainTextAsync("No");
         foreach (var route in new[] { "/Patient/Home", "/Patient/LabResults", "/Patient/Medications" })
         {
@@ -175,7 +176,7 @@ public sealed class WorkflowTests(PortalFixture app)
     }
 
     [Fact]
-    public async Task Malasakit_hub_keeps_provider_band_and_service_guides_without_location_card()
+    public async Task Malasakit_hub_keeps_service_guides_without_retired_program_cards()
     {
         await using var browser = await app.Playwright.Chromium.LaunchAsync();
         await using var context = await browser.NewContextAsync(app.Context("small"));
@@ -192,11 +193,9 @@ public sealed class WorkflowTests(PortalFixture app)
         await Expect(page.GetByText("Open a service guide to prepare the documents commonly requested at the Malasakit Center.")).ToHaveCountAsync(0);
         await Expect(page.Locator("main aside")).ToHaveCountAsync(0);
         await Expect(page.GetByText("Need Help Preparing Your Malasakit Documents?")).ToHaveCountAsync(0);
-        await Expect(page.Locator(".malasakit-provider-band")).ToContainTextAsync("DOH MAIP");
-        await Expect(page.Locator(".malasakit-provider-band")).ToContainTextAsync("PhilHealth Konsulta");
-        await Expect(page.Locator(".malasakit-provider-band")).ToContainTextAsync("DSWD AICS");
-        await Expect(page.Locator(".malasakit-provider-band")).ToContainTextAsync("DRMC");
-        await Expect(page.Locator(".malasakit-provider-band")).Not.ToContainTextAsync("PCSO IMAP");
+        await Expect(page.Locator("main a.dswd-service-tile")).ToHaveCountAsync(4);
+        await Expect(page.Locator("main")).ToContainTextAsync("DOH MAIFIP");
+        await Expect(page.Locator("main")).ToContainTextAsync("PhilHealth");
         await Expect(page.GetByText("Government Service Guides")).ToBeVisibleAsync();
         await Expect(page.GetByText("Malasakit Center Location")).ToHaveCountAsync(0);
     }
@@ -241,7 +240,7 @@ public sealed class WorkflowTests(PortalFixture app)
         await page.Keyboard.PressAsync("Enter");
         await Expect(page.Locator("main")).ToBeFocusedAsync();
         await PortalFixture.SignIn(page);
-        foreach (var route in new[] { "/Patient/Home", "/Patient/Encounters", "/Patient/LabResults", "/Identity/Account/Manage" })
+        foreach (var route in new[] { "/Patient/Home", "/Patient/Visits", "/Patient/LabResults", "/Identity/Account/Manage" })
         {
             await page.GotoAsync(route);
             Assert.Empty(await ResponsiveTests.LayoutProblems(page));

@@ -109,13 +109,13 @@ public class ClientRequirementsTests
             new ClinicalEncounter { PatientUserId = "patient-b", EncounterDate = new DateTime(2026, 2, 15, 12, 0, 0) });
         await db.SaveChangesAsync();
 
-        var controller = Context(new EncountersController(db, Users(), Mock.Of<IAuditLogService>()));
+        var controller = Context(new VisitsController(db, Users(), Mock.Of<IAuditLogService>()));
         var result = Assert.IsType<ViewResult>(await controller.Index(
             null,
             "custom",
             new DateTime(2026, 2, 1),
             new DateTime(2026, 2, 28)));
-        var model = Assert.IsType<EncountersIndexViewModel>(result.Model);
+        var model = Assert.IsType<VisitsIndexViewModel>(result.Model);
 
         Assert.Equal(2, model.Encounters.Count);
         Assert.All(model.Encounters, encounter => Assert.Equal("patient-a", encounter.PatientUserId));
@@ -135,9 +135,9 @@ public class ClientRequirementsTests
             new ClinicalEncounter { PatientUserId = "patient-b", Type = EncounterType.OpdConsultation });
         await db.SaveChangesAsync();
 
-        var controller = Context(new EncountersController(db, Users(), Mock.Of<IAuditLogService>()));
+        var controller = Context(new VisitsController(db, Users(), Mock.Of<IAuditLogService>()));
         var result = Assert.IsType<ViewResult>(await controller.Index("OPD", null));
-        var model = Assert.IsType<EncountersIndexViewModel>(result.Model);
+        var model = Assert.IsType<VisitsIndexViewModel>(result.Model);
 
         Assert.Equal(2, model.Encounters.Count);
         Assert.All(model.Encounters, encounter => Assert.Equal("patient-a", encounter.PatientUserId));

@@ -94,14 +94,12 @@
   <data name="Error_ServiceUnavailableBody"><value>Hindi makumpleto ang kinakailangang tala ng seguridad. Walang protektadong impormasyon ang inilabas. Pakisubukang muli.</value></data>
   <data name="Enc_Title"><value>Mga Pagbisita at Tala sa Pangangalaga</value></data>
   <data name="Enc_Subtitle"><value>Mga pagbisita sa outpatient at ospital</value></data>
-  <data name="Enc_BookFollowUp"><value>Magpa-iskedyul ng Follow-Up</value></data>
-  <data name="Enc_AllDepartments"><value>Lahat ng Departamento</value></data>
   <data name="Enc_AllTypes"><value>Lahat ng Uri</value></data>
   <data name="Enc_TypeOpd"><value>OPD</value></data>
   <data name="Enc_TypeEmergencyRoom"><value>Emergency Room</value></data>
   <data name="Enc_TypeInpatient"><value>Inpatient</value></data>
   <data name="Enc_None"><value>Walang nakatalang pagbisita</value></data>
-  <data name="Enc_NoneBody"><value>Walang pagbisitang tumutugma sa napiling departamento.</value></data>
+  <data name="Enc_NoneBody"><value>Walang pagbisitang tumutugma sa mga napiling filter.</value></data>
   <data name="Enc_ViewAll"><value>Tingnan Lahat ng Pagbisita</value></data>
   <data name="Enc_Reference"><value>Reference</value></data>
   <data name="Enc_VisitDate"><value>Petsa ng Konsultasyon</value></data>
@@ -149,7 +147,6 @@
   <data name="Enc_Collected"><value>Kinuha</value></data>
   <data name="Enc_ViewReport"><value>Tingnan ang Ulat</value></data>
   <data name="Enc_RecommendedFollowUp"><value>Inirerekomendang Susunod na Follow-Up</value></data>
-  <data name="Enc_BookFollowUpSlot"><value>Mag-book ng Follow-Up</value></data>
   <data name="Enc_BackNotes"><value>Bumalik sa mga Pagbisita</value></data>
   <data name="Enc_ViewAllResults"><value>Tingnan lahat ng resulta</value></data>
   <data name="Enc_ViewPrescriptions"><value>Tingnan ang mga Reseta</value></data>
@@ -157,43 +154,6 @@
   <data name="EncounterType_OpdConsultation"><value>Konsultasyong OPD</value></data>
   <data name="EncounterType_Emergency"><value>Emerhensiya</value></data>
   <data name="EncounterType_Inpatient"><value>Inpatient</value></data>
-  <data name="Appt_Book"><value>Mag-book ng Appointment</value></data>
-  <data name="Appt_SelfService"><value>Online na Sariling Pag-book</value></data>
-  <data name="Appt_OutpatientModes"><value>Mga Outpatient Clinic at Telekonsultasyon</value></data>
-  <data name="Appt_Schedule"><value>Itakda ang Iyong Konsultasyong Medikal</value></data>
-  <data name="Appt_SignInHint"><value>May DRMC Patient Account? Mag-sign in upang awtomatikong ilagay ang profile at iugnay ang pagbisita sa dashboard.</value></data>
-  <data name="Appt_SignIn"><value>Mag-sign in sa Account</value></data>
-  <data name="Appt_SelectService"><value>Piliin ang Kagawaran at Paraan ng Konsultasyon</value></data>
-  <data name="Appt_Mode"><value>Paraan ng Konsultasyon</value></data>
-  <data name="Appt_InPerson"><value>Harapang OPD</value></data>
-  <data name="Appt_VisitClinic"><value>Pumunta sa DRMC Tagum City Clinic</value></data>
-  <data name="Appt_Teleconsult"><value>Telekonsultasyon</value></data>
-  <data name="Appt_OnlineVideo"><value>Online na Video Konsultasyon</value></data>
-  <data name="Appt_Department"><value>Espesyalidad na Kagawaran</value></data>
-  <data name="Appt_Doctor"><value>Doktor / Espesyalista (Opsyonal)</value></data>
-  <data name="Appt_AnyDoctor"><value>Sinumang Available na Espesyalista</value></data>
-  <data name="Appt_DoctorHint"><value>Pumili ng nais na doktor o sinumang available na consultant.</value></data>
-  <data name="Appt_ChooseSchedule"><value>Piliin ang Iskedyul ng Konsultasyon</value></data>
-  <data name="Appt_Date"><value>Petsa ng Konsultasyon</value></data>
-  <data name="Appt_Time"><value>Available na Oras</value></data>
-  <data name="Appt_Contact"><value>Detalye sa Pakikipag-ugnayan</value></data>
-  <data name="Appt_FullName"><value>Buong Pangalan</value></data>
-  <data name="Appt_Mobile"><value>Numero ng Mobile sa Pilipinas</value></data>
-  <data name="Appt_SmsHint"><value>Ipapadala rito ang ligtas na link ng booking.</value></data>
-  <data name="Appt_Email"><value>Email Address</value></data>
-  <data name="Appt_PhilHealth"><value>Numero ng PhilHealth (Opsyonal)</value></data>
-  <data name="Appt_Reason"><value>Dahilan ng Pagbisita at mga Sintomas</value></data>
-  <data name="Appt_Describe"><value>Ilarawan ang alalahaning medikal o pangunahing sintomas</value></data>
-  <data name="Appt_PrivacyConsent"><value>Pinatutunayan kong tama ang impormasyon at pumapayag sa pagproseso ng personal at pangkalusugang datos sa ilalim ng Republic Act No. 10173 para sa pag-iskedyul sa DRMC.</value></data>
-  <data name="Appt_Confirm"><value>Kumpirmahin at Gumawa ng Ligtas na QR Pass</value></data>
-  <data name="Appt_Confirmed"><value>Kumpirmado ang Booking</value></data>
-  <data name="Appt_OfficialSlip"><value>Opisyal na Appointment Slip</value></data>
-  <data name="Appt_SlipHelp"><value>Ipakita ang ligtas na QR pass sa clinic triage sa araw ng konsultasyon.</value></data>
-  <data name="Appt_BookingReference"><value>Reference ng Booking</value></data>
-  <data name="Appt_Scheduled"><value>Nakatakdang Petsa at Oras</value></data>
-  <data name="Appt_Cancel"><value>Kanselahin ang Appointment</value></data>
-  <data name="Appt_UnavailableTitle" xml:space="preserve"><value>Hindi mabuksan ang appointment</value></data>
-  <data name="Appt_UnavailableBody" xml:space="preserve"><value>Hindi namin mabuksan ang check-in pass na ito. Gamitin ang link sa mensahe ng kumpirmasyon, mag-sign in sa account na nag-book ng pagbisita, o humingi ng tulong sa triage desk ng ospital.</value></data>
   <data name="Sources_Title" xml:space="preserve"><value>Mga opisyal na sanggunian ng DRMC</value></data>
   <data name="Sources_Description" xml:space="preserve"><value>Basahin ang pinakabagong mga publikasyon sa website ng DRMC.</value></data>
   <data name="Sources_Arta" xml:space="preserve"><value>ARTA / Anti-Red Tape Act</value></data>

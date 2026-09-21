@@ -14,7 +14,7 @@
     var isMalasakit = currentController == "Malasakit";
     var isResults = currentController == "LabResults";
     var isMedications = currentController == "Medications";
-    var isEncounters = currentController == "Encounters";
+    var isEncounters = currentController == "Visits";
     var homeActive = signedIn ? isDashboard : isHome;
 }
 <!DOCTYPE html>
@@ -104,7 +104,7 @@
                 }
                 @if (signedIn)
                 {
-                    <li class="nav-item"><a class="nav-link @(isEncounters ? "active" : null)" aria-current="@(isEncounters ? "page" : null)" asp-controller="Encounters" asp-action="Index">@Loc["Nav_Encounters"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(isEncounters ? "active" : null)" aria-current="@(isEncounters ? "page" : null)" asp-controller="Visits" asp-action="Index">@Loc["Nav_Encounters"]</a></li>
                     <li class="nav-item"><a class="nav-link @(isResults ? "active" : null)" aria-current="@(isResults ? "page" : null)" asp-controller="LabResults" asp-action="Index">@Loc["Nav_Results"]</a></li>
                     <li class="nav-item"><a class="nav-link @(isMedications ? "active" : null)" aria-current="@(isMedications ? "page" : null)" asp-controller="Medications" asp-action="Index">@Loc["Nav_Medication"]</a></li>
                 }
