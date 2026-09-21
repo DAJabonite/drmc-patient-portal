@@ -8,9 +8,9 @@ Patients should see the next useful action before institutional or explanatory c
 
 ## Navigation
 
-- Mobile and desktop primary navigation use the five client-requested destinations: Home, Encounters, Results, Medication, and Financial Assistance / Malasakit.
+- Mobile and desktop primary navigation use the five client-requested destinations: Home, Visits, Labs, Medication, and Financial Assistance / Malasakit.
 - Signed-in Home opens the patient dashboard; signed-out Home opens the public landing page.
-- Guest access to Encounters, Results, and Medication follows the existing sign-in redirect and returns the patient to the destination after authentication.
+- Guest access to Visits, Labs, and Medication follows the existing sign-in redirect and returns the patient to the destination after authentication.
 - The icon-only mobile header hamburger opens the directory, OPD guide, advisories, language, and account actions. It retains an accessible Menu label.
 - Current location is conveyed with text/icon styling and `aria-current`, not color alone.
 
@@ -25,7 +25,7 @@ Patients should see the next useful action before institutional or explanatory c
 ## Authentication and registration
 
 - Login remains a single focused form and respects the requested return URL.
-- Registration retains the four-step verified-ID flow: ID choice, image/manual path, review, and credentials/consent.
+- Registration retains the four-step ID-entry flow: ID choice, image/manual path, review, and credentials/consent.
 - Step labels and helper copy stay concise on phones, Back/Continue actions remain full width, and focus moves to the active step heading.
 - The privacy-and-terms dialog keeps its scroll gate while using a clearly outlined agreement checkbox and readable notice text.
 - Server validation, upload handling, OCR, account lockout, privacy consent, and post-registration dashboard redirect remain unchanged.
@@ -33,7 +33,7 @@ Patients should see the next useful action before institutional or explanatory c
 ## Dashboard and clinical records
 
 - The dashboard opens with direct links to doctors/clinics and the physical OPD guide, followed by current clinical-record summaries.
-- Access history and settings remain in the dashboard shortcut row and utility/account navigation; the welcome banner does not duplicate them.
+- Access history and settings remain in utility/account navigation; the welcome banner does not duplicate them.
 - Record indexes use readable rows with a clear status and one primary action. Supporting metadata wraps instead of overflowing.
 - Detail pages keep safety information and clinical wording intact while using consistent headings, definition-style metadata, and action placement.
 

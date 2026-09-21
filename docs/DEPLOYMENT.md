@@ -40,7 +40,7 @@ Provide secrets through the deployment secret store or environment, never commit
 
 Terminate TLS at a trusted reverse proxy, forward scheme/host safely, and force HTTPS. Preserve HttpOnly secure cookies and the self-only CSP; allow extra origins only after review.
 
-PHI access and clinical mutations fail closed when audit persistence fails. Treat 503 responses and audit-write exceptions as operational incidents. Connect a SIEM only after DRMC approves transport, access, retention, and incident procedures.
+Actions that write an audit event fail closed when audit persistence fails. Treat 503 responses and audit-write exceptions as operational incidents. Connect a SIEM only after DRMC approves transport, access, retention, and incident procedures.
 
 HIS, pharmacy, and SIEM adapters are absent because approved interfaces and credentials are unavailable. Leave them disabled. Never label local triage/refill state as synchronized, accepted, or dispensed without confirmation from an institutional adapter.
 
@@ -52,4 +52,4 @@ dotnet test DrmcPatientPortal.slnx --no-build
 dotnet list DrmcPatientPortal.slnx package --vulnerable --include-transitive
 ```
 
-Smoke-test capability exchange and revocation, Encounters, ID retrieval, triage, refills, languages, and error telemetry before traffic is enabled.
+Smoke-test Visits (including legacy Encounters bookmarks), laboratory results, medications, ID retrieval, registration/2FA, retained triage/subsidy endpoints, languages, and error telemetry before traffic is enabled. Booking/check-in and refill submission are retired; do not deploy them as active workflows.
