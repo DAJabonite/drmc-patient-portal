@@ -322,6 +322,10 @@ textarea:focus-visible,
     align-items: stretch;
 }
 
+.mobile-tab-inner-public {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .mobile-tab-item {
     position: relative;
     min-width: 0;
@@ -527,6 +531,18 @@ textarea:focus-visible,
 .hero-content {
     max-width: 720px;
     padding-block: clamp(2.5rem, 7vw, 5.5rem);
+}
+
+.hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+    margin-top: 1.1rem;
+}
+
+.hero-actions .btn {
+    min-height: 38px;
+    padding-inline: .85rem;
 }
 
 .hero-title {
@@ -768,6 +784,10 @@ textarea:focus-visible,
     width: 100%;
     height: 100%;
     object-fit: contain;
+}
+
+.dswd-requirements-grid {
+    align-items: flex-start;
 }
 
 .dswd-requirement-card {
@@ -1580,7 +1600,20 @@ code,
 .registration-consent .form-check-label { cursor: pointer; }
 .registration-consent .form-check-input:disabled ~ .form-check-label { opacity: 1; }
 .registration-consent .form-check-input,
-.registration-consent .form-check-input:disabled { opacity: 1; border: 2px solid #536273; background-color: #fff; }
+.registration-consent .form-check-input:disabled {
+    opacity: 1;
+    border: 2px solid #aeb8c4;
+    background-color: #e5e9ee;
+}
+.registration-consent .form-check-input:not(:disabled) {
+    cursor: pointer;
+    border-color: #111820;
+    background-color: #fff;
+}
+.registration-consent .form-check-input:not(:disabled):checked {
+    border-color: #111820;
+    background-color: #111820;
+}
 .registration-consent .privacy-content > .lead { font-weight: 400; }
 .registration-optional { margin-left: .18rem; color: var(--drmc-text-muted); font-size: .74rem; font-weight: 400; white-space: nowrap; }
 @media (max-width: 575.98px) {

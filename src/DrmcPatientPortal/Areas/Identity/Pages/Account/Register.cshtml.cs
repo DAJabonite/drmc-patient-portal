@@ -88,6 +88,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             [DataType(DataType.Date)]
             public DateTime? DateOfBirth { get; set; }
 
+            [Required(ErrorMessage = "Enter your residential address.")]
             [StringLength(200, ErrorMessage = "The {0} must be at most {1} characters long.")]
             [Display(Name = "Complete address")]
             public string Address { get; set; }

@@ -7,6 +7,64 @@ namespace DrmcPatientPortal.BrowserTests;
 public sealed class ClientRequirementsTests(PortalFixture app)
 {
     [Fact]
+    public async Task Public_navigation_hides_patient_records_on_desktop_and_mobile()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+
+        foreach (var device in new[] { "1440", "small" })
+        {
+            await using var context = await browser.NewContextAsync(app.Context(device));
+            var page = await context.NewPageAsync();
+            await page.GotoAsync("/");
+
+            foreach (var path in new[] { "/Patient/Encounters", "/Patient/LabResults", "/Patient/Medications" })
+            {
+                await Expect(page.Locator($"nav[aria-label='Main navigation'] a[href='{path}'], .mobile-tab-bar a[href='{path}']")).ToHaveCountAsync(0);
+            }
+
+            await Expect(page.Locator(".mobile-tab-inner-public")).ToHaveCountAsync(1);
+            await Expect(page.Locator(".mobile-tab-inner-public .mobile-tab-item")).ToHaveCountAsync(2);
+        }
+    }
+
+    [Fact]
+    public async Task Dswd_requirement_cards_keep_adjacent_card_collapsed_on_desktop()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+        await using var context = await browser.NewContextAsync(app.Context("1440"));
+        var page = await context.NewPageAsync();
+        await page.GotoAsync("/Malasakit/DSWDServices");
+
+        var cards = page.Locator("details.requirement-disclosure");
+        await Expect(cards).ToHaveCountAsync(4);
+        await cards.Nth(0).Locator("summary").ClickAsync();
+
+        await Expect(cards.Nth(0)).ToHaveAttributeAsync("open", "");
+        await Expect(cards.Nth(1)).Not.ToHaveAttributeAsync("open", "");
+
+        var expandedHeight = (await cards.Nth(0).BoundingBoxAsync())!.Height;
+        var adjacentHeight = (await cards.Nth(1).BoundingBoxAsync())!.Height;
+        Assert.True(expandedHeight > adjacentHeight + 100, $"Expected independent card heights but measured {expandedHeight}px and {adjacentHeight}px.");
+    }
+
+    [Fact]
+    public async Task Home_login_cta_uses_the_same_warning_color_as_portal_entry()
+    {
+        await using var browser = await app.Playwright.Chromium.LaunchAsync();
+        await using var context = await browser.NewContextAsync(app.Context("small"));
+        var page = await context.NewPageAsync();
+        await page.GotoAsync("/");
+
+        var heroClass = await page.Locator(".hero-actions a[href='/Identity/Account/Login']").GetAttributeAsync("class");
+        var portalClass = await page.Locator(".portal-entry-actions a[href='/Identity/Account/Login']").GetAttributeAsync("class");
+
+        Assert.Contains("btn-warning", heroClass);
+        Assert.Contains("btn-warning", portalClass);
+        Assert.Contains("text-dark", heroClass);
+        Assert.Contains("text-dark", portalClass);
+    }
+
+    [Fact]
     public async Task Encounters_does_not_offer_a_duplicate_medical_history_shortcut()
     {
         await using var browser = await app.Playwright.Chromium.LaunchAsync();

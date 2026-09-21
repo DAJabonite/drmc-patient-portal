@@ -270,8 +270,8 @@
 
                             <!-- Address -->
                             <div class="col-12">
-                                <label asp-for="Input.Address" for="txtAddress" class="form-label fw-semibold">Residential address <span class="registration-optional">(Optional)</span></label>
-                                <input asp-for="Input.Address" id="txtAddress" class="form-control" placeholder="House/Unit No., Street, Barangay, City/Municipality, Province" />
+                                <label asp-for="Input.Address" for="txtAddress" class="form-label fw-semibold">Residential address <span class="text-danger" aria-hidden="true">*</span></label>
+                                <input asp-for="Input.Address" id="txtAddress" class="form-control" placeholder="House/Unit No., Street, Barangay, City/Municipality, Province" required />
                                 <span asp-validation-for="Input.Address" class="field-validation-error"></span>
                             </div>
                         </div>
