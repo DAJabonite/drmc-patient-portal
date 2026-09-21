@@ -2,9 +2,6 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using Microsoft.Playwright;
-using DrmcPatientPortal.Data;
-using DrmcPatientPortal.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace DrmcPatientPortal.BrowserTests;
 
@@ -63,18 +60,6 @@ public sealed class PortalFixture : IAsyncLifetime
             {
                 if ((await client.GetAsync(Url)).IsSuccessStatusCode)
                 {
-                    // Development's first seed creates appointments late in its transaction.
-                    // Supply a deterministic summary fixture without changing production seeding.
-                    using var db = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>()
-                        .UseSqlite(start.Environment["ConnectionStrings__DefaultConnection"] + ";Pooling=False").Options);
-                    if (!await db.TriageIntakes.AnyAsync())
-                    {
-                        var appointment = await db.Appointments.OrderBy(a => a.Id).FirstAsync();
-                        db.TriageIntakes.Add(new TriageIntake { AppointmentId = appointment.Id,
-                            PatientUserId = appointment.PatientUserId!, ChiefComplaint = "Test follow-up",
-                            AcuityLevel = TriageAcuity.Routine, SubmittedAt = DateTime.UtcNow });
-                        await db.SaveChangesAsync();
-                    }
                     Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
                     return;
                 }

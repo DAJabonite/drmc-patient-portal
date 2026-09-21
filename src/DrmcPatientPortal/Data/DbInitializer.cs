@@ -4,10 +4,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DrmcPatientPortal.Data;
 
-// Seeds the database with realistic patient accounts, clinical staff roster,
-// assistance guidelines, and advisories. Runs only in Development.
-// Seed credentials are documented in README.md; nothing "seed"-like is ever
-// rendered in patient-facing UI text.
+// Development-only fixtures and a backend integration reference, not hospital data or a production loader.
+// Program.cs invokes this only in Development. Schema and FK definitions live in ApplicationDbContext
+// and migrations; preserve migration history when integrating a real hospital data source.
+// Order: reference catalogs -> Identity users -> legacy appointments/visits -> dependent clinical rows.
+// PatientUserId always points to the owning Identity user. Never join clinical records by display name.
+// Existing records are retained; rerunning does not reset accounts, dates, or patient-entered values.
 public static class DbInitializer
 {
     public static void Initialize(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
@@ -15,7 +17,8 @@ public static class DbInitializer
         // Ensure the schema exists so a fresh `dotnet run` works out of the box
         db.Database.Migrate();
 
-        // 1. Seed Doctors Roster (16 clinical specialists across the 8 verified departments)
+        // 1. Example doctor directory, grouped by the static ClinicalDepartments catalog.
+        // Names, rooms, schedules, and biographies require institutional verification before publication.
         if (!db.Doctors.Any())
         {
             var doctors = new List<Doctor>
@@ -218,7 +221,8 @@ public static class DbInitializer
             db.SaveChanges();
         }
 
-        // 2. Seed Assistance Programs (Statutory Philippine Government Health Assistance)
+        // 2. Example content for the retained /Malasakit/Program route.
+        // The current Malasakit hub uses static service guides; these rows do not determine eligibility.
         if (!db.AssistancePrograms.Any())
         {
             var programs = new List<AssistanceProgram>
@@ -294,7 +298,7 @@ public static class DbInitializer
             db.SaveChanges();
         }
 
-        // 3. Seed Public Health Advisories (DRMC & DOH Region XI)
+        // 3. Example advisories, not a live DOH feed. ContentHtml must come from a trusted publisher.
         if (!db.PublicAdvisories.Any())
         {
             var advisories = new List<PublicAdvisory>
@@ -445,7 +449,10 @@ public static class DbInitializer
                 CreatedAt = DateTime.UtcNow,
             };
 
-            userManager.CreateAsync(user, password).GetAwaiter().GetResult();
+            var result = userManager.CreateAsync(user, password).GetAwaiter().GetResult();
+            if (!result.Succeeded)
+                throw new InvalidOperationException("Development account creation failed: " +
+                    string.Join("; ", result.Errors.Select(error => error.Description)));
         }
 
         // 5. Seed reviewer patient data for current portal features.
@@ -455,6 +462,9 @@ public static class DbInitializer
             var doctorLlanos = db.Doctors.FirstOrDefault(d => d.FullName.Contains("Llanos"));
             var doctorRamos = db.Doctors.FirstOrDefault(d => d.FullName.Contains("Ramos"));
 
+            // Booking/check-in are retired. Keep historical appointment fixtures only because the
+            // retained triage endpoints require AppointmentId (unique: at most one intake per appointment).
+            // They are not upcoming appointments and carry no actionable meeting or check-in URL.
             if (!db.Appointments.Any(a => a.PatientUserId == primary.Id))
             {
                 db.Appointments.AddRange(
@@ -470,11 +480,10 @@ public static class DbInitializer
                         DoctorId = doctorLlanos?.Id,
                         DoctorName = doctorLlanos?.FullName ?? "Dr. Arthur Llanos",
                         Type = "In-Person OPD",
-                        ScheduledAt = DateTime.Now.AddDays(12).Date.AddHours(9).AddMinutes(30),
+                        ScheduledAt = DateTime.Now.AddDays(-18).Date.AddHours(9).AddMinutes(30),
                         TimeSlot = "09:30 AM - 10:00 AM",
                         ChiefComplaint = "Routine 3-month follow-up for blood pressure and fasting blood sugar management.",
-                        Status = "Confirmed",
-                        QrCodePayload = "DRMC|REF:DRMC-2026-IM-0192|PURPOSE:CHECKIN",
+                        Status = "Completed",
                         CreatedAt = DateTime.UtcNow.AddDays(-2)
                     },
                     new Appointment
@@ -489,12 +498,10 @@ public static class DbInitializer
                         DoctorId = doctorRamos?.Id,
                         DoctorName = doctorRamos?.FullName ?? "Dr. Cristina Ramos",
                         Type = "Teleconsultation",
-                        ScheduledAt = DateTime.Now.AddMonths(1).Date.AddHours(14),
+                        ScheduledAt = DateTime.Now.AddMonths(-6).Date.AddHours(14),
                         TimeSlot = "02:00 PM - 02:30 PM",
                         ChiefComplaint = "PhilHealth Konsulta preventive wellness consultation.",
-                        Status = "Pending",
-                        QrCodePayload = "DRMC|REF:DRMC-2026-TC-0481|PURPOSE:CHECKIN",
-                        TeleconsultMeetingUrl = "https://telehealth.drmc.doh.gov.ph/consult/room-tc-0481",
+                        Status = "Completed",
                         CreatedAt = DateTime.UtcNow.AddDays(-1)
                     });
             }
@@ -503,6 +510,12 @@ public static class DbInitializer
                 appointment.QrCodePayload = $"DRMC|REF:{appointment.BookingReference}|PURPOSE:CHECKIN";
             }
 
+            // Persist appointment keys before the triage query below, including on the first startup.
+            db.SaveChanges();
+
+            // UI terminology is "Visits". Keep ClinicalEncounter/ClinicalEncounters storage names
+            // stable for existing databases. OPD includes OpdConsultation and Teleconsultation;
+            // Emergency and Inpatient drive the other visit filters and medical-history groups.
             var encounterIm = db.ClinicalEncounters.FirstOrDefault(e => e.EncounterReference == "DRMC-ENC-2026-0412");
             if (encounterIm is null)
             {
@@ -546,6 +559,9 @@ public static class DbInitializer
                 db.ClinicalEncounters.Add(encounterFcm);
             }
 
+            // LabResult belongs to a patient and optionally a visit. Items are the detailed report rows.
+            // CollectedAt drives date filters; "Available" and "In progress" drive display states.
+            // An unlinked result is valid while the originating visit has not been imported.
             if (!db.LabResults.Any(l => l.PatientUserId == primary.Id))
             {
                 var cbc1 = new LabResult
@@ -685,6 +701,8 @@ public static class DbInitializer
                 }
             }
 
+            // Exact dose times are child rows (PrescriptionId + DoseTime is unique), not inferred
+            // from free-text Frequency. These are read-only clinical orders in the current portal.
             if (!db.Prescriptions.Any(p => p.PatientUserId == primary.Id))
             {
                 var rx1 = new Prescription
@@ -730,15 +748,6 @@ public static class DbInitializer
                 };
                 rx2.DoseSchedules.Add(new MedicationDoseSchedule { DoseTime = new TimeOnly(8, 0), DisplayOrder = 1 });
 
-                rx2.RefillRequests.Add(new RefillRequest
-                {
-                    PatientUserId = primary.Id,
-                    RequestedAt = DateTime.UtcNow.AddDays(-2),
-                    Status = RefillStatus.ReadyForPickup,
-                    PharmacyNotes = "Approved and packaged. Ready for claiming at DRMC OPD Pharmacy Window 2.",
-                    EstimatedPickupDate = DateTime.UtcNow.AddDays(1)
-                });
-
                 var rx3 = new Prescription
                 {
                     PatientUserId = primary.Id,
@@ -778,6 +787,8 @@ public static class DbInitializer
                 }
             }
 
+            // RefillRequest and legacy prescription refill fields remain for stored-history compatibility;
+            // no refill action or dispensing integration is active, so do not fabricate pickup approvals.
             if (!db.PatientAllergies.Any(a => a.PatientUserId == primary.Id))
             {
                 db.PatientAllergies.Add(new PatientAllergy
@@ -792,7 +803,7 @@ public static class DbInitializer
 
             if (!db.TriageIntakes.Any(t => t.PatientUserId == primary.Id))
             {
-                var appt = db.Appointments.FirstOrDefault(a => a.PatientUserId == primary.Id);
+                var appt = db.Appointments.Where(a => a.PatientUserId == primary.Id).OrderBy(a => a.Id).FirstOrDefault();
                 if (appt is not null)
                 {
                     db.TriageIntakes.Add(new TriageIntake
@@ -805,51 +816,27 @@ public static class DbInitializer
                         PainScale = 0,
                         SymptomsJson = "[\"Mild Fatigue\", \"Occasional dry mouth\"]",
                         HasEmergencyRedFlags = false,
-                        ReportedBloodPressure = "125/80 mmHg",
-                        ReportedTemperature = "36.6 C",
-                        ReportedHeartRate = "72 bpm",
+                        ReportedBloodPressure = "125/80",
+                        ReportedTemperature = "36.6",
+                        ReportedHeartRate = "72",
                         ReportedWeightKg = "64.0",
-                        ReportedBloodSugar = "110 mg/dL",
+                        ReportedBloodSugar = "110",
                         ComorbiditiesJson = "[\"Hypertension\", \"Type 2 Diabetes Mellitus\"]",
                         CurrentMedicationsSummary = "Metformin 500mg BID, Losartan 50mg OD",
                         AcuityLevel = TriageAcuity.Routine,
-                        TriageNotes = "Patient pre-screened digitally. Stable vital signs self-reported. No acute distress."
+                        TriageNotes = "Development example of patient-reported intake saved locally; no clinician verification or hospital synchronization."
                     });
                 }
             }
 
-            if (!db.AuditLogs.Any(a => a.UserId == primary.Id))
-            {
-                db.AuditLogs.AddRange(
-                    new AuditLog
-                    {
-                        UserId = primary.Id,
-                        Action = "VIEW_LAB_REPORT",
-                        Resource = "LabResult/1",
-                        Details = "Viewed CBC Diagnostic Examination Report (Accession DRMC-LAB-2026-0814)",
-                        IpAddress = "127.0.0.1",
-                        Timestamp = DateTime.UtcNow.AddDays(-5)
-                    },
-                    new AuditLog
-                    {
-                        UserId = primary.Id,
-                        Action = "REQUEST_REFILL",
-                        Resource = "Prescription/2",
-                        Details = "Requested prescription refill voucher for Losartan 50mg (Rx DRMC-RX-2026-3820)",
-                        IpAddress = "127.0.0.1",
-                        Timestamp = DateTime.UtcNow.AddDays(-2)
-                    },
-                    new AuditLog
-                    {
-                        UserId = primary.Id,
-                        Action = "SUBMIT_TRIAGE_INTAKE",
-                        Resource = "TriageIntake/1",
-                        Details = "Submitted pre-consultation digital self-triage for appointment",
-                        IpAddress = "127.0.0.1",
-                        Timestamp = DateTime.UtcNow.AddDays(-1)
-                    }
-                );
-            }
+            // SubsidyApplication is created by /Malasakit/Apply, at most one per PatientUserId.
+            // Need/ReportedPayment and four document-ready booleans are patient input; Eligibility
+            // starts PendingReview, Coverage/ConfirmedPayment stay Unconfirmed until a real review.
+            // Leave this table empty so the initial application workflow remains available.
+            // PatientIdDocument is created by registration: metadata belongs to the patient, image
+            // bytes are encrypted outside wwwroot, and no fixture pretends an ID was verified.
+            // AuditLog rows must describe actual actions with persisted resource IDs; do not seed
+            // fictitious views/refills. Login and subsequent protected actions populate access history.
 
             db.SaveChanges();
         }
