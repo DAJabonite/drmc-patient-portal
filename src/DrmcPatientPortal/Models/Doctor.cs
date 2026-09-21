@@ -13,6 +13,4 @@ public class Doctor
     public string Biography { get; set; } = string.Empty;
     public string PrcLicenseMasked { get; set; } = string.Empty; // e.g. "PRC Lic. No. 009****"
     public bool IsActive { get; set; } = true;
-
-    public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
 }

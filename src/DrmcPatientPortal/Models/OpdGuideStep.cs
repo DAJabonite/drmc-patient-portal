@@ -2,8 +2,8 @@ namespace DrmcPatientPortal.Models;
 
 // Static reference data for DRMC's outpatient (OPD) facility wayfinding sequences.
 // Facility names, step titles, and step instructions are clinical reference data and
-// stay verbatim in English; only the surrounding page chrome is localized. Sequences and
-// the verification status of every location line are logged in docs/opd-guide-content-sources.md.
+// stay verbatim in English; only the surrounding page chrome is localized. DRMC must
+// verify these sequences and locations before publishing them to patients.
 public record OpdGuideStep(
     int StepNumber,
     string Title,

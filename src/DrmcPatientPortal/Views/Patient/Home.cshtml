@@ -134,10 +134,6 @@
                                 <p class="eyebrow mb-1">Assistance</p>
                                 <h2 class="h6 fw-bold mb-0">Malasakit</h2>
                             </div>
-                            @if (Model.SubsidyApplication is not null)
-                            {
-                                <span class="badge status-badge text-bg-info">@Loc[$"SubsidyEligibility_{Model.SubsidyApplication.Eligibility}"]</span>
-                            }
                         </div>
                         <p class="text-muted small mb-3">Check medical assistance services and document requirements.</p>
                         <a asp-controller="Malasakit" asp-action="Index" class="btn btn-primary-drmc dashboard-summary-button mt-auto">Malasakit assistance <i class="bi bi-arrow-right" aria-hidden="true"></i></a>

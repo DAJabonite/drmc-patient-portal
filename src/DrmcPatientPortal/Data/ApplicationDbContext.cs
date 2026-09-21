@@ -7,21 +7,16 @@ namespace DrmcPatientPortal.Data;
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
     : IdentityDbContext<ApplicationUser>(options)
 {
-    public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<Doctor> Doctors => Set<Doctor>();
-    public DbSet<AssistanceProgram> AssistancePrograms => Set<AssistanceProgram>();
-    public DbSet<SubsidyApplication> SubsidyApplications => Set<SubsidyApplication>();
     public DbSet<PublicAdvisory> PublicAdvisories => Set<PublicAdvisory>();
     
-    // Authenticated Clinical Features (Phase 3.2)
+    // Patient clinical records
     public DbSet<LabResult> LabResults => Set<LabResult>();
     public DbSet<LabResultItem> LabResultItems => Set<LabResultItem>();
     public DbSet<ClinicalEncounter> ClinicalEncounters => Set<ClinicalEncounter>();
     public DbSet<Prescription> Prescriptions => Set<Prescription>();
     public DbSet<MedicationDoseSchedule> MedicationDoseSchedules => Set<MedicationDoseSchedule>();
     public DbSet<PatientAllergy> PatientAllergies => Set<PatientAllergy>();
-    public DbSet<RefillRequest> RefillRequests => Set<RefillRequest>();
-    public DbSet<TriageIntake> TriageIntakes => Set<TriageIntake>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<PatientIdDocument> PatientIdDocuments => Set<PatientIdDocument>();
 
@@ -29,36 +24,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     {
         base.OnModelCreating(builder);
 
-        builder.Entity<SubsidyApplication>(e =>
-        {
-            e.HasOne(x => x.Patient).WithMany().HasForeignKey(x => x.PatientUserId)
-                .OnDelete(DeleteBehavior.Cascade);
-            e.HasIndex(x => x.PatientUserId).IsUnique();
-        });
-
-        builder.Entity<Appointment>(e =>
-        {
-            e.HasOne(x => x.Patient)
-                .WithMany(u => u.Appointments)
-                .HasForeignKey(x => x.PatientUserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            e.HasOne(x => x.Doctor)
-                .WithMany(d => d.Appointments)
-                .HasForeignKey(x => x.DoctorId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            e.HasIndex(x => x.BookingReference).IsUnique();
-        });
-
         builder.Entity<Doctor>(e =>
         {
             e.HasIndex(x => x.Department);
-        });
-
-        builder.Entity<AssistanceProgram>(e =>
-        {
-            e.HasIndex(x => x.Code).IsUnique();
         });
 
         builder.Entity<PublicAdvisory>(e =>
@@ -129,32 +97,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .OnDelete(DeleteBehavior.Cascade);
 
             e.HasIndex(x => x.PatientUserId);
-        });
-
-        builder.Entity<RefillRequest>(e =>
-        {
-            e.HasOne(x => x.Prescription)
-                .WithMany(p => p.RefillRequests)
-                .HasForeignKey(x => x.PrescriptionId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            e.HasIndex(x => x.PatientUserId);
-        });
-
-        builder.Entity<TriageIntake>(e =>
-        {
-            e.HasOne(x => x.Patient)
-                .WithMany(u => u.TriageIntakes)
-                .HasForeignKey(x => x.PatientUserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            e.HasOne(x => x.Appointment)
-                .WithMany()
-                .HasForeignKey(x => x.AppointmentId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            e.HasIndex(x => x.PatientUserId);
-            e.HasIndex(x => x.AppointmentId).IsUnique();
         });
 
         builder.Entity<AuditLog>(e =>

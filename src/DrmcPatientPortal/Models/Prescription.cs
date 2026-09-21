@@ -24,7 +24,6 @@ public class Prescription
     public int RefillsRemaining { get; set; } = 2;
     public DateTime? LastRefillDate { get; set; }
 
-    public ICollection<RefillRequest> RefillRequests { get; set; } = new List<RefillRequest>();
     public ICollection<MedicationDoseSchedule> DoseSchedules { get; set; } = new List<MedicationDoseSchedule>();
 }
 

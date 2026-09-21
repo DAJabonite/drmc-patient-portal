@@ -4,17 +4,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DrmcPatientPortal.Data;
 
-// Development-only fixtures and a backend integration reference, not hospital data or a production loader.
-// Program.cs invokes this only in Development. Schema and FK definitions live in ApplicationDbContext
-// and migrations; preserve migration history when integrating a real hospital data source.
-// Order: reference catalogs -> Identity users -> legacy appointments/visits -> dependent clinical rows.
-// PatientUserId always points to the owning Identity user. Never join clinical records by display name.
-// Existing records are retained; rerunning does not reset accounts, dates, or patient-entered values.
+// Development-only fixtures and backend reference data; never use these rows as hospital records.
+// PatientUserId is the owner FK for patient data. Replace these fixtures with approved directory,
+// HIS, laboratory, and pharmacy integrations without joining clinical records by display name.
+// Existing rows are retained so repeated Development startup does not reset accounts or patient data.
 public static class DbInitializer
 {
     public static void Initialize(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
     {
-        // Ensure the schema exists so a fresh `dotnet run` works out of the box
+        // Apply the versioned schema so a fresh Development checkout starts without manual setup.
         db.Database.Migrate();
 
         // 1. Example doctor directory, grouped by the static ClinicalDepartments catalog.
@@ -221,84 +219,7 @@ public static class DbInitializer
             db.SaveChanges();
         }
 
-        // 2. Example content for the retained /Malasakit/Program route.
-        // The current Malasakit hub uses static service guides; these rows do not determine eligibility.
-        if (!db.AssistancePrograms.Any())
-        {
-            var programs = new List<AssistanceProgram>
-            {
-                new()
-                {
-                    Code = "MALASAKIT",
-                    Title = "Malasakit Center One-Stop Shop (RA 11463)",
-                    ManagingAgency = "DOH / DSWD / PhilHealth / PCSO",
-                    Description = "A unified one-stop shop in DRMC designed to streamline access to financial and medical assistance for indigent and financially-incapacitated Filipino patients.",
-                    CoverageScope = "Hospitalization Bills, Diagnostic Tests, Surgical Procedures, Prescribed Medications",
-                    EligibilitySummary = "All Filipino citizens, prioritizing indigent, low-income, senior citizens, and PWD patients receiving care at Davao Regional Medical Center.",
-                    RequiredDocumentsJson = """["Valid Government ID (PhilSys / PhilHealth / Voter's / Driver's)", "Original Medical Certificate or Clinical Abstract from DRMC Physician", "Official Hospital Statement of Account or Laboratory / Drug Price Quotation", "Barangay Certificate of Indigency / Certificate of Eligibility from LGU", "Social Case Study Report (for high-value financial assistance requests)"]""",
-                    StepByStepProcedureJson = """["Step 1: Obtain a Medical Certificate / Treatment Order and Cost Quotation from your DRMC Attending Physician or Billing Desk.", "Step 2: Proceed to the DRMC Medical Social Service Unit (MSSU) for initial patient intake classification.", "Step 3: Submit your unified document envelope at the Malasakit Center Intake Desk (Ground Floor, Main Bldg).", "Step 4: The unified Malasakit intake officer assesses coverage across PhilHealth, DOH MAIP, and PCSO.", "Step 5: Receive your approved Guarantee Letter / Discount Voucher to present to the DRMC Billing and Pharmacy counters."]""",
-                    OfficeLocation = "Malasakit Center, Ground Floor, DRMC Main Hospital Building (Near OPD Atrium)",
-                    OperatingHours = "Monday to Friday, 7:00 AM - 5:00 PM (Emergency Window open 24/7)"
-                },
-                new()
-                {
-                    Code = "MAIP",
-                    Title = "DOH Medical Assistance for Indigent Patients (MAIP)",
-                    ManagingAgency = "Department of Health (DOH)",
-                    Description = "Direct medical assistance grant funding hospitalization, implants, specialized medicines, and diagnostic procedures for in-need patients.",
-                    CoverageScope = "Emergency Care, Hemodialysis, Chemotherapy Drugs, Laboratory Workups, Surgical Implants",
-                    EligibilitySummary = "Patients classified under Classes C3 and D by the DRMC Medical Social Service Unit.",
-                    RequiredDocumentsJson = """["Barangay Certificate of Indigency (specifying purpose: Medical Assistance)", "Clinical Abstract / Doctor's Prescription / Laboratory Request with Doctor's PRC License", "Valid ID of Patient and Authorized Representative", "DRMC Price Quotation / Official Hospital Billing Statement"]""",
-                    StepByStepProcedureJson = """["Step 1: Secure physician prescription / order with DRMC hospital stamp.", "Step 2: Get quotation from DRMC Pharmacy or Diagnostic Laboratory.", "Step 3: Present documents to DOH MAIP officer inside the Malasakit Center.", "Step 4: Officer issues approved MAIP charge slip covering the requested medical service."]""",
-                    OfficeLocation = "Malasakit Center Desk 2, Ground Floor",
-                    OperatingHours = "Monday to Friday, 8:00 AM - 4:00 PM"
-                },
-                new()
-                {
-                    Code = "PHILHEALTH",
-                    Title = "PhilHealth Konsulta & Universal Healthcare Benefits",
-                    ManagingAgency = "Philippine Health Insurance Corporation",
-                    Description = "Primary care package covering consultation, targeted diagnostic laboratory tests, and prescribed maintenance drugs under the Universal Health Care Act.",
-                    CoverageScope = "Free Consultation, CBC, Urinalysis, Fasting Blood Sugar, Lipid Profile, Chest X-Ray, Maintenance Drugs",
-                    EligibilitySummary = "All registered PhilHealth members and legal dependents with active DRMC Konsulta facility registration.",
-                    RequiredDocumentsJson = """["PhilHealth Identification Card (PIC) or Member Data Record (MDR)", "PhilHealth Konsulta Registration Slip (available at DRMC Registration Desk)", "Valid Photo Government ID"]""",
-                    StepByStepProcedureJson = """["Step 1: Register DRMC as your accredited PhilHealth Konsulta provider at the Primary Care Pavilion.", "Step 2: Undergo initial health profiling with a Family Medicine physician.", "Step 3: Avail covered laboratory and diagnostic exams with zero co-payment.", "Step 4: Receive prescribed essential maintenance medications at the DRMC Konsulta Pharmacy."]""",
-                    OfficeLocation = "Primary Care Pavilion, Ground Floor & Malasakit Desk 1",
-                    OperatingHours = "Monday to Friday, 8:00 AM - 5:00 PM"
-                },
-                new()
-                {
-                    Code = "DSWD_AICS",
-                    Title = "DSWD Assistance to Individuals in Crisis Situation (AICS)",
-                    ManagingAgency = "Department of Social Welfare and Development",
-                    Description = "Direct social safety-net financial grant for critical medical treatments, prosthetics, wheelchairs, and post-hospitalization rehabilitation.",
-                    CoverageScope = "Prosthetics, Orthopedic Hardware, Assistive Devices, Medical Transportation",
-                    EligibilitySummary = "Families facing acute socio-economic crisis resulting from catastrophic medical emergencies.",
-                    RequiredDocumentsJson = """["Medical Abstract signed by DRMC Physician with date of issuance", "Original Doctor's Prescription / Device Quotation", "Barangay Certificate of Indigency and Proof of Residency", "Valid ID of Representative and Authorization Letter"]""",
-                    StepByStepProcedureJson = """["Step 1: Undergo interview with DRMC DSWD Social Worker Desk.", "Step 2: Submit required clinical summary and cost estimate.", "Step 3: Receive DSWD Guarantee Letter for hospital billing adjustment."]""",
-                    OfficeLocation = "Malasakit Center Desk 3, Ground Floor",
-                    OperatingHours = "Monday to Friday, 8:00 AM - 3:00 PM"
-                },
-                new()
-                {
-                    Code = "PCSO",
-                    Title = "PCSO Individual Medical Assistance Program (IMAP)",
-                    ManagingAgency = "Philippine Charity Sweepstakes Office",
-                    Description = "Charity assistance grant targeting high-cost specialty medical care such as chemotherapy, dialysis, hemodialysis supplies, and advanced diagnostic imaging.",
-                    CoverageScope = "Chemotherapy, Radiation Therapy, Dialysis, CT Scan / MRI, Specialty Surgery",
-                    EligibilitySummary = "Patients undergoing prolonged or high-cost therapies with remaining balance after PhilHealth.",
-                    RequiredDocumentsJson = """["Official Statement of Account or Prescription / Treatment Protocol", "Clinical Abstract signed with Doctor's PRC number", "Valid Government ID of Patient & Immediate Relative", "Barangay Certificate of Indigency"]""",
-                    StepByStepProcedureJson = """["Step 1: Obtain treatment protocol / quotation from attending oncologist or nephrologist.", "Step 2: Submit files to PCSO Desk at Malasakit Center.", "Step 3: Approved PCSO Guarantee Letter applies directly against procedure fees."]""",
-                    OfficeLocation = "Malasakit Center Desk 4, Ground Floor",
-                    OperatingHours = "Monday to Friday, 8:00 AM - 3:00 PM"
-                }
-            };
-
-            db.AssistancePrograms.AddRange(programs);
-            db.SaveChanges();
-        }
-
-        // 3. Example advisories, not a live DOH feed. ContentHtml must come from a trusted publisher.
+        // 2. Example advisories, not a live DOH feed. ContentHtml must come from a trusted publisher.
         if (!db.PublicAdvisories.Any())
         {
             var advisories = new List<PublicAdvisory>
@@ -383,14 +304,14 @@ public static class DbInitializer
                 },
                 new()
                 {
-                    Title = "Outpatient Specialty Clinic Schedules & Holiday Operations Advisory",
+                    Title = "Outpatient Specialty Clinic Holiday Operations Advisory",
                     Slug = "outpatient-specialty-clinic-holiday-schedules",
                     Category = AdvisoryCategory.HospitalNotice,
                     Priority = AdvisoryPriority.Normal,
-                    Summary = "Advisory on OPD clinic booking schedules and Emergency Department continuous 24/7 operations.",
+                    Summary = "Advisory on OPD clinic schedules and Emergency Department continuous 24/7 operations.",
                     ContentHtml = """
                     <p>Please be advised that while Outpatient Specialty Clinics observe declared national public holidays, the <strong>DRMC Emergency Department, Trauma Center, Delivery Room, and Inpatient Wards remain fully operational 24 hours a day, 7 days a week</strong>.</p>
-                    <p>Online appointments scheduled on non-working holidays may be rescheduled through the portal without penalty.</p>
+                    <p>Patients should confirm updated clinic schedules with the relevant DRMC department before travelling.</p>
                     """,
                     IssuingUnit = "Office of the Medical Center Chief",
                     PublishedAt = DateTime.UtcNow.AddDays(-15),
@@ -418,7 +339,7 @@ public static class DbInitializer
             db.SaveChanges();
         }
 
-        // 4. Seed Users & Patient Accounts
+        // 3. Reviewer accounts. Production authentication and identity proofing require DRMC policy.
         var seededUsers = new List<(string email, string password, string firstName, string? middleName, string lastName, string contact, string idType, string idNumber)>
         {
             ("patient@drmc.doh.gov.ph", "P@tient2026", "Maria Clara", "D.", "Santos", "0917 123 4567", "Philippine National ID (PhilSys)", "1234-5678-9012-3456"),
@@ -455,67 +376,12 @@ public static class DbInitializer
                     string.Join("; ", result.Errors.Select(error => error.Description)));
         }
 
-        // 5. Seed reviewer patient data for current portal features.
+        // 4. Patient-owned example records for the current dashboard, Visits, Labs, and Medications.
         var primary = db.Users.FirstOrDefault(u => u.Email == "patient@drmc.doh.gov.ph");
         if (primary is not null)
         {
-            var doctorLlanos = db.Doctors.FirstOrDefault(d => d.FullName.Contains("Llanos"));
-            var doctorRamos = db.Doctors.FirstOrDefault(d => d.FullName.Contains("Ramos"));
-
-            // Booking/check-in are retired. Keep historical appointment fixtures only because the
-            // retained triage endpoints require AppointmentId (unique: at most one intake per appointment).
-            // They are not upcoming appointments and carry no actionable meeting or check-in URL.
-            if (!db.Appointments.Any(a => a.PatientUserId == primary.Id))
-            {
-                db.Appointments.AddRange(
-                    new Appointment
-                    {
-                        BookingReference = "DRMC-2026-IM-0192",
-                        PatientUserId = primary.Id,
-                        PatientName = primary.FullName,
-                        ContactNumber = primary.ContactNumber,
-                        Email = primary.Email ?? "patient@drmc.doh.gov.ph",
-                        PhilHealthNumber = "12-345678901-2",
-                        Department = "Internal Medicine",
-                        DoctorId = doctorLlanos?.Id,
-                        DoctorName = doctorLlanos?.FullName ?? "Dr. Arthur Llanos",
-                        Type = "In-Person OPD",
-                        ScheduledAt = DateTime.Now.AddDays(-18).Date.AddHours(9).AddMinutes(30),
-                        TimeSlot = "09:30 AM - 10:00 AM",
-                        ChiefComplaint = "Routine 3-month follow-up for blood pressure and fasting blood sugar management.",
-                        Status = "Completed",
-                        CreatedAt = DateTime.UtcNow.AddDays(-2)
-                    },
-                    new Appointment
-                    {
-                        BookingReference = "DRMC-2026-TC-0481",
-                        PatientUserId = primary.Id,
-                        PatientName = primary.FullName,
-                        ContactNumber = primary.ContactNumber,
-                        Email = primary.Email ?? "patient@drmc.doh.gov.ph",
-                        PhilHealthNumber = "12-345678901-2",
-                        Department = "Family & Community Medicine",
-                        DoctorId = doctorRamos?.Id,
-                        DoctorName = doctorRamos?.FullName ?? "Dr. Cristina Ramos",
-                        Type = "Teleconsultation",
-                        ScheduledAt = DateTime.Now.AddMonths(-6).Date.AddHours(14),
-                        TimeSlot = "02:00 PM - 02:30 PM",
-                        ChiefComplaint = "PhilHealth Konsulta preventive wellness consultation.",
-                        Status = "Completed",
-                        CreatedAt = DateTime.UtcNow.AddDays(-1)
-                    });
-            }
-            foreach (var appointment in db.Appointments.Where(a => a.PatientUserId == primary.Id && a.QrCodePayload.Contains("|PAT:")))
-            {
-                appointment.QrCodePayload = $"DRMC|REF:{appointment.BookingReference}|PURPOSE:CHECKIN";
-            }
-
-            // Persist appointment keys before the triage query below, including on the first startup.
-            db.SaveChanges();
-
-            // UI terminology is "Visits". Keep ClinicalEncounter/ClinicalEncounters storage names
-            // stable for existing databases. OPD includes OpdConsultation and Teleconsultation;
-            // Emergency and Inpatient drive the other visit filters and medical-history groups.
+            // ClinicalEncounter is the persisted visit summary. PatientUserId owns the record;
+            // EncounterType drives the OPD, emergency, and inpatient filters in the current UI.
             var encounterIm = db.ClinicalEncounters.FirstOrDefault(e => e.EncounterReference == "DRMC-ENC-2026-0412");
             if (encounterIm is null)
             {
@@ -787,8 +653,7 @@ public static class DbInitializer
                 }
             }
 
-            // RefillRequest and legacy prescription refill fields remain for stored-history compatibility;
-            // no refill action or dispensing integration is active, so do not fabricate pickup approvals.
+            // Allergies are separate patient-owned safety records displayed with medications.
             if (!db.PatientAllergies.Any(a => a.PatientUserId == primary.Id))
             {
                 db.PatientAllergies.Add(new PatientAllergy
@@ -801,42 +666,10 @@ public static class DbInitializer
                 });
             }
 
-            if (!db.TriageIntakes.Any(t => t.PatientUserId == primary.Id))
-            {
-                var appt = db.Appointments.Where(a => a.PatientUserId == primary.Id).OrderBy(a => a.Id).FirstOrDefault();
-                if (appt is not null)
-                {
-                    db.TriageIntakes.Add(new TriageIntake
-                    {
-                        AppointmentId = appt.Id,
-                        PatientUserId = primary.Id,
-                        SubmittedAt = DateTime.UtcNow.AddDays(-1),
-                        ChiefComplaint = "Routine 3-month follow-up for blood pressure and diabetes monitoring.",
-                        SymptomDurationDays = 5,
-                        PainScale = 0,
-                        SymptomsJson = "[\"Mild Fatigue\", \"Occasional dry mouth\"]",
-                        HasEmergencyRedFlags = false,
-                        ReportedBloodPressure = "125/80",
-                        ReportedTemperature = "36.6",
-                        ReportedHeartRate = "72",
-                        ReportedWeightKg = "64.0",
-                        ReportedBloodSugar = "110",
-                        ComorbiditiesJson = "[\"Hypertension\", \"Type 2 Diabetes Mellitus\"]",
-                        CurrentMedicationsSummary = "Metformin 500mg BID, Losartan 50mg OD",
-                        AcuityLevel = TriageAcuity.Routine,
-                        TriageNotes = "Development example of patient-reported intake saved locally; no clinician verification or hospital synchronization."
-                    });
-                }
-            }
-
-            // SubsidyApplication is created by /Malasakit/Apply, at most one per PatientUserId.
-            // Need/ReportedPayment and four document-ready booleans are patient input; Eligibility
-            // starts PendingReview, Coverage/ConfirmedPayment stay Unconfirmed until a real review.
-            // Leave this table empty so the initial application workflow remains available.
             // PatientIdDocument is created by registration: metadata belongs to the patient, image
             // bytes are encrypted outside wwwroot, and no fixture pretends an ID was verified.
             // AuditLog rows must describe actual actions with persisted resource IDs; do not seed
-            // fictitious views/refills. Login and subsequent protected actions populate access history.
+            // fictitious access events. Login and protected actions populate access history.
 
             db.SaveChanges();
         }

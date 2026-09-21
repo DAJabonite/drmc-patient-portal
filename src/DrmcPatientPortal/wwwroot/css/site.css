@@ -1190,16 +1190,6 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
     letter-spacing: 0.01em;
 }
 
-.appointment-summary-content {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background: var(--drmc-surface-soft);
-    border-radius: var(--drmc-radius-md);
-}
-
 .status-note {
     min-height: 44px;
     display: inline-flex;
@@ -1505,41 +1495,6 @@ code,
 
 .content-narrow {
     max-width: 900px;
-}
-
-.booking-signin,
-.booking-card {
-    border: 1px solid var(--drmc-border) !important;
-    border-radius: var(--drmc-radius-lg) !important;
-    box-shadow: 0 5px 18px rgba(14, 78, 135, 0.06) !important;
-}
-
-.booking-section {
-    margin-bottom: 1.4rem;
-    padding-bottom: 1.4rem;
-    border-bottom: 1px solid var(--drmc-border);
-}
-
-.consultation-mode-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.6rem;
-}
-
-.custom-radio-card {
-    min-width: 0;
-    margin: 0;
-    cursor: pointer;
-    transition: background-color 160ms ease, border-color 160ms ease;
-}
-
-.custom-radio-card:has(input:checked) {
-    background: #e7f0f8;
-    border-color: var(--drmc-primary) !important;
-}
-
-.custom-radio-card label {
-    cursor: pointer;
 }
 
 .form-actions .btn {
@@ -2560,17 +2515,6 @@ code,
 }
 
 @media (max-width: 767.98px) {
-    .appointment-summary .summary-card-heading {
-        display: grid;
-        grid-template-columns: 42px minmax(0, 1fr);
-    }
-
-    .appointment-summary .summary-card-heading .status-badge {
-        grid-column: 2;
-        justify-self: start;
-        margin-left: 0;
-    }
-
     .record-reference {
         flex-basis: 100%;
     }
@@ -2639,14 +2583,6 @@ code,
         padding: 1.25rem !important;
         border-radius: var(--drmc-radius-md) !important;
         box-shadow: none !important;
-    }
-
-    .booking-card {
-        box-shadow: none !important;
-    }
-
-    .consultation-mode-grid {
-        grid-template-columns: 1fr;
     }
 
     .form-actions {
@@ -2821,11 +2757,6 @@ code,
         width: 100%;
     }
 
-    .appointment-summary-content {
-        grid-template-columns: 1fr;
-    }
-
-    .appointment-summary-content .btn,
     .status-note {
         width: 100%;
     }
