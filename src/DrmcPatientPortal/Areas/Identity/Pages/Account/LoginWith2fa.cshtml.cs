@@ -54,7 +54,8 @@ public class LoginWith2faModel : PageModel
 
         if (user == null)
         {
-            throw new InvalidOperationException($"Unable to load two-factor authentication user.");
+            TempData["ErrorMessage"] = "Sign in with your email and password before entering a verification code.";
+            return RedirectToPage("./Login", new { returnUrl });
         }
 
         ReturnUrl = returnUrl;
@@ -65,18 +66,19 @@ public class LoginWith2faModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(bool rememberMe, string? returnUrl = null)
     {
+        var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
+        if (user == null)
+        {
+            TempData["ErrorMessage"] = "Sign in with your email and password before entering a verification code.";
+            return RedirectToPage("./Login", new { returnUrl });
+        }
+
         if (!ModelState.IsValid)
         {
             return Page();
         }
 
         returnUrl ??= Url.Content("~/Patient/Home");
-
-        var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
-        if (user == null)
-        {
-            throw new InvalidOperationException($"Unable to load two-factor authentication user.");
-        }
 
         var authenticatorCode = Input.TwoFactorCode.Replace(" ", string.Empty).Replace("-", string.Empty);
 
