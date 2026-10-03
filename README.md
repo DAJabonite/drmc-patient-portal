@@ -83,6 +83,8 @@ dotnet ef database update --project src/DrmcPatientPortal -- --environment Devel
 
 The command creates the database with `Latin1_General_100_BIN2` collation; an existing empty target must already use that collation. Then start the app with the command in **Run** below. In Development, `DbInitializer` applies migrations and creates the seed data automatically. No SQLite `.db` file is needed; the initial SQL Server migration creates a new database schema and does not transfer existing SQLite data.
 
+Existing development databases must be recreated and reseeded to adopt the stable fixture identifiers. Back up any development data you need before recreating the database.
+
 ## Run
 
 ```powershell
