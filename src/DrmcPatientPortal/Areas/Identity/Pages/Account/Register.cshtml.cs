@@ -68,7 +68,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
 
         public IList<AuthenticationScheme> ExternalLogins { get; set; }
 
-        public class InputModel
+        public class InputModel : IValidatableObject
         {
             [Required(ErrorMessage = "Enter your first name.")]
             [StringLength(60, ErrorMessage = "The {0} must be at most {1} characters long.")]
@@ -103,6 +103,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
 
             [Required(ErrorMessage = "Enter your email address.")]
             [EmailAddress(ErrorMessage = "Enter a valid email address.")]
+            [StringLength(256)]
             [Display(Name = "Email address")]
             public string Email { get; set; }
 
@@ -145,6 +146,14 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             public string TempBackPhotoToken { get; set; }
             public float OcrConfidence { get; set; }
             public bool IsManualEntry { get; set; }
+
+            public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+            {
+                if (!float.IsFinite(OcrConfidence))
+                {
+                    yield return new ValidationResult("Enter a finite OCR confidence value.", new[] { nameof(OcrConfidence) });
+                }
+            }
         }
 
         public async Task OnGetAsync(string returnUrl = null)

@@ -27,6 +27,7 @@ public class AdvisoriesController : Controller
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.Trim().ToLower();
+            s = s.Length > 200 ? s[..200] : s;
             query = query.Where(a => a.Title.ToLower().Contains(s) || a.Summary.ToLower().Contains(s));
         }
 

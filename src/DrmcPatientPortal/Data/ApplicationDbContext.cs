@@ -23,6 +23,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        builder.UseCollation("Latin1_General_100_BIN2");
 
         builder.Entity<Doctor>(e =>
         {
@@ -44,7 +45,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasOne(x => x.Encounter)
                 .WithMany(x => x.LabResults)
                 .HasForeignKey(x => x.ClinicalEncounterId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.ClientSetNull);
 
             e.HasIndex(x => x.PatientUserId);
             e.HasIndex(x => x.ClinicalEncounterId);
