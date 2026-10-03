@@ -340,21 +340,24 @@ public static class DbInitializer
         }
 
         // 3. Reviewer accounts. Production authentication and identity proofing require DRMC policy.
-        var seededUsers = new List<(string email, string password, string firstName, string? middleName, string lastName, string contact, string idType, string idNumber)>
+        const string primaryFixtureUserId = "drmc-development-patient";
+        const string secondFixtureUserId = "drmc-development-juan";
+        var seededUsers = new List<(string id, string email, string password, string firstName, string? middleName, string lastName, string contact, string idType, string idNumber)>
         {
-            ("patient@drmc.doh.gov.ph", "P@tient2026", "Maria Clara", "D.", "Santos", "0917 123 4567", "Philippine National ID (PhilSys)", "1234-5678-9012-3456"),
-            ("juan@drmc.doh.gov.ph", "J@uan2026",     "Juan Miguel",  "A.", "Dela Cruz", "0918 765 4321", "PhilHealth ID", "12-345678901-2"),
+            (primaryFixtureUserId, "patient@drmc.doh.gov.ph", "P@tient2026", "Maria Clara", "D.", "Santos", "0917 123 4567", "Philippine National ID (PhilSys)", "1234-5678-9012-3456"),
+            (secondFixtureUserId, "juan@drmc.doh.gov.ph", "J@uan2026",     "Juan Miguel",  "A.", "Dela Cruz", "0918 765 4321", "PhilHealth ID", "12-345678901-2"),
         };
 
-        foreach (var (email, password, firstName, middleName, lastName, contact, idType, idNumber) in seededUsers)
+        foreach (var (id, email, password, firstName, middleName, lastName, contact, idType, idNumber) in seededUsers)
         {
-            if (db.Users.Any(u => u.Email == email))
+            if (db.Users.Any(u => u.Id == id))
             {
                 continue;
             }
 
             var user = new ApplicationUser
             {
+                Id = id,
                 UserName = email,
                 Email = email,
                 EmailConfirmed = true,
@@ -377,7 +380,7 @@ public static class DbInitializer
         }
 
         // 4. Patient-owned example records for the current dashboard, Visits, Labs, and Medications.
-        var primary = db.Users.FirstOrDefault(u => u.Email == "patient@drmc.doh.gov.ph");
+        var primary = db.Users.FirstOrDefault(u => u.Id == primaryFixtureUserId);
         if (primary is not null)
         {
             // ClinicalEncounter is the persisted visit summary. PatientUserId owns the record;
@@ -425,6 +428,15 @@ public static class DbInitializer
                 db.ClinicalEncounters.Add(encounterFcm);
             }
 
+            var ownedEncounterIm = encounterIm.PatientUserId == primary.Id ? encounterIm : null;
+            var ownedEncounterFcm = encounterFcm.PatientUserId == primary.Id ? encounterFcm : null;
+            var fixtureAccessions = new[] { "DRMC-LAB-2026-0814", "DRMC-LAB-2026-0815", "DRMC-LAB-2026-0790", "DRMC-LAB-2025-0451", "DRMC-LAB-2025-0452", "DRMC-LAB-2026-0922" };
+            foreach (var lab in db.LabResults.Where(l => fixtureAccessions.Contains(l.AccessionNumber)).Include(l => l.Encounter))
+            {
+                if (lab.Encounter != null && lab.PatientUserId != lab.Encounter.PatientUserId)
+                    lab.Encounter = null;
+            }
+
             // LabResult belongs to a patient and optionally a visit. Items are the detailed report rows.
             // CollectedAt drives date filters; "Available" and "In progress" drive display states.
             // An unlinked result is valid while the originating visit has not been imported.
@@ -433,7 +445,7 @@ public static class DbInitializer
                 var cbc1 = new LabResult
                 {
                     PatientUserId = primary.Id,
-                    Encounter = encounterIm,
+                    Encounter = ownedEncounterIm,
                     AccessionNumber = "DRMC-LAB-2026-0814",
                     TestName = "Complete Blood Count (CBC) with Platelet Count",
                     Category = LabCategory.Hematology,
@@ -459,7 +471,7 @@ public static class DbInitializer
                 var fbs = new LabResult
                 {
                     PatientUserId = primary.Id,
-                    Encounter = encounterIm,
+                    Encounter = ownedEncounterIm,
                     AccessionNumber = "DRMC-LAB-2026-0815",
                     TestName = "Fasting Blood Sugar (FBS)",
                     Category = LabCategory.ClinicalChemistry,
@@ -478,7 +490,7 @@ public static class DbInitializer
                 var lipid = new LabResult
                 {
                     PatientUserId = primary.Id,
-                    Encounter = encounterIm,
+                    Encounter = ownedEncounterIm,
                     AccessionNumber = "DRMC-LAB-2026-0790",
                     TestName = "Lipid Profile Panel",
                     Category = LabCategory.ClinicalChemistry,
@@ -500,7 +512,7 @@ public static class DbInitializer
                 var cbc2 = new LabResult
                 {
                     PatientUserId = primary.Id,
-                    Encounter = encounterFcm,
+                    Encounter = ownedEncounterFcm,
                     AccessionNumber = "DRMC-LAB-2025-0451",
                     TestName = "Complete Blood Count (CBC) with Platelet Count",
                     Category = LabCategory.Hematology,
@@ -522,7 +534,7 @@ public static class DbInitializer
                 var urinalysis = new LabResult
                 {
                     PatientUserId = primary.Id,
-                    Encounter = encounterFcm,
+                    Encounter = ownedEncounterFcm,
                     AccessionNumber = "DRMC-LAB-2025-0452",
                     TestName = "Routine Urinalysis",
                     Category = LabCategory.UrinalysisFecalysis,
@@ -556,14 +568,15 @@ public static class DbInitializer
                     PerformingUnit = "DRMC Central Clinical Diagnostic Laboratory"
                 };
 
-                db.LabResults.AddRange(cbc1, fbs, lipid, cbc2, urinalysis, hba1c);
+                db.LabResults.AddRange(new[] { cbc1, fbs, lipid, cbc2, urinalysis, hba1c }
+                    .Where(lab => !db.LabResults.Any(existing => existing.AccessionNumber == lab.AccessionNumber)));
             }
             else
             {
                 foreach (var lab in db.LabResults.Where(l => l.PatientUserId == primary.Id && l.ClinicalEncounterId == null))
                 {
-                    if (lab.AccessionNumber is "DRMC-LAB-2026-0814" or "DRMC-LAB-2026-0815" or "DRMC-LAB-2026-0790") lab.Encounter = encounterIm;
-                    if (lab.AccessionNumber is "DRMC-LAB-2025-0451" or "DRMC-LAB-2025-0452") lab.Encounter = encounterFcm;
+                    if (lab.AccessionNumber is "DRMC-LAB-2026-0814" or "DRMC-LAB-2026-0815" or "DRMC-LAB-2026-0790") lab.Encounter = ownedEncounterIm;
+                    if (lab.AccessionNumber is "DRMC-LAB-2025-0451" or "DRMC-LAB-2025-0452") lab.Encounter = ownedEncounterFcm;
                 }
             }
 
@@ -634,7 +647,8 @@ public static class DbInitializer
                 };
                 rx3.DoseSchedules.Add(new MedicationDoseSchedule { DoseTime = new TimeOnly(8, 0), DisplayOrder = 1 });
 
-                db.Prescriptions.AddRange(rx1, rx2, rx3);
+                db.Prescriptions.AddRange(new[] { rx1, rx2, rx3 }
+                    .Where(rx => !db.Prescriptions.Any(existing => existing.RxNumber == rx.RxNumber)));
             }
             else
             {
