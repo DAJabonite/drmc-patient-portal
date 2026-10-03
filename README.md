@@ -18,7 +18,7 @@ This repository is a development and review implementation. It is not connected 
 ## Tech Stack
 
 - .NET 10, ASP.NET Core MVC, Razor Pages, and ASP.NET Core Identity
-- Entity Framework Core 10 with SQLite and versioned migrations
+- Entity Framework Core 10 with Microsoft SQL Server and versioned migrations
 - ASP.NET Core Data Protection for document encryption and temporary upload tokens
 - Tesseract for local ID OCR and QRCoder for authenticator enrollment
 - Local Bootstrap, Bootstrap Icons, jQuery, and unobtrusive validation assets
@@ -42,8 +42,8 @@ run.ps1                  Local development launcher
 
 - .NET 10 SDK
 - PowerShell when using `run.ps1`
-- SQLite-compatible storage available to the application process
-- Writable persistent directories for the database, Data Protection keys, and patient documents
+- A Microsoft SQL Server instance (SQL Server Express works for local development)
+- Writable persistent directories for Data Protection keys and patient documents
 
 ## Setup
 
@@ -58,7 +58,7 @@ Configuration defaults are in `src/DrmcPatientPortal/appsettings.json`. Use envi
 
 | Setting | Purpose |
 |---|---|
-| `ConnectionStrings__DefaultConnection` | SQLite connection; the default is `DataSource=app.db;Cache=Shared` |
+| `ConnectionStrings__DefaultConnection` | SQL Server connection; Development defaults to `localhost\SQLEXPRESS`, database `DrmcPatientPortal_Dev`, using Windows authentication |
 | `DataProtection__KeyRingPath` | Persistent encryption-key directory |
 | `PatientDocuments__RootPath` | Encrypted patient ID document directory |
 | `PatientDocuments__TemporaryPath` | Staged registration upload directory |
@@ -68,6 +68,20 @@ Configuration defaults are in `src/DrmcPatientPortal/appsettings.json`. Use envi
 | `Notifications__Sms__*` | HTTPS webhook endpoint, API key, and sender ID |
 
 Relative storage paths resolve from the application content root. Keep databases, encryption keys, patient documents, and secrets outside Git and outside `wwwroot`.
+
+### Database
+
+The database is Microsoft SQL Server, replacing SQLite. Local setup requires a running SQL Server instance, permission to create the development database, and the EF command-line tool matching EF Core 10.0.11.
+
+`ConnectionStrings:DefaultConnection` lives in `src/DrmcPatientPortal/appsettings.json`, with the local connection in `appsettings.Development.json`. The base configuration contains placeholders for deployment. To use a different server, override `ConnectionStrings__DefaultConnection` in your environment; store credentials outside Git. The local connection uses encryption and trusts the development server certificate.
+
+Create a fresh SQL Server schema from the repository root:
+
+```powershell
+dotnet ef database update --project src/DrmcPatientPortal -- --environment Development
+```
+
+The command creates the database with `Latin1_General_100_BIN2` collation; an existing empty target must already use that collation. Then start the app with the command in **Run** below. In Development, `DbInitializer` applies migrations and creates the seed data automatically. No SQLite `.db` file is needed; the initial SQL Server migration creates a new database schema and does not transfer existing SQLite data.
 
 ## Run
 
@@ -96,14 +110,14 @@ Never expose these accounts in a production installation.
 
 `Data/ApplicationDbContext.cs` defines the active model. The principal relationships are:
 
-- `ApplicationUser` owns `PatientIdDocument` metadata; encrypted document files are stored outside SQLite.
+- `ApplicationUser` owns `PatientIdDocument` metadata; encrypted document files are stored outside SQL Server.
 - `ClinicalEncounter` belongs to a patient and represents OPD, emergency, or inpatient visits.
 - `LabResult` belongs to a patient, can reference a `ClinicalEncounter`, and owns `LabResultItem` rows.
 - `Prescription` belongs to a patient and owns `MedicationDoseSchedule` rows; `PatientAllergy` is patient-scoped.
 - `AuditLog` records actual patient access and account activity.
 - `Doctor` and `PublicAdvisory` provide database-backed public content; OPD and Malasakit guidance is application content.
 
-The latest migration is `20260921170812_RemoveRetiredPortalFeatures`. Keep the complete migration history so existing databases can upgrade to the active schema.
+The single initial SQL Server migration is `20260929123803_InitialSqlServer`. It replaces the SQLite-generated migration history.
 
 Production does not run `DbInitializer` or apply migrations automatically. Back up the database, encryption keys, and patient documents, then apply migrations before starting a release:
 
