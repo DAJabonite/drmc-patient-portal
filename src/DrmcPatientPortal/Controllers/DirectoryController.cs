@@ -32,6 +32,7 @@ public class DirectoryController : Controller
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.Trim().ToLower();
+            s = s.Length > 200 ? s[..200] : s;
             query = query.Where(d => d.FullName.ToLower().Contains(s) 
                                   || d.SubSpecialty.ToLower().Contains(s) 
                                   || d.Department.ToLower().Contains(s)

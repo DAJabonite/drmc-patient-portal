@@ -51,6 +51,7 @@ public class LabResultsController : Controller
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.Trim().ToLower();
+            s = s.Length > 200 ? s[..200] : s;
             query = query.Where(l => l.TestName.ToLower().Contains(s) || l.AccessionNumber.ToLower().Contains(s));
         }
 
