@@ -105,6 +105,24 @@ builder.Services.AddControllersWithViews()
             factory.Create(typeof(SharedResource));
     });
 
+builder.Services.AddRazorPages(options =>
+{
+    options.Conventions.AddAreaPageApplicationModelConvention("Identity", "/Account/Manage/GenerateRecoveryCodes",
+        model => model.Filters.Add(new Microsoft.AspNetCore.Mvc.TypeFilterAttribute(typeof(EnabledTwoFactorPageFilter))));
+    options.Conventions.AddAreaPageApplicationModelConvention("Identity", "/Account/LoginWithRecoveryCode",
+        model => model.Filters.Add(new Microsoft.AspNetCore.Mvc.TypeFilterAttribute(typeof(PendingTwoFactorPageFilter))));
+    options.Conventions.AddAreaPageApplicationModelConvention("Identity", "/Account/Manage/Disable2fa",
+        model => model.Filters.Add(new Microsoft.AspNetCore.Mvc.TypeFilterAttribute(typeof(EnabledTwoFactorPageFilter))));
+    foreach (var page in new[] { "/Account/ResetPassword", "/Account/ConfirmEmail", "/Account/ConfirmEmailChange" })
+        options.Conventions.AddAreaPageApplicationModelConvention("Identity", page,
+            model => model.Filters.Add(new Microsoft.AspNetCore.Mvc.TypeFilterAttribute(typeof(IdentityLinkPageFilter))));
+    options.Conventions.AddAreaPageApplicationModelConvention("Identity", "/Account/Manage/DeletePersonalData",
+        model => model.Filters.Add(new Microsoft.AspNetCore.Mvc.TypeFilterAttribute(typeof(DeletePersonalDataPageFilter))));
+    foreach (var page in new[] { "/Account/ExternalLogin", "/Account/Manage/ExternalLogins" })
+        options.Conventions.AddAreaPageApplicationModelConvention("Identity", page,
+            model => model.Filters.Add(new Microsoft.AspNetCore.Mvc.TypeFilterAttribute(typeof(ExternalLoginPageFilter))));
+});
+
 var app = builder.Build();
 
 // Seed the database with development/review patient data (safe: only in Development).
@@ -119,6 +137,18 @@ if (app.Environment.IsDevelopment())
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.Use(async (context, next) =>
+    {
+        if (context.Request.Path.Equals(Microsoft.AspNetCore.Builder.MigrationsEndPointOptions.DefaultPath) &&
+            (!HttpMethods.IsPost(context.Request.Method) || !context.Request.HasFormContentType))
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await context.Response.WriteAsync("Submit a form with the database context to apply development migrations.");
+            return;
+        }
+
+        await next();
+    });
     app.UseMigrationsEndPoint();
 }
 else
