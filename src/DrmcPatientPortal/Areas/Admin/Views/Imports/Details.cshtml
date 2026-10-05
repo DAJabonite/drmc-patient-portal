@@ -1,30 +1,56 @@
 @model ImportDetail
-@{ ViewData["Title"] = "Import batch"; var version = Convert.ToBase64String(Model.Batch.RowVersion); }
-<section class="container py-4">
-    <div class="d-flex flex-wrap justify-content-between gap-3"><h1 class="h3">Import batch</h1><a asp-action="Index">Imports</a></div>
-    @if (TempData["ImportMessage"] is string message) { <div class="alert alert-warning" role="alert">@message</div> }
-    <dl class="row mt-3"><dt class="col-sm-3">Batch</dt><dd class="col-sm-9 text-break">@Model.Batch.Id</dd><dt class="col-sm-3">Status</dt><dd class="col-sm-9"><span id="import-status" role="status" aria-live="polite" aria-atomic="true">@Model.Batch.Status</span></dd><dt class="col-sm-3">Rows / created</dt><dd class="col-sm-9" id="import-counts">@Model.Batch.RowCount / @Model.Batch.CreatedCount</dd><dt class="col-sm-3">Created (UTC)</dt><dd class="col-sm-9">@Model.Batch.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</dd><dt class="col-sm-3">File hash</dt><dd class="col-sm-9 text-break"><code>@Model.Batch.FileHash</code></dd></dl>
-    @if (Model.Batch.FailureCode is not null) { <div class="alert alert-warning" role="alert">The batch did not complete: @Model.Batch.FailureCode. No partial clinical writes were retained.</div> }
-    <div class="d-flex flex-wrap gap-3 mb-3">
-    @if (Model.Batch.Status is ImportStatus.Staged or ImportStatus.Validated) { <a class="btn btn-primary" asp-action="Reconcile" asp-route-id="@Model.Batch.Id"><i class="bi bi-people me-1" aria-hidden="true"></i>Reconcile</a> }
-    @if (Model.Batch.Status is ImportStatus.Queued or ImportStatus.Running or ImportStatus.ValidationQueued or ImportStatus.Validating or ImportStatus.ApprovalQueued or ImportStatus.Approving) { <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.Batch.Id"><i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Refresh status</a> }
-    @if (Model.Batch.Status is ImportStatus.Staged or ImportStatus.Validated or ImportStatus.Queued or ImportStatus.ValidationQueued or ImportStatus.ApprovalQueued or ImportStatus.Failed) { <form id="import-cancel" asp-action="Cancel" asp-route-id="@Model.Batch.Id" method="post"><input type="hidden" name="rowVersion" value="@version" /><button class="btn btn-danger"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel batch</button></form> }
+@{
+    ViewData["Title"] = "Import batch";
+    var version = Convert.ToBase64String(Model.Batch.RowVersion);
+    var inFlight = Model.Batch.Status is ImportStatus.Queued or ImportStatus.Running or ImportStatus.ValidationQueued or ImportStatus.Validating or ImportStatus.ApprovalQueued or ImportStatus.Approving;
+}
+<div class="admin-page-header">
+    <div>
+        <p class="admin-eyebrow">Imports</p>
+        <h1 class="admin-title">Import batch <span class="admin-id fs-6">@Model.Batch.Id.ToString("N")[..12]</span></h1>
+        <p class="admin-subtitle">@Model.Batch.Template · uploaded @Model.Batch.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC</p>
     </div>
-    @if (Model.Report is { } report)
-    {
-        <h2 class="h5">Dry run</h2><p>@(report.Valid ? "Ready for approval" : "Review required")</p>
-        <dl class="row">@foreach (var count in report.Counts) { <dt class="col-sm-6">@count.Key</dt><dd class="col-sm-6">@count.Value</dd> }</dl>
-        <div class="table-responsive" tabindex="0" role="region" aria-label="Dry-run row preview"><table class="table align-middle"><thead><tr><th>Template / row</th><th>Patient group</th><th>Reference</th><th>Decision</th><th>Validation</th></tr></thead><tbody>
-        @foreach (var row in report.Rows.Skip((Model.Page - 1) * 25).Take(25)) { <tr><td>@row.Template / @row.Number</td><td class="text-break">@row.PatientKey</td><td class="text-break">@row.Reference</td><td>@row.Decision</td><td>@if (row.Errors.Count == 0) { <span class="text-success">Valid</span> } else { <ul class="mb-0">@foreach (var error in row.Errors) { <li>@error</li> }</ul> }</td></tr> }
+    <div class="admin-page-actions">
+        <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Imports</a>
+        @if (inFlight) { <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.Batch.Id"><i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Refresh status</a> }
+        @if (Model.Batch.Status is ImportStatus.Staged or ImportStatus.Validated or ImportStatus.Queued or ImportStatus.ValidationQueued or ImportStatus.ApprovalQueued or ImportStatus.Failed) { <form id="import-cancel" asp-action="Cancel" asp-route-id="@Model.Batch.Id" method="post"><input type="hidden" name="rowVersion" value="@version" /><button class="btn btn-outline-danger"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel batch</button></form> }
+        @if (Model.Batch.Status is ImportStatus.Staged or ImportStatus.Validated) { <a class="btn btn-primary" asp-action="Reconcile" asp-route-id="@Model.Batch.Id"><i class="bi bi-people me-1" aria-hidden="true"></i>Reconcile</a> }
+    </div>
+</div>
+@if (TempData["ImportMessage"] is string message) { <div class="alert alert-warning" role="alert">@message</div> }
+@if (Model.Batch.FailureCode is not null) { <div class="alert alert-warning" role="alert">The batch did not complete: @Model.Batch.FailureCode. No partial clinical writes were retained.</div> }
+<div class="admin-card">
+    <dl class="admin-dl">
+        <div><dt>Status</dt><dd><span id="import-status" role="status" aria-live="polite" aria-atomic="true" class="@AdminChips.Css(Model.Batch.Status.ToString())">@Model.Batch.Status</span></dd></div>
+        <div><dt>Rows / created</dt><dd class="tabular" id="import-counts">@Model.Batch.RowCount / @Model.Batch.CreatedCount</dd></div>
+        <div><dt>Created (UTC)</dt><dd class="tabular">@Model.Batch.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</dd></div>
+        <div><dt>Batch</dt><dd class="admin-id">@Model.Batch.Id</dd></div>
+        <div class="admin-dl-wide"><dt>File hash</dt><dd><code>@Model.Batch.FileHash</code></dd></div>
+    </dl>
+</div>
+@if (Model.Report is { } report)
+{
+    <div class="admin-card">
+        <div class="admin-card-header"><h2 class="admin-card-title">Dry run</h2><span class="@(report.Valid ? "admin-chip admin-chip-success" : "admin-chip admin-chip-warning")">@(report.Valid ? "Ready for approval" : "Review required")</span></div>
+        <dl class="admin-dl">@foreach (var count in report.Counts) { <div><dt>@count.Key</dt><dd class="tabular fs-5 fw-bold">@count.Value</dd></div> }</dl>
+        <div class="table-responsive" tabindex="0" role="region" aria-label="Dry-run row preview"><table class="table admin-table"><thead><tr><th scope="col">Template / row</th><th scope="col">Patient group</th><th scope="col">Reference</th><th scope="col">Decision</th><th scope="col">Validation</th></tr></thead><tbody>
+        @foreach (var row in report.Rows.Skip((Model.Page - 1) * 25).Take(25)) { <tr><td class="tabular">@row.Template / @row.Number</td><td class="text-break">@row.PatientKey</td><td class="text-break">@row.Reference</td><td><span class="admin-chip admin-chip-info admin-chip-plain">@row.Decision</span></td><td>@if (row.Errors.Count == 0) { <span class="admin-chip admin-chip-success">Valid</span> } else { <ul class="mb-0 ps-3 text-danger small">@foreach (var error in row.Errors) { <li>@error</li> }</ul> }</td></tr> }
         </tbody></table></div>
-        <nav aria-label="Preview pages" class="d-flex gap-3 mb-4"><a asp-action="Details" asp-route-id="@Model.Batch.Id" asp-route-page="@(Math.Max(1, Model.Page - 1))">Previous</a><span>@Model.Page / @Math.Max(1, (report.Rows.Count + 24) / 25)</span><a asp-action="Details" asp-route-id="@Model.Batch.Id" asp-route-page="@(Model.Page + 1)">Next</a></nav>
-        @if (report.Valid && Model.Batch.Status == ImportStatus.Validated)
-        {
-            <form asp-action="Approve" asp-route-id="@Model.Batch.Id" method="post"><input type="hidden" name="RowVersion" value="@version" /><input type="hidden" name="Hash" value="@report.Hash" /><div class="form-check mb-3"><input id="confirm" name="Confirm" type="checkbox" value="true" required class="form-check-input" /><label for="confirm" class="form-check-label">Confirm the reconciled patient records and proposed counts</label></div><button class="btn btn-primary"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Approve batch</button></form>
-        }
+        <nav aria-label="Preview pages" class="admin-card-footer">
+            <span class="tabular">Page @Model.Page of @Math.Max(1, (report.Rows.Count + 24) / 25)</span>
+            <span class="d-flex gap-2"><a asp-action="Details" asp-route-id="@Model.Batch.Id" asp-route-page="@(Math.Max(1, Model.Page - 1))" class="btn btn-sm btn-outline-secondary" aria-label="Previous page"><i class="bi bi-chevron-left" aria-hidden="true"></i></a><a asp-action="Details" asp-route-id="@Model.Batch.Id" asp-route-page="@(Model.Page + 1)" class="btn btn-sm btn-outline-secondary" aria-label="Next page"><i class="bi bi-chevron-right" aria-hidden="true"></i></a></span>
+        </nav>
+    </div>
+    @if (report.Valid && Model.Batch.Status == ImportStatus.Validated)
+    {
+        <form asp-action="Approve" asp-route-id="@Model.Batch.Id" method="post" class="admin-card admin-form">
+            <div class="admin-card-header"><h2 class="admin-card-title">Approve batch</h2><span class="admin-chip admin-chip-info admin-chip-plain">Step 4 of 4</span></div>
+            <div class="admin-card-body"><input type="hidden" name="RowVersion" value="@version" /><input type="hidden" name="Hash" value="@report.Hash" /><div class="form-check"><input id="confirm" name="Confirm" type="checkbox" value="true" required class="form-check-input" /><label for="confirm" class="form-check-label">Confirm the reconciled patient records and proposed counts</label></div></div>
+            <div class="admin-form-actions"><button class="btn btn-primary"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Approve batch</button></div>
+        </form>
     }
-</section>
-@if (Model.Batch.Status is ImportStatus.Queued or ImportStatus.Running or ImportStatus.ValidationQueued or ImportStatus.Validating or ImportStatus.ApprovalQueued or ImportStatus.Approving)
+}
+@if (inFlight)
 {
     @section Scripts { <script src="~/js/import-status.js" asp-append-version="true" data-status-url="@Url.Action("Status", new { id = Model.Batch.Id })"></script> }
 }

@@ -1,9 +1,9 @@
 @model PatientLinkPage
 @{ ViewData["Title"] = "Verified portal link"; }
-<section class="container py-4">
-    <h1 class="h3">Verified portal link</h1>
-    <partial name="_Context" model="Model.Context" />
-    <p class="mb-3">Portal account: @(Model.Linked ? "Linked" : "Unlinked")</p>
-    <partial name="_LinkForm" model="Model.Input" view-data="ViewData" />
-</section>
+<div class="admin-page-header">
+    <div><p class="admin-eyebrow">Patients</p><h1 class="admin-title">Verified portal link</h1><p class="admin-subtitle">Connect this hospital record to a confirmed portal account after checking the patient's identity.</p></div>
+    <span class="@(Model.Linked ? "admin-chip admin-chip-success" : "admin-chip")">Portal account: @(Model.Linked ? "Linked" : "Unlinked")</span>
+</div>
+<partial name="_Context" model="Model.Context" />
+<partial name="_LinkForm" model="Model.Input" view-data="ViewData" />
 @section Scripts { <partial name="_ValidationScriptsPartial" /> }

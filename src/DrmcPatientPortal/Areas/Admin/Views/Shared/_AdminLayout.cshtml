@@ -1,0 +1,121 @@
+@using Microsoft.AspNetCore.Hosting
+@using Microsoft.Extensions.Hosting
+@inject IWebHostEnvironment Environment
+@{
+    var title = ViewData["Title"]?.ToString();
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    var current = AdminNavigation.Find(controller);
+    var isIndex = action is "Index" or null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>@(string.IsNullOrEmpty(title) ? "DRMC Admin" : $"{title} | DRMC Admin")</title>
+    <link rel="icon" type="image/png" href="~/drmc-favicon.png" />
+    <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+</head>
+<body class="admin-body">
+    <a class="skip-link" href="#admin-main">Skip to main content</a>
+    <div class="admin-shell">
+        <aside class="admin-sidebar offcanvas-lg offcanvas-start" id="adminSidebar" tabindex="-1" aria-label="Admin navigation">
+            <div class="admin-sidebar-brand">
+                <a asp-area="Admin" asp-controller="Home" asp-action="Index" class="admin-brand-link">
+                    <img src="~/images/drmc-seal.png" alt="" width="36" height="36" />
+                    <span><span class="admin-brand-name">DRMC Admin</span><span class="admin-brand-sub">Patient portal console</span></span>
+                </a>
+                <button type="button" class="btn-close btn-close-white d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#adminSidebar" aria-label="Close navigation"></button>
+            </div>
+            <nav class="admin-nav" aria-label="Admin sections">
+                @foreach (var navGroup in AdminNavigation.Sections)
+                {
+                    <p class="admin-nav-heading">@navGroup.Label</p>
+                    <ul class="list-unstyled mb-3">
+                        @foreach (var item in navGroup.Items)
+                        {
+                            var active = string.Equals(item.Controller, controller, StringComparison.OrdinalIgnoreCase);
+                            <li>
+                                <a asp-area="Admin" asp-controller="@item.Controller" asp-action="Index" class="admin-nav-link @(active ? "active" : null)" aria-current="@(active ? "page" : null)">
+                                    <i class="bi @item.Icon" aria-hidden="true"></i><span>@item.Label</span>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                }
+            </nav>
+            <div class="admin-sidebar-footer">
+                <a asp-area="" asp-controller="Home" asp-action="Index" class="admin-nav-link"><i class="bi bi-box-arrow-up-left" aria-hidden="true"></i><span>Back to patient portal</span></a>
+            </div>
+        </aside>
+
+        <div class="admin-main-column">
+            <header class="admin-topbar">
+                <button class="btn admin-icon-btn d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminSidebar" aria-controls="adminSidebar" aria-label="Open navigation">
+                    <i class="bi bi-list" aria-hidden="true"></i>
+                </button>
+                <nav aria-label="Breadcrumb" class="admin-breadcrumbs">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
+                        @if (current is { } found && found.Item.Controller != "Home")
+                        {
+                            <li class="breadcrumb-item d-none d-sm-inline">@found.Section.Label</li>
+                            if (isIndex)
+                            {
+                                <li class="breadcrumb-item active" aria-current="page">@found.Item.Label</li>
+                            }
+                            else
+                            {
+                                <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="@found.Item.Controller" asp-action="Index">@found.Item.Label</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">@title</li>
+                            }
+                        }
+                        else
+                        {
+                            <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+                        }
+                    </ol>
+                </nav>
+                <div class="admin-topbar-actions">
+                    @if (!Environment.IsProduction())
+                    {
+                        <span class="admin-env-badge d-none d-sm-inline" title="Hosting environment">@Environment.EnvironmentName</span>
+                    }
+                    <button type="button" class="btn admin-icon-btn" data-admin-density aria-pressed="false" title="Compact rows">
+                        <i class="bi bi-arrows-collapse" aria-hidden="true"></i><span class="visually-hidden">Compact rows</span>
+                    </button>
+                    <div class="dropdown">
+                        <button class="btn admin-user-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="admin-avatar" aria-hidden="true">@(User.Identity?.Name?[..1].ToUpperInvariant())</span>
+                            <span class="d-none d-md-inline text-truncate">@User.Identity?.Name</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                            <li><span class="dropdown-item-text small text-muted">Signed in with MFA</span></li>
+                            <li><a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/TwoFactorAuthentication"><i class="bi bi-shield-lock me-2" aria-hidden="true"></i>Two-factor authentication</a></li>
+                            <li><hr class="dropdown-divider" /></li>
+                            <li>
+                                <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post">
+                                    <button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2" aria-hidden="true"></i>Sign out</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+            <main id="admin-main" class="admin-main" tabindex="-1">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/admin.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

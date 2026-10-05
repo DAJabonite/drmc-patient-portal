@@ -1,23 +1,44 @@
 @model ImportReconciliation
 @{ ViewData["Title"] = "Reconciliation"; var options = (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewData["Patients"]!; }
-<section class="container py-4">
-    <div class="d-flex justify-content-between align-items-center gap-3"><h1 class="h3">Reconciliation</h1><a asp-action="Details" asp-route-id="@Model.Batch.Id">Batch status</a></div>
-    @if (TempData["ImportMessage"] is string message) { <div class="alert alert-warning" role="alert">@message</div> }
-    <form method="get" class="d-flex gap-2 mb-4"><input type="hidden" name="page" value="@Model.Page" /><label for="patientSearch" class="visually-hidden">Patient search</label><input id="patientSearch" name="patientSearch" value="@ViewData["PatientSearch"]" maxlength="450" class="form-control" placeholder="Patient name or hospital number" /><button class="btn btn-outline-secondary" title="Search patients"><i class="bi bi-search" aria-hidden="true"></i><span class="visually-hidden">Search patients</span></button></form>
-    <form asp-action="DryRun" asp-route-id="@Model.Batch.Id" method="post">
+<div class="admin-page-header">
+    <div>
+        <p class="admin-eyebrow">Imports · Step 2 of 4</p>
+        <h1 class="admin-title">Reconciliation</h1>
+        <p class="admin-subtitle">Match each source patient group to an existing hospital record, or confirm a new one.</p>
+    </div>
+    <div class="admin-page-actions"><a asp-action="Details" asp-route-id="@Model.Batch.Id" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Batch status</a></div>
+</div>
+@if (TempData["ImportMessage"] is string message) { <div class="alert alert-warning" role="alert">@message</div> }
+<div class="admin-card">
+    <div class="admin-card-header">
+        <form method="get" class="d-flex flex-grow-1 gap-2" role="search"><input type="hidden" name="page" value="@Model.Page" /><div class="admin-search"><i class="bi bi-search" aria-hidden="true"></i><label for="patientSearch" class="visually-hidden">Patient search</label><input id="patientSearch" name="patientSearch" value="@ViewData["PatientSearch"]" maxlength="450" class="form-control" placeholder="Filter existing records by name or hospital number" /></div><button class="btn btn-outline-secondary" type="submit">Search patients</button></form>
+        <span class="admin-result-count tabular">@Model.TotalGroups source groups</span>
+    </div>
+    <form asp-action="DryRun" asp-route-id="@Model.Batch.Id" method="post" class="admin-form">
         <input name="RowVersion" type="hidden" value="@Model.Input.RowVersion" />
+        <ol class="admin-step-list">
         @for (var i = 0; i < Model.Groups.Count; i++)
         {
             var group = Model.Groups[i]; var mapping = Model.Input.Mappings[i];
-            <div class="border-bottom py-3">
-                <h2 class="h5 text-break">@group.Key</h2><p class="text-break mb-2">@group.Name <span class="text-muted">@group.BirthDate | @group.Rows rows</span></p>
+            <li>
+                <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+                    <div class="text-break"><h2 class="h6 fw-bold mb-0">@group.Name</h2><span class="admin-id">@group.Key</span></div>
+                    <span class="admin-chips"><span class="admin-chip admin-chip-plain">Born @group.BirthDate</span><span class="admin-chip admin-chip-info admin-chip-plain">@group.Rows rows</span></span>
+                </div>
                 <input type="hidden" name="Mappings[@i].SourcePatientKey" value="@group.Key" />
-                <label for="existing-@i" class="form-label">Existing hospital record</label><select id="existing-@i" name="Mappings[@i].PatientRecordId" disabled="@group.FromPatientTemplate" class="form-select"><option value="">Unassigned</option>@foreach (var option in options) { <option value="@option.Value" selected="@(option.Value == mapping.PatientRecordId?.ToString())">@option.Text</option> }</select>
-                <div class="form-check my-3"><input id="create-@i" name="Mappings[@i].CreateNew" type="checkbox" value="true" checked="@mapping.CreateNew" class="form-check-input" /><label for="create-@i" class="form-check-label">Confirm a new hospital record</label><input name="Mappings[@i].CreateNew" type="hidden" value="false" /></div>
-                <div class="row g-3"><div class="col-md-6"><label for="name-@i" class="form-label">New record name</label><input id="name-@i" name="Mappings[@i].Patient.FullName" value="@mapping.Patient.FullName" readonly="@group.FromPatientTemplate" maxlength="100000" class="form-control" /></div><div class="col-md-3"><label for="birth-@i" class="form-label">Birth date</label><input id="birth-@i" name="Mappings[@i].Patient.DateOfBirth" type="date" value="@mapping.Patient.DateOfBirth?.ToString("yyyy-MM-dd")" readonly="@group.FromPatientTemplate" class="form-control" /></div><div class="col-md-3"><label for="number-@i" class="form-label">Hospital number</label><input id="number-@i" name="Mappings[@i].Patient.HospitalNumber" value="@mapping.Patient.HospitalNumber" readonly="@group.FromPatientTemplate" maxlength="450" class="form-control" /></div></div>
-            </div>
+                <div class="row g-3">
+                    <div class="col-lg-6"><label for="existing-@i" class="form-label">Existing hospital record</label><select id="existing-@i" name="Mappings[@i].PatientRecordId" disabled="@group.FromPatientTemplate" class="form-select"><option value="">Unassigned</option>@foreach (var option in options) { <option value="@option.Value" selected="@(option.Value == mapping.PatientRecordId?.ToString())">@option.Text</option> }</select></div>
+                    <div class="col-lg-6 d-flex align-items-end"><div class="form-check mb-2"><input id="create-@i" name="Mappings[@i].CreateNew" type="checkbox" value="true" checked="@mapping.CreateNew" class="form-check-input" /><label for="create-@i" class="form-check-label">Confirm a new hospital record</label><input name="Mappings[@i].CreateNew" type="hidden" value="false" /></div></div>
+                    <div class="col-md-6"><label for="name-@i" class="form-label">New record name</label><input id="name-@i" name="Mappings[@i].Patient.FullName" value="@mapping.Patient.FullName" readonly="@group.FromPatientTemplate" maxlength="100000" class="form-control" /></div>
+                    <div class="col-md-3"><label for="birth-@i" class="form-label">Birth date</label><input id="birth-@i" name="Mappings[@i].Patient.DateOfBirth" type="date" value="@mapping.Patient.DateOfBirth?.ToString("yyyy-MM-dd")" readonly="@group.FromPatientTemplate" class="form-control" /></div>
+                    <div class="col-md-3"><label for="number-@i" class="form-label">Hospital number</label><input id="number-@i" name="Mappings[@i].Patient.HospitalNumber" value="@mapping.Patient.HospitalNumber" readonly="@group.FromPatientTemplate" maxlength="450" class="form-control" /></div>
+                </div>
+            </li>
         }
-        <button type="submit" class="btn btn-primary my-4"><i class="bi bi-check2-square me-1" aria-hidden="true"></i>Save mappings and dry run</button>
+        </ol>
+        <div class="admin-form-actions justify-content-between">
+            <nav aria-label="Source group pages" class="d-flex align-items-center gap-2 small"><a asp-action="Reconcile" asp-route-id="@Model.Batch.Id" asp-route-page="@(Math.Max(1, Model.Page - 1))" asp-route-patientSearch="@ViewData["PatientSearch"]" class="btn btn-sm btn-outline-secondary" aria-label="Previous page"><i class="bi bi-chevron-left" aria-hidden="true"></i></a><span class="tabular">Page @Model.Page of @Math.Max(1, (Model.TotalGroups + 24) / 25)</span><a asp-action="Reconcile" asp-route-id="@Model.Batch.Id" asp-route-page="@(Model.Page + 1)" asp-route-patientSearch="@ViewData["PatientSearch"]" class="btn btn-sm btn-outline-secondary" aria-label="Next page"><i class="bi bi-chevron-right" aria-hidden="true"></i></a></nav>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check2-square me-1" aria-hidden="true"></i>Save mappings and dry run</button>
+        </div>
     </form>
-    <nav aria-label="Source group pages" class="d-flex gap-3"><a asp-action="Reconcile" asp-route-id="@Model.Batch.Id" asp-route-page="@(Math.Max(1, Model.Page - 1))" asp-route-patientSearch="@ViewData["PatientSearch"]">Previous</a><span>@Model.Page / @Math.Max(1, (Model.TotalGroups + 24) / 25)</span><a asp-action="Reconcile" asp-route-id="@Model.Batch.Id" asp-route-page="@(Model.Page + 1)" asp-route-patientSearch="@ViewData["PatientSearch"]">Next</a></nav>
-</section>
+</div>
