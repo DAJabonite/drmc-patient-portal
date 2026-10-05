@@ -20,6 +20,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PatientAllergy> PatientAllergies => Set<PatientAllergy>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
+    public DbSet<ImportBatch> ImportBatches => Set<ImportBatch>();
     public DbSet<PatientIdDocument> PatientIdDocuments => Set<PatientIdDocument>();
 
     private void GuardAuditHistory()
@@ -46,6 +47,25 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     {
         base.OnModelCreating(builder);
         builder.UseCollation("Latin1_General_100_BIN2");
+
+        builder.Entity<ImportBatch>(e =>
+        {
+            e.Property(x => x.Id).ValueGeneratedNever();
+            e.Property(x => x.ActorId).HasMaxLength(450);
+            e.Property(x => x.ActorEmail).HasMaxLength(256);
+            e.Property(x => x.ApprovedById).HasMaxLength(450);
+            e.Property(x => x.ApprovedByEmail).HasMaxLength(256);
+            e.Property(x => x.Template).HasMaxLength(50);
+            e.Property(x => x.FileHash).HasMaxLength(64);
+            e.Property(x => x.ValidationHash).HasMaxLength(64);
+            e.Property(x => x.ApprovalHash).HasMaxLength(64);
+            e.Property(x => x.ValidationVersion).HasMaxLength(50);
+            e.Property(x => x.FailureCode).HasMaxLength(100);
+            e.Property(x => x.OwnerId).HasMaxLength(200);
+            e.Property(x => x.RowVersion).IsRowVersion();
+            e.HasIndex(x => new { x.Status, x.CreatedAtUtc });
+            e.HasIndex(x => new { x.Status, x.LeaseExpiresUtc });
+        });
 
         foreach (var type in new[] { typeof(Doctor), typeof(PublicAdvisory), typeof(ClinicalEncounter),
                      typeof(LabResult), typeof(LabResultItem), typeof(Prescription),

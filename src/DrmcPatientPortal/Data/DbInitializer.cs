@@ -18,7 +18,7 @@ public static class DbInitializer
         if (db.Doctors.Any() || db.PublicAdvisories.Any() || db.PatientRecords.Any() ||
             db.ClinicalEncounters.Any() || db.LabResults.Any() || db.LabResultItems.Any() ||
             db.Prescriptions.Any() || db.MedicationDoseSchedules.Any() || db.PatientAllergies.Any() ||
-            db.PatientIdDocuments.Any() || db.AuditLogs.Any() || db.AdminAuditLogs.Any()) return;
+            db.PatientIdDocuments.Any() || db.AuditLogs.Any() || db.AdminAuditLogs.Any() || db.ImportBatches.Any()) return;
         string Required(string key) => !string.IsNullOrWhiteSpace(configuration[key])
             ? configuration[key]! : throw new InvalidOperationException("Explicit fixture credentials are required.");
         var primaryEmail = Required("DevelopmentFixtures:Primary:Email");

@@ -26,11 +26,11 @@ public sealed class PrescriptionEditor : ClinicalEditor<Prescription, Prescripti
     };
     public override async Task<IReadOnlyDictionary<string, int>> DependentsAsync(ApplicationDbContext db, Prescription entity, CancellationToken token) =>
         new Dictionary<string, int> { ["Dose schedules"] = await db.MedicationDoseSchedules.CountAsync(d => d.PrescriptionId == entity.Id, token) };
-    public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, PrescriptionInput input, Prescription entity, OwnershipContext? context, bool create, CancellationToken token)
+    public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, PrescriptionInput input, Prescription entity, OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
     {
         if (context is null) return WriteResult.Invalid("The patient record no longer exists.");
         var number = input.RxNumber.Trim().ToUpperInvariant();
-        if (await db.Prescriptions.AnyAsync(p => p.Id != entity.Id && EF.Functions.Collate(p.RxNumber, "Latin1_General_100_CI_AS") == number, token))
+        if (lookups is not null ? lookups.Exists("Rx:" + number) : await db.Prescriptions.AnyAsync(p => p.Id != entity.Id && EF.Functions.Collate(p.RxNumber, "Latin1_General_100_CI_AS") == number, token))
             return WriteResult.Invalid("A prescription already uses this Rx number.");
         var physician = await PhysicianNames.ResolveAsync(db, input, token);
         if (physician is null) return WriteResult.Invalid("Select an existing directory physician or enter an explicit historical name.");

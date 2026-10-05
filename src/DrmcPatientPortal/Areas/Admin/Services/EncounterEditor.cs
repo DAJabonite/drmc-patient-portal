@@ -26,11 +26,11 @@ public sealed class EncounterEditor : ClinicalEditor<ClinicalEncounter, Encounte
     public override async Task<IReadOnlyDictionary<string, int>> DependentsAsync(ApplicationDbContext db, ClinicalEncounter entity, CancellationToken token) =>
         new Dictionary<string, int> { ["Labs"] = await db.LabResults.CountAsync(l => l.ClinicalEncounterId == entity.Id, token) };
     public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, EncounterInput input, ClinicalEncounter entity,
-        OwnershipContext? context, bool create, CancellationToken token)
+        OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
     {
         if (context is null) return WriteResult.Invalid("The patient record no longer exists.");
         var reference = input.EncounterReference.Trim().ToUpperInvariant();
-        if (await db.ClinicalEncounters.AnyAsync(e => e.Id != entity.Id && EF.Functions.Collate(e.EncounterReference, "Latin1_General_100_CI_AS") == reference, token))
+        if (lookups is not null ? lookups.Exists("Encounter:" + reference) : await db.ClinicalEncounters.AnyAsync(e => e.Id != entity.Id && EF.Functions.Collate(e.EncounterReference, "Latin1_General_100_CI_AS") == reference, token))
             return WriteResult.Invalid("An encounter already uses this reference.");
         var physician = await PhysicianNames.ResolveAsync(db, input, token);
         if (physician is null) return WriteResult.Invalid("Select an existing directory physician or enter an explicit historical name.");

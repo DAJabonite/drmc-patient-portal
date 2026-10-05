@@ -27,7 +27,7 @@ public abstract class AdminEntity<TEntity, TInput> where TEntity : class, new() 
         TInput input, OwnershipContext? context, CancellationToken token) => Task.CompletedTask;
     public abstract TInput Input(ApplicationDbContext db, TEntity entity);
     public abstract Task<WriteResult> ApplyAsync(ApplicationDbContext db, TInput input, TEntity entity,
-        OwnershipContext? context, bool create, CancellationToken token);
+        OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null);
 
     public virtual IReadOnlyList<RecordField> Fields(ApplicationDbContext db, TEntity entity) => db.Entry(entity).Properties
         .Where(p => p.Metadata.Name is not "RowVersion" and not "Id")

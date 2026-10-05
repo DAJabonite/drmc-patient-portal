@@ -37,11 +37,12 @@ public sealed class LabItemEditor : AdminEntity<LabResultItem, LabItemInput>
     }
     public override LabItemInput Input(ApplicationDbContext db, LabResultItem entity) => new()
     { ParameterName = entity.ParameterName, Value = entity.Value, Unit = entity.Unit, ReferenceRange = entity.ReferenceRange, Flag = entity.Flag };
-    public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, LabItemInput input, LabResultItem entity, OwnershipContext? context, bool create, CancellationToken token)
+    public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, LabItemInput input, LabResultItem entity, OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
     {
         if (context is null) return WriteResult.Invalid("The parent lab no longer exists.");
-        var parent = await db.LabResults.SingleOrDefaultAsync(l => l.Id == context.RouteId && l.PatientRecordId == context.Patient.Id, token);
-        if (parent is null) return WriteResult.Invalid("The lab does not belong to the selected patient.");
+        var parent = lookups is not null ? lookups.Labs.GetValueOrDefault(context.RouteId) : db.LabResults.Local.SingleOrDefault(l => db.Entry(l).State == EntityState.Added && l.Id == context.RouteId && l.PatientRecordId == context.Patient.Id) ??
+            await db.LabResults.SingleOrDefaultAsync(l => l.Id == context.RouteId && l.PatientRecordId == context.Patient.Id, token);
+        if (parent is null || parent.PatientRecordId != context.Patient.Id) return WriteResult.Invalid("The lab does not belong to the selected patient.");
         if (create) { entity.LabResultId = parent.Id; entity.LabResult = parent; }
         else if (entity.LabResultId != parent.Id) return WriteResult.Invalid("Lab item ownership cannot change.");
         entity.ParameterName = input.ParameterName.Trim(); entity.Value = input.Value ?? ""; entity.Unit = input.Unit ?? "";

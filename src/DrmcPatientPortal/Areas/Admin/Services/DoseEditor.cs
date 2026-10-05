@@ -43,14 +43,15 @@ public sealed class DoseEditor : AdminEntity<MedicationDoseSchedule, DoseInput>
     }
     public override DoseInput Input(ApplicationDbContext db, MedicationDoseSchedule entity) => new()
     { DoseTime = entity.DoseTime.ToString("HH:mm:ss.fff"), DisplayOrder = entity.DisplayOrder };
-    public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, DoseInput input, MedicationDoseSchedule entity, OwnershipContext? context, bool create, CancellationToken token)
+    public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, DoseInput input, MedicationDoseSchedule entity, OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
     {
         if (context is null) return WriteResult.Invalid("The parent prescription no longer exists.");
-        var parent = await db.Prescriptions.SingleOrDefaultAsync(p => p.Id == context.RouteId && p.PatientRecordId == context.Patient.Id, token);
-        if (parent is null) return WriteResult.Invalid("The prescription does not belong to the selected patient.");
+        var parent = lookups is not null ? lookups.Prescriptions.GetValueOrDefault(context.RouteId) : db.Prescriptions.Local.SingleOrDefault(p => db.Entry(p).State == EntityState.Added && p.Id == context.RouteId && p.PatientRecordId == context.Patient.Id) ??
+            await db.Prescriptions.SingleOrDefaultAsync(p => p.Id == context.RouteId && p.PatientRecordId == context.Patient.Id, token);
+        if (parent is null || parent.PatientRecordId != context.Patient.Id) return WriteResult.Invalid("The prescription does not belong to the selected patient.");
         var time = DoseInput.Parse(input.DoseTime);
         if (time is null) return WriteResult.Invalid("Enter a valid Manila dose time.");
-        if (await db.MedicationDoseSchedules.AnyAsync(d => d.PrescriptionId == parent.Id && d.Id != entity.Id && d.DoseTime == time, token))
+        if (lookups is not null ? lookups.Exists("Dose:" + parent.Id + ":" + time.Value.Ticks) : await db.MedicationDoseSchedules.AnyAsync(d => d.PrescriptionId == parent.Id && d.Id != entity.Id && d.DoseTime == time, token))
             return WriteResult.Invalid("This prescription already has a schedule at that time.");
         if (create) { entity.PrescriptionId = parent.Id; entity.Prescription = parent; }
         else if (entity.PrescriptionId != parent.Id) return WriteResult.Invalid("Dose schedule ownership cannot change.");

@@ -4,6 +4,7 @@ using DrmcPatientPortal.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DrmcPatientPortal.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261005042232_AdminImportBatches")]
+    partial class AdminImportBatches
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -418,13 +421,6 @@ namespace DrmcPatientPortal.Data.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
-                    b.Property<DateTime?>("LeaseExpiresUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("OwnerId")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
                     b.Property<int>("RowCount")
                         .HasColumnType("int");
 
@@ -460,8 +456,6 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Status", "CreatedAtUtc");
-
-                    b.HasIndex("Status", "LeaseExpiresUtc");
 
                     b.ToTable("ImportBatches");
                 });

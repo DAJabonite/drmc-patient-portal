@@ -33,11 +33,11 @@ public sealed class PatientEditor : AdminEntity<PatientRecord, PatientInput>
             ["Allergies"] = await db.PatientAllergies.CountAsync(e => e.PatientRecordId == entity.Id, token)
         };
     public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, PatientInput input, PatientRecord entity,
-        OwnershipContext? context, bool create, CancellationToken token)
+        OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
     {
         var number = string.IsNullOrWhiteSpace(input.HospitalNumber) ? null : input.HospitalNumber.Trim();
-        if (number is not null && await db.PatientRecords.AnyAsync(e => e.Id != entity.Id && e.HospitalNumber != null &&
-            EF.Functions.Collate(e.HospitalNumber, "Latin1_General_100_CI_AS") == number, token))
+        if (number is not null && (lookups is not null ? lookups.Exists("Hospital:" + number) : await db.PatientRecords.AnyAsync(e => e.Id != entity.Id && e.HospitalNumber != null &&
+            EF.Functions.Collate(e.HospitalNumber, "Latin1_General_100_CI_AS") == number, token)))
             return WriteResult.Invalid("That hospital number is already assigned.");
         if (string.IsNullOrWhiteSpace(input.FullName)) return WriteResult.Invalid("A patient name is required.");
         entity.FullName = input.FullName.Trim(); entity.HospitalNumber = number;

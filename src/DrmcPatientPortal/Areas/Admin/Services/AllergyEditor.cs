@@ -13,7 +13,7 @@ public sealed class AllergyEditor : ClinicalEditor<PatientAllergy, AllergyInput>
     public override string Summary(PatientAllergy entity) => entity.Severity + " | " + entity.RecordedAt.ToString("yyyy-MM-dd HH:mm");
     public override AllergyInput Input(ApplicationDbContext db, PatientAllergy entity) => new()
     { Allergen = entity.Allergen, Reaction = entity.Reaction, Severity = entity.Severity, RecordedAt = entity.RecordedAt };
-    public override Task<WriteResult> ApplyAsync(ApplicationDbContext db, AllergyInput input, PatientAllergy entity, OwnershipContext? context, bool create, CancellationToken token)
+    public override Task<WriteResult> ApplyAsync(ApplicationDbContext db, AllergyInput input, PatientAllergy entity, OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
     {
         if (context is null) return Task.FromResult(WriteResult.Invalid("The patient record no longer exists."));
         if (create) entity.PatientRecordId = context.Patient.Id;

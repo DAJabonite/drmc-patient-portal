@@ -31,13 +31,16 @@ public sealed class LabEditor : ClinicalEditor<LabResult, LabInput>
     };
     public override async Task<IReadOnlyDictionary<string, int>> DependentsAsync(ApplicationDbContext db, LabResult entity, CancellationToken token) =>
         new Dictionary<string, int> { ["Lab items"] = await db.LabResultItems.CountAsync(i => i.LabResultId == entity.Id, token) };
-    public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, LabInput input, LabResult entity, OwnershipContext? context, bool create, CancellationToken token)
+    public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, LabInput input, LabResult entity, OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
     {
         if (context is null) return WriteResult.Invalid("The patient record no longer exists.");
-        if (input.ClinicalEncounterId is not null && !await db.ClinicalEncounters.AnyAsync(e => e.Id == input.ClinicalEncounterId && e.PatientRecordId == context.Patient.Id, token))
+        if (input.ClinicalEncounterId is not null && (lookups is not null
+            ? !lookups.Encounters.TryGetValue(input.ClinicalEncounterId.Value, out var parent) || parent.PatientRecordId != context.Patient.Id
+            : !db.ClinicalEncounters.Local.Any(e => db.Entry(e).State == EntityState.Added && e.Id == input.ClinicalEncounterId && e.PatientRecordId == context.Patient.Id) &&
+            !await db.ClinicalEncounters.AnyAsync(e => e.Id == input.ClinicalEncounterId && e.PatientRecordId == context.Patient.Id, token)))
             return WriteResult.Invalid("Select an existing encounter belonging to this patient.");
         var accession = input.AccessionNumber.Trim().ToUpperInvariant();
-        if (await db.LabResults.AnyAsync(l => l.Id != entity.Id && EF.Functions.Collate(l.AccessionNumber, "Latin1_General_100_CI_AS") == accession, token))
+        if (lookups is not null ? lookups.Exists("Lab:" + accession) : await db.LabResults.AnyAsync(l => l.Id != entity.Id && EF.Functions.Collate(l.AccessionNumber, "Latin1_General_100_CI_AS") == accession, token))
             return WriteResult.Invalid("A lab already uses this accession number.");
         var ordering = await PhysicianNames.ResolveAsync(db, input, token); var pathologist = await PhysicianNames.ResolveAsync(db, input.Pathologist, token);
         if (ordering is null || pathologist is null) return WriteResult.Invalid("Select existing directory physicians or enter explicit historical names.");

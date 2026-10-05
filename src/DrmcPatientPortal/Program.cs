@@ -133,6 +133,10 @@ builder.Services.AddAuthorization(options => options.AddPolicy("AdminAccess", po
 builder.Services.AddScoped<IAuthorizationHandler, AdminAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, AdminAuthorizationResultHandler>();
 builder.Services.AddScoped<AdminWrites>();
+builder.Services.AddSingleton<ImportStaging>();
+builder.Services.AddScoped<ImportWorkflow>();
+builder.Services.AddSingleton<ImportLeases>();
+builder.Services.AddHostedService<ImportWorker>();
 builder.Services.AddControllersWithViews(options => options.Conventions.Add(new AdminAreaConvention()))
     .AddViewLocalization()
     .AddDataAnnotationsLocalization(options =>

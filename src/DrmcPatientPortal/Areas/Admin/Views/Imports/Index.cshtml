@@ -1,0 +1,19 @@
+@model ImportIndex
+@using DrmcPatientPortal.Areas.Admin.Services
+@{ ViewData["Title"] = "Imports"; }
+<section class="container py-4">
+    <h1 class="h3">Imports</h1>
+    @if (TempData["ImportMessage"] is string message) { <div class="alert alert-warning" role="alert">@message</div> }
+    <form asp-action="Upload" method="post" enctype="multipart/form-data" class="row g-3 my-2">
+        <div class="col-md-5"><label for="template" class="form-label">Template</label><select id="template" name="Template" class="form-select" required><option value="Workbook_v1">Workbook v1 (.xlsx)</option>@foreach (var template in ImportTemplates.All) { <option value="@template.Sheet">@template.Sheet (.csv)</option> }</select></div>
+        <div class="col-md-5"><label for="file" class="form-label">File</label><input id="file" name="File" type="file" accept=".csv,.xlsx" class="form-control" required /></div>
+        <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary" type="submit"><i class="bi bi-upload me-1" aria-hidden="true"></i>Upload</button></div>
+    </form>
+    <h2 class="h5 mt-4">Templates</h2>
+    <div class="d-flex flex-wrap gap-3 mb-4"><a asp-action="Template" asp-route-name="Workbook_v1"><i class="bi bi-download" aria-hidden="true"></i> Workbook v1</a>@foreach (var template in ImportTemplates.All) { <a asp-action="Template" asp-route-name="@template.Sheet">@template.Name CSV</a> }</div>
+    <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Created (UTC)</th><th>Batch</th><th>Template</th><th>Status</th><th>Rows</th></tr></thead><tbody>
+    @foreach (var batch in Model.Rows) { <tr><td>@batch.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td><td><a asp-action="Details" asp-route-id="@batch.Id">@batch.Id.ToString("N")[..12]</a></td><td>@batch.Template</td><td>@batch.Status</td><td>@batch.RowCount</td></tr> }
+    </tbody></table></div>
+    @if (Model.Rows.Count == 0) { <p class="text-muted">No batches.</p> }
+    <nav aria-label="Batch pages" class="d-flex gap-3"><a asp-action="Index" asp-route-page="@(Math.Max(1, Model.Page - 1))">Previous</a><span>@Model.Page / @Math.Max(1, (Model.Total + 24) / 25)</span><a asp-action="Index" asp-route-page="@(Model.Page + 1)">Next</a></nav>
+</section>
