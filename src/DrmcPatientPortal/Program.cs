@@ -110,7 +110,8 @@ builder.Services.AddHostedService<TemporaryDocumentCleanupService>();
 
 var keyRingPath = builder.Configuration["DataProtection:KeyRingPath"] ?? Path.Combine(builder.Environment.ContentRootPath, "App_Data", "DataProtectionKeys");
 if (!Path.IsPathRooted(keyRingPath)) keyRingPath = Path.Combine(builder.Environment.ContentRootPath, keyRingPath);
-builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keyRingPath)).SetApplicationName("DRMC.PatientPortal");
+var protectKeysWithDpapi = builder.Configuration.GetValue<bool>("DataProtection:ProtectKeysWithDpapi");
+await KeyRingProtection.ConfigureAsync(builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keyRingPath)).SetApplicationName("DRMC.PatientPortal"), keyRingPath, protectKeysWithDpapi);
 
 // Offline local OCR ID extraction service
 builder.Services.AddSingleton<IIdDocumentExtractionService, TesseractIdDocumentExtractionService>();
@@ -164,6 +165,8 @@ builder.Services.AddRazorPages(options =>
 });
 
 var app = builder.Build();
+if (!protectKeysWithDpapi && !app.Environment.IsDevelopment())
+    app.Logger.LogWarning("Data Protection keys are unprotected at rest. See the README Key Protection and Recovery section to choose and configure key protection before deployment.");
 await AdminBootstrap.InitializeAsync(app.Services, app.Configuration);
 
 // Fixtures require explicit opt-in and an already migrated, empty business schema.
