@@ -95,10 +95,6 @@
     display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; flex: none;
     border-radius: 50%; background: var(--drmc-primary); color: #fff; font-weight: 700; font-size: 0.8125rem;
 }
-.admin-env-badge {
-    font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-    padding: 0.25rem 0.5rem; border-radius: 0.375rem; background: #fff4db; color: #7a4f00; border: 1px solid #f5d48a;
-}
 
 /* Page header ------------------------------------------------------------ */
 .admin-page-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; }
@@ -288,3 +284,28 @@
     .admin-table-stack tbody td:not(:first-child):not(:last-child) { flex: 1 1 100%; }
     .admin-table-stack .text-break { word-break: normal !important; overflow-wrap: anywhere; }
 }
+/* Wide logs (audit, imports, dry run) become labelled record cards below desktop width. */
+@media (max-width: 991.98px) {
+    .admin-table-cards thead { display: none; }
+    .admin-table-cards tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.625rem 1rem; padding: 0.875rem 1rem; border-bottom: 1px solid var(--admin-gridline); }
+    .admin-table-cards tbody tr:last-child { border-bottom: 0; }
+    .admin-table-cards tbody td { display: block; padding: 0; border: 0; min-width: 0; white-space: normal; }
+    .admin-table-cards tbody td:first-child, .admin-table-cards tbody td.admin-cell-wide { grid-column: 1 / -1; }
+}
+@media (max-width: 991.98px) { .admin-table-cards td[data-label]::before { content: attr(data-label); } }
+@media (max-width: 767.98px) { .admin-table-stack td[data-label]::before { content: attr(data-label); } }
+.admin-table td[data-label]::before {
+    display: block; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--drmc-text-muted); margin-bottom: 0.125rem;
+}
+@media (max-width: 991.98px) {
+    .admin-table-cards, .admin-table-cards tbody { display: block; width: 100%; }
+}
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .admin-table-cards tbody tr { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .admin-table-cards tbody td.admin-cell-wide { grid-column: span 2; }
+    .admin-table-cards tbody td:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 767.98px) {
+    .admin-table-stack, .admin-table-stack tbody { display: block; width: 100%; }
+}
+@media (max-width: 991.98px) { .admin-table-cards.admin-audit-table { min-width: 0; } }

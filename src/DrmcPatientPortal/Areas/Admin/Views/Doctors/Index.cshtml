@@ -25,8 +25,8 @@
         {
             <tr>
                 <td class="text-break"><a asp-area="Admin" asp-action="Details" asp-route-id="@doctor.Id" class="admin-record-link">@doctor.FullName</a>@if (!string.IsNullOrEmpty(doctor.SubSpecialty)) { <div class="admin-muted small">@doctor.SubSpecialty</div> }</td>
-                <td>@doctor.Department</td>
-                <td class="admin-muted text-break">@doctor.ClinicRoom</td>
+                <td data-label="Department">@doctor.Department</td>
+                <td class="admin-muted text-break" data-label="Clinic">@doctor.ClinicRoom</td>
                 <td><span class="admin-chips"><span class="@(doctor.IsActive ? "admin-chip admin-chip-success" : "admin-chip")">@(doctor.IsActive ? "Active" : "Inactive")</span>@if (doctor.OffersTeleconsult) { <span class="admin-chip admin-chip-info admin-chip-plain"><i class="bi bi-camera-video" aria-hidden="true"></i>Teleconsult</span> }</span></td>
                 <td class="text-end text-nowrap"><span class="admin-row-actions"><a asp-area="Admin" asp-action="Edit" asp-route-id="@doctor.Id" class="btn btn-sm btn-outline-primary" title="Edit" aria-label="Edit @doctor.FullName"><i class="bi bi-pencil" aria-hidden="true"></i></a><a asp-area="Admin" asp-action="Delete" asp-route-id="@doctor.Id" class="btn btn-sm btn-outline-danger" title="Delete" aria-label="Delete @doctor.FullName"><i class="bi bi-trash" aria-hidden="true"></i></a></span></td>
             </tr>

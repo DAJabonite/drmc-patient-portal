@@ -23,16 +23,16 @@
     </div>
     @if (Model.Rows.Count > 0)
     {
-        <div class="table-responsive"><table class="table table-hover admin-table admin-audit-table"><thead><tr><th scope="col">UTC time</th><th scope="col">Actor</th><th scope="col">Action</th><th scope="col">Record</th><th scope="col">Patient</th><th scope="col">Changed fields</th></tr></thead><tbody>
+        <div class="table-responsive"><table class="table table-hover admin-table admin-table-cards admin-audit-table"><thead><tr><th scope="col">UTC time</th><th scope="col">Actor</th><th scope="col">Action</th><th scope="col">Record</th><th scope="col">Patient</th><th scope="col">Changed fields</th></tr></thead><tbody>
         @foreach (var row in Model.Rows)
         {
             <tr>
                 <td class="text-nowrap"><a asp-area="Admin" asp-action="Details" asp-route-id="@row.Id" class="admin-record-link tabular">@row.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss")</a></td>
-                <td class="text-break">@row.ActorEmail</td>
-                <td><span class="@AdminChips.Css(row.Action) admin-chip-plain">@row.Action</span></td>
-                <td class="text-break">@row.Entity @if (row.RecordKey == "Index") { <span class="admin-muted">list</span> } else { <span class="admin-id">#@row.RecordKey</span> }</td>
-                <td class="tabular">@(row.SubjectPatientId is { } pid ? $"#{pid}" : "—")</td>
-                <td class="text-break admin-muted small">@(row.ChangedFields is "[]" or "" ? "—" : row.ChangedFields)</td>
+                <td class="text-break admin-cell-wide" data-label="Actor">@row.ActorEmail</td>
+                <td data-label="Action"><span class="@AdminChips.Css(row.Action) admin-chip-plain">@row.Action</span></td>
+                <td class="text-break" data-label="Record">@row.Entity @if (row.RecordKey == "Index") { <span class="admin-muted">list</span> } else { <span class="admin-id">#@row.RecordKey</span> }</td>
+                <td class="tabular" data-label="Patient">@(row.SubjectPatientId is { } pid ? $"#{pid}" : "—")</td>
+                <td class="text-break admin-muted small" data-label="Changed fields">@(row.ChangedFields is "[]" or "" ? "—" : row.ChangedFields)</td>
             </tr>
         }
         </tbody></table></div>

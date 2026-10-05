@@ -1,6 +1,3 @@
-@using Microsoft.AspNetCore.Hosting
-@using Microsoft.Extensions.Hosting
-@inject IWebHostEnvironment Environment
 @{
     var title = ViewData["Title"]?.ToString();
     var controller = ViewContext.RouteData.Values["controller"]?.ToString();
@@ -82,10 +79,6 @@
                     </ol>
                 </nav>
                 <div class="admin-topbar-actions">
-                    @if (!Environment.IsProduction())
-                    {
-                        <span class="admin-env-badge d-none d-sm-inline" title="Hosting environment">@Environment.EnvironmentName</span>
-                    }
                     <button type="button" class="btn admin-icon-btn" data-admin-density aria-pressed="false" title="Compact rows">
                         <i class="bi bi-arrows-collapse" aria-hidden="true"></i><span class="visually-hidden">Compact rows</span>
                     </button>

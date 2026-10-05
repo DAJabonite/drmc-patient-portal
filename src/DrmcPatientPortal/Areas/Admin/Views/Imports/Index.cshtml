@@ -36,15 +36,15 @@
     <div class="admin-card-header"><h2 class="admin-card-title">Batches</h2><span class="admin-result-count tabular">@Model.Total total</span></div>
     @if (Model.Rows.Count > 0)
     {
-        <div class="table-responsive"><table class="table table-hover admin-table"><thead><tr><th scope="col">Created (UTC)</th><th scope="col">Batch</th><th scope="col">Template</th><th scope="col">Status</th><th scope="col" class="text-end">Rows</th></tr></thead><tbody>
+        <div class="table-responsive"><table class="table table-hover admin-table admin-table-cards"><thead><tr><th scope="col">Created (UTC)</th><th scope="col">Batch</th><th scope="col">Template</th><th scope="col">Status</th><th scope="col" class="text-end">Rows</th></tr></thead><tbody>
         @foreach (var batch in Model.Rows)
         {
             <tr>
                 <td class="tabular text-nowrap">@batch.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                <td><a asp-action="Details" asp-route-id="@batch.Id" class="admin-record-link admin-id">@batch.Id.ToString("N")[..12]</a></td>
-                <td>@batch.Template</td>
-                <td><span class="@AdminChips.Css(batch.Status.ToString())">@AdminChips.Humanize(batch.Status)</span></td>
-                <td class="text-end tabular">@batch.RowCount</td>
+                <td data-label="Batch"><a asp-action="Details" asp-route-id="@batch.Id" class="admin-record-link admin-id">@batch.Id.ToString("N")[..12]</a></td>
+                <td data-label="Template">@batch.Template</td>
+                <td data-label="Status"><span class="@AdminChips.Css(batch.Status.ToString())">@AdminChips.Humanize(batch.Status)</span></td>
+                <td class="text-lg-end tabular" data-label="Rows">@batch.RowCount</td>
             </tr>
         }
         </tbody></table></div>
