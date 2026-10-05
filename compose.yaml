@@ -1,0 +1,22 @@
+# Local SQL Server for macOS, Linux, or Windows without SQL Server Express.
+# Usage: set MSSQL_SA_PASSWORD (8+ chars, mixed case, digit, symbol), then `docker compose up -d`.
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD before starting SQL Server}
+    ports:
+      - "127.0.0.1:1433:1433"
+    volumes:
+      - drmc-sqlserver:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  drmc-sqlserver:

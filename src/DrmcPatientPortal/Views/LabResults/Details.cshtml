@@ -10,7 +10,7 @@
                 <i class="bi bi-arrow-left"></i> All Lab Results
             </a>
             <span class="text-white text-opacity-50">/</span>
-            <span class="small text-white text-opacity-75">@Model.Category</span>
+            <span class="small text-white text-opacity-75">@Model.Category.DisplayName()</span>
         </div>
         <h1 class="display-6 fw-bold mb-1">Result Availability &amp; Claiming Guide</h1>
         <p class="text-white text-opacity-90 mb-0">Accession Number: <strong>@Model.AccessionNumber</strong> &middot; Davao Regional Medical Center</p>
@@ -55,7 +55,7 @@
             <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 pb-3 mb-4 border-bottom">
                 <div>
                     <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill small fw-semibold mb-2">
-                        @Model.Category Panel
+                        @Model.Category.DisplayName() Panel
                     </span>
                     <h2 class="h4 fw-bold text-dark mb-1">@Model.TestName</h2>
                     <p class="text-muted small mb-0">

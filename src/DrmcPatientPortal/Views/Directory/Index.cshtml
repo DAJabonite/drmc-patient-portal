@@ -27,7 +27,7 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="form-check form-switch mb-0">
                             <input class="form-check-input" type="checkbox" name="teleconsultOnly" value="true" id="teleconsultSwitch"
-                                   @(Model.TeleconsultOnly ? "checked" : "") onchange="this.form.submit()" />
+                                   @(Model.TeleconsultOnly ? "checked" : "") data-auto-submit />
                             <label class="form-check-label small text-muted" for="teleconsultSwitch">
                                 Teleconsult Available Only
                             </label>
@@ -58,7 +58,7 @@
                 <input type="hidden" name="teleconsultOnly" value="true" />
             }
             <label for="directoryDepartmentFilter" class="form-label small fw-semibold text-dark mb-1">Filter doctors by department</label>
-            <select id="directoryDepartmentFilter" name="department" class="form-select" onchange="this.form.submit()">
+            <select id="directoryDepartmentFilter" name="department" class="form-select" data-auto-submit>
                 <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDepartment))">All Departments (@Model.Doctors.Count)</option>
                 @foreach (var dept in Model.Departments)
                 {

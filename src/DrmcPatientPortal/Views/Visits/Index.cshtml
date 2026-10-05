@@ -96,55 +96,16 @@
 </section>
 
 @section Scripts {
-    <script>
-        (() => {
-            const rangeSelect = document.getElementById("encounterDateFilter");
-            const customRange = document.getElementById("customEncounterDateRange");
-            const startDate = document.getElementById("encounterStartDate");
-            const endDate = document.getElementById("encounterEndDate");
-            const filterForm = document.getElementById("encounterFilterForm");
-            const visitTypeSelect = document.getElementById("encounterDepartmentFilter");
-            const dateToggle = document.getElementById("encounterDateToggle");
-            const datePanel = document.getElementById("encounterDatePanel");
-
-            if (!rangeSelect || !customRange || !startDate || !endDate) return;
-
-            const setDatePanelOpen = (open) => {
-                datePanel?.classList.toggle("is-open", open);
-                dateToggle?.setAttribute("aria-expanded", open ? "true" : "false");
-            };
-
-            const syncRangeVisibility = () => {
-                const isCustom = rangeSelect.value === "custom";
-                customRange.classList.toggle("d-none", !isCustom);
-                startDate.required = isCustom;
-                endDate.required = isCustom;
-            };
-
-            rangeSelect.addEventListener("change", syncRangeVisibility);
-            startDate.addEventListener("change", () => {
-                endDate.min = startDate.value;
-                if (endDate.value && endDate.value < startDate.value) endDate.value = startDate.value;
-            });
-            endDate.addEventListener("change", () => {
-                startDate.max = endDate.value || "@DrmcPatientPortal.Services.ClinicalClock.Today.ToString("yyyy-MM-dd")";
-            });
-            dateToggle?.addEventListener("click", () => {
-                setDatePanelOpen(dateToggle.getAttribute("aria-expanded") !== "true");
-            });
-            datePanel?.addEventListener("keydown", (event) => {
-                if (event.key === "Escape" && window.matchMedia("(max-width: 767.98px)").matches) {
-                    setDatePanelOpen(false);
-                    dateToggle?.focus();
-                }
-            });
-            visitTypeSelect?.addEventListener("change", () => {
-                if (window.matchMedia("(max-width: 767.98px)").matches) filterForm?.requestSubmit();
-            });
-
-            syncRangeVisibility();
-        })();
-    </script>
+    <script src="~/js/date-range-filter.js" asp-append-version="true"
+            data-form="encounterFilterForm"
+            data-mobile-submit="encounterDepartmentFilter"
+            data-range="encounterDateFilter"
+            data-custom-range="customEncounterDateRange"
+            data-start="encounterStartDate"
+            data-end="encounterEndDate"
+            data-toggle="encounterDateToggle"
+            data-panel="encounterDatePanel"
+            data-today="@DrmcPatientPortal.Services.ClinicalClock.Today.ToString("yyyy-MM-dd")"></script>
 }
 
 <section class="section py-5 bg-light">

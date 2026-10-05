@@ -39,7 +39,7 @@
                 <input type="hidden" name="search" value="@Model.SearchTerm" />
             }
             <label for="advisoryCategoryFilter" class="form-label small fw-semibold text-dark mb-1">Filter bulletins by category</label>
-            <select id="advisoryCategoryFilter" name="category" class="form-select" onchange="this.form.submit()">
+            <select id="advisoryCategoryFilter" name="category" class="form-select" data-auto-submit>
                 <option value="" selected="@(!Model.SelectedCategory.HasValue)">All Bulletins (@Model.Advisories.Count)</option>
                 <option value="@AdvisoryCategory.HealthAlert" selected="@(Model.SelectedCategory == AdvisoryCategory.HealthAlert)">Health Alerts</option>
                 <option value="@AdvisoryCategory.Vaccination" selected="@(Model.SelectedCategory == AdvisoryCategory.Vaccination)">Vaccination Drives</option>
@@ -115,7 +115,7 @@
                     <div class="card border-0 shadow-sm rounded-4 h-100 p-4 bg-white advisory-card d-flex flex-column">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <span class="badge @(adv.Category == AdvisoryCategory.HealthAlert ? "bg-danger-subtle text-danger" : adv.Category == AdvisoryCategory.Vaccination ? "bg-success-subtle text-success" : "bg-primary-subtle text-primary-drmc") rounded-pill small">
-                                @adv.Category
+                                @adv.Category.DisplayName()
                             </span>
                             <span class="small text-muted" style="font-size: 0.75rem;">
                                 @adv.PublishedAt.ToString("MMM d, yyyy")

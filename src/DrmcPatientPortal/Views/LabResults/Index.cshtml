@@ -21,9 +21,10 @@
                     <label for="labCategoryFilter" class="form-label small fw-semibold text-dark mb-1 lab-filter-label">Test category</label>
                     <select id="labCategoryFilter" name="category" class="form-select" aria-label="Filter by test category">
                         <option value="" selected="@(!Model.SelectedCategory.HasValue)">All Tests (@Model.TotalCount)</option>
-                        <option value="@LabCategory.Hematology" selected="@(Model.SelectedCategory == LabCategory.Hematology)">Hematology</option>
-                        <option value="@LabCategory.ClinicalChemistry" selected="@(Model.SelectedCategory == LabCategory.ClinicalChemistry)">Clinical Chemistry</option>
-                        <option value="@LabCategory.SpecialDiagnostics" selected="@(Model.SelectedCategory == LabCategory.SpecialDiagnostics)">Special Diagnostics</option>
+                        @foreach (var category in Enum.GetValues<LabCategory>())
+                        {
+                            <option value="@category" selected="@(Model.SelectedCategory == category)">@category.DisplayName()</option>
+                        }
                     </select>
                 </div>
                 <button type="button"
@@ -94,56 +95,16 @@
 </section>
 
 @section Scripts {
-    <script>
-        (() => {
-            const filterForm = document.getElementById("labResultFilterForm");
-            const categorySelect = document.getElementById("labCategoryFilter");
-            const rangeSelect = document.getElementById("labDateFilter");
-            const customRange = document.getElementById("customLabDateRange");
-            const startDate = document.getElementById("labStartDate");
-            const endDate = document.getElementById("labEndDate");
-            const dateToggle = document.getElementById("labDateToggle");
-            const datePanel = document.getElementById("labDatePanel");
-
-            if (!rangeSelect || !customRange || !startDate || !endDate) return;
-
-            const setDatePanelOpen = (open) => {
-                datePanel?.classList.toggle("is-open", open);
-                dateToggle?.setAttribute("aria-expanded", open ? "true" : "false");
-            };
-
-            const syncRangeVisibility = () => {
-                const isCustom = rangeSelect.value === "custom";
-                customRange.classList.toggle("d-none", !isCustom);
-                startDate.required = isCustom;
-                endDate.required = isCustom;
-            };
-
-            rangeSelect.addEventListener("change", syncRangeVisibility);
-            startDate.addEventListener("change", () => {
-                endDate.min = startDate.value;
-                if (endDate.value && endDate.value < startDate.value) endDate.value = startDate.value;
-            });
-            endDate.addEventListener("change", () => {
-                startDate.max = endDate.value || "@DrmcPatientPortal.Services.ClinicalClock.Today.ToString("yyyy-MM-dd")";
-            });
-
-            dateToggle?.addEventListener("click", () => {
-                setDatePanelOpen(dateToggle.getAttribute("aria-expanded") !== "true");
-            });
-            datePanel?.addEventListener("keydown", (event) => {
-                if (event.key === "Escape" && window.matchMedia("(max-width: 767.98px)").matches) {
-                    setDatePanelOpen(false);
-                    dateToggle?.focus();
-                }
-            });
-            categorySelect?.addEventListener("change", () => {
-                if (window.matchMedia("(max-width: 767.98px)").matches) filterForm?.requestSubmit();
-            });
-
-            syncRangeVisibility();
-        })();
-    </script>
+    <script src="~/js/date-range-filter.js" asp-append-version="true"
+            data-form="labResultFilterForm"
+            data-mobile-submit="labCategoryFilter"
+            data-range="labDateFilter"
+            data-custom-range="customLabDateRange"
+            data-start="labStartDate"
+            data-end="labEndDate"
+            data-toggle="labDateToggle"
+            data-panel="labDatePanel"
+            data-today="@DrmcPatientPortal.Services.ClinicalClock.Today.ToString("yyyy-MM-dd")"></script>
 }
 
 <section class="section py-5 bg-light">

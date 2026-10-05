@@ -36,3 +36,13 @@
         setInterval(updateClock, 1000);
     }
 })();
+
+// CSP-safe replacements for inline handlers (script-src 'self' forbids onchange/onsubmit attributes).
+document.addEventListener("change", (event) => {
+    const control = event.target;
+    if (control instanceof HTMLElement && control.matches("[data-auto-submit]")) control.form?.submit();
+});
+document.addEventListener("submit", (event) => {
+    const form = event.target;
+    if (form instanceof HTMLFormElement && form.dataset.confirm && !window.confirm(form.dataset.confirm)) event.preventDefault();
+});
