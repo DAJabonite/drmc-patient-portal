@@ -1,8 +1,19 @@
 @model AdminDetails
 @if (Model.Context is not null) { <partial name="_Context" model="Model.Context" /> }
-<dl class="row">
-    @foreach (var field in Model.Fields) { <dt class="col-sm-3 text-break">@field.Label</dt><dd class="col-sm-9 text-break" style="white-space:pre-wrap">@field.Value</dd> }
-</dl>
-@if (Model.Dependents.Count > 0) {
-    <dl class="row">@foreach (var count in Model.Dependents) { <dt class="col-sm-3">@count.Key</dt><dd class="col-sm-9">@count.Value</dd> }</dl>
+<div class="admin-card">
+    <div class="admin-card-header"><h2 class="admin-card-title">Record details</h2><span class="admin-id">#@Model.Id</span></div>
+    <dl class="admin-dl">
+        @foreach (var field in Model.Fields)
+        {
+            var wide = field.Value.Length > 80 || field.Value.Contains('\n');
+            <div class="@(wide ? "admin-dl-wide" : null)"><dt>@AdminChips.Label(field.Label)</dt><dd>@if (field.Label.Contains("Status", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(field.Value)) { <span class="@AdminChips.Css(field.Value)">@field.Value</span> } else { @(string.IsNullOrEmpty(field.Value) ? "—" : AdminChips.Value(field.Value)) }</dd></div>
+        }
+    </dl>
+</div>
+@if (Model.Dependents.Count > 0)
+{
+    <div class="admin-card">
+        <div class="admin-card-header"><h2 class="admin-card-title">Linked records</h2></div>
+        <dl class="admin-dl">@foreach (var count in Model.Dependents) { <div><dt>@count.Key</dt><dd class="tabular">@count.Value</dd></div> }</dl>
+    </div>
 }

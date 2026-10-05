@@ -1,15 +1,47 @@
 @model AdminList
-@{ ViewData["Title"] = Model.Title; var action = ViewData["ContextAction"]?.ToString() ?? "Create"; }
-<section class="container py-4">
-    <h1 class="h3">@Model.Title</h1>
-    <form method="get" class="d-flex gap-2 my-3"><label for="search" class="visually-hidden">Search</label><input id="search" name="search" value="@Model.Search" maxlength="450" class="form-control" type="search" /><button class="btn btn-outline-primary" aria-label="Search" title="Search"><i class="bi bi-search" aria-hidden="true"></i></button></form>
-    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
-    <div class="table-responsive"><table class="table"><thead><tr><th>Record</th><th>Context</th><th></th></tr></thead><tbody>
-    @foreach (var row in Model.Rows) { <tr><td class="text-break">@row.Label</td><td class="text-break">@row.Summary</td><td>
-        @if (action == "Index") { <a asp-area="Admin" asp-action="Index" asp-route-contextId="@row.Id" class="btn btn-outline-primary" aria-label="Select" title="Select"><i class="bi bi-check-lg" aria-hidden="true"></i></a> }
-        else { <a asp-area="Admin" asp-action="Create" asp-route-id="@row.Id" class="btn btn-outline-primary" aria-label="Select" title="Select"><i class="bi bi-check-lg" aria-hidden="true"></i></a> }
-    </td></tr> }
-    </tbody></table></div>
-    @if (Model.Total == 0) { <p>No records found.</p> }
-    <nav class="d-flex justify-content-between align-items-center" aria-label="Record pages"><a asp-area="Admin" asp-action="@action" asp-route-search="@Model.Search" asp-route-page="@(Model.Page - 1)" class="btn btn-outline-secondary @(Model.Page == 1 ? "disabled" : "")" aria-label="Previous page"><i class="bi bi-chevron-left" aria-hidden="true"></i></a><span>Page @Model.Page of @Model.Pages</span><a asp-area="Admin" asp-action="@action" asp-route-search="@Model.Search" asp-route-page="@(Model.Page + 1)" class="btn btn-outline-secondary @(Model.Page == Model.Pages ? "disabled" : "")" aria-label="Next page"><i class="bi bi-chevron-right" aria-hidden="true"></i></a></nav>
-</section>
+@{
+    ViewData["Title"] = Model.Title;
+    var action = ViewData["ContextAction"]?.ToString() ?? "Create";
+    var nav = AdminNavigation.Find(ViewContext.RouteData.Values["controller"]?.ToString());
+}
+<div class="admin-page-header">
+    <div>
+        <p class="admin-eyebrow">@(nav?.Item.Label ?? "Records") · Step 1</p>
+        <h1 class="admin-title">@Model.Title</h1>
+        <p class="admin-subtitle">Choose the parent record first, so every entry stays attached to the right patient.</p>
+    </div>
+</div>
+<div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+<div class="admin-card">
+    <div class="admin-card-header">
+        <form method="get" class="d-flex flex-grow-1 gap-2" role="search">
+            <div class="admin-search"><i class="bi bi-search" aria-hidden="true"></i><label for="search" class="visually-hidden">Search</label><input id="search" name="search" value="@Model.Search" maxlength="450" class="form-control" type="search" placeholder="Search records" /></div>
+            <button class="btn btn-outline-secondary" type="submit">Search</button>
+        </form>
+        <span class="admin-result-count tabular">@Model.Total records</span>
+    </div>
+    @if (Model.Rows.Count > 0)
+    {
+        <div class="table-responsive"><table class="table table-hover admin-table"><thead><tr><th scope="col">Record</th><th scope="col">Details</th><th scope="col" class="text-end"><span class="visually-hidden">Select</span></th></tr></thead><tbody>
+        @foreach (var row in Model.Rows)
+        {
+            var (lead, chips) = AdminChips.Split(row.Summary);
+            <tr><td class="text-break"><span class="fw-semibold">@row.Label</span><div class="admin-id">#@row.Id</div></td><td class="text-break">@lead <span class="admin-chips">@foreach (var chip in chips) { <span class="@AdminChips.Css(chip)">@chip</span> }</span></td><td class="text-end">
+                @if (action == "Index") { <a asp-area="Admin" asp-action="Index" asp-route-contextId="@row.Id" class="btn btn-sm btn-outline-primary" aria-label="Select @row.Label">Select <i class="bi bi-chevron-right" aria-hidden="true"></i></a> }
+                else { <a asp-area="Admin" asp-action="Create" asp-route-id="@row.Id" class="btn btn-sm btn-outline-primary" aria-label="Select @row.Label">Select <i class="bi bi-chevron-right" aria-hidden="true"></i></a> }
+            </td></tr>
+        }
+        </tbody></table></div>
+    }
+    else
+    {
+        <div class="admin-empty"><span class="admin-empty-icon"><i class="bi bi-search" aria-hidden="true"></i></span><h2>No records found</h2><p>Try a different search term.</p></div>
+    }
+    <nav class="admin-card-footer" aria-label="Record pages">
+        <span class="tabular">Page @Model.Page of @Model.Pages</span>
+        <span class="d-flex gap-2">
+            <a asp-area="Admin" asp-action="@action" asp-route-search="@Model.Search" asp-route-page="@(Model.Page - 1)" class="btn btn-sm btn-outline-secondary @(Model.Page == 1 ? "disabled" : "")" aria-label="Previous page"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
+            <a asp-area="Admin" asp-action="@action" asp-route-search="@Model.Search" asp-route-page="@(Model.Page + 1)" class="btn btn-sm btn-outline-secondary @(Model.Page == Model.Pages ? "disabled" : "")" aria-label="Next page"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+        </span>
+    </nav>
+</div>

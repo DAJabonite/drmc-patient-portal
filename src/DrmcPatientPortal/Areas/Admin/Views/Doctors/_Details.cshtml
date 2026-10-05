@@ -1,13 +1,16 @@
 @model Doctor
-<dl class="row mb-0">
-    <dt class="col-sm-3">Name</dt><dd class="col-sm-9 text-break">@Model.FullName</dd>
-    <dt class="col-sm-3">Title</dt><dd class="col-sm-9 text-break">@Model.Title</dd>
-    <dt class="col-sm-3">Department</dt><dd class="col-sm-9">@Model.Department</dd>
-    <dt class="col-sm-3">Subspecialty</dt><dd class="col-sm-9 text-break">@Model.SubSpecialty</dd>
-    <dt class="col-sm-3">Clinic room</dt><dd class="col-sm-9 text-break">@Model.ClinicRoom</dd>
-    <dt class="col-sm-3">Schedule</dt><dd class="col-sm-9 text-break">@Model.ScheduleSummary</dd>
-    <dt class="col-sm-3">Teleconsultation</dt><dd class="col-sm-9">@(Model.OffersTeleconsult ? "Yes" : "No")</dd>
-    <dt class="col-sm-3">Biography</dt><dd class="col-sm-9 text-break">@Model.Biography</dd>
-    <dt class="col-sm-3">Masked PRC license</dt><dd class="col-sm-9 text-break">@Model.PrcLicenseMasked</dd>
-    <dt class="col-sm-3">Active</dt><dd class="col-sm-9">@(Model.IsActive ? "Yes" : "No")</dd>
-</dl>
+<div class="admin-card">
+    <div class="admin-card-header"><h2 class="admin-card-title">Directory entry</h2><span class="admin-chips"><span class="@(Model.IsActive ? "admin-chip admin-chip-success" : "admin-chip")">@(Model.IsActive ? "Active" : "Inactive")</span>@if (Model.OffersTeleconsult) { <span class="admin-chip admin-chip-info admin-chip-plain">Teleconsult</span> }</span></div>
+    <dl class="admin-dl">
+        <div><dt>Name</dt><dd>@Model.FullName</dd></div>
+        <div><dt>Title</dt><dd>@(string.IsNullOrEmpty(Model.Title) ? "—" : Model.Title)</dd></div>
+        <div><dt>Department</dt><dd>@Model.Department</dd></div>
+        <div><dt>Subspecialty</dt><dd>@(string.IsNullOrEmpty(Model.SubSpecialty) ? "—" : Model.SubSpecialty)</dd></div>
+        <div><dt>Clinic room</dt><dd>@(string.IsNullOrEmpty(Model.ClinicRoom) ? "—" : Model.ClinicRoom)</dd></div>
+        <div><dt>Schedule</dt><dd>@(string.IsNullOrEmpty(Model.ScheduleSummary) ? "—" : Model.ScheduleSummary)</dd></div>
+        <div><dt>Teleconsultation</dt><dd>@(Model.OffersTeleconsult ? "Yes" : "No")</dd></div>
+        <div><dt>Masked PRC license</dt><dd>@(string.IsNullOrEmpty(Model.PrcLicenseMasked) ? "—" : Model.PrcLicenseMasked)</dd></div>
+        <div><dt>Active</dt><dd>@(Model.IsActive ? "Yes" : "No")</dd></div>
+        <div class="admin-dl-wide"><dt>Biography</dt><dd>@(string.IsNullOrEmpty(Model.Biography) ? "—" : Model.Biography)</dd></div>
+    </dl>
+</div>

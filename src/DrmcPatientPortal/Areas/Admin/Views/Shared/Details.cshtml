@@ -1,13 +1,21 @@
 @model AdminDetails
-@{ ViewData["Title"] = Model.Title; var indexContext = ViewContext.RouteData.Values["controller"]?.ToString() == "Patients" ? null : Model.Context?.RouteId; }
-<section class="container py-4">
-    <div class="d-flex flex-wrap justify-content-between gap-2 mb-3"><h1 class="h3">@Model.Title #@Model.Id</h1><a asp-area="Admin" asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-pencil" aria-hidden="true"></i> Edit</a></div>
-    <partial name="_Fields" model="Model" />
-    @if (ViewContext.RouteData.Values["controller"]?.ToString() == "Patients")
-    { <a asp-area="Admin" asp-action="Link" asp-route-id="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-link-45deg" aria-hidden="true"></i> Verified portal link</a> }
-    @if (ViewContext.RouteData.Values["controller"]?.ToString() == "LabResults")
-    { <a asp-controller="LabResultItems" asp-area="Admin" asp-action="Index" asp-route-contextId="@indexContext" asp-route-contextId="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-list-check" aria-hidden="true"></i> Lab items</a> }
-    @if (ViewContext.RouteData.Values["controller"]?.ToString() == "Prescriptions")
-    { <a asp-controller="MedicationDoseSchedules" asp-area="Admin" asp-action="Index" asp-route-contextId="@indexContext" asp-route-contextId="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-clock" aria-hidden="true"></i> Dose schedules</a> }
-    <a asp-area="Admin" asp-action="Index" asp-route-contextId="@indexContext" class="btn btn-outline-secondary">Back</a>
-</section>
+@{
+    ViewData["Title"] = Model.Title;
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var indexContext = controller == "Patients" ? null : Model.Context?.RouteId;
+    var nav = AdminNavigation.Find(controller);
+}
+<div class="admin-page-header">
+    <div>
+        <p class="admin-eyebrow">@(nav?.Item.Label ?? "Record")</p>
+        <h1 class="admin-title">@Model.Title <span class="admin-id fs-6">#@Model.Id</span></h1>
+    </div>
+    <div class="admin-page-actions">
+        <a asp-area="Admin" asp-action="Index" asp-route-contextId="@indexContext" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back</a>
+        @if (controller == "Patients") { <a asp-area="Admin" asp-action="Link" asp-route-id="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-link-45deg me-1" aria-hidden="true"></i>Verified portal link</a> }
+        @if (controller == "LabResults") { <a asp-controller="LabResultItems" asp-area="Admin" asp-action="Index" asp-route-contextId="@indexContext" asp-route-contextId="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-list-check me-1" aria-hidden="true"></i>Lab items</a> }
+        @if (controller == "Prescriptions") { <a asp-controller="MedicationDoseSchedules" asp-area="Admin" asp-action="Index" asp-route-contextId="@indexContext" asp-route-contextId="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-clock me-1" aria-hidden="true"></i>Dose schedules</a> }
+        <a asp-area="Admin" asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit</a>
+    </div>
+</div>
+<partial name="_Fields" model="Model" />

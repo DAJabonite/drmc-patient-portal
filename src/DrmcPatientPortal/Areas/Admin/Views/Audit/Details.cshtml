@@ -1,19 +1,26 @@
 @model AdminAuditLog
-@{ ViewData["Title"] = "Staff audit entry"; }
-<section class="container py-4">
-    <h1 class="h3">Staff audit entry #@Model.Id</h1>
-    <dl class="row mt-3">
-        <dt class="col-md-3">UTC time</dt><dd class="col-md-9">@Model.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss.fffffff") UTC</dd>
-        <dt class="col-md-3">Actor</dt><dd class="col-md-9 text-break">@Model.ActorEmail (@Model.ActorId)</dd>
-        <dt class="col-md-3">Action</dt><dd class="col-md-9">@Model.Action</dd>
-        <dt class="col-md-3">Record</dt><dd class="col-md-9 text-break">@Model.Entity #@Model.RecordKey</dd>
-        <dt class="col-md-3">Patient reference</dt><dd class="col-md-9">@Model.SubjectPatientId</dd>
-        <dt class="col-md-3">Changed fields</dt><dd class="col-md-9 text-break">@Model.ChangedFields</dd>
+@{ ViewData["Title"] = "Audit entry"; }
+<div class="admin-page-header">
+    <div>
+        <p class="admin-eyebrow">Audit history</p>
+        <h1 class="admin-title">Staff audit entry <span class="admin-id fs-6">#@Model.Id</span></h1>
+    </div>
+    <div class="admin-page-actions"><a asp-area="Admin" asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back</a></div>
+</div>
+<div class="admin-card">
+    <dl class="admin-dl">
+        <div><dt>UTC time</dt><dd class="tabular">@Model.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss.fffffff") UTC</dd></div>
+        <div><dt>Action</dt><dd><span class="admin-chip admin-chip-info admin-chip-plain">@Model.Action</span></dd></div>
+        <div><dt>Actor</dt><dd>@Model.ActorEmail <span class="admin-id d-block">@Model.ActorId</span></dd></div>
+        <div><dt>Record</dt><dd>@Model.Entity <span class="admin-id">#@Model.RecordKey</span></dd></div>
+        <div><dt>Patient reference</dt><dd class="tabular">@(Model.SubjectPatientId is { } pid ? $"#{pid}" : "—")</dd></div>
+        <div class="admin-dl-wide"><dt>Changed fields</dt><dd>@Model.ChangedFields</dd></div>
     </dl>
-    @if (Model.Entity is "Doctors" or "PublicAdvisories")
-    {
-        <h2 class="h6">Previous public values</h2><pre class="text-break" style="white-space:pre-wrap">@Model.OldValues</pre>
-        <h2 class="h6">New public values</h2><pre class="text-break" style="white-space:pre-wrap">@Model.NewValues</pre>
-    }
-    <a asp-area="Admin" asp-action="Index" class="btn btn-outline-secondary">Back</a>
-</section>
+</div>
+@if (Model.Entity is "Doctors" or "PublicAdvisories")
+{
+    <div class="row g-3 mt-1">
+        <div class="col-lg-6"><div class="admin-card h-100"><div class="admin-card-header"><h2 class="admin-card-title">Previous public values</h2></div><div class="admin-card-body"><pre class="admin-pre">@Model.OldValues</pre></div></div></div>
+        <div class="col-lg-6"><div class="admin-card h-100"><div class="admin-card-header"><h2 class="admin-card-title">New public values</h2></div><div class="admin-card-body"><pre class="admin-pre">@Model.NewValues</pre></div></div></div>
+    </div>
+}

@@ -1,7 +1,10 @@
 @model Doctor
 @{ ViewData["Title"] = "Doctor"; }
-<section class="container py-4">
-    <div class="d-flex flex-wrap justify-content-between gap-2 mb-3"><h1 class="h3">Doctor</h1><a asp-area="Admin" asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-pencil" aria-hidden="true"></i> Edit</a></div>
-    <partial name="_Details" model="Model" />
-    <a asp-area="Admin" asp-action="Index" class="btn btn-outline-secondary mt-3">Back</a>
-</section>
+<div class="admin-page-header">
+    <div><p class="admin-eyebrow">Doctors</p><h1 class="admin-title">@Model.FullName</h1><p class="admin-subtitle">@Model.Department</p></div>
+    <div class="admin-page-actions">
+        <a asp-area="Admin" asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back</a>
+        <a asp-area="Admin" asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit</a>
+    </div>
+</div>
+<partial name="_Details" model="Model" />

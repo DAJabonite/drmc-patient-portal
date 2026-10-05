@@ -1,11 +1,33 @@
 @model AdminDetails
-@{ ViewData["Title"] = "Delete " + Model.Title; var indexContext = ViewContext.RouteData.Values["controller"]?.ToString() == "Patients" ? null : Model.Context?.RouteId; }
-<section class="container py-4">
-    <h1 class="h3">Delete @Model.Title #@Model.Id</h1>
-    @if (TempData["AdminError"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }
-    <partial name="_Fields" model="Model" />
-    <form asp-area="Admin" asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-flex gap-2 mt-3">
+@{
+    ViewData["Title"] = "Delete " + Model.Title;
+    var indexContext = ViewContext.RouteData.Values["controller"]?.ToString() == "Patients" ? null : Model.Context?.RouteId;
+    var blocked = Model.Dependents.Values.Any(count => count > 0);
+}
+<div class="admin-page-header">
+    <div>
+        <p class="admin-eyebrow">Delete record</p>
+        <h1 class="admin-title">Delete @Model.Title <span class="admin-id fs-6">#@Model.Id</span></h1>
+        <p class="admin-subtitle">Review the record below before removing it.</p>
+    </div>
+</div>
+@if (TempData["AdminError"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+<partial name="_Fields" model="Model" />
+<form asp-area="Admin" asp-action="Delete" asp-route-id="@Model.Id" method="post" class="admin-card admin-danger">
+    <div class="admin-card-header"><h2 class="admin-card-title"><i class="bi bi-exclamation-octagon me-2" aria-hidden="true"></i>Danger zone</h2></div>
+    <div class="admin-card-body">
         <input type="hidden" name="rowVersion" value="@Model.RowVersion" />
-        <button class="btn btn-danger" type="submit" disabled="@(Model.Dependents.Values.Any(count => count > 0))"><i class="bi bi-trash" aria-hidden="true"></i> Delete</button><a asp-area="Admin" asp-action="Index" asp-route-contextId="@indexContext" class="btn btn-outline-secondary">Cancel</a>
-    </form>
-</section>
+        @if (blocked)
+        {
+            <p class="mb-0">This record still has linked records. Remove or reassign them first; deletion is disabled.</p>
+        }
+        else
+        {
+            <p class="mb-0">Deleting removes this record from staff and patient views. The action is written to the audit history and cannot be undone here.</p>
+        }
+    </div>
+    <div class="admin-form-actions">
+        <a asp-area="Admin" asp-action="Index" asp-route-contextId="@indexContext" class="btn btn-outline-secondary">Cancel</a>
+        <button class="btn btn-danger" type="submit" disabled="@blocked"><i class="bi bi-trash me-1" aria-hidden="true"></i>Delete record</button>
+    </div>
+</form>

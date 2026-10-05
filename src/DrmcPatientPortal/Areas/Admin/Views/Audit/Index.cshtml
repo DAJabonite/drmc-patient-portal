@@ -1,17 +1,51 @@
 @model AuditPage
-@{ ViewData["Title"] = "Staff audit history"; }
-<section class="container py-4">
-    <h1 class="h3">Staff audit history</h1>
-    <form method="get" class="row g-2 my-3">
-        <div class="col-md-8"><label for="search" class="visually-hidden">Search</label><input id="search" name="search" type="search" value="@Model.Search" maxlength="450" class="form-control" /></div>
-        <div class="col"><label for="patientId" class="visually-hidden">Patient reference</label><input id="patientId" name="patientId" type="number" min="1" value="@Model.PatientId" placeholder="Patient reference" class="form-control" /></div>
-        <div class="col-auto"><button class="btn btn-outline-primary" aria-label="Search" title="Search"><i class="bi bi-search" aria-hidden="true"></i></button></div>
-    </form>
-    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
-    <div class="table-responsive"><table class="table align-middle admin-audit-table"><thead><tr><th>UTC time</th><th>Actor</th><th>Action</th><th>Record</th><th>Patient reference</th><th>Changed fields</th></tr></thead><tbody>
-    @foreach (var row in Model.Rows)
-    { <tr><td class="text-nowrap"><a asp-area="Admin" asp-action="Details" asp-route-id="@row.Id">@row.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss")</a></td><td class="text-break">@row.ActorEmail</td><td>@row.Action</td><td class="text-break">@row.Entity #@row.RecordKey</td><td>@row.SubjectPatientId</td><td class="text-break">@row.ChangedFields</td></tr> }
-    </tbody></table></div>
-    @if (Model.Total == 0) { <p>No audit entries found.</p> }
-    <nav class="d-flex justify-content-between align-items-center" aria-label="Audit pages"><a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-patientId="@Model.PatientId" asp-route-page="@(Model.Page - 1)" class="btn btn-outline-secondary @(Model.Page == 1 ? "disabled" : "")" aria-label="Previous page"><i class="bi bi-chevron-left" aria-hidden="true"></i></a><span>Page @Model.Page of @Model.Pages</span><a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-patientId="@Model.PatientId" asp-route-page="@(Model.Page + 1)" class="btn btn-outline-secondary @(Model.Page == Model.Pages ? "disabled" : "")" aria-label="Next page"><i class="bi bi-chevron-right" aria-hidden="true"></i></a></nav>
-</section>
+@{
+    ViewData["Title"] = "Staff audit history";
+    var from = Model.Total == 0 ? 0 : (Model.Page - 1) * 25 + 1;
+    var to = Math.Min(Model.Page * 25, Model.Total);
+}
+<div class="admin-page-header">
+    <div>
+        <p class="admin-eyebrow">Operations</p>
+        <h1 class="admin-title">Staff audit history</h1>
+        <p class="admin-subtitle">Every staff view and change, newest first. Times are UTC.</p>
+    </div>
+</div>
+<div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+<div class="admin-card">
+    <div class="admin-card-header">
+        <form method="get" class="d-flex flex-wrap flex-grow-1 gap-2" role="search">
+            <div class="admin-search"><i class="bi bi-search" aria-hidden="true"></i><label for="search" class="visually-hidden">Search</label><input id="search" name="search" type="search" value="@Model.Search" maxlength="450" class="form-control" placeholder="Search actor, action or record" /></div>
+            <div class="admin-filter-narrow"><label for="patientId" class="visually-hidden">Patient reference</label><input id="patientId" name="patientId" type="number" min="1" value="@Model.PatientId" placeholder="Patient #" class="form-control" /></div>
+            <button class="btn btn-outline-secondary" type="submit">Filter</button>
+        </form>
+        <span class="admin-result-count tabular">@(Model.Total > 0 ? $"Showing {from}–{to} of {Model.Total}" : "0 entries")</span>
+    </div>
+    @if (Model.Rows.Count > 0)
+    {
+        <div class="table-responsive"><table class="table table-hover admin-table admin-table-cards admin-audit-table"><thead><tr><th scope="col">UTC time</th><th scope="col">Actor</th><th scope="col">Action</th><th scope="col">Record</th><th scope="col">Patient</th><th scope="col">Changed fields</th></tr></thead><tbody>
+        @foreach (var row in Model.Rows)
+        {
+            <tr>
+                <td class="text-nowrap"><a asp-area="Admin" asp-action="Details" asp-route-id="@row.Id" class="admin-record-link tabular">@row.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss")</a></td>
+                <td class="text-break admin-cell-wide" data-label="Actor">@row.ActorEmail</td>
+                <td data-label="Action"><span class="@AdminChips.Css(row.Action) admin-chip-plain">@row.Action</span></td>
+                <td class="text-break" data-label="Record">@row.Entity @if (row.RecordKey == "Index") { <span class="admin-muted">list</span> } else { <span class="admin-id">#@row.RecordKey</span> }</td>
+                <td class="tabular" data-label="Patient">@(row.SubjectPatientId is { } pid ? $"#{pid}" : "—")</td>
+                <td class="text-break admin-muted small" data-label="Changed fields">@(row.ChangedFields is "[]" or "" ? "—" : row.ChangedFields)</td>
+            </tr>
+        }
+        </tbody></table></div>
+    }
+    else
+    {
+        <div class="admin-empty"><span class="admin-empty-icon"><i class="bi bi-journal-text" aria-hidden="true"></i></span><h2>No audit entries found</h2><p>Adjust the filters to widen the search.</p></div>
+    }
+    <nav class="admin-card-footer" aria-label="Audit pages">
+        <span class="tabular">Page @Model.Page of @Model.Pages</span>
+        <span class="d-flex gap-2">
+            <a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-patientId="@Model.PatientId" asp-route-page="@(Model.Page - 1)" class="btn btn-sm btn-outline-secondary @(Model.Page == 1 ? "disabled" : "")" aria-label="Previous page"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
+            <a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-patientId="@Model.PatientId" asp-route-page="@(Model.Page + 1)" class="btn btn-sm btn-outline-secondary @(Model.Page == Model.Pages ? "disabled" : "")" aria-label="Next page"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+        </span>
+    </nav>
+</div>

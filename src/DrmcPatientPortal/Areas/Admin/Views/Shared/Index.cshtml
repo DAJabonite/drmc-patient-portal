@@ -1,13 +1,80 @@
 @model AdminList
-@{ ViewData["Title"] = Model.Title; }
-<section class="container py-4">
-    <div class="d-flex flex-wrap justify-content-between gap-2 mb-3"><h1 class="h3">@Model.Title</h1><a asp-area="Admin" asp-action="Create" asp-route-id="@Model.ContextId" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> Add</a></div>
-    @if (Model.Context is not null) { <partial name="_Context" model="Model.Context" /> }
-    <form method="get" class="d-flex gap-2 mb-3"><label for="search" class="visually-hidden">Search</label><input id="search" name="search" value="@Model.Search" maxlength="450" class="form-control" type="search" /><input type="hidden" name="contextId" value="@Model.ContextId" /><button class="btn btn-outline-primary" title="Search" aria-label="Search"><i class="bi bi-search" aria-hidden="true"></i></button></form>
-    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
-    <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Record</th><th>Context</th><th><span class="visually-hidden">Actions</span></th></tr></thead><tbody>
-    @foreach (var row in Model.Rows) { <tr><td class="text-break"><a asp-area="Admin" asp-action="Details" asp-route-id="@row.Id">@row.Label</a></td><td class="text-break">@row.Summary @if (row.PatientId.HasValue) { <span class="d-block">Patient #@row.PatientId</span> }</td><td class="text-nowrap"><a asp-area="Admin" asp-action="Edit" asp-route-id="@row.Id" class="btn btn-sm btn-outline-primary" title="Edit" aria-label="Edit"><i class="bi bi-pencil" aria-hidden="true"></i></a> <a asp-area="Admin" asp-action="Delete" asp-route-id="@row.Id" class="btn btn-sm btn-outline-danger" title="Delete" aria-label="Delete"><i class="bi bi-trash" aria-hidden="true"></i></a></td></tr> }
-    </tbody></table></div>
-    @if (Model.Total == 0) { <p>No records found.</p> }
-    <nav class="d-flex justify-content-between align-items-center" aria-label="Record pages"><a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-contextId="@Model.ContextId" asp-route-page="@(Model.Page - 1)" class="btn btn-outline-secondary @(Model.Page == 1 ? "disabled" : "")" aria-label="Previous page"><i class="bi bi-chevron-left" aria-hidden="true"></i></a><span>Page @Model.Page of @Model.Pages</span><a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-contextId="@Model.ContextId" asp-route-page="@(Model.Page + 1)" class="btn btn-outline-secondary @(Model.Page == Model.Pages ? "disabled" : "")" aria-label="Next page"><i class="bi bi-chevron-right" aria-hidden="true"></i></a></nav>
-</section>
+@{
+    ViewData["Title"] = Model.Title;
+    var nav = AdminNavigation.Find(ViewContext.RouteData.Values["controller"]?.ToString());
+    var from = Model.Total == 0 ? 0 : (Model.Page - 1) * 25 + 1;
+    var to = Math.Min(Model.Page * 25, Model.Total);
+}
+<div class="admin-page-header">
+    <div>
+        <p class="admin-eyebrow">@(nav?.Section.Label ?? "Records")</p>
+        <h1 class="admin-title">@Model.Title</h1>
+        @if (nav is { } n) { <p class="admin-subtitle">@n.Item.Description</p> }
+    </div>
+    <div class="admin-page-actions">
+        <a asp-area="Admin" asp-action="Create" asp-route-id="@Model.ContextId" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add record</a>
+    </div>
+</div>
+@if (Model.Context is not null) { <partial name="_Context" model="Model.Context" /> }
+<div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+<div class="admin-card">
+    <div class="admin-card-header">
+        <form method="get" class="d-flex flex-grow-1 gap-2" role="search">
+            <div class="admin-search">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <label for="search" class="visually-hidden">Search @Model.Title.ToLowerInvariant()</label>
+                <input id="search" name="search" value="@Model.Search" maxlength="450" class="form-control" type="search" placeholder="Search @Model.Title.ToLowerInvariant()" />
+            </div>
+            <input type="hidden" name="contextId" value="@Model.ContextId" />
+            <button class="btn btn-outline-secondary" type="submit">Search</button>
+        </form>
+        <span class="admin-result-count tabular">@if (Model.Total > 0) { <text>Showing @from–@to of @Model.Total</text> } else { <text>0 records</text> }</span>
+    </div>
+    @if (Model.Rows.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="table table-hover admin-table admin-table-stack">
+                <thead><tr><th scope="col">Record</th><th scope="col">Details</th><th scope="col">Status</th><th scope="col" class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+                <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    var (lead, chips) = AdminChips.Split(row.Summary);
+                    <tr>
+                        <td class="text-break">
+                            <a asp-area="Admin" asp-action="Details" asp-route-id="@row.Id" class="admin-record-link">@row.Label</a>
+                            <div class="admin-id">#@row.Id</div>
+                        </td>
+                        <td class="text-break">
+                            @lead
+                            @if (row.PatientId.HasValue) { <div class="admin-muted small">Patient #@row.PatientId</div> }
+                        </td>
+                        <td><span class="admin-chips">@foreach (var chip in chips) { <span class="@AdminChips.Css(chip)">@chip</span> }</span></td>
+                        <td class="text-end text-nowrap">
+                            <span class="admin-row-actions">
+                                <a asp-area="Admin" asp-action="Edit" asp-route-id="@row.Id" class="btn btn-sm btn-outline-primary" title="Edit" aria-label="Edit @row.Label"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                                <a asp-area="Admin" asp-action="Delete" asp-route-id="@row.Id" class="btn btn-sm btn-outline-danger" title="Delete" aria-label="Delete @row.Label"><i class="bi bi-trash" aria-hidden="true"></i></a>
+                            </span>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="admin-empty">
+            <span class="admin-empty-icon"><i class="bi @(nav?.Item.Icon ?? "bi-inbox")" aria-hidden="true"></i></span>
+            <h2>@(string.IsNullOrEmpty(Model.Search) ? "No records yet" : "No matching records")</h2>
+            <p>@(string.IsNullOrEmpty(Model.Search) ? "Records you add or import will appear here." : "Try a different search term.")</p>
+            @if (!string.IsNullOrEmpty(Model.Search)) { <a asp-area="Admin" asp-action="Index" asp-route-contextId="@Model.ContextId" class="btn btn-outline-secondary">Clear search</a> }
+        </div>
+    }
+    <nav class="admin-card-footer" aria-label="Record pages">
+        <span class="tabular">Page @Model.Page of @Model.Pages</span>
+        <span class="d-flex gap-2">
+            <a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-contextId="@Model.ContextId" asp-route-page="@(Model.Page - 1)" class="btn btn-sm btn-outline-secondary @(Model.Page == 1 ? "disabled" : "")" aria-label="Previous page"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
+            <a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-contextId="@Model.ContextId" asp-route-page="@(Model.Page + 1)" class="btn btn-sm btn-outline-secondary @(Model.Page == Model.Pages ? "disabled" : "")" aria-label="Next page"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+        </span>
+    </nav>
+</div>

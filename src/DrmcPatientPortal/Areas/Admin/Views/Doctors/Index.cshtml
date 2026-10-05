@@ -1,12 +1,47 @@
 @model DoctorList
-@{ ViewData["Title"] = "Doctors"; }
-<section class="container py-4">
-    <div class="d-flex flex-wrap justify-content-between gap-2 mb-3"><h1 class="h3">Doctors</h1><a asp-area="Admin" asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> Add doctor</a></div>
-    <form method="get" class="d-flex gap-2 mb-3"><label for="search" class="visually-hidden">Search doctors</label><input id="search" name="search" value="@Model.Search" maxlength="450" class="form-control" type="search" /><button class="btn btn-outline-primary" title="Search" aria-label="Search"><i class="bi bi-search" aria-hidden="true"></i></button></form>
-    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
-    <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Name</th><th>Department</th><th>Active</th><th><span class="visually-hidden">Actions</span></th></tr></thead><tbody>
-    @foreach (var doctor in Model.Rows) { <tr><td class="text-break"><a asp-area="Admin" asp-action="Details" asp-route-id="@doctor.Id">@doctor.FullName</a></td><td>@doctor.Department</td><td>@(doctor.IsActive ? "Yes" : "No")</td><td class="text-nowrap"><a asp-area="Admin" asp-action="Edit" asp-route-id="@doctor.Id" class="btn btn-sm btn-outline-primary" title="Edit" aria-label="Edit"><i class="bi bi-pencil" aria-hidden="true"></i></a> <a asp-area="Admin" asp-action="Delete" asp-route-id="@doctor.Id" class="btn btn-sm btn-outline-danger" title="Delete" aria-label="Delete"><i class="bi bi-trash" aria-hidden="true"></i></a></td></tr> }
-    </tbody></table></div>
-    @if (Model.Total == 0) { <p>No doctors found.</p> }
-    <nav class="d-flex justify-content-between align-items-center" aria-label="Doctors pages"><a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-page="@(Model.Page - 1)" class="btn btn-outline-secondary @(Model.Page == 1 ? "disabled" : "")" aria-label="Previous page"><i class="bi bi-chevron-left" aria-hidden="true"></i></a><span>Page @Model.Page of @Model.Pages</span><a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-page="@(Model.Page + 1)" class="btn btn-outline-secondary @(Model.Page == Model.Pages ? "disabled" : "")" aria-label="Next page"><i class="bi bi-chevron-right" aria-hidden="true"></i></a></nav>
-</section>
+@{
+    ViewData["Title"] = "Doctors";
+    var from = Model.Total == 0 ? 0 : (Model.Page - 1) * 25 + 1;
+    var to = Math.Min(Model.Page * 25, Model.Total);
+}
+<div class="admin-page-header">
+    <div>
+        <p class="admin-eyebrow">Public content</p>
+        <h1 class="admin-title">Doctors</h1>
+        <p class="admin-subtitle">Public doctor and clinic directory. Inactive doctors are hidden from patients.</p>
+    </div>
+    <div class="admin-page-actions"><a asp-area="Admin" asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add doctor</a></div>
+</div>
+<div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+<div class="admin-card">
+    <div class="admin-card-header">
+        <form method="get" class="d-flex flex-grow-1 gap-2" role="search"><div class="admin-search"><i class="bi bi-search" aria-hidden="true"></i><label for="search" class="visually-hidden">Search doctors</label><input id="search" name="search" value="@Model.Search" maxlength="450" class="form-control" type="search" placeholder="Search doctors" /></div><button class="btn btn-outline-secondary" type="submit">Search</button></form>
+        <span class="admin-result-count tabular">@(Model.Total > 0 ? $"Showing {from}–{to} of {Model.Total}" : "0 doctors")</span>
+    </div>
+    @if (Model.Rows.Count > 0)
+    {
+        <div class="table-responsive"><table class="table table-hover admin-table admin-table-stack"><thead><tr><th scope="col">Name</th><th scope="col">Department</th><th scope="col">Clinic</th><th scope="col">Status</th><th scope="col" class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead><tbody>
+        @foreach (var doctor in Model.Rows)
+        {
+            <tr>
+                <td class="text-break"><a asp-area="Admin" asp-action="Details" asp-route-id="@doctor.Id" class="admin-record-link">@doctor.FullName</a>@if (!string.IsNullOrEmpty(doctor.SubSpecialty)) { <div class="admin-muted small">@doctor.SubSpecialty</div> }</td>
+                <td data-label="Department">@doctor.Department</td>
+                <td class="admin-muted text-break" data-label="Clinic">@doctor.ClinicRoom</td>
+                <td><span class="admin-chips"><span class="@(doctor.IsActive ? "admin-chip admin-chip-success" : "admin-chip")">@(doctor.IsActive ? "Active" : "Inactive")</span>@if (doctor.OffersTeleconsult) { <span class="admin-chip admin-chip-info admin-chip-plain"><i class="bi bi-camera-video" aria-hidden="true"></i>Teleconsult</span> }</span></td>
+                <td class="text-end text-nowrap"><span class="admin-row-actions"><a asp-area="Admin" asp-action="Edit" asp-route-id="@doctor.Id" class="btn btn-sm btn-outline-primary" title="Edit" aria-label="Edit @doctor.FullName"><i class="bi bi-pencil" aria-hidden="true"></i></a><a asp-area="Admin" asp-action="Delete" asp-route-id="@doctor.Id" class="btn btn-sm btn-outline-danger" title="Delete" aria-label="Delete @doctor.FullName"><i class="bi bi-trash" aria-hidden="true"></i></a></span></td>
+            </tr>
+        }
+        </tbody></table></div>
+    }
+    else
+    {
+        <div class="admin-empty"><span class="admin-empty-icon"><i class="bi bi-person-badge" aria-hidden="true"></i></span><h2>No doctors found</h2><p>@(string.IsNullOrEmpty(Model.Search) ? "Add the first doctor to publish the directory." : "Try a different search term.")</p></div>
+    }
+    <nav class="admin-card-footer" aria-label="Doctors pages">
+        <span class="tabular">Page @Model.Page of @Model.Pages</span>
+        <span class="d-flex gap-2">
+            <a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-page="@(Model.Page - 1)" class="btn btn-sm btn-outline-secondary @(Model.Page == 1 ? "disabled" : "")" aria-label="Previous page"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
+            <a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-page="@(Model.Page + 1)" class="btn btn-sm btn-outline-secondary @(Model.Page == Model.Pages ? "disabled" : "")" aria-label="Next page"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+        </span>
+    </nav>
+</div>
