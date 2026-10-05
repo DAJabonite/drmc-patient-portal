@@ -1,5 +1,6 @@
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -28,17 +29,17 @@ public class PatientController : Controller
         }
 
         var encounters = await _db.ClinicalEncounters
-            .Where(e => e.PatientUserId == user.Id)
+            .Where(e => e.Patient.PortalUserId == user.Id)
             .OrderByDescending(e => e.EncounterDate)
             .ToListAsync();
 
         var latestLab = await _db.LabResults
-            .Where(l => l.PatientUserId == user.Id)
+            .Where(l => l.Patient.PortalUserId == user.Id)
             .OrderByDescending(l => l.CollectedAt)
             .ToListAsync();
 
         var activePrescriptions = await _db.Prescriptions
-            .CountAsync(p => p.PatientUserId == user.Id && p.Status == PrescriptionStatus.Active);
+            .CountAsync(p => p.Patient.PortalUserId == user.Id && p.Status == PrescriptionStatus.Active);
 
         var model = new PatientDashboardViewModel
         {

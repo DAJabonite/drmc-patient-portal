@@ -1,0 +1,19 @@
+@model EncounterInput
+<input asp-for="RowVersion" type="hidden" />
+<div class="row g-3 mb-3">
+    <div class="col-md-6"><label asp-for="EncounterReference" class="form-label"></label><input asp-for="EncounterReference" class="form-control" /><span asp-validation-for="EncounterReference" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="EncounterDate" class="form-label"></label><input asp-for="EncounterDate" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="EncounterDate" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Department" class="form-label"></label><select asp-for="Department" class="form-select"><option value="">Select</option>@foreach (var department in ClinicalDepartments.All) { <option>@department.Name</option> }</select><span asp-validation-for="Department" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Type" class="form-label"></label><select asp-for="Type" asp-items="Html.GetEnumSelectList<EncounterType>()" class="form-select"></select><span asp-validation-for="Type" class="text-danger"></span></div>
+</div>
+<partial name="_Physician" model="@(new PhysicianForm(Model, (IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewData["Doctors"]!))" />
+<div class="row g-3 mt-1">
+    <div class="col-12"><label asp-for="ChiefComplaint" class="form-label"></label><textarea asp-for="ChiefComplaint" class="form-control"></textarea><span asp-validation-for="ChiefComplaint" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="PrimaryDiagnosis" class="form-label"></label><textarea asp-for="PrimaryDiagnosis" class="form-control"></textarea><span asp-validation-for="PrimaryDiagnosis" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="SecondaryDiagnosis" class="form-label"></label><textarea asp-for="SecondaryDiagnosis" class="form-control"></textarea><span asp-validation-for="SecondaryDiagnosis" class="text-danger"></span></div>
+    <div class="col-12"><label asp-for="ClinicalSummary" class="form-label"></label><textarea asp-for="ClinicalSummary" class="form-control"></textarea><span asp-validation-for="ClinicalSummary" class="text-danger"></span></div>
+    <div class="col-12"><label asp-for="CarePlanAndInstructions" class="form-label"></label><textarea asp-for="CarePlanAndInstructions" class="form-control"></textarea><span asp-validation-for="CarePlanAndInstructions" class="text-danger"></span></div>
+    <div class="col-12"><label asp-for="VitalSignsRecorded" class="form-label"></label><textarea asp-for="VitalSignsRecorded" class="form-control"></textarea><span asp-validation-for="VitalSignsRecorded" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="FollowUpDate" class="form-label"></label><input asp-for="FollowUpDate" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="FollowUpDate" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="FollowUpNotes" class="form-label"></label><textarea asp-for="FollowUpNotes" class="form-control"></textarea><span asp-validation-for="FollowUpNotes" class="text-danger"></span></div>
+</div>

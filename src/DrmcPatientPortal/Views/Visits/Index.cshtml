@@ -61,7 +61,7 @@
                                    name="startDate"
                                    type="date"
                                    value="@Model.SelectedStartDate?.ToString("yyyy-MM-dd")"
-                                   max="@(Model.SelectedEndDate?.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd"))"
+                                   max="@(Model.SelectedEndDate?.ToString("yyyy-MM-dd") ?? DrmcPatientPortal.Services.ClinicalClock.Today.ToString("yyyy-MM-dd"))"
                                    class="form-control" />
                         </div>
                         <div>
@@ -71,7 +71,7 @@
                                    type="date"
                                    value="@Model.SelectedEndDate?.ToString("yyyy-MM-dd")"
                                    min="@Model.SelectedStartDate?.ToString("yyyy-MM-dd")"
-                                   max="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                   max="@DrmcPatientPortal.Services.ClinicalClock.Today.ToString("yyyy-MM-dd")"
                                    class="form-control" />
                         </div>
                     </fieldset>
@@ -127,7 +127,7 @@
                 if (endDate.value && endDate.value < startDate.value) endDate.value = startDate.value;
             });
             endDate.addEventListener("change", () => {
-                startDate.max = endDate.value || "@DateTime.Today.ToString("yyyy-MM-dd")";
+                startDate.max = endDate.value || "@DrmcPatientPortal.Services.ClinicalClock.Today.ToString("yyyy-MM-dd")";
             });
             dateToggle?.addEventListener("click", () => {
                 setDatePanelOpen(dateToggle.getAttribute("aria-expanded") !== "true");

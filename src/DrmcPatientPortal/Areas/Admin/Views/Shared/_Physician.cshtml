@@ -1,0 +1,7 @@
+@model PhysicianForm
+@{ var source = Model.Prefix + "PhysicianSource"; var directory = Model.Prefix + "DirectoryDoctorId"; var historical = Model.Prefix + "HistoricalDoctorName"; }
+<div class="row g-3">
+    <div class="col-md-4"><label for="@source" class="form-label">Physician source</label><select id="@source" name="@source" class="form-select"><option value="0" selected="@(Model.Input.PhysicianSource == PhysicianSource.Directory)">Directory</option><option value="1" selected="@(Model.Input.PhysicianSource == PhysicianSource.HistoricalName)">Historical name</option></select></div>
+    <div class="col-md-8"><label for="@directory" class="form-label">Directory physician</label><select id="@directory" name="@directory" class="form-select"><option value="">Unassigned</option>@foreach (var doctor in Model.Doctors) { <option value="@doctor.Value" selected="@(Model.Input.DirectoryDoctorId?.ToString() == doctor.Value)">@doctor.Text</option> }</select></div>
+    <div class="col-12"><label for="@historical" class="form-label">Historical physician name</label><input id="@historical" name="@historical" value="@Model.Input.HistoricalDoctorName" maxlength="100000" class="form-control" /></div>
+</div>

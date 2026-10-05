@@ -1,0 +1,21 @@
+@model PrescriptionInput
+<input asp-for="RowVersion" type="hidden" />
+<div class="row g-3 mb-3">
+    <div class="col-md-6"><label asp-for="RxNumber" class="form-label"></label><input asp-for="RxNumber" class="form-control" /><span asp-validation-for="RxNumber" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="GenericName" class="form-label"></label><input asp-for="GenericName" class="form-control" /><span asp-validation-for="GenericName" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="BrandName" class="form-label"></label><input asp-for="BrandName" class="form-control" /><span asp-validation-for="BrandName" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Dosage" class="form-label"></label><input asp-for="Dosage" class="form-control" /><span asp-validation-for="Dosage" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="DosageForm" class="form-label"></label><input asp-for="DosageForm" class="form-control" /><span asp-validation-for="DosageForm" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Frequency" class="form-label"></label><input asp-for="Frequency" class="form-control" /><span asp-validation-for="Frequency" class="text-danger"></span></div>
+    <div class="col-12"><label asp-for="Instructions" class="form-label"></label><textarea asp-for="Instructions" class="form-control"></textarea><span asp-validation-for="Instructions" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Department" class="form-label"></label><select asp-for="Department" class="form-select"><option value="">Select</option>@foreach (var department in ClinicalDepartments.All) { <option>@department.Name</option> }</select><span asp-validation-for="Department" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Status" class="form-label"></label><select asp-for="Status" asp-items="Html.GetEnumSelectList<PrescriptionStatus>()" class="form-select"></select><span asp-validation-for="Status" class="text-danger"></span></div>
+</div>
+<partial name="_Physician" model="@(new PhysicianForm(Model, (IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewData["Doctors"]!))" />
+<div class="row g-3 mt-1">
+    <div class="col-md-6"><label asp-for="PrescribedAt" class="form-label"></label><input asp-for="PrescribedAt" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="PrescribedAt" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="ValidUntil" class="form-label"></label><input asp-for="ValidUntil" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="ValidUntil" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="RefillsTotal" class="form-label"></label><input asp-for="RefillsTotal" class="form-control" min="0" /><span asp-validation-for="RefillsTotal" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="RefillsRemaining" class="form-label"></label><input asp-for="RefillsRemaining" class="form-control" min="0" /><span asp-validation-for="RefillsRemaining" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="LastRefillDate" class="form-label"></label><input asp-for="LastRefillDate" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="LastRefillDate" class="text-danger"></span></div>
+</div>

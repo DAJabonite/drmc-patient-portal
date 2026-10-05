@@ -3,8 +3,8 @@ namespace DrmcPatientPortal.Models;
 public class LabResult
 {
     public int Id { get; set; }
-    public string PatientUserId { get; set; } = string.Empty;
-    public ApplicationUser Patient { get; set; } = null!;
+    public int PatientRecordId { get; set; }
+    public PatientRecord Patient { get; set; } = null!;
     public int? ClinicalEncounterId { get; set; }
     public ClinicalEncounter? Encounter { get; set; }
 

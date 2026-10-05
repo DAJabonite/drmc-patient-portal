@@ -1,0 +1,11 @@
+@model AdminDetails
+@{ ViewData["Title"] = "Delete " + Model.Title; var indexContext = ViewContext.RouteData.Values["controller"]?.ToString() == "Patients" ? null : Model.Context?.RouteId; }
+<section class="container py-4">
+    <h1 class="h3">Delete @Model.Title #@Model.Id</h1>
+    @if (TempData["AdminError"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+    <partial name="_Fields" model="Model" />
+    <form asp-area="Admin" asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-flex gap-2 mt-3">
+        <input type="hidden" name="rowVersion" value="@Model.RowVersion" />
+        <button class="btn btn-danger" type="submit" disabled="@(Model.Dependents.Values.Any(count => count > 0))"><i class="bi bi-trash" aria-hidden="true"></i> Delete</button><a asp-area="Admin" asp-action="Index" asp-route-contextId="@indexContext" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</section>

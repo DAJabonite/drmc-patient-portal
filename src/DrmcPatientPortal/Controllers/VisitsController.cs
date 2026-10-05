@@ -38,7 +38,7 @@ public class VisitsController : Controller
         if (user is null) return Challenge();
 
         var query = _db.ClinicalEncounters
-            .Where(e => e.PatientUserId == user.Id)
+            .Where(e => e.Patient.PortalUserId == user.Id)
             .AsQueryable();
 
         var selectedType = department?.Trim();
@@ -59,7 +59,7 @@ public class VisitsController : Controller
             query = query.Where(e => false);
         }
 
-        var today = DateTime.Today;
+        var today = ClinicalClock.Today;
         if (dateRange == "30d")
         {
             var rangeStart = today.AddDays(-30);
@@ -121,8 +121,8 @@ public class VisitsController : Controller
         if (user is null) return Challenge();
 
         var encounter = await _db.ClinicalEncounters
-            .Include(e => e.LabResults)
-            .FirstOrDefaultAsync(e => e.Id == id && e.PatientUserId == user.Id);
+            .Include(e => e.LabResults.Where(l => l.Patient.PortalUserId == user.Id))
+            .FirstOrDefaultAsync(e => e.Id == id && e.Patient.PortalUserId == user.Id);
 
         if (encounter is null)
         {

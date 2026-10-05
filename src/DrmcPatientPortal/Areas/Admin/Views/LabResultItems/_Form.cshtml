@@ -1,0 +1,9 @@
+@model LabItemInput
+<input asp-for="RowVersion" type="hidden" />
+<div class="row g-3">
+    <div class="col-12"><label asp-for="ParameterName" class="form-label"></label><input asp-for="ParameterName" class="form-control" /><span asp-validation-for="ParameterName" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Value" class="form-label"></label><input asp-for="Value" class="form-control" /><span asp-validation-for="Value" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Unit" class="form-label"></label><input asp-for="Unit" class="form-control" /><span asp-validation-for="Unit" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="ReferenceRange" class="form-label"></label><input asp-for="ReferenceRange" class="form-control" /><span asp-validation-for="ReferenceRange" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Flag" class="form-label"></label><select asp-for="Flag" asp-items="Html.GetEnumSelectList<LabFlag>()" class="form-select"></select><span asp-validation-for="Flag" class="text-danger"></span></div>
+</div>

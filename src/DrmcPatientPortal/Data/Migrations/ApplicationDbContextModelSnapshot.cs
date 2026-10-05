@@ -23,6 +23,64 @@ namespace DrmcPatientPortal.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.AdminAuditLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ActorEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ChangedFields")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Entity")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("NewValues")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OldValues")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RecordKey")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("SubjectPatientId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("TimestampUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubjectPatientId");
+
+                    b.HasIndex("TimestampUtc");
+
+                    b.ToTable("AdminAuditLogs");
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
@@ -220,13 +278,18 @@ namespace DrmcPatientPortal.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("PatientUserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("PatientRecordId")
+                        .HasColumnType("int");
 
                     b.Property<string>("PrimaryDiagnosis")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.Property<string>("SecondaryDiagnosis")
                         .HasColumnType("nvarchar(max)");
@@ -243,7 +306,7 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.HasIndex("EncounterReference")
                         .IsUnique();
 
-                    b.HasIndex("PatientUserId");
+                    b.HasIndex("PatientRecordId");
 
                     b.ToTable("ClinicalEncounters");
                 });
@@ -282,6 +345,12 @@ namespace DrmcPatientPortal.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<string>("ScheduleSummary")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -299,6 +368,102 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.HasIndex("Department");
 
                     b.ToTable("Doctors");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.ImportBatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ActorEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ApprovalHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime?>("ApprovedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ApprovedByEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("ApprovedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FailureCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FileHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime?>("LeaseExpiresUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OwnerId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("RowCount")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<bool>("StagingPurged")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("StartedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Template")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ValidationHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ValidationVersion")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status", "CreatedAtUtc");
+
+                    b.HasIndex("Status", "LeaseExpiresUtc");
+
+                    b.ToTable("ImportBatches");
                 });
 
             modelBuilder.Entity("DrmcPatientPortal.Models.LabResult", b =>
@@ -334,9 +499,8 @@ namespace DrmcPatientPortal.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("PatientUserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("PatientRecordId")
+                        .HasColumnType("int");
 
                     b.Property<string>("PerformingUnit")
                         .IsRequired()
@@ -348,6 +512,12 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Property<string>("ResultSummary")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -363,7 +533,7 @@ namespace DrmcPatientPortal.Data.Migrations
 
                     b.HasIndex("ClinicalEncounterId");
 
-                    b.HasIndex("PatientUserId");
+                    b.HasIndex("PatientRecordId");
 
                     b.ToTable("LabResults");
                 });
@@ -389,6 +559,12 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Property<string>("ReferenceRange")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.Property<string>("Unit")
                         .IsRequired()
@@ -422,6 +598,12 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Property<int>("PrescriptionId")
                         .HasColumnType("int");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.HasKey("Id");
 
                     b.HasIndex("PrescriptionId", "DoseTime")
@@ -442,9 +624,8 @@ namespace DrmcPatientPortal.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("PatientUserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("PatientRecordId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Reaction")
                         .IsRequired()
@@ -453,12 +634,18 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Property<DateTime>("RecordedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<int>("Severity")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PatientUserId");
+                    b.HasIndex("PatientRecordId");
 
                     b.ToTable("PatientAllergies");
                 });
@@ -521,6 +708,48 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.ToTable("PatientIdDocuments");
                 });
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.PatientRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("DateOfBirth")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HospitalNumber")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)")
+                        .UseCollation("Latin1_General_100_CI_AS");
+
+                    b.Property<string>("PortalUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HospitalNumber")
+                        .IsUnique()
+                        .HasFilter("[HospitalNumber] IS NOT NULL");
+
+                    b.HasIndex("PortalUserId")
+                        .IsUnique()
+                        .HasFilter("[PortalUserId] IS NOT NULL");
+
+                    b.ToTable("PatientRecords");
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.Prescription", b =>
                 {
                     b.Property<int>("Id")
@@ -559,9 +788,8 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Property<DateTime?>("LastRefillDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("PatientUserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("PatientRecordId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("PrescribedAt")
                         .HasColumnType("datetime2");
@@ -576,6 +804,12 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Property<int>("RefillsTotal")
                         .HasColumnType("int");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<string>("RxNumber")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -588,7 +822,7 @@ namespace DrmcPatientPortal.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PatientUserId");
+                    b.HasIndex("PatientRecordId");
 
                     b.HasIndex("RxNumber")
                         .IsUnique();
@@ -629,6 +863,12 @@ namespace DrmcPatientPortal.Data.Migrations
 
                     b.Property<DateTime>("PublishedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -792,10 +1032,10 @@ namespace DrmcPatientPortal.Data.Migrations
 
             modelBuilder.Entity("DrmcPatientPortal.Models.ClinicalEncounter", b =>
                 {
-                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "Patient")
+                    b.HasOne("DrmcPatientPortal.Models.PatientRecord", "Patient")
                         .WithMany("Encounters")
-                        .HasForeignKey("PatientUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("PatientRecordId")
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Patient");
@@ -807,10 +1047,10 @@ namespace DrmcPatientPortal.Data.Migrations
                         .WithMany("LabResults")
                         .HasForeignKey("ClinicalEncounterId");
 
-                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "Patient")
+                    b.HasOne("DrmcPatientPortal.Models.PatientRecord", "Patient")
                         .WithMany("LabResults")
-                        .HasForeignKey("PatientUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("PatientRecordId")
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Encounter");
@@ -842,10 +1082,10 @@ namespace DrmcPatientPortal.Data.Migrations
 
             modelBuilder.Entity("DrmcPatientPortal.Models.PatientAllergy", b =>
                 {
-                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "Patient")
+                    b.HasOne("DrmcPatientPortal.Models.PatientRecord", "Patient")
                         .WithMany("Allergies")
-                        .HasForeignKey("PatientUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("PatientRecordId")
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Patient");
@@ -862,12 +1102,22 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Navigation("Patient");
                 });
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.PatientRecord", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "PortalUser")
+                        .WithOne("PatientRecord")
+                        .HasForeignKey("DrmcPatientPortal.Models.PatientRecord", "PortalUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("PortalUser");
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.Prescription", b =>
                 {
-                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "Patient")
+                    b.HasOne("DrmcPatientPortal.Models.PatientRecord", "Patient")
                         .WithMany("Prescriptions")
-                        .HasForeignKey("PatientUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("PatientRecordId")
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Patient");
@@ -926,15 +1176,9 @@ namespace DrmcPatientPortal.Data.Migrations
 
             modelBuilder.Entity("DrmcPatientPortal.Models.ApplicationUser", b =>
                 {
-                    b.Navigation("Allergies");
-
-                    b.Navigation("Encounters");
-
                     b.Navigation("IdDocuments");
 
-                    b.Navigation("LabResults");
-
-                    b.Navigation("Prescriptions");
+                    b.Navigation("PatientRecord");
                 });
 
             modelBuilder.Entity("DrmcPatientPortal.Models.ClinicalEncounter", b =>
@@ -945,6 +1189,17 @@ namespace DrmcPatientPortal.Data.Migrations
             modelBuilder.Entity("DrmcPatientPortal.Models.LabResult", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.PatientRecord", b =>
+                {
+                    b.Navigation("Allergies");
+
+                    b.Navigation("Encounters");
+
+                    b.Navigation("LabResults");
+
+                    b.Navigation("Prescriptions");
                 });
 
             modelBuilder.Entity("DrmcPatientPortal.Models.Prescription", b =>

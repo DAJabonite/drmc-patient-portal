@@ -1,0 +1,6 @@
+@model DoseInput
+<input asp-for="RowVersion" type="hidden" />
+<div class="row g-3">
+    <div class="col-md-6"><label asp-for="DoseTime" class="form-label"></label><input asp-for="DoseTime" type="time" step="any" class="form-control" /><span asp-validation-for="DoseTime" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="DisplayOrder" class="form-label"></label><input asp-for="DisplayOrder" class="form-control" min="0" /><span asp-validation-for="DisplayOrder" class="text-danger"></span></div>
+</div>

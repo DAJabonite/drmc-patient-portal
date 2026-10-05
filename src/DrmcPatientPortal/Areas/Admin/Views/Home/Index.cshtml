@@ -1,0 +1,22 @@
+@{ ViewData["Title"] = "Administration"; }
+<section class="container py-4">
+    <h1 class="h3 mb-4">Administration</h1>
+    <h2 class="h5">Patient registry</h2>
+    <ul class="list-unstyled"><li class="py-2 border-bottom"><a asp-controller="Patients" asp-area="Admin" asp-action="Index"><i class="bi bi-people me-2" aria-hidden="true"></i>Patients and verified links</a></li></ul>
+    <h2 class="h5 mt-4">Dashboard and visits</h2>
+    <ul class="list-unstyled"><li class="py-2 border-bottom"><a asp-controller="ClinicalEncounters" asp-area="Admin" asp-action="Index"><i class="bi bi-clipboard2-pulse me-2" aria-hidden="true"></i>Clinical encounters</a></li></ul>
+    <h2 class="h5 mt-4">Laboratory availability</h2>
+    <ul class="list-unstyled"><li class="py-2 border-bottom"><a asp-controller="LabResults" asp-area="Admin" asp-action="Index"><i class="bi bi-droplet me-2" aria-hidden="true"></i>Lab results</a></li></ul>
+    <ul class="list-unstyled"><li class="py-2 border-bottom"><a asp-controller="LabResultItems" asp-area="Admin" asp-action="Index"><i class="bi bi-list-check me-2" aria-hidden="true"></i>Lab items (staff only)</a></li></ul>
+    <h2 class="h5 mt-4">Medications</h2>
+    <ul class="list-unstyled"><li class="py-2 border-bottom"><a asp-controller="Prescriptions" asp-area="Admin" asp-action="Index"><i class="bi bi-capsule me-2" aria-hidden="true"></i>Prescriptions</a></li></ul>
+    <ul class="list-unstyled"><li class="py-2 border-bottom"><a asp-controller="MedicationDoseSchedules" asp-area="Admin" asp-action="Index"><i class="bi bi-clock me-2" aria-hidden="true"></i>Dose schedules</a></li></ul>
+    <ul class="list-unstyled"><li class="py-2 border-bottom"><a asp-controller="PatientAllergies" asp-area="Admin" asp-action="Index"><i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>Allergies</a></li></ul>
+    <h2 class="h5 mt-4">Doctor directory</h2>
+    <ul class="list-unstyled"><li class="py-2 border-bottom"><a asp-controller="Doctors" asp-area="Admin" asp-action="Index"><i class="bi bi-person-badge me-2" aria-hidden="true"></i>Doctors</a></li></ul>
+    <h2 class="h5 mt-4">Public advisories</h2>
+    <ul class="list-unstyled"><li class="py-2 border-bottom"><a asp-controller="PublicAdvisories" asp-area="Admin" asp-action="Index"><i class="bi bi-megaphone me-2" aria-hidden="true"></i>Advisories</a></li></ul>
+    <h2 class="h5 mt-4">Staff history</h2>
+    <ul class="list-unstyled"><li class="py-2 border-bottom"><a asp-controller="Imports" asp-area="Admin" asp-action="Index"><i class="bi bi-file-earmark-arrow-up me-2" aria-hidden="true"></i>Import batches</a></li></ul>
+    <ul class="list-unstyled"><li class="py-2 border-bottom"><a asp-controller="Audit" asp-area="Admin" asp-action="Index"><i class="bi bi-journal-text me-2" aria-hidden="true"></i>Access and change history</a></li></ul>
+</section>

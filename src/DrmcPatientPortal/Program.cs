@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Security.Claims;
 using DrmcPatientPortal;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
@@ -8,6 +9,10 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using DrmcPatientPortal.Areas.Admin.Security;
+using DrmcPatientPortal.Areas.Admin.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Policy;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,8 +42,23 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
 })
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddUserValidator<UserTextLengthValidator>();
+
+builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+{
+    options.OnRefreshingPrincipal = context =>
+    {
+        // Refresh only carries proof from an already authenticated MFA ticket, never user settings.
+        if (context.CurrentPrincipal is { } current && context.NewPrincipal is { } refreshed &&
+            current.HasClaim("amr", "mfa") && current.FindFirstValue(ClaimTypes.NameIdentifier) is { Length: > 0 } userId &&
+            userId == refreshed.FindFirstValue(ClaimTypes.NameIdentifier) &&
+            refreshed.Identity is ClaimsIdentity identity && !refreshed.HasClaim("amr", "mfa"))
+            identity.AddClaim(new Claim("amr", "mfa"));
+        return Task.CompletedTask;
+    };
+});
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -47,6 +67,17 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
         ? CookieSecurePolicy.SameAsRequest
         : CookieSecurePolicy.Always;
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        if (context.Request.Path.StartsWithSegments("/Admin")) return AdminAuthorizationResultHandler.DenyAsync(context.HttpContext);
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    };
 });
 
 if (builder.Environment.IsDevelopment())
@@ -79,7 +110,8 @@ builder.Services.AddHostedService<TemporaryDocumentCleanupService>();
 
 var keyRingPath = builder.Configuration["DataProtection:KeyRingPath"] ?? Path.Combine(builder.Environment.ContentRootPath, "App_Data", "DataProtectionKeys");
 if (!Path.IsPathRooted(keyRingPath)) keyRingPath = Path.Combine(builder.Environment.ContentRootPath, keyRingPath);
-builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keyRingPath)).SetApplicationName("DRMC.PatientPortal");
+var protectKeysWithDpapi = builder.Configuration.GetValue<bool>("DataProtection:ProtectKeysWithDpapi");
+await KeyRingProtection.ConfigureAsync(builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keyRingPath)).SetApplicationName("DRMC.PatientPortal"), keyRingPath, protectKeysWithDpapi);
 
 // Offline local OCR ID extraction service
 builder.Services.AddSingleton<IIdDocumentExtractionService, TesseractIdDocumentExtractionService>();
@@ -97,7 +129,16 @@ builder.Services.AddSession(options =>
         : CookieSecurePolicy.Always;
 });
 
-builder.Services.AddControllersWithViews()
+builder.Services.AddAuthorization(options => options.AddPolicy("AdminAccess", policy =>
+    policy.RequireAuthenticatedUser().RequireRole("Admin").AddRequirements(new AdminRequirement())));
+builder.Services.AddScoped<IAuthorizationHandler, AdminAuthorizationHandler>();
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, AdminAuthorizationResultHandler>();
+builder.Services.AddScoped<AdminWrites>();
+builder.Services.AddSingleton<ImportStaging>();
+builder.Services.AddScoped<ImportWorkflow>();
+builder.Services.AddSingleton<ImportLeases>();
+builder.Services.AddHostedService<ImportWorker>();
+builder.Services.AddControllersWithViews(options => options.Conventions.Add(new AdminAreaConvention()))
     .AddViewLocalization()
     .AddDataAnnotationsLocalization(options =>
     {
@@ -124,14 +165,17 @@ builder.Services.AddRazorPages(options =>
 });
 
 var app = builder.Build();
+if (!protectKeysWithDpapi && !app.Environment.IsDevelopment())
+    app.Logger.LogWarning("Data Protection keys are unprotected at rest. See the README Key Protection and Recovery section to choose and configure key protection before deployment.");
+await AdminBootstrap.InitializeAsync(app.Services, app.Configuration);
 
-// Seed the database with development/review patient data (safe: only in Development).
+// Fixtures require explicit opt-in and an already migrated, empty business schema.
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    DbInitializer.Initialize(db, userManager);
+    DbInitializer.Initialize(db, userManager, app.Configuration);
 }
 
 // Configure the HTTP request pipeline.
@@ -199,6 +243,9 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 
+app.MapAreaControllerRoute(name: "admin", areaName: "Admin", pattern: "Admin/{controller=Home}/{action=Index}/{id?}")
+    .WithStaticAssets();
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
@@ -206,5 +253,15 @@ app.MapControllerRoute(
 
 app.MapRazorPages()
    .WithStaticAssets();
+
+foreach (var endpoint in ((Microsoft.AspNetCore.Routing.IEndpointRouteBuilder)app).DataSources.SelectMany(source => source.Endpoints))
+{
+    var action = endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor>();
+    if (action is null || !action.RouteValues.TryGetValue("area", out var area) || area != "Admin") continue;
+    if (endpoint.Metadata.GetMetadata<IAllowAnonymous>() is not null)
+        throw new InvalidOperationException("Admin endpoints must not allow anonymous access.");
+    if (!endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>().Any(data => data.Policy == "AdminAccess"))
+        throw new InvalidOperationException("Admin endpoints must require the AdminAccess authorization policy.");
+}
 
 app.Run();

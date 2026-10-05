@@ -1,0 +1,19 @@
+@model AdminAuditLog
+@{ ViewData["Title"] = "Staff audit entry"; }
+<section class="container py-4">
+    <h1 class="h3">Staff audit entry #@Model.Id</h1>
+    <dl class="row mt-3">
+        <dt class="col-md-3">UTC time</dt><dd class="col-md-9">@Model.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss.fffffff") UTC</dd>
+        <dt class="col-md-3">Actor</dt><dd class="col-md-9 text-break">@Model.ActorEmail (@Model.ActorId)</dd>
+        <dt class="col-md-3">Action</dt><dd class="col-md-9">@Model.Action</dd>
+        <dt class="col-md-3">Record</dt><dd class="col-md-9 text-break">@Model.Entity #@Model.RecordKey</dd>
+        <dt class="col-md-3">Patient reference</dt><dd class="col-md-9">@Model.SubjectPatientId</dd>
+        <dt class="col-md-3">Changed fields</dt><dd class="col-md-9 text-break">@Model.ChangedFields</dd>
+    </dl>
+    @if (Model.Entity is "Doctors" or "PublicAdvisories")
+    {
+        <h2 class="h6">Previous public values</h2><pre class="text-break" style="white-space:pre-wrap">@Model.OldValues</pre>
+        <h2 class="h6">New public values</h2><pre class="text-break" style="white-space:pre-wrap">@Model.NewValues</pre>
+    }
+    <a asp-area="Admin" asp-action="Index" class="btn btn-outline-secondary">Back</a>
+</section>

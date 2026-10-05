@@ -1,0 +1,12 @@
+@model AdminForm
+@{ ViewData["Title"] = "Add " + Model.Title; var indexContext = ViewContext.RouteData.Values["controller"]?.ToString() == "Patients" ? null : Model.Context?.RouteId; }
+<section class="container py-4">
+    <h1 class="h3">Add @Model.Title</h1>
+    @if (Model.Context is not null) { <partial name="_Context" model="Model.Context" /> }
+    <form asp-area="Admin" asp-action="Create" asp-route-id="@Model.Context?.RouteId" method="post">
+        <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+        <partial name="@Model.FormPartial" model="Model.Input" />
+        <div class="d-flex gap-2 mt-4"><button type="submit" class="btn btn-primary"><i class="bi bi-save" aria-hidden="true"></i> Save</button><a asp-area="Admin" asp-action="Index" asp-route-contextId="@indexContext" class="btn btn-outline-secondary">Cancel</a></div>
+    </form>
+</section>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

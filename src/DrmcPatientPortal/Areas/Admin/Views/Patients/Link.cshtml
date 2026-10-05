@@ -1,0 +1,9 @@
+@model PatientLinkPage
+@{ ViewData["Title"] = "Verified portal link"; }
+<section class="container py-4">
+    <h1 class="h3">Verified portal link</h1>
+    <partial name="_Context" model="Model.Context" />
+    <p class="mb-3">Portal account: @(Model.Linked ? "Linked" : "Unlinked")</p>
+    <partial name="_LinkForm" model="Model.Input" view-data="ViewData" />
+</section>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -3,8 +3,8 @@ namespace DrmcPatientPortal.Models;
 public class Prescription
 {
     public int Id { get; set; }
-    public string PatientUserId { get; set; } = string.Empty;
-    public ApplicationUser Patient { get; set; } = null!;
+    public int PatientRecordId { get; set; }
+    public PatientRecord Patient { get; set; } = null!;
 
     public string RxNumber { get; set; } = string.Empty; // e.g. "DRMC-RX-2026-4421"
     public string GenericName { get; set; } = string.Empty; // e.g. "Metformin Hydrochloride"

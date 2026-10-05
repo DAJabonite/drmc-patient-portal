@@ -1,0 +1,12 @@
+@model PatientLinkInput
+<form method="post">
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    <input asp-for="RowVersion" type="hidden" />
+    <div class="mb-3"><label asp-for="Email" class="form-label">Confirmed account email</label><input asp-for="Email" class="form-control" /><span asp-validation-for="Email" class="text-danger"></span></div>
+    <div class="form-check mb-3"><input asp-for="IdentityVerified" class="form-check-input" /><label asp-for="IdentityVerified" class="form-check-label">Staff checked the patient's identity</label></div>
+    <div class="d-flex flex-wrap gap-2">
+        <button type="submit" asp-action="Link" asp-route-id="@ViewContext.RouteData.Values["id"]" class="btn btn-primary"><i class="bi bi-link-45deg" aria-hidden="true"></i> Link</button>
+        <button type="submit" asp-action="Unlink" asp-route-id="@ViewContext.RouteData.Values["id"]" class="btn btn-outline-danger"><i class="bi bi-link-45deg" aria-hidden="true"></i> Unlink</button>
+        <a asp-area="Admin" asp-action="Index" class="btn btn-outline-secondary">Back</a>
+    </div>
+</form>

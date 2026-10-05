@@ -1,0 +1,6 @@
+@model OwnershipContext
+<div class="border-bottom pb-3 mb-3 text-break">
+    <span class="fw-semibold">Patient #@Model.Patient.Id: @Model.Patient.FullName</span>
+    <span class="d-block">Hospital number: @(string.IsNullOrEmpty(Model.Patient.HospitalNumber) ? "unassigned" : Model.Patient.HospitalNumber)</span>
+    <span class="d-block">@Model.Label</span>
+</div>

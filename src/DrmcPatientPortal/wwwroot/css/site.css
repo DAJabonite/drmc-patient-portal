@@ -2198,6 +2198,14 @@ code,
     }
 }
 
+.admin-audit-table {
+    min-width: 70rem;
+}
+
+.admin-audit-table th:nth-child(2) {
+    min-width: 16rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .requirement-disclosure-chevron {
         transition: none;

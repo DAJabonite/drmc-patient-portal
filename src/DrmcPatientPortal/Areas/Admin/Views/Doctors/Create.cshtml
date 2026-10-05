@@ -1,0 +1,10 @@
+@model DoctorInput
+@{ ViewData["Title"] = "Add doctor"; }
+<section class="container py-4">
+    <h1 class="h3">Add doctor</h1>
+    <form asp-area="Admin" asp-action="Create" method="post">
+        <partial name="_Form" model="Model" />
+        <div class="d-flex gap-2 mt-4"><button class="btn btn-primary" type="submit"><i class="bi bi-save" aria-hidden="true"></i> Save</button><a asp-area="Admin" asp-action="Index" class="btn btn-outline-secondary">Cancel</a></div>
+    </form>
+</section>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -1,19 +1,30 @@
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace DrmcPatientPortal.Data;
 
 // Development-only fixtures and backend reference data; never use these rows as hospital records.
-// PatientUserId is the owner FK for patient data. Replace these fixtures with approved directory,
+// PatientRecordId is the owner FK for patient data. Replace these fixtures with approved directory,
 // HIS, laboratory, and pharmacy integrations without joining clinical records by display name.
 // Existing rows are retained so repeated Development startup does not reset accounts or patient data.
 public static class DbInitializer
 {
-    public static void Initialize(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+    public static void Initialize(ApplicationDbContext db, UserManager<ApplicationUser> userManager, IConfiguration configuration)
     {
-        // Apply the versioned schema so a fresh Development checkout starts without manual setup.
-        db.Database.Migrate();
+        if (!configuration.GetValue<bool>("DevelopmentFixtures:Enabled")) return;
+        using var transaction = db.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
+        if (db.Doctors.Any() || db.PublicAdvisories.Any() || db.PatientRecords.Any() ||
+            db.ClinicalEncounters.Any() || db.LabResults.Any() || db.LabResultItems.Any() ||
+            db.Prescriptions.Any() || db.MedicationDoseSchedules.Any() || db.PatientAllergies.Any() ||
+            db.PatientIdDocuments.Any() || db.AuditLogs.Any() || db.AdminAuditLogs.Any() || db.ImportBatches.Any()) return;
+        string Required(string key) => !string.IsNullOrWhiteSpace(configuration[key])
+            ? configuration[key]! : throw new InvalidOperationException("Explicit fixture credentials are required.");
+        var primaryEmail = Required("DevelopmentFixtures:Primary:Email");
+        var primaryPassword = Required("DevelopmentFixtures:Primary:Password");
+        var emptyEmail = Required("DevelopmentFixtures:Empty:Email");
+        var emptyPassword = Required("DevelopmentFixtures:Empty:Password");
 
         // 1. Example doctor directory, grouped by the static ClinicalDepartments catalog.
         // Names, rooms, schedules, and biographies require institutional verification before publication.
@@ -344,8 +355,8 @@ public static class DbInitializer
         const string secondFixtureUserId = "drmc-development-juan";
         var seededUsers = new List<(string id, string email, string password, string firstName, string? middleName, string lastName, string contact, string idType, string idNumber)>
         {
-            (primaryFixtureUserId, "patient@drmc.doh.gov.ph", "P@tient2026", "Maria Clara", "D.", "Santos", "0917 123 4567", "Philippine National ID (PhilSys)", "1234-5678-9012-3456"),
-            (secondFixtureUserId, "juan@drmc.doh.gov.ph", "J@uan2026",     "Juan Miguel",  "A.", "Dela Cruz", "0918 765 4321", "PhilHealth ID", "12-345678901-2"),
+            (primaryFixtureUserId, primaryEmail, primaryPassword, "Maria Clara", "D.", "Santos", "0917 123 4567", "Philippine National ID (PhilSys)", "1234-5678-9012-3456"),
+            (secondFixtureUserId, emptyEmail, emptyPassword, "Juan Miguel", "A.", "Dela Cruz", "0918 765 4321", "PhilHealth ID", "12-345678901-2"),
         };
 
         foreach (var (id, email, password, firstName, middleName, lastName, contact, idType, idNumber) in seededUsers)
@@ -375,24 +386,29 @@ public static class DbInitializer
 
             var result = userManager.CreateAsync(user, password).GetAwaiter().GetResult();
             if (!result.Succeeded)
-                throw new InvalidOperationException("Development account creation failed: " +
-                    string.Join("; ", result.Errors.Select(error => error.Description)));
+                throw new InvalidOperationException("Development fixture account creation failed.");
         }
 
         // 4. Patient-owned example records for the current dashboard, Visits, Labs, and Medications.
         var primary = db.Users.FirstOrDefault(u => u.Id == primaryFixtureUserId);
         if (primary is not null)
         {
-            // ClinicalEncounter is the persisted visit summary. PatientUserId owns the record;
+            if (string.IsNullOrWhiteSpace(primary.FullName))
+                throw new InvalidOperationException("The primary fixture account must have a patient name.");
+            var clinicalNow = ClinicalClock.WallTime(DateTimeOffset.UtcNow);
+            var patient = new PatientRecord { FullName = primary.FullName, DateOfBirth = primary.DateOfBirth, PortalUserId = primary.Id };
+            db.PatientRecords.Add(patient);
+            db.SaveChanges();
+            // ClinicalEncounter is the persisted visit summary. PatientRecordId owns the record;
             // EncounterType drives the OPD, emergency, and inpatient filters in the current UI.
             var encounterIm = db.ClinicalEncounters.FirstOrDefault(e => e.EncounterReference == "DRMC-ENC-2026-0412");
             if (encounterIm is null)
             {
                 encounterIm = new ClinicalEncounter
                 {
-                    PatientUserId = primary.Id,
+                    PatientRecordId = patient.Id,
                     EncounterReference = "DRMC-ENC-2026-0412",
-                    EncounterDate = DateTime.UtcNow.AddDays(-18),
+                    EncounterDate = clinicalNow.AddDays(-18),
                     Department = "Internal Medicine",
                     AttendingPhysician = "Dr. Arthur Llanos, MD, FPCP",
                     Type = EncounterType.OpdConsultation,
@@ -402,7 +418,7 @@ public static class DbInitializer
                     ClinicalSummary = "Patient is asymptomatic and reports good medication adherence.",
                     CarePlanAndInstructions = "Maintain a low-sodium, low-glycemic diet.\nContinue prescribed medicines.\nRepeat fasting blood sugar and HbA1c in three months.",
                     VitalSignsRecorded = "BP: 128/82 mmHg | HR: 76 bpm | Temp: 36.5 C | Wt: 64.0 kg",
-                    FollowUpDate = DateTime.UtcNow.AddMonths(3),
+                    FollowUpDate = clinicalNow.AddMonths(3),
                     FollowUpNotes = "Internal Medicine OPD follow-up."
                 };
                 db.ClinicalEncounters.Add(encounterIm);
@@ -413,9 +429,9 @@ public static class DbInitializer
             {
                 encounterFcm = new ClinicalEncounter
                 {
-                    PatientUserId = primary.Id,
+                    PatientRecordId = patient.Id,
                     EncounterReference = "DRMC-ENC-2025-1089",
-                    EncounterDate = DateTime.UtcNow.AddMonths(-6),
+                    EncounterDate = clinicalNow.AddMonths(-6),
                     Department = "Family & Community Medicine",
                     AttendingPhysician = "Dr. Cristina Ramos, MD, FPAFP",
                     Type = EncounterType.OpdConsultation,
@@ -428,29 +444,29 @@ public static class DbInitializer
                 db.ClinicalEncounters.Add(encounterFcm);
             }
 
-            var ownedEncounterIm = encounterIm.PatientUserId == primary.Id ? encounterIm : null;
-            var ownedEncounterFcm = encounterFcm.PatientUserId == primary.Id ? encounterFcm : null;
+            var ownedEncounterIm = encounterIm.PatientRecordId == patient.Id ? encounterIm : null;
+            var ownedEncounterFcm = encounterFcm.PatientRecordId == patient.Id ? encounterFcm : null;
             var fixtureAccessions = new[] { "DRMC-LAB-2026-0814", "DRMC-LAB-2026-0815", "DRMC-LAB-2026-0790", "DRMC-LAB-2025-0451", "DRMC-LAB-2025-0452", "DRMC-LAB-2026-0922" };
             foreach (var lab in db.LabResults.Where(l => fixtureAccessions.Contains(l.AccessionNumber)).Include(l => l.Encounter))
             {
-                if (lab.Encounter != null && lab.PatientUserId != lab.Encounter.PatientUserId)
+                if (lab.Encounter != null && lab.PatientRecordId != lab.Encounter.PatientRecordId)
                     lab.Encounter = null;
             }
 
             // LabResult belongs to a patient and optionally a visit. Items are the detailed report rows.
             // CollectedAt drives date filters; "Available" and "In progress" drive display states.
             // An unlinked result is valid while the originating visit has not been imported.
-            if (!db.LabResults.Any(l => l.PatientUserId == primary.Id))
+            if (!db.LabResults.Any(l => l.PatientRecordId == patient.Id))
             {
                 var cbc1 = new LabResult
                 {
-                    PatientUserId = primary.Id,
+                    PatientRecordId = patient.Id,
                     Encounter = ownedEncounterIm,
                     AccessionNumber = "DRMC-LAB-2026-0814",
                     TestName = "Complete Blood Count (CBC) with Platelet Count",
                     Category = LabCategory.Hematology,
-                    CollectedAt = DateTime.UtcNow.AddDays(-18),
-                    ReleasedAt = DateTime.UtcNow.AddDays(-17),
+                    CollectedAt = clinicalNow.AddDays(-18),
+                    ReleasedAt = clinicalNow.AddDays(-17),
                     Status = "Available",
                     ResultSummary = "Hematology parameters within standard diagnostic limits. No acute cytopenia.",
                     OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP",
@@ -470,13 +486,13 @@ public static class DbInitializer
 
                 var fbs = new LabResult
                 {
-                    PatientUserId = primary.Id,
+                    PatientRecordId = patient.Id,
                     Encounter = ownedEncounterIm,
                     AccessionNumber = "DRMC-LAB-2026-0815",
                     TestName = "Fasting Blood Sugar (FBS)",
                     Category = LabCategory.ClinicalChemistry,
-                    CollectedAt = DateTime.UtcNow.AddDays(-18),
-                    ReleasedAt = DateTime.UtcNow.AddDays(-17),
+                    CollectedAt = clinicalNow.AddDays(-18),
+                    ReleasedAt = clinicalNow.AddDays(-17),
                     Status = "Available",
                     ResultSummary = "Elevated fasting blood glucose. Consistent with impaired fasting glycemia / DM monitoring.",
                     OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP",
@@ -489,13 +505,13 @@ public static class DbInitializer
 
                 var lipid = new LabResult
                 {
-                    PatientUserId = primary.Id,
+                    PatientRecordId = patient.Id,
                     Encounter = ownedEncounterIm,
                     AccessionNumber = "DRMC-LAB-2026-0790",
                     TestName = "Lipid Profile Panel",
                     Category = LabCategory.ClinicalChemistry,
-                    CollectedAt = DateTime.UtcNow.AddDays(-18),
-                    ReleasedAt = DateTime.UtcNow.AddDays(-17),
+                    CollectedAt = clinicalNow.AddDays(-18),
+                    ReleasedAt = clinicalNow.AddDays(-17),
                     Status = "Available",
                     ResultSummary = "Lipid parameters within acceptable cardiovascular risk limits.",
                     OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP",
@@ -511,13 +527,13 @@ public static class DbInitializer
                 // Additional Labs
                 var cbc2 = new LabResult
                 {
-                    PatientUserId = primary.Id,
+                    PatientRecordId = patient.Id,
                     Encounter = ownedEncounterFcm,
                     AccessionNumber = "DRMC-LAB-2025-0451",
                     TestName = "Complete Blood Count (CBC) with Platelet Count",
                     Category = LabCategory.Hematology,
-                    CollectedAt = DateTime.UtcNow.AddMonths(-6),
-                    ReleasedAt = DateTime.UtcNow.AddMonths(-6).AddDays(1),
+                    CollectedAt = clinicalNow.AddMonths(-6),
+                    ReleasedAt = clinicalNow.AddMonths(-6).AddDays(1),
                     Status = "Available",
                     ResultSummary = "Normal baseline complete blood count.",
                     OrderingPhysician = "Dr. Cristina Ramos, MD, FPAFP",
@@ -533,13 +549,13 @@ public static class DbInitializer
 
                 var urinalysis = new LabResult
                 {
-                    PatientUserId = primary.Id,
+                    PatientRecordId = patient.Id,
                     Encounter = ownedEncounterFcm,
                     AccessionNumber = "DRMC-LAB-2025-0452",
                     TestName = "Routine Urinalysis",
                     Category = LabCategory.UrinalysisFecalysis,
-                    CollectedAt = DateTime.UtcNow.AddMonths(-6),
-                    ReleasedAt = DateTime.UtcNow.AddMonths(-6).AddDays(1),
+                    CollectedAt = clinicalNow.AddMonths(-6),
+                    ReleasedAt = clinicalNow.AddMonths(-6).AddDays(1),
                     Status = "Available",
                     ResultSummary = "Urinalysis parameters within normal limits. Negative for proteinuria and glucosuria.",
                     OrderingPhysician = "Dr. Cristina Ramos, MD, FPAFP",
@@ -557,11 +573,11 @@ public static class DbInitializer
 
                 var hba1c = new LabResult
                 {
-                    PatientUserId = primary.Id,
+                    PatientRecordId = patient.Id,
                     AccessionNumber = "DRMC-LAB-2026-0922",
                     TestName = "HbA1c (Glycated Hemoglobin)",
                     Category = LabCategory.SpecialDiagnostics,
-                    CollectedAt = DateTime.UtcNow.AddDays(-2),
+                    CollectedAt = clinicalNow.AddDays(-2),
                     Status = "In progress",
                     ResultSummary = "Specimen received by laboratory. Analysis currently in progress.",
                     OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP",
@@ -573,7 +589,7 @@ public static class DbInitializer
             }
             else
             {
-                foreach (var lab in db.LabResults.Where(l => l.PatientUserId == primary.Id && l.ClinicalEncounterId == null))
+                foreach (var lab in db.LabResults.Where(l => l.PatientRecordId == patient.Id && l.ClinicalEncounterId == null))
                 {
                     if (lab.AccessionNumber is "DRMC-LAB-2026-0814" or "DRMC-LAB-2026-0815" or "DRMC-LAB-2026-0790") lab.Encounter = ownedEncounterIm;
                     if (lab.AccessionNumber is "DRMC-LAB-2025-0451" or "DRMC-LAB-2025-0452") lab.Encounter = ownedEncounterFcm;
@@ -582,11 +598,11 @@ public static class DbInitializer
 
             // Exact dose times are child rows (PrescriptionId + DoseTime is unique), not inferred
             // from free-text Frequency. These are read-only clinical orders in the current portal.
-            if (!db.Prescriptions.Any(p => p.PatientUserId == primary.Id))
+            if (!db.Prescriptions.Any(p => p.PatientRecordId == patient.Id))
             {
                 var rx1 = new Prescription
                 {
-                    PatientUserId = primary.Id,
+                    PatientRecordId = patient.Id,
                     RxNumber = "DRMC-RX-2026-3819",
                     GenericName = "Metformin Hydrochloride",
                     BrandName = "Glucophage",
@@ -596,19 +612,19 @@ public static class DbInitializer
                     Instructions = "Take with or immediately after breakfast and dinner to minimize gastrointestinal discomfort.",
                     PrescribingDoctor = "Dr. Arthur Llanos, MD, FPCP",
                     Department = "Internal Medicine",
-                    PrescribedAt = DateTime.UtcNow.AddDays(-18),
-                    ValidUntil = DateTime.UtcNow.AddMonths(6),
+                    PrescribedAt = clinicalNow.AddDays(-18),
+                    ValidUntil = clinicalNow.AddMonths(6),
                     Status = PrescriptionStatus.Active,
                     RefillsTotal = 3,
                     RefillsRemaining = 2,
-                    LastRefillDate = DateTime.UtcNow.AddDays(-18)
+                    LastRefillDate = clinicalNow.AddDays(-18)
                 };
                 rx1.DoseSchedules.Add(new MedicationDoseSchedule { DoseTime = new TimeOnly(8, 0), DisplayOrder = 1 });
                 rx1.DoseSchedules.Add(new MedicationDoseSchedule { DoseTime = new TimeOnly(18, 0), DisplayOrder = 2 });
 
                 var rx2 = new Prescription
                 {
-                    PatientUserId = primary.Id,
+                    PatientRecordId = patient.Id,
                     RxNumber = "DRMC-RX-2026-3820",
                     GenericName = "Losartan Potassium",
                     BrandName = "Cozaar",
@@ -618,18 +634,18 @@ public static class DbInitializer
                     Instructions = "Take consistently every morning with or without food. Do not discontinue without physician advice.",
                     PrescribingDoctor = "Dr. Arthur Llanos, MD, FPCP",
                     Department = "Internal Medicine",
-                    PrescribedAt = DateTime.UtcNow.AddDays(-18),
-                    ValidUntil = DateTime.UtcNow.AddMonths(6),
+                    PrescribedAt = clinicalNow.AddDays(-18),
+                    ValidUntil = clinicalNow.AddMonths(6),
                     Status = PrescriptionStatus.Active,
                     RefillsTotal = 3,
                     RefillsRemaining = 1,
-                    LastRefillDate = DateTime.UtcNow.AddDays(-2)
+                    LastRefillDate = clinicalNow.AddDays(-2)
                 };
                 rx2.DoseSchedules.Add(new MedicationDoseSchedule { DoseTime = new TimeOnly(8, 0), DisplayOrder = 1 });
 
                 var rx3 = new Prescription
                 {
-                    PatientUserId = primary.Id,
+                    PatientRecordId = patient.Id,
                     RxNumber = "DRMC-RX-2026-2104",
                     GenericName = "Ascorbic Acid + Zinc",
                     BrandName = "Cecon Plus",
@@ -639,8 +655,8 @@ public static class DbInitializer
                     Instructions = "Daily nutritional immune support supplement.",
                     PrescribingDoctor = "Dr. Cristina Ramos, MD, FPAFP",
                     Department = "Family & Community Medicine",
-                    PrescribedAt = DateTime.UtcNow.AddMonths(-1),
-                    ValidUntil = DateTime.UtcNow.AddMonths(5),
+                    PrescribedAt = clinicalNow.AddMonths(-1),
+                    ValidUntil = clinicalNow.AddMonths(5),
                     Status = PrescriptionStatus.Active,
                     RefillsTotal = 3,
                     RefillsRemaining = 3
@@ -652,7 +668,7 @@ public static class DbInitializer
             }
             else
             {
-                foreach (var rx in db.Prescriptions.Where(p => p.PatientUserId == primary.Id).Include(p => p.DoseSchedules))
+                foreach (var rx in db.Prescriptions.Where(p => p.PatientRecordId == patient.Id).Include(p => p.DoseSchedules))
                 {
                     if (rx.DoseSchedules.Count > 0) continue;
                     if (rx.RxNumber is "DRMC-RX-2026-3819")
@@ -668,15 +684,15 @@ public static class DbInitializer
             }
 
             // Allergies are separate patient-owned safety records displayed with medications.
-            if (!db.PatientAllergies.Any(a => a.PatientUserId == primary.Id))
+            if (!db.PatientAllergies.Any(a => a.PatientRecordId == patient.Id))
             {
                 db.PatientAllergies.Add(new PatientAllergy
                 {
-                    PatientUserId = primary.Id,
+                    PatientRecordId = patient.Id,
                     Allergen = "Penicillin & Beta-lactam Antibiotics",
                     Reaction = "Urticarial skin rash, facial itching, and mild lip swelling.",
                     Severity = AllergySeverity.Moderate,
-                    RecordedAt = DateTime.UtcNow.AddYears(-2)
+                    RecordedAt = clinicalNow.AddYears(-2)
                 });
             }
 
@@ -687,5 +703,6 @@ public static class DbInitializer
 
             db.SaveChanges();
         }
+        transaction.Commit();
     }
 }
