@@ -35,13 +35,13 @@ public class MedicationsController : Controller
 
         var prescriptions = await _db.Prescriptions
             .Include(p => p.DoseSchedules)
-            .Where(p => p.PatientUserId == user.Id)
+            .Where(p => p.Patient.PortalUserId == user.Id)
             .OrderByDescending(p => p.Status == PrescriptionStatus.Active)
             .ThenByDescending(p => p.PrescribedAt)
             .ToListAsync();
 
         var allergies = await _db.PatientAllergies
-            .Where(a => a.PatientUserId == user.Id)
+            .Where(a => a.Patient.PortalUserId == user.Id)
             .ToListAsync();
 
         var model = new MedicationsIndexViewModel
@@ -62,7 +62,7 @@ public class MedicationsController : Controller
         if (user is null) return Challenge();
 
         var rx = await _db.Prescriptions
-            .FirstOrDefaultAsync(p => p.Id == id && p.PatientUserId == user.Id);
+            .FirstOrDefaultAsync(p => p.Id == id && p.Patient.PortalUserId == user.Id);
 
         if (rx is null)
         {

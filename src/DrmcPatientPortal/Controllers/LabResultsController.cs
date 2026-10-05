@@ -40,7 +40,7 @@ public class LabResultsController : Controller
 
         var query = _db.LabResults
             .Include(l => l.Items)
-            .Where(l => l.PatientUserId == user.Id)
+            .Where(l => l.Patient.PortalUserId == user.Id)
             .AsQueryable();
 
         if (category.HasValue)
@@ -55,7 +55,7 @@ public class LabResultsController : Controller
             query = query.Where(l => l.TestName.ToLower().Contains(s) || l.AccessionNumber.ToLower().Contains(s));
         }
 
-        var today = DateTime.Today;
+        var today = ClinicalClock.Today;
 
         if (dateRange == "30d")
         {
@@ -94,7 +94,7 @@ public class LabResultsController : Controller
             }
         }
 
-        var allCount = await _db.LabResults.CountAsync(l => l.PatientUserId == user.Id);
+        var allCount = await _db.LabResults.CountAsync(l => l.Patient.PortalUserId == user.Id);
 
         var results = await query
             .OrderByDescending(l => l.CollectedAt)
@@ -125,7 +125,7 @@ public class LabResultsController : Controller
 
         var result = await _db.LabResults
             .Include(l => l.Items)
-            .FirstOrDefaultAsync(l => l.Id == id && l.PatientUserId == user.Id);
+            .FirstOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id);
 
         if (result is null)
         {

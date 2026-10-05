@@ -125,13 +125,13 @@ builder.Services.AddRazorPages(options =>
 
 var app = builder.Build();
 
-// Seed the database with development/review patient data (safe: only in Development).
+// Fixtures require explicit opt-in and an already migrated, empty business schema.
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    DbInitializer.Initialize(db, userManager);
+    DbInitializer.Initialize(db, userManager, app.Configuration);
 }
 
 // Configure the HTTP request pipeline.

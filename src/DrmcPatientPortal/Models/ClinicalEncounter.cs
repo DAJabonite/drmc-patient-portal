@@ -3,8 +3,8 @@ namespace DrmcPatientPortal.Models;
 public class ClinicalEncounter
 {
     public int Id { get; set; }
-    public string PatientUserId { get; set; } = string.Empty;
-    public ApplicationUser Patient { get; set; } = null!;
+    public int PatientRecordId { get; set; }
+    public PatientRecord Patient { get; set; } = null!;
 
     public string EncounterReference { get; set; } = string.Empty; // e.g. "DRMC-ENC-2026-1104"
     public DateTime EncounterDate { get; set; }

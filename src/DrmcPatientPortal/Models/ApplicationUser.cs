@@ -34,8 +34,5 @@ public class ApplicationUser : IdentityUser
 
     // Navigation collections
     public ICollection<PatientIdDocument> IdDocuments { get; set; } = new List<PatientIdDocument>();
-    public ICollection<LabResult> LabResults { get; set; } = new List<LabResult>();
-    public ICollection<ClinicalEncounter> Encounters { get; set; } = new List<ClinicalEncounter>();
-    public ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();
-    public ICollection<PatientAllergy> Allergies { get; set; } = new List<PatientAllergy>();
+    public PatientRecord? PatientRecord { get; set; }
 }

@@ -8,6 +8,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     : IdentityDbContext<ApplicationUser>(options)
 {
     public DbSet<Doctor> Doctors => Set<Doctor>();
+    public DbSet<PatientRecord> PatientRecords => Set<PatientRecord>();
     public DbSet<PublicAdvisory> PublicAdvisories => Set<PublicAdvisory>();
     
     // Patient clinical records
@@ -25,6 +26,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         base.OnModelCreating(builder);
         builder.UseCollation("Latin1_General_100_BIN2");
 
+        builder.Entity<PatientRecord>(e =>
+        {
+            e.Property(x => x.HospitalNumber).HasMaxLength(450).UseCollation("Latin1_General_100_CI_AS");
+            e.HasIndex(x => x.HospitalNumber).IsUnique();
+            e.HasIndex(x => x.PortalUserId).IsUnique();
+            e.HasOne(x => x.PortalUser).WithOne(x => x.PatientRecord)
+                .HasForeignKey<PatientRecord>(x => x.PortalUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
         builder.Entity<Doctor>(e =>
         {
             e.HasIndex(x => x.Department);
@@ -39,15 +49,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             e.HasOne(x => x.Patient)
                 .WithMany(u => u.LabResults)
-                .HasForeignKey(x => x.PatientUserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasForeignKey(x => x.PatientRecordId)
+                .OnDelete(DeleteBehavior.NoAction);
 
             e.HasOne(x => x.Encounter)
                 .WithMany(x => x.LabResults)
                 .HasForeignKey(x => x.ClinicalEncounterId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
 
-            e.HasIndex(x => x.PatientUserId);
+            e.HasIndex(x => x.PatientRecordId);
             e.HasIndex(x => x.ClinicalEncounterId);
             e.HasIndex(x => x.AccessionNumber);
         });
@@ -56,9 +66,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             e.HasOne(x => x.Patient)
                 .WithMany(x => x.Encounters)
-                .HasForeignKey(x => x.PatientUserId)
-                .OnDelete(DeleteBehavior.Cascade);
-            e.HasIndex(x => x.PatientUserId);
+                .HasForeignKey(x => x.PatientRecordId)
+                .OnDelete(DeleteBehavior.NoAction);
+            e.HasIndex(x => x.PatientRecordId);
             e.HasIndex(x => x.EncounterReference).IsUnique();
         });
 
@@ -74,10 +84,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             e.HasOne(x => x.Patient)
                 .WithMany(u => u.Prescriptions)
-                .HasForeignKey(x => x.PatientUserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasForeignKey(x => x.PatientRecordId)
+                .OnDelete(DeleteBehavior.NoAction);
 
-            e.HasIndex(x => x.PatientUserId);
+            e.HasIndex(x => x.PatientRecordId);
             e.HasIndex(x => x.RxNumber).IsUnique();
         });
 
@@ -94,10 +104,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             e.HasOne(x => x.Patient)
                 .WithMany(u => u.Allergies)
-                .HasForeignKey(x => x.PatientUserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasForeignKey(x => x.PatientRecordId)
+                .OnDelete(DeleteBehavior.NoAction);
 
-            e.HasIndex(x => x.PatientUserId);
+            e.HasIndex(x => x.PatientRecordId);
         });
 
         builder.Entity<AuditLog>(e =>
