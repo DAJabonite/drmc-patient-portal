@@ -4,6 +4,7 @@
 @inject IStringLocalizer<SharedResource> Loc
 @{
     var signedIn = SignInManager.IsSignedIn(User);
+    var isAdminArea = ViewContext.RouteData.Values["area"]?.ToString() == "Admin";
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
@@ -17,43 +18,46 @@
     var malasakitActive = currentController == "Malasakit";
 }
 
+@if (!isAdminArea)
+{
 <nav class="mobile-tab-bar d-lg-none" aria-label="Primary navigation">
     <div class="mobile-tab-inner @(signedIn ? "mobile-tab-inner-authenticated" : "mobile-tab-inner-public")">
         @if (signedIn)
         {
-            <a class="mobile-tab-item @(homeActive ? "active" : null)" aria-current="@(homeActive ? "page" : null)" asp-controller="Patient" asp-action="Home">
+            <a class="mobile-tab-item @(homeActive ? "active" : null)" aria-current="@(homeActive ? "page" : null)" asp-area="" asp-controller="Patient" asp-action="Home">
                 <i class="bi bi-house" aria-hidden="true"></i>
                 <span>@Loc["Mobile_Home"]</span>
             </a>
         }
         else
         {
-            <a class="mobile-tab-item @(homeActive ? "active" : null)" aria-current="@(homeActive ? "page" : null)" asp-controller="Home" asp-action="Index">
+            <a class="mobile-tab-item @(homeActive ? "active" : null)" aria-current="@(homeActive ? "page" : null)" asp-area="" asp-controller="Home" asp-action="Index">
                 <i class="bi bi-house" aria-hidden="true"></i>
                 <span>@Loc["Mobile_Home"]</span>
             </a>
         }
         @if (signedIn)
         {
-            <a class="mobile-tab-item @(encountersActive ? "active" : null)" aria-current="@(encountersActive ? "page" : null)" asp-controller="Visits" asp-action="Index">
+            <a class="mobile-tab-item @(encountersActive ? "active" : null)" aria-current="@(encountersActive ? "page" : null)" asp-area="" asp-controller="Visits" asp-action="Index">
                 <i class="bi bi-journal-medical" aria-hidden="true"></i>
                 <span>@Loc["Mobile_Encounters"]</span>
             </a>
-            <a class="mobile-tab-item @(resultsActive ? "active" : null)" aria-current="@(resultsActive ? "page" : null)" asp-controller="LabResults" asp-action="Index">
+            <a class="mobile-tab-item @(resultsActive ? "active" : null)" aria-current="@(resultsActive ? "page" : null)" asp-area="" asp-controller="LabResults" asp-action="Index">
                 <i class="bi bi-file-earmark-medical" aria-hidden="true"></i>
                 <span>@Loc["Mobile_Results"]</span>
             </a>
-            <a class="mobile-tab-item @(medicationActive ? "active" : null)" aria-current="@(medicationActive ? "page" : null)" asp-controller="Medications" asp-action="Index">
+            <a class="mobile-tab-item @(medicationActive ? "active" : null)" aria-current="@(medicationActive ? "page" : null)" asp-area="" asp-controller="Medications" asp-action="Index">
                 <i class="bi bi-capsule" aria-hidden="true"></i>
                 <span>@Loc["Mobile_Medication"]</span>
             </a>
         }
-        <a class="mobile-tab-item @(malasakitActive ? "active" : null)" aria-current="@(malasakitActive ? "page" : null)" aria-label="@Loc["Nav_FinancialAssistance"]" asp-controller="Malasakit" asp-action="Index">
+        <a class="mobile-tab-item @(malasakitActive ? "active" : null)" aria-current="@(malasakitActive ? "page" : null)" aria-label="@Loc["Nav_FinancialAssistance"]" asp-area="" asp-controller="Malasakit" asp-action="Index">
             <img class="mobile-tab-icon" src="~/images/malasakit-nav-logo.png" alt="" aria-hidden="true" />
             <span>@Loc["Mobile_Malasakit"]</span>
         </a>
     </div>
 </nav>
+}
 
 <div class="offcanvas offcanvas-end mobile-utility-sheet" tabindex="-1" id="mobileUtilityMenu" aria-labelledby="mobileUtilityMenuLabel">
     <div class="offcanvas-header">
@@ -64,12 +68,16 @@
         <section class="mobile-utility-section" aria-labelledby="mobileHospitalServicesHeading">
             <h3 class="mobile-utility-heading" id="mobileHospitalServicesHeading">@Loc["Mobile_HospitalServices"]</h3>
             <div class="mobile-more-grid">
-                <a class="mobile-more-link" asp-controller="Directory" asp-action="Index"><i class="bi bi-person-badge" aria-hidden="true"></i><span>@Loc["Nav_Directory"]</span></a>
-                <a class="mobile-more-link" asp-controller="Home" asp-action="OpdGuide"><i class="bi bi-signpost-split" aria-hidden="true"></i><span>@Loc["Nav_OpdGuide"]</span></a>
-                <a class="mobile-more-link" asp-controller="Advisories" asp-action="Index"><i class="bi bi-megaphone" aria-hidden="true"></i><span>@Loc["Nav_Advisories"]</span></a>
+                <a class="mobile-more-link" asp-area="" asp-controller="Directory" asp-action="Index"><i class="bi bi-person-badge" aria-hidden="true"></i><span>@Loc["Nav_Directory"]</span></a>
+                <a class="mobile-more-link" asp-area="" asp-controller="Home" asp-action="OpdGuide"><i class="bi bi-signpost-split" aria-hidden="true"></i><span>@Loc["Nav_OpdGuide"]</span></a>
+                <a class="mobile-more-link" asp-area="" asp-controller="Advisories" asp-action="Index"><i class="bi bi-megaphone" aria-hidden="true"></i><span>@Loc["Nav_Advisories"]</span></a>
                 @if (signedIn)
                 {
-                    <a class="mobile-more-link" asp-controller="Patient" asp-action="Audit"><i class="bi bi-shield-check" aria-hidden="true"></i><span>@Loc["Nav_Audit"]</span></a>
+                    <a class="mobile-more-link" asp-area="" asp-controller="Patient" asp-action="Audit"><i class="bi bi-shield-check" aria-hidden="true"></i><span>@Loc["Nav_Audit"]</span></a>
+                }
+                @if (User.IsInRole("Admin"))
+                {
+                    <a class="mobile-more-link" asp-area="Admin" asp-controller="Home" asp-action="Index"><i class="bi bi-clipboard-check" aria-hidden="true"></i><span>Administration</span></a>
                 }
             </div>
         </section>
@@ -77,17 +85,17 @@
         <details class="mobile-menu-section">
             <summary><i class="bi bi-translate" aria-hidden="true"></i><span>@Loc["Nav_Language"]</span></summary>
             <div class="mobile-language-list">
-                <form asp-controller="Home" asp-action="SetLanguage" method="post">
+                <form asp-area="" asp-controller="Home" asp-action="SetLanguage" method="post">
                     <input type="hidden" name="culture" value="en" />
                     <input type="hidden" name="returnUrl" value="@currentUrl" />
                     <button type="submit" class="mobile-language-option @(currentCulture.StartsWith("en") ? "active" : null)">English</button>
                 </form>
-                <form asp-controller="Home" asp-action="SetLanguage" method="post">
+                <form asp-area="" asp-controller="Home" asp-action="SetLanguage" method="post">
                     <input type="hidden" name="culture" value="fil" />
                     <input type="hidden" name="returnUrl" value="@currentUrl" />
                     <button type="submit" class="mobile-language-option @(currentCulture.StartsWith("fil") ? "active" : null)">Filipino</button>
                 </form>
-                <form asp-controller="Home" asp-action="SetLanguage" method="post">
+                <form asp-area="" asp-controller="Home" asp-action="SetLanguage" method="post">
                     <input type="hidden" name="culture" value="ceb" />
                     <input type="hidden" name="returnUrl" value="@currentUrl" />
                     <button type="submit" class="mobile-language-option @(currentCulture.StartsWith("ceb") ? "active" : null)">Cebuano / Bisaya</button>

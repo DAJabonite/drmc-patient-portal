@@ -1,0 +1,8 @@
+@model AdminDetails
+@if (Model.Context is not null) { <partial name="_Context" model="Model.Context" /> }
+<dl class="row">
+    @foreach (var field in Model.Fields) { <dt class="col-sm-3 text-break">@field.Label</dt><dd class="col-sm-9 text-break" style="white-space:pre-wrap">@field.Value</dd> }
+</dl>
+@if (Model.Dependents.Count > 0) {
+    <dl class="row">@foreach (var count in Model.Dependents) { <dt class="col-sm-3">@count.Key</dt><dd class="col-sm-9">@count.Value</dd> }</dl>
+}

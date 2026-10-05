@@ -1,0 +1,19 @@
+@model LabInput
+@{ var doctors = (IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewData["Doctors"]!; }
+<input asp-for="RowVersion" type="hidden" />
+<div class="row g-3">
+    <div class="col-md-6"><label asp-for="AccessionNumber" class="form-label"></label><input asp-for="AccessionNumber" class="form-control" /><span asp-validation-for="AccessionNumber" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="TestName" class="form-label"></label><input asp-for="TestName" class="form-control" /><span asp-validation-for="TestName" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Category" class="form-label"></label><select asp-for="Category" asp-items="Html.GetEnumSelectList<LabCategory>()" class="form-select"></select><span asp-validation-for="Category" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Status" class="form-label"></label><select asp-for="Status" class="form-select"><option>Available</option><option>In progress</option><option>Pending Verification</option></select><span asp-validation-for="Status" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="CollectedAt" class="form-label"></label><input asp-for="CollectedAt" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="CollectedAt" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="ReleasedAt" class="form-label"></label><input asp-for="ReleasedAt" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="ReleasedAt" class="text-danger"></span></div>
+    <div class="col-12"><label asp-for="ClinicalEncounterId" class="form-label"></label><select asp-for="ClinicalEncounterId" asp-items="@((IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewData["Encounters"]!)" class="form-select"><option value="">Unassigned</option></select><span asp-validation-for="ClinicalEncounterId" class="text-danger"></span></div>
+</div>
+<fieldset class="mt-3"><legend class="h6">Ordering physician</legend><partial name="_Physician" model="@(new PhysicianForm(Model, doctors))" /></fieldset>
+<fieldset class="mt-3"><legend class="h6">Pathologist</legend><partial name="_Physician" model="@(new PhysicianForm(Model.Pathologist, doctors, "Pathologist."))" /></fieldset>
+<div class="row g-3 mt-1">
+    <div class="col-12"><label asp-for="ResultSummary" class="form-label"></label><textarea asp-for="ResultSummary" class="form-control"></textarea><span asp-validation-for="ResultSummary" class="text-danger"></span></div>
+    <div class="col-12"><label asp-for="PerformingUnit" class="form-label"></label><input asp-for="PerformingUnit" class="form-control" /><span asp-validation-for="PerformingUnit" class="text-danger"></span></div>
+    <div class="col-12"><label asp-for="ClinicalNotes" class="form-label"></label><textarea asp-for="ClinicalNotes" class="form-control"></textarea><span asp-validation-for="ClinicalNotes" class="text-danger"></span></div>
+</div>

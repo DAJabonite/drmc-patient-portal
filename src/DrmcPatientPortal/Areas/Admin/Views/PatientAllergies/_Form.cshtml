@@ -1,0 +1,8 @@
+@model AllergyInput
+<input asp-for="RowVersion" type="hidden" />
+<div class="row g-3">
+    <div class="col-12"><label asp-for="Allergen" class="form-label"></label><input asp-for="Allergen" class="form-control" /><span asp-validation-for="Allergen" class="text-danger"></span></div>
+    <div class="col-12"><label asp-for="Reaction" class="form-label"></label><textarea asp-for="Reaction" class="form-control"></textarea><span asp-validation-for="Reaction" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Severity" class="form-label"></label><select asp-for="Severity" asp-items="Html.GetEnumSelectList<AllergySeverity>()" class="form-select"></select><span asp-validation-for="Severity" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="RecordedAt" class="form-label"></label><input asp-for="RecordedAt" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="RecordedAt" class="text-danger"></span></div>
+</div>

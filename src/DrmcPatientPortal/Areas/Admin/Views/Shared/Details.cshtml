@@ -1,0 +1,13 @@
+@model AdminDetails
+@{ ViewData["Title"] = Model.Title; var indexContext = ViewContext.RouteData.Values["controller"]?.ToString() == "Patients" ? null : Model.Context?.RouteId; }
+<section class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between gap-2 mb-3"><h1 class="h3">@Model.Title #@Model.Id</h1><a asp-area="Admin" asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-pencil" aria-hidden="true"></i> Edit</a></div>
+    <partial name="_Fields" model="Model" />
+    @if (ViewContext.RouteData.Values["controller"]?.ToString() == "Patients")
+    { <a asp-area="Admin" asp-action="Link" asp-route-id="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-link-45deg" aria-hidden="true"></i> Verified portal link</a> }
+    @if (ViewContext.RouteData.Values["controller"]?.ToString() == "LabResults")
+    { <a asp-controller="LabResultItems" asp-area="Admin" asp-action="Index" asp-route-contextId="@indexContext" asp-route-contextId="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-list-check" aria-hidden="true"></i> Lab items</a> }
+    @if (ViewContext.RouteData.Values["controller"]?.ToString() == "Prescriptions")
+    { <a asp-controller="MedicationDoseSchedules" asp-area="Admin" asp-action="Index" asp-route-contextId="@indexContext" asp-route-contextId="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-clock" aria-hidden="true"></i> Dose schedules</a> }
+    <a asp-area="Admin" asp-action="Index" asp-route-contextId="@indexContext" class="btn btn-outline-secondary">Back</a>
+</section>

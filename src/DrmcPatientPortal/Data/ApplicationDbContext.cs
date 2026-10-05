@@ -19,12 +19,49 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MedicationDoseSchedule> MedicationDoseSchedules => Set<MedicationDoseSchedule>();
     public DbSet<PatientAllergy> PatientAllergies => Set<PatientAllergy>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
     public DbSet<PatientIdDocument> PatientIdDocuments => Set<PatientIdDocument>();
+
+    private void GuardAuditHistory()
+    {
+        ChangeTracker.DetectChanges();
+        if (ChangeTracker.Entries().Any(e => (e.Entity is AuditLog or AdminAuditLog) &&
+            e.State is EntityState.Modified or EntityState.Deleted))
+            throw new InvalidOperationException("Audit history is append-only.");
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        GuardAuditHistory();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        GuardAuditHistory();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
         builder.UseCollation("Latin1_General_100_BIN2");
+
+        foreach (var type in new[] { typeof(Doctor), typeof(PublicAdvisory), typeof(ClinicalEncounter),
+                     typeof(LabResult), typeof(LabResultItem), typeof(Prescription),
+                     typeof(MedicationDoseSchedule), typeof(PatientAllergy) })
+            builder.Entity(type).Property<byte[]>("RowVersion").IsRequired().IsRowVersion();
+
+        builder.Entity<AdminAuditLog>(e =>
+        {
+            e.HasIndex(x => x.TimestampUtc);
+            e.HasIndex(x => x.SubjectPatientId);
+            e.Property(x => x.ActorId).HasMaxLength(450);
+            e.Property(x => x.ActorEmail).HasMaxLength(256);
+            e.Property(x => x.Action).HasMaxLength(100);
+            e.Property(x => x.Entity).HasMaxLength(100);
+            e.Property(x => x.RecordKey).HasMaxLength(450);
+        });
 
         builder.Entity<PatientRecord>(e =>
         {

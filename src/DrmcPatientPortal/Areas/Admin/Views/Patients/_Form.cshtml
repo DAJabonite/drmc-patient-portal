@@ -1,0 +1,7 @@
+@model PatientInput
+<input asp-for="RowVersion" type="hidden" />
+<div class="row g-3">
+    <div class="col-12"><label asp-for="FullName" class="form-label"></label><input asp-for="FullName" class="form-control" /><span asp-validation-for="FullName" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="DateOfBirth" class="form-label"></label><input asp-for="DateOfBirth" type="date" class="form-control" /><span asp-validation-for="DateOfBirth" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="HospitalNumber" class="form-label"></label><input asp-for="HospitalNumber" class="form-control" /><span asp-validation-for="HospitalNumber" class="text-danger"></span></div>
+</div>

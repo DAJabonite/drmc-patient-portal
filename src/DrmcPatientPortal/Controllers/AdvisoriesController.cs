@@ -69,8 +69,9 @@ public class AdvisoriesController : Controller
         }
 
         // Increment view count
-        advisory.ViewCount++;
-        await _db.SaveChangesAsync();
+        await _db.PublicAdvisories.Where(a => a.Id == advisory.Id && a.ViewCount < int.MaxValue)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(a => a.ViewCount, a => a.ViewCount + 1));
+        if (advisory.ViewCount < int.MaxValue) advisory.ViewCount++;
 
         var related = await _db.PublicAdvisories
             .Where(a => a.Id != advisory.Id)

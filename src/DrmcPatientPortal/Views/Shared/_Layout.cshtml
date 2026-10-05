@@ -9,6 +9,7 @@
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
     var signedIn = SignInManager.IsSignedIn(User);
+    var isAdminArea = ViewContext.RouteData.Values["area"]?.ToString() == "Admin";
     var isHome = currentController == "Home" && currentAction == "Index";
     var isDashboard = currentController == "Patient" && currentAction == "Home";
     var isMalasakit = currentController == "Malasakit";
@@ -29,7 +30,7 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/DrmcPatientPortal.styles.css" asp-append-version="true" />
 </head>
-<body class="has-mobile-navigation">
+<body class="@(isAdminArea ? null : "has-mobile-navigation")">
     <a class="skip-link" href="#main-content">Skip to main content</a>
 
     <header class="masthead d-none d-lg-block" role="banner">
@@ -48,21 +49,21 @@
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="langDropdown">
                         <li>
-                            <form asp-controller="Home" asp-action="SetLanguage" method="post">
+                            <form asp-area="" asp-controller="Home" asp-action="SetLanguage" method="post">
                                 <input type="hidden" name="culture" value="en" />
                                 <input type="hidden" name="returnUrl" value="@currentUrl" />
                                 <button type="submit" class="dropdown-item @(currentCulture.StartsWith("en") ? "active" : null)">English</button>
                             </form>
                         </li>
                         <li>
-                            <form asp-controller="Home" asp-action="SetLanguage" method="post">
+                            <form asp-area="" asp-controller="Home" asp-action="SetLanguage" method="post">
                                 <input type="hidden" name="culture" value="fil" />
                                 <input type="hidden" name="returnUrl" value="@currentUrl" />
                                 <button type="submit" class="dropdown-item @(currentCulture.StartsWith("fil") ? "active" : null)">Filipino</button>
                             </form>
                         </li>
                         <li>
-                            <form asp-controller="Home" asp-action="SetLanguage" method="post">
+                            <form asp-area="" asp-controller="Home" asp-action="SetLanguage" method="post">
                                 <input type="hidden" name="culture" value="ceb" />
                                 <input type="hidden" name="returnUrl" value="@currentUrl" />
                                 <button type="submit" class="dropdown-item @(currentCulture.StartsWith("ceb") ? "active" : null)">Cebuano / Bisaya</button>
@@ -96,19 +97,23 @@
             <ul class="navbar-nav flex-row align-items-center gap-1 me-auto">
                 @if (signedIn)
                 {
-                    <li class="nav-item"><a class="nav-link @(homeActive ? "active" : null)" aria-current="@(homeActive ? "page" : null)" asp-controller="Patient" asp-action="Home">@Loc["Nav_Home"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(homeActive ? "active" : null)" aria-current="@(homeActive ? "page" : null)" asp-area="" asp-controller="Patient" asp-action="Home">@Loc["Nav_Home"]</a></li>
                 }
                 else
                 {
-                    <li class="nav-item"><a class="nav-link @(homeActive ? "active" : null)" aria-current="@(homeActive ? "page" : null)" asp-controller="Home" asp-action="Index">@Loc["Nav_Home"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(homeActive ? "active" : null)" aria-current="@(homeActive ? "page" : null)" asp-area="" asp-controller="Home" asp-action="Index">@Loc["Nav_Home"]</a></li>
                 }
                 @if (signedIn)
                 {
-                    <li class="nav-item"><a class="nav-link @(isEncounters ? "active" : null)" aria-current="@(isEncounters ? "page" : null)" asp-controller="Visits" asp-action="Index">@Loc["Nav_Encounters"]</a></li>
-                    <li class="nav-item"><a class="nav-link @(isResults ? "active" : null)" aria-current="@(isResults ? "page" : null)" asp-controller="LabResults" asp-action="Index">@Loc["Nav_Results"]</a></li>
-                    <li class="nav-item"><a class="nav-link @(isMedications ? "active" : null)" aria-current="@(isMedications ? "page" : null)" asp-controller="Medications" asp-action="Index">@Loc["Nav_Medication"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(isEncounters ? "active" : null)" aria-current="@(isEncounters ? "page" : null)" asp-area="" asp-controller="Visits" asp-action="Index">@Loc["Nav_Encounters"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(isResults ? "active" : null)" aria-current="@(isResults ? "page" : null)" asp-area="" asp-controller="LabResults" asp-action="Index">@Loc["Nav_Results"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(isMedications ? "active" : null)" aria-current="@(isMedications ? "page" : null)" asp-area="" asp-controller="Medications" asp-action="Index">@Loc["Nav_Medication"]</a></li>
                 }
-                <li class="nav-item"><a class="nav-link @(isMalasakit ? "active" : null)" aria-current="@(isMalasakit ? "page" : null)" asp-controller="Malasakit" asp-action="Index">@Loc["Nav_FinancialAssistance"]</a></li>
+                <li class="nav-item"><a class="nav-link @(isMalasakit ? "active" : null)" aria-current="@(isMalasakit ? "page" : null)" asp-area="" asp-controller="Malasakit" asp-action="Index">@Loc["Nav_FinancialAssistance"]</a></li>
+                @if (User.IsInRole("Admin"))
+                {
+                    <li class="nav-item"><a class="nav-link" asp-area="Admin" asp-controller="Home" asp-action="Index">Administration</a></li>
+                }
             </ul>
             <div class="nav-account d-flex align-items-center gap-2">
                 @if (!signedIn)
@@ -187,7 +192,7 @@
 
             <div class="footer-bottom d-flex justify-content-between flex-wrap gap-2">
                 <span>&copy; @DateTime.Now.Year DRMC. All content is in the public domain unless otherwise stated.</span>
-                <span><a asp-controller="Home" asp-action="Privacy">Privacy Statement</a> · <a asp-controller="Home" asp-action="Privacy" asp-fragment="portal-terms">Terms of Use</a></span>
+                <span><a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy Statement</a> · <a asp-area="" asp-controller="Home" asp-action="Privacy" asp-fragment="portal-terms">Terms of Use</a></span>
             </div>
         </div>
     </footer>

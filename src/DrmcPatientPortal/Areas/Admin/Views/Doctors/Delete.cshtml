@@ -1,0 +1,11 @@
+@model Doctor
+@{ ViewData["Title"] = "Delete doctor"; }
+<section class="container py-4">
+    <h1 class="h3">Delete doctor</h1>
+    @if (TempData["AdminError"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+    <partial name="_Details" model="Model" />
+    <form asp-area="Admin" asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-flex gap-2 mt-4">
+        <input type="hidden" name="rowVersion" value="@ViewData["RowVersion"]" />
+        <button class="btn btn-danger" type="submit"><i class="bi bi-trash" aria-hidden="true"></i> Delete</button><a asp-area="Admin" asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</section>

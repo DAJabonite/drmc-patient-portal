@@ -1,0 +1,17 @@
+@model AuditPage
+@{ ViewData["Title"] = "Staff audit history"; }
+<section class="container py-4">
+    <h1 class="h3">Staff audit history</h1>
+    <form method="get" class="row g-2 my-3">
+        <div class="col-md-8"><label for="search" class="visually-hidden">Search</label><input id="search" name="search" type="search" value="@Model.Search" maxlength="450" class="form-control" /></div>
+        <div class="col"><label for="patientId" class="visually-hidden">Patient reference</label><input id="patientId" name="patientId" type="number" min="1" value="@Model.PatientId" placeholder="Patient reference" class="form-control" /></div>
+        <div class="col-auto"><button class="btn btn-outline-primary" aria-label="Search" title="Search"><i class="bi bi-search" aria-hidden="true"></i></button></div>
+    </form>
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    <div class="table-responsive"><table class="table align-middle admin-audit-table"><thead><tr><th>UTC time</th><th>Actor</th><th>Action</th><th>Record</th><th>Patient reference</th><th>Changed fields</th></tr></thead><tbody>
+    @foreach (var row in Model.Rows)
+    { <tr><td class="text-nowrap"><a asp-area="Admin" asp-action="Details" asp-route-id="@row.Id">@row.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss")</a></td><td class="text-break">@row.ActorEmail</td><td>@row.Action</td><td class="text-break">@row.Entity #@row.RecordKey</td><td>@row.SubjectPatientId</td><td class="text-break">@row.ChangedFields</td></tr> }
+    </tbody></table></div>
+    @if (Model.Total == 0) { <p>No audit entries found.</p> }
+    <nav class="d-flex justify-content-between align-items-center" aria-label="Audit pages"><a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-patientId="@Model.PatientId" asp-route-page="@(Model.Page - 1)" class="btn btn-outline-secondary @(Model.Page == 1 ? "disabled" : "")" aria-label="Previous page"><i class="bi bi-chevron-left" aria-hidden="true"></i></a><span>Page @Model.Page of @Model.Pages</span><a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-patientId="@Model.PatientId" asp-route-page="@(Model.Page + 1)" class="btn btn-outline-secondary @(Model.Page == Model.Pages ? "disabled" : "")" aria-label="Next page"><i class="bi bi-chevron-right" aria-hidden="true"></i></a></nav>
+</section>

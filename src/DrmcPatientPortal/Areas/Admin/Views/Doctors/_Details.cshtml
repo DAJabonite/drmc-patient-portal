@@ -1,0 +1,13 @@
+@model Doctor
+<dl class="row mb-0">
+    <dt class="col-sm-3">Name</dt><dd class="col-sm-9 text-break">@Model.FullName</dd>
+    <dt class="col-sm-3">Title</dt><dd class="col-sm-9 text-break">@Model.Title</dd>
+    <dt class="col-sm-3">Department</dt><dd class="col-sm-9">@Model.Department</dd>
+    <dt class="col-sm-3">Subspecialty</dt><dd class="col-sm-9 text-break">@Model.SubSpecialty</dd>
+    <dt class="col-sm-3">Clinic room</dt><dd class="col-sm-9 text-break">@Model.ClinicRoom</dd>
+    <dt class="col-sm-3">Schedule</dt><dd class="col-sm-9 text-break">@Model.ScheduleSummary</dd>
+    <dt class="col-sm-3">Teleconsultation</dt><dd class="col-sm-9">@(Model.OffersTeleconsult ? "Yes" : "No")</dd>
+    <dt class="col-sm-3">Biography</dt><dd class="col-sm-9 text-break">@Model.Biography</dd>
+    <dt class="col-sm-3">Masked PRC license</dt><dd class="col-sm-9 text-break">@Model.PrcLicenseMasked</dd>
+    <dt class="col-sm-3">Active</dt><dd class="col-sm-9">@(Model.IsActive ? "Yes" : "No")</dd>
+</dl>
