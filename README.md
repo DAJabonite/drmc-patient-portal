@@ -40,6 +40,21 @@ dotnet run --project src/DrmcPatientPortal --launch-profile http
 
 Open `http://localhost:5095`. Startup requires a reachable, fully migrated database in every environment; migrations are not applied automatically. No database reset is needed for ordinary startup. SQL Server creates the schema with `Latin1_General_100_BIN2` collation; an existing empty database must already use that collation. The initial migration does not transfer SQLite data.
 
+### macOS, Linux, or Docker SQL Server
+
+Without SQL Server Express, run SQL Server Developer edition from `compose.yaml` (requires Docker; Apple silicon uses amd64 emulation):
+
+```bash
+export MSSQL_SA_PASSWORD='<local-only strong password>'
+docker compose up -d --wait
+export ASPNETCORE_ENVIRONMENT=Development
+export ConnectionStrings__DefaultConnection="Server=localhost,1433;Database=DrmcPatientPortal_Dev;User Id=sa;Password=$MSSQL_SA_PASSWORD;Encrypt=True;TrustServerCertificate=True"
+dotnet ef database update --project src/DrmcPatientPortal -- --environment Development
+dotnet run --project src/DrmcPatientPortal --launch-profile http
+```
+
+The container binds to `127.0.0.1` only and keeps data in the `drmc-sqlserver` volume; `docker compose down -v` deletes it. Use this password for local development only.
+
 ### Configuration
 
 | Setting | Purpose |
@@ -54,6 +69,7 @@ Open `http://localhost:5095`. Startup requires a reachable, fully migrated datab
 | `Imports__StagingPath` | Encrypted import staging; default the current user's local application-data DRMC/ImportStaging directory |
 | `Notifications__Email__*` | SMTP host, port, TLS, credentials and sender |
 | `Notifications__Sms__*` | HTTPS webhook, API key and sender ID |
+| `Identity__RequireConfirmedAccount` | Require a confirmed email before sign-in; default `true`. In Development the confirmation link is written to the console |
 
 Relative storage paths resolve from the application content root. Restrict directory permissions to the app identity and approved operators. Retain the key ring across releases and back it up together with patient documents and the database.
 
@@ -67,6 +83,19 @@ Back up the database before applying or reversing migrations. New migrations are
 4. `20261005070928_AdminImportLeases`: adds nullable worker ownership and lease fields plus a status/lease index, without rewriting existing rows. Downgrade is blocked when import history exists.
 
 The initial SQL Server migration is `20260929123803_InitialSqlServer`. During upgrade, drain and stop older builds, apply migrations, then run only the new build. Older workers cannot respect the lease protocol.
+
+## Testing
+
+`tests/DrmcPatientPortal.Tests` holds integration tests that boot the app with `WebApplicationFactory`. Each run creates a uniquely named SQL Server database, applies migrations, seeds synthetic fixtures and drops it afterwards. Point the tests at a server whose login may create databases, without a database name:
+
+```bash
+export DRMC_TEST_SQLSERVER="Server=localhost,1433;User Id=sa;Password=$MSSQL_SA_PASSWORD;Encrypt=True;TrustServerCertificate=True"
+dotnet test DrmcPatientPortal.slnx
+```
+
+The tests cover public pages, the sign-in requirement, patient record isolation, the not-found page, the Content Security Policy, email confirmation and readable lab categories. GitHub Actions (`.github/workflows/ci.yml`) runs the build with warnings as errors, a pending-migration check and these tests on every pull request against a SQL Server service container.
+
+Views must not use inline `<script>` blocks or `on*` attributes, because the Content Security Policy only allows `script-src 'self'`. Put scripts in `wwwroot/js`; use `data-auto-submit` on a form control or `data-confirm="..."` on a form for the common cases.
 
 ## Development Fixtures
 

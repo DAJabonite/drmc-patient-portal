@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using DrmcPatientPortal.Models;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DrmcPatientPortal.Controllers;
@@ -68,6 +69,17 @@ public class HomeController : Controller
         }
 
         return RedirectToAction(nameof(Index));
+    }
+
+    // Re-executed by UseStatusCodePagesWithReExecute for empty 4xx/5xx responses; accepts any method.
+    [Route("Home/StatusCode")]
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult StatusCodePage(int? code)
+    {
+        var reExecute = HttpContext.Features.Get<IStatusCodeReExecuteFeature>();
+        var statusCode = reExecute is not null && code is >= 400 and <= 599 ? code.Value : StatusCodes.Status404NotFound;
+        Response.StatusCode = statusCode;
+        return View("StatusCode", statusCode);
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

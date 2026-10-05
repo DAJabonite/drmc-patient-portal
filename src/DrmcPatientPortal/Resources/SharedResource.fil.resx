@@ -153,4 +153,15 @@
   <data name="OpdGuide_PanelHeading" xml:space="preserve"><value>Sequence ng Pagbisita sa {0}</value></data>
   <data name="OpdGuide_PreRegistrationNode" xml:space="preserve"><value>Pre</value></data>
   <data name="OpdGuide_DestinationsLabel" xml:space="preserve"><value>Mga posibleng destinasyon</value></data>
+
+  <!-- Status pages and sign-in confirmation -->
+  <data name="Status_NotFoundTitle" xml:space="preserve"><value>Hindi mahanap ang pahina</value></data>
+  <data name="Status_NotFoundBody" xml:space="preserve"><value>Ang pahina o rekord na hinahanap mo ay wala o hindi available sa iyong account.</value></data>
+  <data name="Status_GenericTitle" xml:space="preserve"><value>May nagkaproblema</value></data>
+  <data name="Status_GenericBody" xml:space="preserve"><value>Hindi namin natapos ang iyong kahilingan. Pakisubukang muli.</value></data>
+  <data name="Status_ErrorCode" xml:space="preserve"><value>Error {0}</value></data>
+  <data name="Status_Home" xml:space="preserve"><value>Pumunta sa home page</value></data>
+  <data name="Status_Dashboard" xml:space="preserve"><value>Pumunta sa aking dashboard</value></data>
+  <data name="Login_EmailNotConfirmed" xml:space="preserve"><value>Kumpirmahin muna ang iyong email address bago mag-sign in. Tingnan ang iyong inbox para sa confirmation link.</value></data>
+  <data name="Login_ResendConfirmation" xml:space="preserve"><value>Ipadala muli ang confirmation email</value></data>
 </root>

@@ -36,7 +36,7 @@
             <strong>2FA is actively protecting your patient portal account.</strong>
         </div>
         <form method="post" asp-page-handler="Disable2fa" class="d-inline"
-              onsubmit="return confirm('Are you sure you want to disable 2FA security?');">
+              data-confirm="Are you sure you want to disable 2FA security?">
             <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">Disable 2FA</button>
         </form>
     </div>

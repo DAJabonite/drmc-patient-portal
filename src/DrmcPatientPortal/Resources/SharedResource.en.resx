@@ -34,7 +34,7 @@
   <data name="Nav_Home"><value>Home</value></data>
   <data name="Nav_Encounters"><value>Visits</value></data>
   <data name="Nav_Results"><value>Labs</value></data>
-  <data name="Nav_Medication"><value>Medication</value></data>
+  <data name="Nav_Medication"><value>Medications</value></data>
   <data name="Nav_FinancialAssistance"><value>Malasakit</value></data>
   <data name="Nav_OpdGuide"><value>OPD Guide</value></data>
   <data name="Nav_Directory"><value>Doctors &amp; Clinics</value></data>
@@ -49,7 +49,7 @@
   <data name="Mobile_Home"><value>Home</value></data>
   <data name="Mobile_Encounters"><value>Visits</value></data>
   <data name="Mobile_Results"><value>Labs</value></data>
-  <data name="Mobile_Medication"><value>Medication</value></data>
+  <data name="Mobile_Medication"><value>Medications</value></data>
   <data name="Mobile_Malasakit"><value>Malasakit</value></data>
   <data name="Mobile_Menu"><value>Menu</value></data>
   <data name="Mobile_HospitalServices"><value>Hospital services</value></data>
@@ -153,4 +153,15 @@
   <data name="OpdGuide_PanelHeading" xml:space="preserve"><value>{0} Visit Sequence</value></data>
   <data name="OpdGuide_PreRegistrationNode" xml:space="preserve"><value>Pre</value></data>
   <data name="OpdGuide_DestinationsLabel" xml:space="preserve"><value>Possible destinations</value></data>
+
+  <!-- Status pages and sign-in confirmation -->
+  <data name="Status_NotFoundTitle" xml:space="preserve"><value>Page not found</value></data>
+  <data name="Status_NotFoundBody" xml:space="preserve"><value>The page or record you're looking for doesn't exist, or it isn't available to your account.</value></data>
+  <data name="Status_GenericTitle" xml:space="preserve"><value>Something went wrong</value></data>
+  <data name="Status_GenericBody" xml:space="preserve"><value>We couldn't complete your request. Please try again.</value></data>
+  <data name="Status_ErrorCode" xml:space="preserve"><value>Error {0}</value></data>
+  <data name="Status_Home" xml:space="preserve"><value>Go to home page</value></data>
+  <data name="Status_Dashboard" xml:space="preserve"><value>Go to my dashboard</value></data>
+  <data name="Login_EmailNotConfirmed" xml:space="preserve"><value>Confirm your email address before signing in. Check your inbox for the confirmation link.</value></data>
+  <data name="Login_ResendConfirmation" xml:space="preserve"><value>Resend confirmation email</value></data>
 </root>

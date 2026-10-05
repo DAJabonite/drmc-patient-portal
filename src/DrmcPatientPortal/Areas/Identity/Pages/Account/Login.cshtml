@@ -19,6 +19,13 @@
 
             <form id="account" method="post">
                 <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+                @if (Model.EmailNotConfirmed)
+                {
+                    <div class="alert alert-warning small mb-3" role="alert" id="email-not-confirmed">
+                        @Loc["Login_EmailNotConfirmed"]
+                        <a asp-page="./ResendEmailConfirmation" class="alert-link d-block mt-1">@Loc["Login_ResendConfirmation"]</a>
+                    </div>
+                }
 
                 <div class="mb-3">
                     <label asp-for="Input.Email" class="form-label">Email address</label>
@@ -73,21 +80,5 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script>
-        document.querySelectorAll('.pw-toggle').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var targetId = btn.getAttribute('aria-controls');
-                var input = document.getElementById(targetId);
-                if (!input) return;
-                var isPassword = input.getAttribute('type') === 'password';
-                input.setAttribute('type', isPassword ? 'text' : 'password');
-                btn.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
-                btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
-                var icon = btn.querySelector('i');
-                if (icon) {
-                    icon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
-                }
-            });
-        });
-    </script>
+    <script src="~/js/password-toggle.js" asp-append-version="true"></script>
 }

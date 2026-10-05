@@ -1,0 +1,24 @@
+@model int
+@{
+    var notFound = Model == 404;
+    ViewData["Title"] = notFound ? Loc["Status_NotFoundTitle"] : Loc["Status_GenericTitle"];
+    var signedIn = User.Identity?.IsAuthenticated == true;
+}
+
+<section class="section py-5 bg-light">
+    <div class="container">
+        <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4 mx-auto" style="max-width: 36rem;">
+            <i class="bi @(notFound ? "bi-signpost-split" : "bi-exclamation-triangle") fs-1 text-muted mb-2" aria-hidden="true"></i>
+            <p class="text-muted small mb-1">@Loc["Status_ErrorCode", Model]</p>
+            <h1 class="h4 fw-bold text-dark">@ViewData["Title"]</h1>
+            <p class="text-muted mb-4">@(notFound ? Loc["Status_NotFoundBody"] : Loc["Status_GenericBody"])</p>
+            <div class="d-flex flex-wrap justify-content-center gap-2">
+                @if (signedIn)
+                {
+                    <a href="/Patient/Home" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold">@Loc["Status_Dashboard"]</a>
+                }
+                <a href="/" class="btn @(signedIn ? "btn-outline-drmc" : "btn-primary-drmc") rounded-pill px-4 fw-semibold">@Loc["Status_Home"]</a>
+            </div>
+        </div>
+    </div>
+</section>

@@ -153,4 +153,15 @@
   <data name="OpdGuide_PanelHeading" xml:space="preserve"><value>Sequence sa Pagbisita sa {0}</value></data>
   <data name="OpdGuide_PreRegistrationNode" xml:space="preserve"><value>Pre</value></data>
   <data name="OpdGuide_DestinationsLabel" xml:space="preserve"><value>Posibleng mga destinasyon</value></data>
+
+  <!-- Status pages and sign-in confirmation -->
+  <data name="Status_NotFoundTitle" xml:space="preserve"><value>Wala makit-i ang panid</value></data>
+  <data name="Status_NotFoundBody" xml:space="preserve"><value>Ang panid o rekord nga imong gipangita wala o dili available sa imong account.</value></data>
+  <data name="Status_GenericTitle" xml:space="preserve"><value>Adunay sayop nga nahitabo</value></data>
+  <data name="Status_GenericBody" xml:space="preserve"><value>Wala namo mahuman ang imong hangyo. Palihug sulayi pag-usab.</value></data>
+  <data name="Status_ErrorCode" xml:space="preserve"><value>Error {0}</value></data>
+  <data name="Status_Home" xml:space="preserve"><value>Adto sa home page</value></data>
+  <data name="Status_Dashboard" xml:space="preserve"><value>Adto sa akong dashboard</value></data>
+  <data name="Login_EmailNotConfirmed" xml:space="preserve"><value>Kumpirmaha una ang imong email address sa dili pa mo-sign in. Tan-awa ang imong inbox para sa confirmation link.</value></data>
+  <data name="Login_ResendConfirmation" xml:space="preserve"><value>Ipadala pag-usab ang confirmation email</value></data>
 </root>

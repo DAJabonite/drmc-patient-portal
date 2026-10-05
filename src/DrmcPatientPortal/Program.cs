@@ -29,8 +29,10 @@ builder.Services.AddLocalization(options => options.ResourcesPath = "Resources")
 // Extended ApplicationUser with Identity & 2FA support
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
-    options.SignIn.RequireConfirmedAccount = false;
-    options.SignIn.RequireConfirmedEmail = false;
+    // Email confirmation defaults on; set Identity:RequireConfirmedAccount=false only for isolated local review.
+    var requireConfirmedAccount = builder.Configuration.GetValue("Identity:RequireConfirmedAccount", true);
+    options.SignIn.RequireConfirmedAccount = requireConfirmedAccount;
+    options.SignIn.RequireConfirmedEmail = requireConfirmedAccount;
     options.User.RequireUniqueEmail = true;
     options.Password.RequiredLength = 8;
     options.Password.RequireNonAlphanumeric = true;
@@ -201,6 +203,7 @@ else
     app.UseHsts();
 }
 
+app.UseStatusCodePagesWithReExecute("/Home/StatusCode", "?code={0}");
 app.UseHttpsRedirection();
 app.Use(async (context, next) =>
 {
@@ -215,7 +218,7 @@ app.Use(async (context, next) =>
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
     context.Response.Headers["X-Frame-Options"] = "SAMEORIGIN";
     context.Response.Headers["Referrer-Policy"] = "no-referrer";
-    context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'";
+    context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'";
     await next();
 });
 app.UseRouting();
@@ -265,3 +268,5 @@ foreach (var endpoint in ((Microsoft.AspNetCore.Routing.IEndpointRouteBuilder)ap
 }
 
 app.Run();
+
+public partial class Program;
