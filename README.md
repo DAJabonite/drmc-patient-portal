@@ -1,137 +1,180 @@
 # DRMC Patient Portal
 
-## Overview
+ASP.NET Core MVC and Identity application for Davao Regional Medical Center. Public pages provide hospital information, doctor listings and advisories. Patients can register, manage encrypted ID documents and view their linked hospital records. The staff Admin area manages patient records, clinical availability, public content and reconciled imports.
 
-The DRMC Patient Portal is a patient-facing ASP.NET Core application for Davao Regional Medical Center. It provides public hospital information, patient registration and sign-in, and access to locally stored patient records.
+This application is not connected to hospital clinical, pharmacy, billing or social-work systems. Demonstration records, schedules and guidance require institutional approval before production use.
 
-This repository is a development and review implementation. It is not connected to DRMC clinical, pharmacy, billing, social-work, or security systems. Seeded patients, records, schedules, notices, and guidance must be institutionally verified before production use.
+## Prerequisites
 
-## Current Features
+- .NET 10 SDK and Entity Framework Core command-line tool 10.0.11.
+- SQL Server; SQL Server Express with Windows authentication is suitable for local development.
+- Windows when opting into current-user DPAPI protection.
+- Writable, persistent directories for encryption keys, encrypted patient documents and import staging, outside Git and the web root.
+- SMTP and HTTPS SMS delivery configuration outside Development. Development sends delivery details to the console.
 
-- Public home page, doctor and department directory, OPD guide, advisories, privacy notice, terms, and official DRMC links.
-- Malasakit service guides for DSWD, DRMC Malasakit, DOH-MAIFIP, and PhilHealth requirements.
-- Patient registration with government-ID selection, optional local OCR or photo capture, manual entry, privacy consent, and residential address.
-- Identity sign-in, lockout, profile management, authenticator-based two-factor authentication, and an owner-scoped encrypted ID wallet.
-- Authenticated dashboard with visits and care notes, laboratory results, medications, dose schedules, allergy information, and patient access history.
-- English, Filipino, and Cebuano shared navigation and guidance resources.
+The application uses EF Core 10, SQL Server, Bootstrap 5, Razor Pages, Identity, HtmlSanitizer and ExcelDataReader. Local OCR uses Tesseract; authenticator enrollment uses QRCoder.
 
-## Tech Stack
+## Local Setup
 
-- .NET 10, ASP.NET Core MVC, Razor Pages, and ASP.NET Core Identity
-- Entity Framework Core 10 with Microsoft SQL Server and versioned migrations
-- ASP.NET Core Data Protection for document encryption and temporary upload tokens
-- Tesseract for local ID OCR and QRCoder for authenticator enrollment
-- Local Bootstrap, Bootstrap Icons, jQuery, and unobtrusive validation assets
-
-## Project Structure
-
-```text
-src/DrmcPatientPortal/
-  Areas/Identity/Pages/  Registration, sign-in, profile, ID wallet, and 2FA
-  Controllers/           Public and authenticated MVC endpoints
-  Data/                  DbContext, development initializer, and EF migrations
-  Models/                Persisted entities, view inputs, and static catalogs
-  Resources/             English, Filipino, and Cebuano shared strings
-  Services/              Audit, encrypted documents, OCR, QR, and notifications
-  Views/                 Razor views for current public and patient journeys
-  wwwroot/               Local CSS, JavaScript, images, and vendor libraries
-run.ps1                  Local development launcher
-```
-
-## Requirements
-
-- .NET 10 SDK
-- PowerShell when using `run.ps1`
-- A Microsoft SQL Server instance (SQL Server Express works for local development)
-- Writable persistent directories for Data Protection keys and patient documents
-
-## Setup
-
-From the repository root:
+From the repository root, restore and build:
 
 ```powershell
 dotnet restore DrmcPatientPortal.slnx
 dotnet build DrmcPatientPortal.slnx -c Release
+dotnet tool install --global dotnet-ef --version 10.0.11
 ```
 
-Configuration defaults are in `src/DrmcPatientPortal/appsettings.json`. Use environment variables with double underscores for nested settings and a secret store for credentials.
+Use the installed matching tool if it is already available. Development configuration targets `localhost\SQLEXPRESS`, database `DrmcPatientPortal_Dev`, with integrated authentication. Deployment configuration contains placeholders. Environment variables use double underscores for nested settings; keep credentials in user-secrets or a deployment secret store, never in tracked configuration.
 
-| Setting | Purpose |
-|---|---|
-| `ConnectionStrings__DefaultConnection` | SQL Server connection; Development defaults to `localhost\SQLEXPRESS`, database `DrmcPatientPortal_Dev`, using Windows authentication |
-| `DataProtection__KeyRingPath` | Persistent encryption-key directory |
-| `PatientDocuments__RootPath` | Encrypted patient ID document directory |
-| `PatientDocuments__TemporaryPath` | Staged registration upload directory |
-| `PatientDocuments__MaximumFileSizeMb` | Upload size limit; default 10 MB |
-| `PatientDocuments__TemporaryFileLifetimeMinutes` | Temporary upload lifetime; default 30 minutes |
-| `Notifications__Email__*` | SMTP host, port, TLS, credentials, and sender address |
-| `Notifications__Sms__*` | HTTPS webhook endpoint, API key, and sender ID |
-
-Relative storage paths resolve from the application content root. Keep databases, encryption keys, patient documents, and secrets outside Git and outside `wwwroot`.
-
-### Database
-
-The database is Microsoft SQL Server, replacing SQLite. Local setup requires a running SQL Server instance, permission to create the development database, and the EF command-line tool matching EF Core 10.0.11.
-
-`ConnectionStrings:DefaultConnection` lives in `src/DrmcPatientPortal/appsettings.json`, with the local connection in `appsettings.Development.json`. The base configuration contains placeholders for deployment. To use a different server, override `ConnectionStrings__DefaultConnection` in your environment; store credentials outside Git. The local connection uses encryption and trusts the development server certificate.
-
-Create a fresh SQL Server schema from the repository root:
+Before applying migrations, check the resolved connection, including any environment or user-secret overrides. For local development, use only the following target:
 
 ```powershell
+$env:ASPNETCORE_ENVIRONMENT = 'Development'
+$env:ConnectionStrings__DefaultConnection = 'Server=localhost\SQLEXPRESS;Database=DrmcPatientPortal_Dev;Integrated Security=True;Encrypt=True;TrustServerCertificate=True'
+$target = [System.Data.SqlClient.SqlConnectionStringBuilder]::new($env:ConnectionStrings__DefaultConnection)
+Write-Host "Migration target: server=$($target.DataSource); database=$($target.InitialCatalog)"
+if ($target.DataSource -ne 'localhost\SQLEXPRESS' -or $target.InitialCatalog -ne 'DrmcPatientPortal_Dev') { throw 'Unexpected database target' }
 dotnet ef database update --project src/DrmcPatientPortal -- --environment Development
-```
-
-The command creates the database with `Latin1_General_100_BIN2` collation; an existing empty target must already use that collation. Then start the app with the command in **Run** below. In Development, `DbInitializer` applies migrations and creates the seed data automatically. No SQLite `.db` file is needed; the initial SQL Server migration creates a new database schema and does not transfer existing SQLite data.
-
-Existing development databases must be recreated and reseeded to adopt the stable fixture identifiers. Back up any development data you need before recreating the database.
-
-## Run
-
-```powershell
-.\run.ps1
-```
-
-Or run the project directly:
-
-```powershell
 dotnet run --project src/DrmcPatientPortal --launch-profile http
 ```
 
-Open `http://localhost:5095`.
+Open `http://localhost:5095`. Startup requires a reachable, fully migrated database in every environment; migrations are not applied automatically. No database reset is needed for ordinary startup. SQL Server creates the schema with `Latin1_General_100_BIN2` collation; an existing empty database must already use that collation. The initial migration does not transfer SQLite data.
 
-Development applies migrations, seeds review data, and logs email and SMS deliveries to the console. Local review accounts are:
+### Configuration
 
-| Account | Password | Dataset |
-|---|---|---|
-| `patient@drmc.doh.gov.ph` | `P@tient2026` | Seeded visits, laboratory results, medications, and allergies |
-| `juan@drmc.doh.gov.ph` | `J@uan2026` | Empty clinical record for empty-state review |
+| Setting | Purpose |
+| --- | --- |
+| `ConnectionStrings__DefaultConnection` | SQL Server connection |
+| `DataProtection__KeyRingPath` | Persistent key directory; default `App_Data/DataProtectionKeys` |
+| `DataProtection__ProtectKeysWithDpapi` | Opt-in Windows current-user protection; default `false` |
+| `PatientDocuments__RootPath` | Encrypted patient ID document directory |
+| `PatientDocuments__TemporaryPath` | Temporary encrypted registration uploads |
+| `PatientDocuments__MaximumFileSizeMb` | Document upload limit; default 10 MB |
+| `PatientDocuments__TemporaryFileLifetimeMinutes` | Temporary upload lifetime; default 30 minutes |
+| `Imports__StagingPath` | Encrypted import staging; default the current user's local application-data DRMC/ImportStaging directory |
+| `Notifications__Email__*` | SMTP host, port, TLS, credentials and sender |
+| `Notifications__Sms__*` | HTTPS webhook, API key and sender ID |
 
-Never expose these accounts in a production installation.
+Relative storage paths resolve from the application content root. Restrict directory permissions to the app identity and approved operators. Retain the key ring across releases and back it up together with patient documents and the database.
 
-## Database and Backend Reference
+### Database Migrations
 
-`Data/ApplicationDbContext.cs` defines the active model. The principal relationships are:
+Back up the database before applying or reversing migrations. New migrations are:
 
-- `ApplicationUser` owns `PatientIdDocument` metadata; encrypted document files are stored outside SQL Server.
-- `ClinicalEncounter` belongs to a patient and represents OPD, emergency, or inpatient visits.
-- `LabResult` belongs to a patient, can reference a `ClinicalEncounter`, and owns `LabResultItem` rows.
-- `Prescription` belongs to a patient and owns `MedicationDoseSchedule` rows; `PatientAllergy` is patient-scoped.
-- `AuditLog` records actual patient access and account activity.
-- `Doctor` and `PublicAdvisory` provide database-backed public content; OPD and Malasakit guidance is application content.
+1. `20261004153506_PatientRegistryOwnership`: moves clinical ownership to independent hospital patient records. Existing clinical IDs, values, relationships and account ownership are preserved. One linked record is created per distinct clinical owner; no hospital numbers or birth dates are invented. Empty names abort the migration. Accounts without clinical data remain unlinked. Downgrade aborts if clinical rows belong to unlinked patient records.
+2. `20261004162211_AdminConcurrencyAudit`: adds concurrency tokens and staff audit storage. Downgrade removes staff history and concurrency columns; do not use it on a database whose history must be retained.
+3. `20261005042232_AdminImportBatches`: stores operational import-job metadata. Downgrade is blocked when import history exists.
+4. `20261005070928_AdminImportLeases`: adds nullable worker ownership and lease fields plus a status/lease index, without rewriting existing rows. Downgrade is blocked when import history exists.
 
-The single initial SQL Server migration is `20260929123803_InitialSqlServer`. It replaces the SQLite-generated migration history.
+The initial SQL Server migration is `20260929123803_InitialSqlServer`. During upgrade, drain and stop older builds, apply migrations, then run only the new build. Older workers cannot respect the lease protocol.
 
-Production does not run `DbInitializer` or apply migrations automatically. Back up the database, encryption keys, and patient documents, then apply migrations before starting a release:
+## Development Fixtures
+
+Fixtures are opt-in, Development-only and have no default emails or passwords. Configure all four credentials locally when initializing an empty schema:
 
 ```powershell
-dotnet tool install --global dotnet-ef --version 10.0.11
-dotnet ef database update --project src/DrmcPatientPortal
+$env:DevelopmentFixtures__Enabled = 'true'
+$env:DevelopmentFixtures__Primary__Email = Read-Host 'Synthetic populated account email'
+$env:DevelopmentFixtures__Primary__Password = Read-Host 'Synthetic populated account password'
+$env:DevelopmentFixtures__Empty__Email = Read-Host 'Synthetic empty account email'
+$env:DevelopmentFixtures__Empty__Password = Read-Host 'Synthetic empty account password'
+dotnet run --project src/DrmcPatientPortal --launch-profile http
 ```
 
-## Important Development Notes
+Alternatively, run `dotnet user-secrets init --project src/DrmcPatientPortal` and set the same colon-separated keys with `dotnet user-secrets set --project src/DrmcPatientPortal`. Remove the fixture settings after initialization.
 
-- `DbInitializer` is a development-only fixture loader. It does not reset existing passwords or patient-entered data.
-- Outside Development, valid SMTP and HTTPS SMS settings are required at startup.
-- Preserve owner-scoped queries, antiforgery validation, encrypted document storage, and audit logging when integrating real backends.
-- Public advisory HTML requires a trusted publishing workflow.
-- Clinical records and public guidance are local review data until authoritative DRMC integrations and institutional approval are in place.
+Stable fixture account IDs are retained. Seeding runs transactionally only when all business tables, both audit histories and import history are empty. It skips the entire batch when data exists; it never restores deleted records, overwrites staff changes, resets existing passwords or repairs relationships.
+
+## First Admin
+
+1. Apply migrations, start the Development app and register an account using Identity registration. Bootstrap never creates an account or password.
+2. Confirm the email using the Development confirmation link printed in the console, or the configured delivery service outside Development.
+3. In account management, enroll an authenticator and enable two-factor authentication.
+4. Set the following variables for that existing account and restart:
+
+```powershell
+$env:AdminBootstrap__Enabled = 'true'
+$env:AdminBootstrap__Email = Read-Host 'Confirmed staff account email'
+dotnet run --project src/DrmcPatientPortal --launch-profile http
+```
+
+5. Remove both bootstrap variables, restart, sign out and sign in with an authenticator code. Open `/Admin`.
+
+The Admin role is created idempotently at startup. Bootstrap only promotes an existing, email-confirmed, 2FA-enabled, non-locked-out account. Every startup while bootstrap is enabled logs a warning, including when no email is configured.
+
+All Admin endpoints require the Admin role, currently confirmed email, enabled 2FA, a non-locked-out account and an `amr=mfa` sign-in claim. Password-only and remembered-browser sessions do not qualify. Anonymous requests receive the normal Identity login challenge with `ReturnUrl`; authenticated requests failing these rules receive HTTP 403. Select **Forget this browser** under Two-factor authentication, then sign out and sign in with an authenticator code. Admin writes require antiforgery tokens. Startup rejects anonymous Admin endpoints or endpoints missing the Admin policy.
+
+## Admin Area
+
+| Page | Purpose |
+| --- | --- |
+| `/Admin/Patients` | Hospital registry and separately confirmed portal links |
+| `/Admin/Doctors` | Public doctor directory |
+| `/Admin/PublicAdvisories` | Sanitized public advisories |
+| `/Admin/ClinicalEncounters` | Dashboard and visit records |
+| `/Admin/LabResults` | Laboratory availability |
+| `/Admin/LabResultItems` | Staff-only items within a selected lab |
+| `/Admin/Prescriptions` | Medications and refills |
+| `/Admin/MedicationDoseSchedules` | Dose times within a selected prescription |
+| `/Admin/PatientAllergies` | Patient allergies |
+| `/Admin/Audit` | Read-only staff access and change history |
+| `/Admin/Imports` | Templates, uploads, reconciliation and job status |
+
+Lists use server-side search, fixed ordering and 25-row pages. Clinical forms show patient and parent context; edits cannot move records between patients or parents. Stale edits and deletes require review. Deletes with dependent records are blocked with counts. Hospital numbers retain leading zeros, are optional and unique ignoring case when present, and are never generated. Physician choices are stored as text snapshots.
+
+### Account Linking and Audit
+
+Hospital patient records exist independently of portal accounts. Staff verify identity, select one unambiguous email-confirmed account and confirm the check through a dedicated link form. Names, birth dates and similar emails are never automatic identity proof. Unlinking removes clinical access immediately; deleting an account preserves the hospital record and its clinical relationships. Patient ID documents remain account-owned.
+
+Changes and staff audit entries commit together. Registry and clinical audit entries retain field names only, not earlier medical values; they cannot reconstruct prior records. Doctors and PublicAdvisories retain old/new values. Staff clinical views log affected patient references before display; failed audit persistence prevents display. The patient activity page remains unchanged. Both audit tables are append-only through application guards and have no edit/delete endpoints. Database access controls and retention procedures remain an operational responsibility.
+
+General Identity administration, sensitive ID-document metadata, audit tables, migration history and import system metadata have no generic editor. Laboratory item values remain staff-only; the patient laboratory claiming guide is retained. New advisory saves sanitize HTML, but existing legacy HTML is not rewritten; review it before publication. The existing inline-script CSP allowance is unchanged.
+
+## CSV and Excel Imports
+
+Download versioned CSV headers or the nine-sheet workbook from `/Admin/Imports`. CSV targets one `*_v1` template; `.xlsx` targets `Workbook_v1` and fixed named sheets. Preserve the supplied column order. Unknown columns, sheets, Identity fields and arbitrary mappings are rejected. See [Import Templates](docs/import-templates.md) for columns and value formats.
+
+Staff reconcile every source patient group to an existing hospital record or explicitly approve creating a new one. Source keys, names and birth dates are review aids, not automatic matching rules. Child rows also reference a source parent. Imports never link portal accounts, merge records, update existing rows or skip duplicates.
+
+Upload, save mappings, queue a dry run, review errors and proposed counts, then queue approval. Dry run, approval and execution run on the durable worker; requests return to a polling status page. Dry runs write no clinical rows. Approval binds the file hash, mappings and validation version; changes require another dry run. Validation loads existing keys and relationships in bounded set-based queries, and execution checks them again within its transaction. The initiating staff account must remain eligible throughout.
+
+### Limits and Recovery
+
+- Maximum 20 MB and 10,000 data rows across all sheets per batch; preview and reconciliation pages show 25 rows/groups.
+- CSV is strict UTF-8. Workbooks must contain values only; encrypted/OLE files, macros, formulas, defined-name formulas and external links are rejected before parsing.
+- Archive limits: 256 entries, 80 MB expanded total and 40 MB per entry. Hospital numbers and source identifiers must use text cells.
+- Whole-batch business records and per-record audit entries commit atomically. An error rolls everything back; imports are create-only and duplicates block the batch.
+- Queued phases survive restart. Running phases with expired leases fail without replay; live leases are never recovered. Failed uploads must be reviewed, cancelled and uploaded again.
+- Queued phases can be cancelled; running phases cannot. Success and cancellation purge staged content. Unfinished batches expire seven days after upload; operational metadata remains.
+
+Two independently started application processes are supported for overlapped recycle or redeploy, not general horizontal scaling. They must share the same build, database, Windows identity, protection setting, persistent key ring and staging directory. Execution is single-flight across both processes; dry run and approval may overlap. Claims use conditional status/rowversion updates, unique process owners and 60-second leases renewed about every 15 seconds. Completion is fenced by owner, rowversion and a live lease inside the business/audit transaction. A lost lease cannot commit records. No automatic replay or uncertain-commit retry is performed.
+
+For IIS, use persistent shared directories and enable Load User Profile when using current-user DPAPI. Keep the app-pool identity/profile stable. Worker polling is every two seconds; status polling is every three seconds, pauses while the page is hidden and announces status changes through a polite live region.
+
+## Time-Zone Rules
+
+Staff-entered clinical dates/times are Manila wall time stored as `datetime2` without an offset. Patient date filters use explicit Manila today. Advisory publication/effectivity dates and system, audit and import timestamps are UTC. Browser date/time fields preserve additional stored fractional precision when unchanged. Existing clinical timestamps are not shifted; their original time-zone meaning still needs confirmation before any conversion.
+
+## Key Protection and Recovery
+
+`DataProtection:ProtectKeysWithDpapi` defaults to `false`, pending the client's key-protection decision. With the setting off, existing plaintext keys are not converted and new keys remain unprotected at rest, as in the previous release. Non-Development startup warns that keys are unprotected and points here. Directory permissions and protected backups are essential. A protected key ring cannot be used with the setting off: startup rejects it rather than generating a mixture of protected and plaintext keys.
+
+To explicitly opt in on Windows, set `DataProtection__ProtectKeysWithDpapi=true`. Startup converts existing plaintext key secrets atomically, verifies conversion, preserves key IDs and creates no plaintext backup; new keys also use current-user DPAPI. Conversion errors and unsupported platforms fail startup. Turning this on ties the keys to that Windows account and machine. Keep it enabled afterward; switching the flag off does not decrypt or revert keys. Do not run older builds or processes using different settings during conversion.
+
+The same key ring encrypts patient ID documents and temporary document uploads as well as import staging and commands, cookies and tokens. Losing historical keys can make existing documents and unfinished imports unreadable. Copying current-user DPAPI key XML to another machine or account is not a usable recovery method; retain the original recovery identity/profile until a compatible recovery plan is established. Do not reset unreadable import jobs to bypass decryption failures.
+
+The client must choose and approve a protection and backup strategy:
+
+| Option | Operational decision |
+| --- | --- |
+| Certificate-based protection | Securely back up the private key, grant approved app identities access, retain historical keys and test document/import recovery on the destination machine. Requires a separate implementation. |
+| DPAPI-NG with an AD group | Use a supported domain setup and approved group descriptor; review membership, domain recovery and access controls. Requires a separate implementation. |
+| Accept the risk | Explicitly accept plaintext keys protected only by storage controls, or opt into machine/account-bound DPAPI and accept its recovery limitations. Document the choice and recovery responsibilities. |
+
+No portable recovery option is implemented. Any future change must preserve decryption of existing patient documents and queued imports before retiring the old identity. Encryption does not protect against a compromised application identity or database/storage administrator.
+
+## Known Limitations and Client Inputs
+
+Representative source files and expected dataset volume are still needed. Fixed templates do not promise compatibility with arbitrary legacy spreadsheets. Batch limits are safety bounds, not performance guarantees; execution holds one serializable transaction for the whole batch and other writers may cause an atomic failure.
+
+Confirm the meaning of existing clinical timestamps, approve audit/import/document retention and establish key backup/recovery ownership. Departments, OPD and Malasakit guides, privacy/terms, official links and facility instructions remain hard-coded; decide whether they should become managed content. Clinical integrations, authoritative content and institutional deployment approval remain outside this application's current scope.
