@@ -1,0 +1,42 @@
+@page
+@model ConfirmEmailModel
+@{
+    var titleKey = Model.IsConfirmed ? "Verification_ConfirmedTitle" : "Verification_InvalidTitle";
+    ViewData["Title"] = Loc[titleKey];
+    var heading = Model.IsConfirmed
+        ? new EmailVerificationHeading(titleKey, "Verification_ConfirmedLabel", "bi-check2-circle", "is-success")
+        : new EmailVerificationHeading(titleKey, "Verification_NewLinkNeeded", "bi-link-45deg", "is-warning");
+}
+
+<section class="auth-page auth-verification-page">
+    <div class="container">
+        <div class="auth-card auth-verification-card" aria-labelledby="verificationHeading">
+            <partial name="_EmailVerificationHeading" model="heading" />
+            <p class="auth-verification-copy">@Loc[Model.IsConfirmed ? "Verification_ConfirmedBody" : "Verification_InvalidBody"]</p>
+            @if (Model.IsConfirmed)
+            {
+                <a class="btn btn-drmc auth-verification-action" asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">
+                    @Loc["Verification_ContinueSignIn"] <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                </a>
+                <div class="auth-verification-help">
+                    <h2>@Loc["Verification_NextStep"]</h2>
+                    <p>@Loc["Verification_SignInHelp"]</p>
+                </div>
+            }
+            else
+            {
+                <a class="btn btn-drmc auth-verification-action" asp-page="./ResendEmailConfirmation" asp-route-returnUrl="@Model.ReturnUrl">
+                    @Loc["Verification_RequestNewLink"] <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                </a>
+                <div class="auth-verification-secondary">
+                    <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">@Loc["Verification_BackToSignIn"]</a>
+                </div>
+                <div class="auth-verification-help">
+                    <h2>@Loc["Verification_TryAgain"]</h2>
+                    <p>@Loc["Verification_RegistrationEmailHelp"]</p>
+                </div>
+            }
+        </div>
+        <p class="auth-verification-trust"><i class="bi bi-shield-check" aria-hidden="true"></i> @Loc["Verification_PortalName"]</p>
+    </div>
+</section>

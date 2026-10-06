@@ -1,0 +1,33 @@
+@page
+@model RegisterConfirmationModel
+@{
+    ViewData["Title"] = Loc["Verification_CheckEmailTitle"];
+}
+
+<section class="auth-page auth-verification-page">
+    <div class="container">
+        <div class="auth-card auth-verification-card" aria-labelledby="verificationHeading">
+            <partial name="_EmailVerificationHeading" model='new EmailVerificationHeading("Verification_CheckEmailTitle", "Verification_ActionNeeded", "bi-envelope")' />
+            <p class="auth-verification-copy">
+                @Loc["Verification_SentTo"]
+                <strong class="auth-verification-recipient">@Model.Email</strong>
+            </p>
+            <h2>@Loc["Verification_CompleteSetup"]</h2>
+            <ol class="auth-verification-steps">
+                <li>@Loc["Verification_OpenEmail"]</li>
+                <li>@Loc["Verification_SelectLink"]</li>
+            </ol>
+            <a class="btn btn-drmc auth-verification-action" asp-page="./ResendEmailConfirmation" asp-route-returnUrl="@Model.ReturnUrl">
+                @Loc["Verification_SendNewLink"] <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            </a>
+            <div class="auth-verification-secondary">
+                <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">@Loc["Verification_BackToSignIn"]</a>
+            </div>
+            <div class="auth-verification-help">
+                <h2>@Loc["Verification_CannotFindEmail"]</h2>
+                <p>@Loc["Verification_SpamHelp"]</p>
+            </div>
+        </div>
+        <p class="auth-verification-trust"><i class="bi bi-shield-check" aria-hidden="true"></i> @Loc["Verification_PortalName"]</p>
+    </div>
+</section>

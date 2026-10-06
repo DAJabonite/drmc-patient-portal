@@ -1,0 +1,56 @@
+@page
+@model ResendEmailConfirmationModel
+@{
+    var titleKey = Model.RequestSent ? "Verification_CheckInboxTitle" : "Verification_ResendTitle";
+    ViewData["Title"] = Loc[titleKey];
+    var heading = new EmailVerificationHeading(titleKey,
+        Model.RequestSent ? "Verification_RequestReceived" : "Verification_EmailLabelState",
+        Model.RequestSent ? "bi-envelope-check" : "bi-envelope-arrow-up");
+}
+
+<section class="auth-page auth-verification-page">
+    <div class="container">
+        <div class="auth-card auth-verification-card" aria-labelledby="verificationHeading">
+            <partial name="_EmailVerificationHeading" model="heading" />
+            @if (Model.RequestSent)
+            {
+                <p class="auth-verification-copy" role="status">@Loc["Verification_RequestReceivedBody"]</p>
+                <h2>@Loc["Verification_WhatNext"]</h2>
+                <p class="auth-verification-copy">@Loc["Verification_InboxHelp"]</p>
+                <a class="btn btn-drmc auth-verification-action" asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">
+                    @Loc["Verification_BackToSignIn"] <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                </a>
+                <div class="auth-verification-help">
+                    <h2>@Loc["Verification_StillNeedLink"]</h2>
+                    <p><a asp-page="./ResendEmailConfirmation" asp-route-returnUrl="@Model.ReturnUrl">@Loc["Verification_ReturnToForm"]</a></p>
+                </div>
+            }
+            else
+            {
+                <p class="auth-verification-copy">@Loc["Verification_ResendBody"]</p>
+                <form method="post" asp-route-returnUrl="@Model.ReturnUrl">
+                    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+                    <label asp-for="Input.Email" class="form-label">@Loc["Verification_EmailAddress"]</label>
+                    <input asp-for="Input.Email" class="form-control" type="email" autocomplete="email" maxlength="256" required aria-required="true" aria-describedby="verificationEmailHelp verificationEmailError" />
+                    <span asp-validation-for="Input.Email" class="field-validation-error" id="verificationEmailError"></span>
+                    <p class="form-text" id="verificationEmailHelp">@Loc["Verification_EmailHelp"]</p>
+                    <button type="submit" class="btn btn-drmc auth-verification-action">
+                        @Loc["Verification_SendLink"] <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </button>
+                </form>
+                <div class="auth-verification-secondary">
+                    <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">@Loc["Verification_BackToSignIn"]</a>
+                </div>
+                <div class="auth-verification-help">
+                    <h2>@Loc["Verification_AlreadyConfirmed"]</h2>
+                    <p>@Loc["Verification_AlreadyConfirmedHelp"]</p>
+                </div>
+            }
+        </div>
+        <p class="auth-verification-trust"><i class="bi bi-shield-check" aria-hidden="true"></i> @Loc["Verification_PortalName"]</p>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

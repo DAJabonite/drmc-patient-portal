@@ -1,0 +1,10 @@
+@model EmailVerificationHeading
+
+<div class="auth-verification-context">
+    <span>@Loc["Verification_PatientAccount"]</span>
+    <span class="auth-verification-label @Model.Tone">@Loc[Model.StatusKey]</span>
+</div>
+<div class="auth-verification-icon @Model.Tone">
+    <i class="bi @Model.Icon" aria-hidden="true"></i>
+</div>
+<h1 id="verificationHeading">@Loc[Model.TitleKey]</h1>

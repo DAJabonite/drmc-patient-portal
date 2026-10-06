@@ -23,7 +23,7 @@
                 {
                     <div class="alert alert-warning small mb-3" role="alert" id="email-not-confirmed">
                         @Loc["Login_EmailNotConfirmed"]
-                        <a asp-page="./ResendEmailConfirmation" class="alert-link d-block mt-1">@Loc["Login_ResendConfirmation"]</a>
+                        <a asp-page="./ResendEmailConfirmation" asp-route-returnUrl="@Model.ReturnUrl" class="alert-link d-block mt-1">@Loc["Login_ResendConfirmation"]</a>
                     </div>
                 }
 
