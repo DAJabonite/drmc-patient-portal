@@ -107,7 +107,8 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
             // Default login lands on the patient dashboard when no target is set.
-            returnUrl ??= Url.Content("~/Patient/Home");
+            returnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : Url.Content("~/Patient/Home");
+            ReturnUrl = returnUrl;
 
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 

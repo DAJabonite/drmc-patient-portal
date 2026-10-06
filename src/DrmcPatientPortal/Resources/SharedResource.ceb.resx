@@ -165,4 +165,50 @@
   <data name="Status_Dashboard" xml:space="preserve"><value>Adto sa akong dashboard</value></data>
   <data name="Login_EmailNotConfirmed" xml:space="preserve"><value>Kumpirmaha una ang imong email address sa dili pa mo-sign in. Tan-awa ang imong inbox para sa confirmation link.</value></data>
   <data name="Login_ResendConfirmation" xml:space="preserve"><value>Ipadala pag-usab ang confirmation email</value></data>
+
+  <!-- Email verification -->
+  <data name="Verification_PatientAccount" xml:space="preserve"><value>Account sa pasyente</value></data>
+  <data name="Verification_ActionNeeded" xml:space="preserve"><value>Adunay kinahanglan buhaton</value></data>
+  <data name="Verification_EmailLabelState" xml:space="preserve"><value>Pagkumpirma sa email</value></data>
+  <data name="Verification_CheckEmailTitle" xml:space="preserve"><value>Tan-awa ang imong email</value></data>
+  <data name="Verification_SentTo" xml:space="preserve"><value>Nagpadala kami og confirmation link sa</value></data>
+  <data name="Verification_CompleteSetup" xml:space="preserve"><value>Kompletoha ang pag-set up sa imong account</value></data>
+  <data name="Verification_OpenEmail" xml:space="preserve"><value>Ablihi ang email gikan sa Davao Regional Medical Center.</value></data>
+  <data name="Verification_SelectLink" xml:space="preserve"><value>Pilia ang confirmation link, dayon mag-sign in sa portal.</value></data>
+  <data name="Verification_SendNewLink" xml:space="preserve"><value>Pagpadala og bag-ong confirmation link</value></data>
+  <data name="Verification_BackToSignIn" xml:space="preserve"><value>Balik sa pag-sign in</value></data>
+  <data name="Verification_CannotFindEmail" xml:space="preserve"><value>Dili makita ang email?</value></data>
+  <data name="Verification_SpamHelp" xml:space="preserve"><value>Tan-awa ang imong spam o junk folder. Kung wala pa gihapon ang email, pangayo og bag-ong link.</value></data>
+  <data name="Verification_PortalName" xml:space="preserve"><value>Davao Regional Medical Center · Portal sa Pasyente</value></data>
+  <data name="Verification_ResendTitle" xml:space="preserve"><value>Pagpadala og bag-ong confirmation link</value></data>
+  <data name="Verification_ResendBody" xml:space="preserve"><value>Isulod ang email address nga imong gigamit sa pagparehistro sa portal sa pasyente.</value></data>
+  <data name="Verification_EmailAddress" xml:space="preserve"><value>Email address</value></data>
+  <data name="Verification_EmailHelp" xml:space="preserve"><value>Gamita ang email address sa imong account isip pasyente.</value></data>
+  <data name="Verification_EmailRequired" xml:space="preserve"><value>Isulod ang imong email address.</value></data>
+  <data name="Verification_EmailInvalid" xml:space="preserve"><value>Isulod ang balidong email address, pananglitan name@example.com.</value></data>
+  <data name="Verification_SendLink" xml:space="preserve"><value>Pagpadala og confirmation link</value></data>
+  <data name="Verification_AlreadyConfirmed" xml:space="preserve"><value>Nakumpirma na nimo ang imong email?</value></data>
+  <data name="Verification_AlreadyConfirmedHelp" xml:space="preserve"><value>Mahimo kang mobalik sa pag-sign in aron maablihan ang imong account isip pasyente.</value></data>
+  <data name="Verification_CheckInboxTitle" xml:space="preserve"><value>Tan-awa ang imong inbox</value></data>
+  <data name="Verification_RequestReceived" xml:space="preserve"><value>Nadawat ang hangyo</value></data>
+  <data name="Verification_RequestReceivedBody" xml:space="preserve"><value>Kung kini nga email address iya sa account nga kinahanglan kumpirmahon, magpadala kami og bag-ong link.</value></data>
+  <data name="Verification_WhatNext" xml:space="preserve"><value>Unsay sunod buhaton</value></data>
+  <data name="Verification_InboxHelp" xml:space="preserve"><value>Tan-awa ang imong inbox ug spam o junk folder. Kung moabot ang email, pilia ang confirmation link.</value></data>
+  <data name="Verification_StillNeedLink" xml:space="preserve"><value>Kinahanglan pa og laing link?</value></data>
+  <data name="Verification_ReturnToForm" xml:space="preserve"><value>Balik sa confirmation form</value></data>
+  <data name="Verification_ConfirmedTitle" xml:space="preserve"><value>Nakumpirma na ang imong email</value></data>
+  <data name="Verification_ConfirmedLabel" xml:space="preserve"><value>Nakumpirma ang email</value></data>
+  <data name="Verification_ConfirmedBody" xml:space="preserve"><value>Salamat sa pagkumpirma sa imong email address. Mahimo ka nang mag-sign in sa DRMC Patient Portal.</value></data>
+  <data name="Verification_ContinueSignIn" xml:space="preserve"><value>Padayon sa pag-sign in</value></data>
+  <data name="Verification_NextStep" xml:space="preserve"><value>Ang imong sunod nga lakang</value></data>
+  <data name="Verification_SignInHelp" xml:space="preserve"><value>Mag-sign in gamit ang email address ug password nga imong gigamit sa pagparehistro.</value></data>
+  <data name="Verification_InvalidTitle" xml:space="preserve"><value>Dili na balido kini nga link</value></data>
+  <data name="Verification_NewLinkNeeded" xml:space="preserve"><value>Kinahanglan og bag-ong link</value></data>
+  <data name="Verification_InvalidBody" xml:space="preserve"><value>Mahimong dili balido o na-expire na ang confirmation link. Pangayo og bag-ong link aron makompleto ang pagkumpirma sa imong email address.</value></data>
+  <data name="Verification_RequestNewLink" xml:space="preserve"><value>Pangayo og bag-ong link</value></data>
+  <data name="Verification_TryAgain" xml:space="preserve"><value>Kinahanglan mosulay pag-usab?</value></data>
+  <data name="Verification_RegistrationEmailHelp" xml:space="preserve"><value>Isulod ang email address nga imong gigamit sa pagparehistro.</value></data>
+  <data name="Verification_EmailSubject" xml:space="preserve"><value>Kumpirmaha ang imong DRMC email address</value></data>
+  <data name="Verification_EmailIntro" xml:space="preserve"><value>Aron kumpirmahon ang imong email address para sa DRMC Patient Portal, pilia kini nga link:</value></data>
+  <data name="Verification_EmailLinkText" xml:space="preserve"><value>Kumpirmaha ang email address</value></data>
 </root>

@@ -165,4 +165,50 @@
   <data name="Status_Dashboard" xml:space="preserve"><value>Go to my dashboard</value></data>
   <data name="Login_EmailNotConfirmed" xml:space="preserve"><value>Confirm your email address before signing in. Check your inbox for the confirmation link.</value></data>
   <data name="Login_ResendConfirmation" xml:space="preserve"><value>Resend confirmation email</value></data>
+
+  <!-- Email verification -->
+  <data name="Verification_PatientAccount" xml:space="preserve"><value>Patient account</value></data>
+  <data name="Verification_ActionNeeded" xml:space="preserve"><value>Action needed</value></data>
+  <data name="Verification_EmailLabelState" xml:space="preserve"><value>Email verification</value></data>
+  <data name="Verification_CheckEmailTitle" xml:space="preserve"><value>Check your email</value></data>
+  <data name="Verification_SentTo" xml:space="preserve"><value>We sent a confirmation link to</value></data>
+  <data name="Verification_CompleteSetup" xml:space="preserve"><value>Complete your account setup</value></data>
+  <data name="Verification_OpenEmail" xml:space="preserve"><value>Open the email from Davao Regional Medical Center.</value></data>
+  <data name="Verification_SelectLink" xml:space="preserve"><value>Select the confirmation link, then sign in to the portal.</value></data>
+  <data name="Verification_SendNewLink" xml:space="preserve"><value>Send a new confirmation link</value></data>
+  <data name="Verification_BackToSignIn" xml:space="preserve"><value>Back to sign in</value></data>
+  <data name="Verification_CannotFindEmail" xml:space="preserve"><value>Can’t find the email?</value></data>
+  <data name="Verification_SpamHelp" xml:space="preserve"><value>Check your spam or junk folder. If it still hasn’t arrived, request a new link.</value></data>
+  <data name="Verification_PortalName" xml:space="preserve"><value>Davao Regional Medical Center · Patient Portal</value></data>
+  <data name="Verification_ResendTitle" xml:space="preserve"><value>Send a new confirmation link</value></data>
+  <data name="Verification_ResendBody" xml:space="preserve"><value>Enter the email address you used to register for the patient portal.</value></data>
+  <data name="Verification_EmailAddress" xml:space="preserve"><value>Email address</value></data>
+  <data name="Verification_EmailHelp" xml:space="preserve"><value>Use the same email address as your patient account.</value></data>
+  <data name="Verification_EmailRequired" xml:space="preserve"><value>Enter your email address.</value></data>
+  <data name="Verification_EmailInvalid" xml:space="preserve"><value>Enter a valid email address, for example name@example.com.</value></data>
+  <data name="Verification_SendLink" xml:space="preserve"><value>Send confirmation link</value></data>
+  <data name="Verification_AlreadyConfirmed" xml:space="preserve"><value>Already confirmed your email?</value></data>
+  <data name="Verification_AlreadyConfirmedHelp" xml:space="preserve"><value>You can return to sign in to access your patient account.</value></data>
+  <data name="Verification_CheckInboxTitle" xml:space="preserve"><value>Check your inbox</value></data>
+  <data name="Verification_RequestReceived" xml:space="preserve"><value>Request received</value></data>
+  <data name="Verification_RequestReceivedBody" xml:space="preserve"><value>If this email address belongs to an account that needs confirmation, we’ll send a new link.</value></data>
+  <data name="Verification_WhatNext" xml:space="preserve"><value>What to do next</value></data>
+  <data name="Verification_InboxHelp" xml:space="preserve"><value>Check your inbox and spam or junk folder. When the email arrives, select the confirmation link.</value></data>
+  <data name="Verification_StillNeedLink" xml:space="preserve"><value>Still need another link?</value></data>
+  <data name="Verification_ReturnToForm" xml:space="preserve"><value>Return to the confirmation form</value></data>
+  <data name="Verification_ConfirmedTitle" xml:space="preserve"><value>Your email is confirmed</value></data>
+  <data name="Verification_ConfirmedLabel" xml:space="preserve"><value>Email confirmed</value></data>
+  <data name="Verification_ConfirmedBody" xml:space="preserve"><value>Thank you for confirming your email address. You can now sign in to the DRMC Patient Portal.</value></data>
+  <data name="Verification_ContinueSignIn" xml:space="preserve"><value>Continue to sign in</value></data>
+  <data name="Verification_NextStep" xml:space="preserve"><value>Your next step</value></data>
+  <data name="Verification_SignInHelp" xml:space="preserve"><value>Sign in with the email address and password you used when you registered.</value></data>
+  <data name="Verification_InvalidTitle" xml:space="preserve"><value>This link is no longer valid</value></data>
+  <data name="Verification_NewLinkNeeded" xml:space="preserve"><value>New link needed</value></data>
+  <data name="Verification_InvalidBody" xml:space="preserve"><value>The confirmation link may be invalid or expired. Request a new link to finish confirming your email address.</value></data>
+  <data name="Verification_RequestNewLink" xml:space="preserve"><value>Request a new link</value></data>
+  <data name="Verification_TryAgain" xml:space="preserve"><value>Need to try again?</value></data>
+  <data name="Verification_RegistrationEmailHelp" xml:space="preserve"><value>Enter the email address you used when you registered.</value></data>
+  <data name="Verification_EmailSubject" xml:space="preserve"><value>Confirm your DRMC email address</value></data>
+  <data name="Verification_EmailIntro" xml:space="preserve"><value>To confirm your email address for the DRMC Patient Portal, select this link:</value></data>
+  <data name="Verification_EmailLinkText" xml:space="preserve"><value>Confirm email address</value></data>
 </root>

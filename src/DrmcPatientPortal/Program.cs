@@ -159,7 +159,8 @@ builder.Services.AddRazorPages(options =>
         model => model.Filters.Add(new Microsoft.AspNetCore.Mvc.TypeFilterAttribute(typeof(PendingTwoFactorPageFilter))));
     options.Conventions.AddAreaPageApplicationModelConvention("Identity", "/Account/Manage/Disable2fa",
         model => model.Filters.Add(new Microsoft.AspNetCore.Mvc.TypeFilterAttribute(typeof(EnabledTwoFactorPageFilter))));
-    foreach (var page in new[] { "/Account/ResetPassword", "/Account/ConfirmEmail", "/Account/ConfirmEmailChange" })
+    // The local ConfirmEmail page validates its token and renders branded recovery with HTTP 400.
+    foreach (var page in new[] { "/Account/ResetPassword", "/Account/ConfirmEmailChange" })
         options.Conventions.AddAreaPageApplicationModelConvention("Identity", page,
             model => model.Filters.Add(new Microsoft.AspNetCore.Mvc.TypeFilterAttribute(typeof(IdentityLinkPageFilter))));
     options.Conventions.AddAreaPageApplicationModelConvention("Identity", "/Account/Manage/DeletePersonalData",
