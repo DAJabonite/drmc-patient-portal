@@ -6,10 +6,13 @@
         <h1 class="admin-title">Administration</h1>
         <p class="admin-subtitle">Work that needs attention across patient records, public content and imports.</p>
     </div>
-    <div class="admin-page-actions">
-        <a asp-area="Admin" asp-controller="Imports" asp-action="Index" class="btn btn-outline-primary"><i class="bi bi-upload me-1" aria-hidden="true"></i>Import data</a>
-        <a asp-area="Admin" asp-controller="Patients" asp-action="Create" class="btn btn-primary"><i class="bi bi-person-plus me-1" aria-hidden="true"></i>Add patient</a>
-    </div>
+    @if (Model.Counts.ContainsKey("Imports") || Model.Counts.ContainsKey("Patients"))
+    {
+        <div class="admin-page-actions">
+            @if (Model.Counts.ContainsKey("Imports")) { <a asp-area="Admin" asp-controller="Imports" asp-action="Index" class="btn btn-outline-primary"><i class="bi bi-upload me-1" aria-hidden="true"></i>Import data</a> }
+            @if (Model.Counts.ContainsKey("Patients")) { <a asp-area="Admin" asp-controller="Patients" asp-action="Create" class="btn btn-primary"><i class="bi bi-person-plus me-1" aria-hidden="true"></i>Add patient</a> }
+        </div>
+    }
 </div>
 
 <section aria-labelledby="attention-heading">
@@ -26,7 +29,7 @@
     </div>
 </section>
 
-@foreach (var navGroup in AdminNavigation.Sections.Skip(1))
+@foreach (var navGroup in Model.Sections.Where(section => section.Label != "Overview"))
 {
     <section aria-label="@navGroup.Label">
         <div class="admin-section-title"><h2>@navGroup.Label</h2></div>
@@ -45,6 +48,8 @@
     </section>
 }
 
+@if (Model.Counts.ContainsKey("Audit") || Model.Counts.ContainsKey("Imports"))
+{
 <div class="row g-3">
     <div class="col-xl-7">
         <section class="admin-card h-100" aria-labelledby="audit-heading">
@@ -93,3 +98,4 @@
         </section>
     </div>
 </div>
+}

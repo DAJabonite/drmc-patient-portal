@@ -29,8 +29,14 @@ public static class AdminNavigation
         [
             new("Imports", "Imports", "bi-file-earmark-arrow-up", "CSV and Excel batches with reconciliation."),
             new("Audit", "Audit history", "bi-journal-text", "Staff access and change history."),
+            new("StaffAccess", "Staff access", "bi-person-lock", "Grant or revoke Laboratory and Radiology staff roles."),
         ]),
     ];
+
+    // Sections and items the signed-in staff member may open; empty sections are dropped.
+    public static IReadOnlyList<AdminNavSection> For(IReadOnlySet<string> roles) => Sections
+        .Select(section => section with { Items = section.Items.Where(item => DrmcPatientPortal.Areas.Admin.Security.AdminPolicies.Allows(item.Controller, roles)).ToArray() })
+        .Where(section => section.Items.Count > 0).ToArray();
 
     public static (AdminNavSection Section, AdminNavItem Item)? Find(string? controller)
     {
@@ -93,6 +99,7 @@ public static class AdminChips
 public sealed record AdminMetric(string Label, int Value, string Icon, string Controller, string Hint, bool Attention = false);
 public sealed record AdminModuleCount(string Controller, int Count);
 public sealed record AdminDashboard(
+    IReadOnlyList<AdminNavSection> Sections,
     IReadOnlyList<AdminMetric> Attention,
     IReadOnlyDictionary<string, int> Counts,
     IReadOnlyList<DrmcPatientPortal.Models.AdminAuditLog> RecentAudit,
