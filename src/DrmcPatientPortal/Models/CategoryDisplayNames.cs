@@ -14,6 +14,27 @@ public static class CategoryDisplayNames
         _ => category.ToString()
     };
 
+    public static string DisplayName(this RadiologyModality modality) => modality switch
+    {
+        RadiologyModality.XRay => "X-ray",
+        RadiologyModality.Fluoroscopy => "Fluoroscopy",
+        RadiologyModality.Ultrasound => "Ultrasound",
+        RadiologyModality.CT => "CT scan",
+        RadiologyModality.MRI => "MRI",
+        RadiologyModality.Mammography => "Mammography",
+        RadiologyModality.Other => "Other imaging",
+        _ => "Imaging"
+    };
+
+    public static string DisplayName(this RadiologyStatus status) => status switch
+    {
+        RadiologyStatus.InProgress => "In progress",
+        RadiologyStatus.PendingVerification => "Pending verification",
+        RadiologyStatus.Final => "Final",
+        RadiologyStatus.Amended => "Amended",
+        _ => "Unknown"
+    };
+
     public static string DisplayName(this AdvisoryCategory category) => category switch
     {
         AdvisoryCategory.HealthAlert => "Health Alert",

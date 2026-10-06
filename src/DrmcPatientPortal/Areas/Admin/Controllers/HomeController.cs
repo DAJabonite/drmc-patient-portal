@@ -25,6 +25,7 @@ public sealed class HomeController(ApplicationDbContext db) : Controller
             ["ClinicalEncounters"] = await db.ClinicalEncounters.CountAsync(cancellationToken),
             ["LabResults"] = await db.LabResults.CountAsync(cancellationToken),
             ["LabResultItems"] = await db.LabResultItems.CountAsync(cancellationToken),
+            ["RadiologyStudies"] = await db.RadiologyStudies.CountAsync(cancellationToken),
             ["Prescriptions"] = await db.Prescriptions.CountAsync(cancellationToken),
             ["MedicationDoseSchedules"] = await db.MedicationDoseSchedules.CountAsync(cancellationToken),
             ["PatientAllergies"] = await db.PatientAllergies.CountAsync(cancellationToken),
@@ -33,7 +34,10 @@ public sealed class HomeController(ApplicationDbContext db) : Controller
             ["Imports"] = await db.ImportBatches.CountAsync(cancellationToken),
             ["Audit"] = await db.AdminAuditLogs.CountAsync(cancellationToken),
         };
+        var now = DrmcPatientPortal.Services.ClinicalClock.WallTime(DateTimeOffset.UtcNow);
         var labsAwaiting = await db.LabResults.CountAsync(l => l.Status != "Available", cancellationToken);
+        var radiologyAwaiting = await db.RadiologyStudies.CountAsync(r =>
+            r.Status != RadiologyStatus.Final && r.Status != RadiologyStatus.Amended || r.ReleasedAt == null || r.ReleasedAt > now, cancellationToken);
         var openImports = await db.ImportBatches.CountAsync(b => OpenImportStatuses.Contains(b.Status), cancellationToken);
         var unlinked = await db.PatientRecords.CountAsync(p => p.PortalUserId == null, cancellationToken);
         var activePrescriptions = await db.Prescriptions.CountAsync(p => p.Status == PrescriptionStatus.Active, cancellationToken);
@@ -41,6 +45,7 @@ public sealed class HomeController(ApplicationDbContext db) : Controller
         AdminMetric[] attention =
         [
             new("Labs awaiting release", labsAwaiting, "bi-hourglass-split", "LabResults", "In progress or pending verification", labsAwaiting > 0),
+            new("Radiology awaiting release", radiologyAwaiting, "bi-hourglass-split", "RadiologyStudies", "Not final, or release time not reached", radiologyAwaiting > 0),
             new("Imports in progress", openImports, "bi-arrow-repeat", "Imports", "Staged, validating or awaiting approval", openImports > 0),
             new("Unlinked patient records", unlinked, "bi-link-45deg", "Patients", "No verified portal account yet", unlinked > 0),
             new("Active prescriptions", activePrescriptions, "bi-capsule", "Prescriptions", "Visible on patient medication lists"),

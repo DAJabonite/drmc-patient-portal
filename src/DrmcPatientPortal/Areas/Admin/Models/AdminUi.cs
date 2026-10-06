@@ -15,6 +15,7 @@ public static class AdminNavigation
             new("ClinicalEncounters", "Encounters", "bi-clipboard2-pulse", "OPD, emergency and inpatient visits."),
             new("LabResults", "Lab results", "bi-droplet", "Result availability and release status."),
             new("LabResultItems", "Lab items", "bi-list-check", "Staff-only analyte values and flags."),
+            new("RadiologyStudies", "Radiology", "bi-lungs", "Imaging studies, reports and release status."),
             new("Prescriptions", "Prescriptions", "bi-capsule", "Active and completed medications."),
             new("MedicationDoseSchedules", "Dose schedules", "bi-clock", "Dose timing shown to patients."),
             new("PatientAllergies", "Allergies", "bi-exclamation-triangle", "Recorded allergies and severity."),
@@ -50,7 +51,7 @@ public static class AdminChips
         var v = value?.Trim().ToLowerInvariant() ?? string.Empty;
         return v switch
         {
-            "available" or "linked" or "active" or "succeeded" or "completed" or "normal" or "valid" or "yes" or "mild" => ChipTone.Success,
+            "available" or "final" or "linked" or "active" or "succeeded" or "completed" or "normal" or "valid" or "yes" or "mild" => ChipTone.Success,
             "in progress" or "pending verification" or "staged" or "validated" or "queued" or "running" or "validationqueued"
                 or "validating" or "approvalqueued" or "approving" or "moderate" or "on hold" or "onhold" => ChipTone.Warning,
             "failed" or "severe" or "critical" or "high" or "low" or "critical high" or "critical low" => ChipTone.Danger,

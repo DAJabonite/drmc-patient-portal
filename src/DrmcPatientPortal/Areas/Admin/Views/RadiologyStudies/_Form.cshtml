@@ -1,0 +1,28 @@
+@model RadiologyInput
+@{ var doctors = (IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewData["Doctors"]!; }
+<input asp-for="RowVersion" type="hidden" />
+<div class="row g-3">
+    <div class="col-md-6"><label asp-for="AccessionNumber" class="form-label"></label><input asp-for="AccessionNumber" class="form-control" /><span asp-validation-for="AccessionNumber" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="StudyName" class="form-label"></label><input asp-for="StudyName" class="form-control" /><span asp-validation-for="StudyName" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Modality" class="form-label"></label><select asp-for="Modality" asp-items="Html.GetEnumSelectList<RadiologyModality>()" class="form-select"></select><span asp-validation-for="Modality" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="BodyRegion" class="form-label"></label><input asp-for="BodyRegion" class="form-control" /><span asp-validation-for="BodyRegion" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Status" class="form-label"></label><select asp-for="Status" asp-items="Html.GetEnumSelectList<RadiologyStatus>()" class="form-select" aria-describedby="radiologyStatusHelp"></select><div id="radiologyStatusHelp" class="form-text">Final and Amended need a release time, findings and an impression.</div><span asp-validation-for="Status" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="PerformedAt" class="form-label"></label><input asp-for="PerformedAt" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="PerformedAt" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="ReleasedAt" class="form-label"></label><input asp-for="ReleasedAt" type="datetime-local" step="any" class="form-control" aria-describedby="radiologyReleaseHelp" /><div id="radiologyReleaseHelp" class="form-text">Patients see a final report only from this time. Set a later time to give the referring doctor time to talk with the patient first.</div><span asp-validation-for="ReleasedAt" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="ClinicalEncounterId" class="form-label"></label><select asp-for="ClinicalEncounterId" asp-items="@((IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewData["Encounters"]!)" class="form-select"><option value="">Unassigned</option></select><span asp-validation-for="ClinicalEncounterId" class="text-danger"></span></div>
+    <div class="col-12"><label asp-for="PerformingUnit" class="form-label"></label><input asp-for="PerformingUnit" class="form-control" /><span asp-validation-for="PerformingUnit" class="text-danger"></span></div>
+</div>
+<fieldset class="mt-3"><legend class="h6">Ordering physician</legend><partial name="_Physician" model="@(new PhysicianForm(Model, doctors))" /></fieldset>
+<fieldset class="mt-3"><legend class="h6">Radiologist</legend><partial name="_Physician" model="@(new PhysicianForm(Model.Radiologist, doctors, "Radiologist."))" /></fieldset>
+<fieldset class="mt-3"><legend class="h6">Report</legend>
+<div class="row g-3">
+    <div class="col-12"><label asp-for="ClinicalIndication" class="form-label"></label><textarea asp-for="ClinicalIndication" class="form-control" rows="2"></textarea><span asp-validation-for="ClinicalIndication" class="text-danger"></span></div>
+    <div class="col-12"><label asp-for="Technique" class="form-label"></label><textarea asp-for="Technique" class="form-control" rows="2"></textarea><span asp-validation-for="Technique" class="text-danger"></span></div>
+    <div class="col-12"><label asp-for="Comparison" class="form-label"></label><textarea asp-for="Comparison" class="form-control" rows="2"></textarea><span asp-validation-for="Comparison" class="text-danger"></span></div>
+    <div class="col-12"><label asp-for="Findings" class="form-label"></label><textarea asp-for="Findings" class="form-control" rows="6"></textarea><span asp-validation-for="Findings" class="text-danger"></span></div>
+    <div class="col-12"><label asp-for="Impression" class="form-label"></label><textarea asp-for="Impression" class="form-control" rows="3"></textarea><span asp-validation-for="Impression" class="text-danger"></span></div>
+    <div class="col-12"><label asp-for="PlainLanguageSummary" class="form-label"></label><textarea asp-for="PlainLanguageSummary" class="form-control" rows="3" aria-describedby="radiologySummaryHelp"></textarea><div id="radiologySummaryHelp" class="form-text">Shown to the patient as "Summary in plain language" when full results are enabled.</div><span asp-validation-for="PlainLanguageSummary" class="text-danger"></span></div>
+    <div class="col-12"><label asp-for="AmendmentNote" class="form-label"></label><textarea asp-for="AmendmentNote" class="form-control" rows="2"></textarea><span asp-validation-for="AmendmentNote" class="text-danger"></span></div>
+    <div class="col-12"><label asp-for="InternalNotes" class="form-label"></label><textarea asp-for="InternalNotes" class="form-control" rows="2" aria-describedby="radiologyInternalHelp"></textarea><div id="radiologyInternalHelp" class="form-text">Never shown to patients.</div><span asp-validation-for="InternalNotes" class="text-danger"></span></div>
+</div>
+</fieldset>
