@@ -36,6 +36,7 @@
   <data name="Nav_Results"><value>Labs</value></data>
   <data name="Nav_Medication"><value>Medications</value></data>
   <data name="Nav_FinancialAssistance"><value>Malasakit</value></data>
+  <data name="Nav_Radiology"><value>Radiology</value></data>
   <data name="Nav_OpdGuide"><value>OPD Guide</value></data>
   <data name="Nav_Directory"><value>Doctors &amp; Clinics</value></data>
   <data name="Nav_Advisories"><value>Advisories</value></data>
@@ -51,6 +52,7 @@
   <data name="Mobile_Results"><value>Labs</value></data>
   <data name="Mobile_Medication"><value>Medications</value></data>
   <data name="Mobile_Malasakit"><value>Malasakit</value></data>
+  <data name="Mobile_Radiology"><value>Radiology</value></data>
   <data name="Mobile_Menu"><value>Menu</value></data>
   <data name="Mobile_HospitalServices"><value>Hospital services</value></data>
 

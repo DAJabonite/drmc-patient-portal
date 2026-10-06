@@ -452,7 +452,15 @@ textarea:focus-visible,
     font-size: 1.15rem;
 }
 
-.mobile-more-link:hover {
+.mobile-more-link .mobile-more-icon {
+    width: 1.15rem;
+    height: 1.15rem;
+    flex-shrink: 0;
+    object-fit: contain;
+}
+
+.mobile-more-link:hover,
+.mobile-more-link.active {
     color: var(--drmc-primary);
     border-color: #bdd1e2;
 }

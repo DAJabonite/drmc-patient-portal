@@ -12,7 +12,7 @@
     var isAdminArea = ViewContext.RouteData.Values["area"]?.ToString() == "Admin";
     var isHome = currentController == "Home" && currentAction == "Index";
     var isDashboard = currentController == "Patient" && currentAction == "Home";
-    var isMalasakit = currentController == "Malasakit";
+    var isRadiology = currentController == "Radiology";
     var isResults = currentController == "LabResults";
     var isMedications = currentController == "Medications";
     var isEncounters = currentController == "Visits";
@@ -108,9 +108,9 @@
                     <li class="nav-item"><a class="nav-link @(isEncounters ? "active" : null)" aria-current="@(isEncounters ? "page" : null)" asp-area="" asp-controller="Visits" asp-action="Index">@Loc["Nav_Encounters"]</a></li>
                     <li class="nav-item"><a class="nav-link @(isResults ? "active" : null)" aria-current="@(isResults ? "page" : null)" asp-area="" asp-controller="LabResults" asp-action="Index">@Loc["Nav_Results"]</a></li>
                     <li class="nav-item"><a class="nav-link @(isMedications ? "active" : null)" aria-current="@(isMedications ? "page" : null)" asp-area="" asp-controller="Medications" asp-action="Index">@Loc["Nav_Medication"]</a></li>
+                    <li class="nav-item"><a class="nav-link @(isRadiology ? "active" : null)" aria-current="@(isRadiology ? "page" : null)" asp-area="" asp-controller="Radiology" asp-action="Index">@Loc["Nav_Radiology"]</a></li>
                 }
-                <li class="nav-item"><a class="nav-link @(isMalasakit ? "active" : null)" aria-current="@(isMalasakit ? "page" : null)" asp-area="" asp-controller="Malasakit" asp-action="Index">@Loc["Nav_FinancialAssistance"]</a></li>
-                @if (User.IsInRole("Admin"))
+                @if (User.IsInRole("Admin") || User.IsInRole("LabStaff") || User.IsInRole("RadiologyStaff"))
                 {
                     <li class="nav-item"><a class="nav-link" asp-area="Admin" asp-controller="Home" asp-action="Index">Administration</a></li>
                 }

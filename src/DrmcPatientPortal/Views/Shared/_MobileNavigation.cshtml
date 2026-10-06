@@ -15,7 +15,9 @@
     var encountersActive = currentController == "Visits";
     var resultsActive = currentController == "LabResults";
     var medicationActive = currentController == "Medications";
+    var radiologyActive = currentController == "Radiology";
     var malasakitActive = currentController == "Malasakit";
+    var staffConsole = User.IsInRole("Admin") || User.IsInRole("LabStaff") || User.IsInRole("RadiologyStaff");
 }
 
 @if (!isAdminArea)
@@ -50,11 +52,18 @@
                 <i class="bi bi-capsule" aria-hidden="true"></i>
                 <span>@Loc["Mobile_Medication"]</span>
             </a>
+            <a class="mobile-tab-item @(radiologyActive ? "active" : null)" aria-current="@(radiologyActive ? "page" : null)" asp-area="" asp-controller="Radiology" asp-action="Index">
+                <i class="bi bi-lungs" aria-hidden="true"></i>
+                <span>@Loc["Mobile_Radiology"]</span>
+            </a>
         }
-        <a class="mobile-tab-item @(malasakitActive ? "active" : null)" aria-current="@(malasakitActive ? "page" : null)" aria-label="@Loc["Nav_FinancialAssistance"]" asp-area="" asp-controller="Malasakit" asp-action="Index">
-            <img class="mobile-tab-icon" src="~/images/malasakit-nav-logo.png" alt="" aria-hidden="true" />
-            <span>@Loc["Mobile_Malasakit"]</span>
-        </a>
+        else
+        {
+            <button class="mobile-tab-item" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileUtilityMenu" aria-controls="mobileUtilityMenu">
+                <i class="bi bi-list" aria-hidden="true"></i>
+                <span>@Loc["Mobile_Menu"]</span>
+            </button>
+        }
     </div>
 </nav>
 }
@@ -70,12 +79,13 @@
             <div class="mobile-more-grid">
                 <a class="mobile-more-link" asp-area="" asp-controller="Directory" asp-action="Index"><i class="bi bi-person-badge" aria-hidden="true"></i><span>@Loc["Nav_Directory"]</span></a>
                 <a class="mobile-more-link" asp-area="" asp-controller="Home" asp-action="OpdGuide"><i class="bi bi-signpost-split" aria-hidden="true"></i><span>@Loc["Nav_OpdGuide"]</span></a>
+                <a class="mobile-more-link @(malasakitActive ? "active" : null)" aria-current="@(malasakitActive ? "page" : null)" asp-area="" asp-controller="Malasakit" asp-action="Index"><img class="mobile-more-icon" src="~/images/malasakit-nav-logo.png" alt="" aria-hidden="true" /><span>@Loc["Nav_FinancialAssistance"]</span></a>
                 <a class="mobile-more-link" asp-area="" asp-controller="Advisories" asp-action="Index"><i class="bi bi-megaphone" aria-hidden="true"></i><span>@Loc["Nav_Advisories"]</span></a>
                 @if (signedIn)
                 {
                     <a class="mobile-more-link" asp-area="" asp-controller="Patient" asp-action="Audit"><i class="bi bi-shield-check" aria-hidden="true"></i><span>@Loc["Nav_Audit"]</span></a>
                 }
-                @if (User.IsInRole("Admin"))
+                @if (staffConsole)
                 {
                     <a class="mobile-more-link" asp-area="Admin" asp-controller="Home" asp-action="Index"><i class="bi bi-clipboard-check" aria-hidden="true"></i><span>Administration</span></a>
                 }

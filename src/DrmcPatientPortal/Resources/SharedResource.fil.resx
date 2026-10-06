@@ -36,6 +36,7 @@
   <data name="Nav_Results"><value>Mga Resulta</value></data>
   <data name="Nav_Medication"><value>Gamot</value></data>
   <data name="Nav_FinancialAssistance"><value>Tulong Pinansyal / Malasakit</value></data>
+  <data name="Nav_Radiology"><value>Radiology</value></data>
   <data name="Nav_OpdGuide"><value>Gabay sa OPD</value></data>
   <data name="Nav_Directory"><value>Mga Doktor at Klinika</value></data>
   <data name="Nav_Advisories"><value>Mga Anunsyo sa Kalusugan</value></data>
@@ -51,6 +52,7 @@
   <data name="Mobile_Results"><value>Resulta</value></data>
   <data name="Mobile_Medication"><value>Gamot</value></data>
   <data name="Mobile_Malasakit"><value>Malasakit</value></data>
+  <data name="Mobile_Radiology"><value>Radiology</value></data>
   <data name="Mobile_Menu"><value>Menu</value></data>
   <data name="Mobile_HospitalServices"><value>Mga serbisyo ng ospital</value></data>
 
