@@ -2832,6 +2832,16 @@ code,
 .lab-filter-form.has-search .lab-filter-actions { grid-column: 4; }
 .lab-filter-form.has-search .lab-custom-date { grid-column: 3 / 5; }
 
+/* Tablet and small desktop: search gets its own row so the filters and actions are not clipped. */
+@media (min-width: 768px) and (max-width: 1199.98px) {
+    .lab-filter-form.has-search { grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto; }
+    .lab-filter-form.has-search .radiology-search-field { grid-column: 1 / -1; grid-row: 1; }
+    .lab-filter-form.has-search .lab-category-field { grid-column: 1; grid-row: 2; }
+    .lab-filter-form.has-search .lab-date-field { grid-column: 2; grid-row: 2; }
+    .lab-filter-form.has-search .lab-filter-actions { grid-column: 3; grid-row: 2; }
+    .lab-filter-form.has-search .lab-custom-date { grid-column: 2 / 4; grid-row: 3; }
+}
+
 @media (max-width: 767.98px) {
     .lab-filter-form.has-search .radiology-search-field { margin-bottom: 0.5rem; }
     .lab-filter-form.has-search .radiology-search-field .form-label {
