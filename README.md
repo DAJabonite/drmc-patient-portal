@@ -157,7 +157,7 @@ Hospital patient records exist independently of portal accounts. Staff verify id
 
 Changes and staff audit entries commit together. Registry and clinical audit entries retain field names only, not earlier medical values; they cannot reconstruct prior records. Doctors and PublicAdvisories retain old/new values. Staff clinical views log affected patient references before display; failed audit persistence prevents display. The patient activity page remains unchanged. Both audit tables are append-only through application guards and have no edit/delete endpoints. Database access controls and retention procedures remain an operational responsibility.
 
-General Identity administration, sensitive ID-document metadata, audit tables, migration history and import system metadata have no generic editor. Laboratory item values remain staff-only; the patient laboratory claiming guide is retained. New advisory saves sanitize HTML, but existing legacy HTML is not rewritten; review it before publication. The existing inline-script CSP allowance is unchanged.
+General Identity administration, sensitive ID-document metadata, audit tables, migration history and import system metadata have no generic editor. Laboratory item values and result summaries are staff-only by default; when `PatientResults:ShowFullResults` is switched on, released results (and released radiology reports) are shown to the owning patient, and clinical and internal notes stay staff-only. The patient laboratory claiming guide is retained. New advisory saves sanitize HTML, but existing legacy HTML is not rewritten; review it before publication. The existing inline-script CSP allowance is unchanged.
 
 ## CSV and Excel Imports
 

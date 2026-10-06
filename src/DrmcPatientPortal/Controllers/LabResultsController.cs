@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace DrmcPatientPortal.Controllers;
 
@@ -15,15 +16,18 @@ public class LabResultsController : Controller
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IAuditLogService _auditLog;
+    private readonly IOptionsMonitor<PatientResultsOptions> _resultsOptions;
 
     public LabResultsController(
         ApplicationDbContext db,
         UserManager<ApplicationUser> userManager,
-        IAuditLogService auditLog)
+        IAuditLogService auditLog,
+        IOptionsMonitor<PatientResultsOptions> resultsOptions)
     {
         _db = db;
         _userManager = userManager;
         _auditLog = auditLog;
+        _resultsOptions = resultsOptions;
     }
 
     // GET /Patient/LabResults
@@ -132,8 +136,15 @@ public class LabResultsController : Controller
             return NotFound();
         }
 
+        // D4: item values and the result summary are shown only for released results with the switch on.
+        // ClinicalNotes stay staff-only either way.
+        var showFullResults = _resultsOptions.CurrentValue.ShowFullResults
+            && PatientResultsDisclosure.IsReleased(result, PatientResultsDisclosure.ManilaNow);
+        ViewData["ShowFullResults"] = showFullResults;
+
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
-        await _auditLog.LogAsync(user.Id, "VIEW_LAB_REPORT", $"LabResult/{id}", "Viewed laboratory result claiming notice and availability.", ip);
+        await _auditLog.LogAsync(user.Id, "VIEW_LAB_REPORT", $"LabResult/{id}",
+            showFullResults ? "Viewed released laboratory result values." : "Viewed laboratory result claiming notice and availability.", ip);
 
         return View(result);
     }

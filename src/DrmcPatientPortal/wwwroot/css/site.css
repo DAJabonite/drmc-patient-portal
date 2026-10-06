@@ -2820,3 +2820,32 @@ code,
         transition-duration: 0.01ms !important;
     }
 }
+
+/* Radiology filters: search field ahead of the shared lab filter layout. */
+.lab-filter-form.has-search {
+    grid-template-columns: minmax(200px, 1.2fr) minmax(180px, 1fr) minmax(180px, 1fr) auto;
+}
+
+.lab-filter-form.has-search .radiology-search-field { grid-column: 1; grid-row: 1; min-width: 0; }
+.lab-filter-form.has-search .lab-category-field { grid-column: 2; }
+.lab-filter-form.has-search .lab-date-field { grid-column: 3; }
+.lab-filter-form.has-search .lab-filter-actions { grid-column: 4; }
+.lab-filter-form.has-search .lab-custom-date { grid-column: 3 / 5; }
+
+@media (max-width: 767.98px) {
+    .lab-filter-form.has-search .radiology-search-field { margin-bottom: 0.5rem; }
+    .lab-filter-form.has-search .radiology-search-field .form-label {
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
+    .lab-filter-form.has-search .lab-category-field { grid-column: 1; }
+    .lab-filter-form.has-search .lab-date-field,
+    .lab-filter-form.has-search .lab-custom-date,
+    .lab-filter-form.has-search .lab-filter-actions { grid-column: 1; }
+}
+
+.radiology-report-section + .radiology-report-section { margin-top: 1rem; }
+.radiology-report-text { white-space: pre-line; }
+
+/* Released lab values (PatientResults:ShowFullResults): scroll sideways on narrow screens instead of breaking words. */
+.lab-values-table { min-width: 32rem; }

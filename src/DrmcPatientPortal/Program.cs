@@ -107,6 +107,7 @@ builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
 // PHI and security access audit logging service
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.Configure<PatientDocumentStorageOptions>(builder.Configuration.GetSection("PatientDocuments"));
+builder.Services.Configure<PatientResultsOptions>(builder.Configuration.GetSection(PatientResultsOptions.SectionName));
 builder.Services.AddScoped<IPatientDocumentStorage, PatientDocumentStorage>();
 builder.Services.AddHostedService<TemporaryDocumentCleanupService>();
 

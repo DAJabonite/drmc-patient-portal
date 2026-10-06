@@ -1,12 +1,225 @@
+@model RadiologyIndexViewModel
 @{
     ViewData["Title"] = "Radiology & Imaging";
+    var today = DrmcPatientPortal.Services.ClinicalClock.Today.ToString("yyyy-MM-dd");
+    var dateOpen = Model.SelectedDateRange is not null || ViewData["DateRangeError"] is not null;
+    var dept = Model.Department;
 }
 
 <section class="page-header">
     <div class="container">
         <div>
-            <p class="small text-white text-opacity-75 mb-1">Diagnostic Imaging</p>
+            <p class="small text-white text-opacity-75 mb-1">Diagnostic Imaging Center</p>
             <h1 class="display-6 fw-bold mb-0">Radiology &amp; Imaging</h1>
         </div>
+    </div>
+</section>
+
+<!-- Study filters -->
+<section class="py-3 bg-white border-bottom sticky-top shadow-xs" style="z-index: 1020;">
+    <div class="container">
+        <form asp-action="Index" method="get" class="lab-filter-form has-search" id="radiologyFilterForm" role="search" aria-label="Filter imaging studies">
+            <div class="radiology-search-field">
+                <label for="radiologySearch" class="form-label small fw-semibold text-dark mb-1">Search</label>
+                <input id="radiologySearch" name="search" type="search" class="form-control"
+                       value="@Model.SearchTerm" maxlength="200" placeholder="Study, body part or accession" />
+            </div>
+            <div class="lab-filter-toolbar">
+                <div class="lab-category-field">
+                    <label for="radiologyModalityFilter" class="form-label small fw-semibold text-dark mb-1 lab-filter-label">Imaging type</label>
+                    <select id="radiologyModalityFilter" name="modality" class="form-select" aria-label="Filter by imaging type">
+                        <option value="" selected="@(!Model.SelectedModality.HasValue)">All imaging (@Model.TotalCount)</option>
+                        @foreach (var modality in Enum.GetValues<RadiologyModality>())
+                        {
+                            <option value="@modality" selected="@(Model.SelectedModality == modality)">@modality.DisplayName()</option>
+                        }
+                    </select>
+                </div>
+                <button type="button"
+                        class="btn btn-outline-drmc lab-date-toggle d-md-none"
+                        id="radiologyDateToggle"
+                        aria-expanded="@(dateOpen ? "true" : "false")"
+                        aria-controls="radiologyDatePanel">
+                    <i class="bi bi-calendar3" aria-hidden="true"></i>
+                    <span>Date</span>
+                    @if (!string.IsNullOrEmpty(Model.SelectedDateRange))
+                    {
+                        <span class="filter-active-dot" aria-label="Date filter active"></span>
+                    }
+                </button>
+            </div>
+
+            <div id="radiologyDatePanel" class="lab-date-panel @(dateOpen ? "is-open" : null)">
+                <div class="lab-date-field">
+                    <label for="radiologyDateFilter" class="form-label small fw-semibold text-dark mb-1">Date performed</label>
+                    <select id="radiologyDateFilter" name="dateRange" class="form-select" aria-controls="customRadiologyDateRange">
+                        <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDateRange))">Any date</option>
+                        <option value="30d" selected="@(Model.SelectedDateRange == "30d")">Last 30 days</option>
+                        <option value="6m" selected="@(Model.SelectedDateRange == "6m")">Last 6 months</option>
+                        <option value="year" selected="@(Model.SelectedDateRange == "year")">This year</option>
+                        <option value="custom" selected="@(Model.SelectedDateRange == "custom")">Custom date range</option>
+                    </select>
+                </div>
+                <div id="customRadiologyDateRange" class="lab-custom-date @(Model.SelectedDateRange == "custom" ? null : "d-none")">
+                    <fieldset class="custom-date-range">
+                        <legend class="visually-hidden">Custom imaging study date range</legend>
+                        <div>
+                            <label for="radiologyStartDate" class="form-label small fw-semibold text-dark mb-1">From</label>
+                            <input id="radiologyStartDate" name="startDate" type="date"
+                                   value="@Model.SelectedStartDate?.ToString("yyyy-MM-dd")"
+                                   max="@(Model.SelectedEndDate?.ToString("yyyy-MM-dd") ?? today)"
+                                   class="form-control" />
+                        </div>
+                        <div>
+                            <label for="radiologyEndDate" class="form-label small fw-semibold text-dark mb-1">To</label>
+                            <input id="radiologyEndDate" name="endDate" type="date"
+                                   value="@Model.SelectedEndDate?.ToString("yyyy-MM-dd")"
+                                   min="@Model.SelectedStartDate?.ToString("yyyy-MM-dd")"
+                                   max="@today"
+                                   class="form-control" />
+                        </div>
+                    </fieldset>
+                    @if (ViewData["DateRangeError"] is string dateRangeError)
+                    {
+                        <p class="small text-danger mt-2 mb-0" role="alert">@dateRangeError</p>
+                    }
+                </div>
+                <div class="lab-filter-actions">
+                    <button type="submit" class="btn btn-primary-drmc fw-semibold">
+                        <i class="bi bi-funnel me-1" aria-hidden="true"></i> Apply
+                    </button>
+                    @if (Model.HasFilters)
+                    {
+                        <a asp-action="Index" class="btn btn-outline-secondary fw-semibold">Clear</a>
+                    }
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/date-range-filter.js" asp-append-version="true"
+            data-form="radiologyFilterForm"
+            data-mobile-submit="radiologyModalityFilter"
+            data-range="radiologyDateFilter"
+            data-custom-range="customRadiologyDateRange"
+            data-start="radiologyStartDate"
+            data-end="radiologyEndDate"
+            data-toggle="radiologyDateToggle"
+            data-panel="radiologyDatePanel"
+            data-today="@today"></script>
+}
+
+<section class="section py-5 bg-light">
+    <div class="container">
+        <h2 class="h5 fw-bold text-dark mb-2">Your imaging studies</h2>
+        @if (Model.TotalCount == 0)
+        {
+            <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white mb-5" data-testid="radiology-empty">
+                <i class="bi bi-lungs fs-1 text-muted mb-2" aria-hidden="true"></i>
+                <h3 class="h5 fw-bold text-dark">No imaging studies yet</h3>
+                <p class="text-muted small mb-0">When you have an X-ray, ultrasound, CT, MRI or other imaging study at DRMC, it will be listed here. The preparation guide below can help you get ready.</p>
+            </div>
+        }
+        else
+        {
+            <p class="small text-muted mb-3" data-testid="radiology-summary" aria-live="polite">
+                Showing <strong>@Model.Studies.Count</strong> of @Model.TotalCount
+                @(Model.TotalCount == 1 ? "study" : "studies") &middot;
+                <strong>@Model.ShownReady</strong> ready for claiming &middot;
+                <strong>@Model.ShownInProgress</strong> report in progress
+            </p>
+
+            @if (Model.Studies.Count == 0)
+            {
+                <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white mb-5" data-testid="radiology-no-match">
+                    <i class="bi bi-search fs-1 text-muted mb-2" aria-hidden="true"></i>
+                    <h3 class="h5 fw-bold text-dark">No imaging studies found</h3>
+                    <p class="text-muted small mb-3">No imaging studies matched your selected filters.</p>
+                    <a asp-action="Index" class="btn btn-primary-drmc btn-sm rounded-pill px-4 fw-semibold mx-auto">View all studies</a>
+                </div>
+            }
+            else
+            {
+                <div class="d-flex flex-column gap-3 mb-5">
+                    @foreach (var study in Model.Studies)
+                    {
+                        <article class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                            <div class="row align-items-center g-3">
+                                <div class="col-md-8">
+                                    <div class="record-metadata d-flex flex-wrap align-items-center gap-2 mb-1">
+                                        @if (study.IsReady)
+                                        {
+                                            <span class="badge bg-success-subtle text-success rounded-pill small">
+                                                <i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i> Ready for claiming
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill small">
+                                                <i class="bi bi-hourglass-split me-1" aria-hidden="true"></i> Report in progress
+                                            </span>
+                                        }
+                                        <span class="badge bg-light text-secondary border rounded-pill small">@study.Modality.DisplayName()</span>
+                                        <span class="record-reference small text-muted" style="font-size: 0.75rem;">
+                                            Accession: <strong>@study.AccessionNumber</strong>
+                                        </span>
+                                    </div>
+                                    <h3 class="h5 fw-bold text-primary-drmc mb-1">@study.StudyName</h3>
+                                    <div class="small text-muted d-flex flex-wrap gap-3" style="font-size: 0.8rem;">
+                                        <span><i class="bi bi-calendar3 me-1" aria-hidden="true"></i> Performed: @study.PerformedAt.ToString("MMM d, yyyy")</span>
+                                        @if (!string.IsNullOrEmpty(study.BodyRegion))
+                                        {
+                                            <span><i class="bi bi-person me-1" aria-hidden="true"></i> Body part: @study.BodyRegion</span>
+                                        }
+                                        @if (study.ReleasedAt.HasValue)
+                                        {
+                                            <span><i class="bi bi-check2-circle me-1" aria-hidden="true"></i> Released: @study.ReleasedAt.Value.ToString("MMM d, yyyy")</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(study.OrderingPhysician))
+                                        {
+                                            <span><i class="bi bi-person-badge me-1" aria-hidden="true"></i> Requested by: @study.OrderingPhysician</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-md-end">
+                                    <a asp-action="Details" asp-route-id="@study.Id"
+                                       class="btn @(study.IsReady ? "btn-primary-drmc" : "btn-outline-secondary") rounded-pill px-4 fw-semibold">
+                                        <i class="bi @(study.IsReady ? "bi-file-earmark-medical" : "bi-info-circle") me-1" aria-hidden="true"></i>
+                                        @(study.IsReady ? "View study details" : "Check status")
+                                        <span class="visually-hidden">for @study.StudyName</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+        }
+
+        <partial name="_PreparationGuide" model="dept" />
+
+        <!-- Services overview -->
+        <section class="card border-0 shadow-sm rounded-4 p-4 bg-white" aria-labelledby="radiologyServicesHeading">
+            <h2 id="radiologyServicesHeading" class="h5 fw-bold text-dark mb-2">Imaging services at DRMC</h2>
+            <p class="small text-muted mb-3">@dept.Description</p>
+            @if (dept.ServicesOffered is { Count: > 0 })
+            {
+                <ul class="small text-dark mb-3">
+                    @foreach (var service in dept.ServicesOffered)
+                    {
+                        <li>@service</li>
+                    }
+                </ul>
+            }
+            <p class="small text-muted mb-3">
+                <i class="bi bi-geo-alt-fill text-primary-drmc me-1" aria-hidden="true"></i>@dept.Location &middot;
+                <i class="bi bi-telephone ms-1 me-1 text-primary-drmc" aria-hidden="true"></i>@dept.LocalExtension
+            </p>
+            <a asp-controller="Directory" asp-action="Department" asp-route-id="@dept.Name" class="btn btn-outline-drmc fw-semibold align-self-start">
+                <i class="bi bi-building me-1" aria-hidden="true"></i> Radiology department and doctors
+            </a>
+        </section>
     </div>
 </section>
