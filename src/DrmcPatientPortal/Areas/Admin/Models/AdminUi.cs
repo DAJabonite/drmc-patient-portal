@@ -15,6 +15,7 @@ public static class AdminNavigation
             new("ClinicalEncounters", "Encounters", "bi-clipboard2-pulse", "OPD, emergency and inpatient visits."),
             new("LabResults", "Lab results", "bi-droplet", "Result availability and release status."),
             new("LabResultItems", "Lab items", "bi-list-check", "Staff-only analyte values and flags."),
+            new("RadiologyStudies", "Radiology", "bi-lungs", "Imaging studies, reports and release status."),
             new("Prescriptions", "Prescriptions", "bi-capsule", "Active and completed medications."),
             new("MedicationDoseSchedules", "Dose schedules", "bi-clock", "Dose timing shown to patients."),
             new("PatientAllergies", "Allergies", "bi-exclamation-triangle", "Recorded allergies and severity."),
@@ -28,8 +29,14 @@ public static class AdminNavigation
         [
             new("Imports", "Imports", "bi-file-earmark-arrow-up", "CSV and Excel batches with reconciliation."),
             new("Audit", "Audit history", "bi-journal-text", "Staff access and change history."),
+            new("StaffAccess", "Staff access", "bi-person-lock", "Grant or revoke Laboratory and Radiology staff roles."),
         ]),
     ];
+
+    // Sections and items the signed-in staff member may open; empty sections are dropped.
+    public static IReadOnlyList<AdminNavSection> For(IReadOnlySet<string> roles) => Sections
+        .Select(section => section with { Items = section.Items.Where(item => DrmcPatientPortal.Areas.Admin.Security.AdminPolicies.Allows(item.Controller, roles)).ToArray() })
+        .Where(section => section.Items.Count > 0).ToArray();
 
     public static (AdminNavSection Section, AdminNavItem Item)? Find(string? controller)
     {
@@ -50,7 +57,7 @@ public static class AdminChips
         var v = value?.Trim().ToLowerInvariant() ?? string.Empty;
         return v switch
         {
-            "available" or "linked" or "active" or "succeeded" or "completed" or "normal" or "valid" or "yes" or "mild" => ChipTone.Success,
+            "available" or "final" or "linked" or "active" or "succeeded" or "completed" or "normal" or "valid" or "yes" or "mild" => ChipTone.Success,
             "in progress" or "pending verification" or "staged" or "validated" or "queued" or "running" or "validationqueued"
                 or "validating" or "approvalqueued" or "approving" or "moderate" or "on hold" or "onhold" => ChipTone.Warning,
             "failed" or "severe" or "critical" or "high" or "low" or "critical high" or "critical low" => ChipTone.Danger,
@@ -92,6 +99,7 @@ public static class AdminChips
 public sealed record AdminMetric(string Label, int Value, string Icon, string Controller, string Hint, bool Attention = false);
 public sealed record AdminModuleCount(string Controller, int Count);
 public sealed record AdminDashboard(
+    IReadOnlyList<AdminNavSection> Sections,
     IReadOnlyList<AdminMetric> Attention,
     IReadOnlyDictionary<string, int> Counts,
     IReadOnlyList<DrmcPatientPortal.Models.AdminAuditLog> RecentAudit,

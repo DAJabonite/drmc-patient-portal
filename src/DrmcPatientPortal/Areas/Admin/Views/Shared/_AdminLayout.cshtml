@@ -1,4 +1,6 @@
+@inject DrmcPatientPortal.Areas.Admin.Security.AdminAccessScope AccessScope
 @{
+    var sections = AdminNavigation.For(await AccessScope.RolesAsync());
     var title = ViewData["Title"]?.ToString();
     var controller = ViewContext.RouteData.Values["controller"]?.ToString();
     var action = ViewContext.RouteData.Values["action"]?.ToString();
@@ -30,7 +32,7 @@
                 <button type="button" class="btn-close btn-close-white d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#adminSidebar" aria-label="Close navigation"></button>
             </div>
             <nav class="admin-nav" aria-label="Admin sections">
-                @foreach (var navGroup in AdminNavigation.Sections)
+                @foreach (var navGroup in sections)
                 {
                     <p class="admin-nav-heading">@navGroup.Label</p>
                     <ul class="list-unstyled mb-3">

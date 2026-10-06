@@ -16,7 +16,7 @@ public static class DbInitializer
         if (!configuration.GetValue<bool>("DevelopmentFixtures:Enabled")) return;
         using var transaction = db.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
         if (db.Doctors.Any() || db.PublicAdvisories.Any() || db.PatientRecords.Any() ||
-            db.ClinicalEncounters.Any() || db.LabResults.Any() || db.LabResultItems.Any() ||
+            db.ClinicalEncounters.Any() || db.LabResults.Any() || db.LabResultItems.Any() || db.RadiologyStudies.Any() ||
             db.Prescriptions.Any() || db.MedicationDoseSchedules.Any() || db.PatientAllergies.Any() ||
             db.PatientIdDocuments.Any() || db.AuditLogs.Any() || db.AdminAuditLogs.Any() || db.ImportBatches.Any()) return;
         string Required(string key) => !string.IsNullOrWhiteSpace(configuration[key])
@@ -594,6 +594,72 @@ public static class DbInitializer
                     if (lab.AccessionNumber is "DRMC-LAB-2026-0814" or "DRMC-LAB-2026-0815" or "DRMC-LAB-2026-0790") lab.Encounter = ownedEncounterIm;
                     if (lab.AccessionNumber is "DRMC-LAB-2025-0451" or "DRMC-LAB-2025-0452") lab.Encounter = ownedEncounterFcm;
                 }
+            }
+
+            // RadiologyStudy is a narrative imaging report. Synthetic studies cover several modalities and
+            // statuses, including a final report held until a future release time. InternalNotes are staff-only.
+            if (!db.RadiologyStudies.Any(r => r.PatientRecordId == patient.Id))
+            {
+                db.RadiologyStudies.AddRange(new[]
+                {
+                    new RadiologyStudy
+                    {
+                        PatientRecordId = patient.Id, Encounter = ownedEncounterIm, AccessionNumber = "DRMC-RAD-2026-0301",
+                        StudyName = "Chest X-ray, PA view", Modality = RadiologyModality.XRay, BodyRegion = "Chest",
+                        PerformedAt = clinicalNow.AddDays(-18), ReleasedAt = clinicalNow.AddDays(-17), Status = RadiologyStatus.Final,
+                        OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP", RadiologistName = "Dr. Francis Xavier Gomez, MD, FPCR",
+                        PerformingUnit = "DRMC Diagnostic Imaging Center",
+                        ClinicalIndication = "Synthetic fixture: pre-consultation baseline.",
+                        Technique = "Single frontal (PA) radiograph of the chest.",
+                        Comparison = "None available.",
+                        Findings = "Synthetic fixture findings: the lungs are clear. The heart size is within normal limits. No pleural effusion.",
+                        Impression = "Synthetic fixture impression: no acute cardiopulmonary findings.",
+                        PlainLanguageSummary = "Synthetic fixture summary: the picture of your chest looks normal.",
+                        InternalNotes = "FIXTURE-INTERNAL-NOTE: staff-only radiology note."
+                    },
+                    new RadiologyStudy
+                    {
+                        PatientRecordId = patient.Id, Encounter = ownedEncounterFcm, AccessionNumber = "DRMC-RAD-2025-0188",
+                        StudyName = "Whole abdomen ultrasound", Modality = RadiologyModality.Ultrasound, BodyRegion = "Abdomen",
+                        PerformedAt = clinicalNow.AddMonths(-6), ReleasedAt = clinicalNow.AddMonths(-6).AddDays(1), Status = RadiologyStatus.Amended,
+                        OrderingPhysician = "Dr. Cristina Ramos, MD, FPAFP", RadiologistName = "Dr. Francis Xavier Gomez, MD, FPCR",
+                        PerformingUnit = "DRMC Diagnostic Imaging Center",
+                        ClinicalIndication = "Synthetic fixture: annual wellness check.",
+                        Technique = "Real-time grayscale ultrasound of the abdomen.",
+                        Comparison = "None available.",
+                        Findings = "Synthetic fixture findings: liver, gallbladder, pancreas, spleen and kidneys appear unremarkable.",
+                        Impression = "Synthetic fixture impression: normal abdominal ultrasound.",
+                        AmendmentNote = "Synthetic fixture amendment: corrected the body region label.",
+                        InternalNotes = "FIXTURE-INTERNAL-NOTE: amended after peer review."
+                    },
+                    new RadiologyStudy
+                    {
+                        PatientRecordId = patient.Id, AccessionNumber = "DRMC-RAD-2026-0342",
+                        StudyName = "MRI lumbar spine, plain", Modality = RadiologyModality.MRI, BodyRegion = "Lower back",
+                        PerformedAt = clinicalNow.AddDays(-1), ReleasedAt = clinicalNow.AddDays(3), Status = RadiologyStatus.Final,
+                        OrderingPhysician = "Dr. Dennis Alcantara, MD, FPOA", RadiologistName = "Dr. Francis Xavier Gomez, MD, FPCR",
+                        PerformingUnit = "DRMC Diagnostic Imaging Center",
+                        Technique = "Multiplanar MRI sequences of the lumbar spine.",
+                        Findings = "FIXTURE-HELD-FINDINGS: held until the referring doctor discusses the result.",
+                        Impression = "FIXTURE-HELD-IMPRESSION: held report.",
+                        InternalNotes = "FIXTURE-INTERNAL-NOTE: hold for referring doctor."
+                    },
+                    new RadiologyStudy
+                    {
+                        PatientRecordId = patient.Id, AccessionNumber = "DRMC-RAD-2026-0347",
+                        StudyName = "CT scan of the head, plain", Modality = RadiologyModality.CT, BodyRegion = "Head",
+                        PerformedAt = clinicalNow.AddHours(-6), Status = RadiologyStatus.InProgress,
+                        OrderingPhysician = "Dr. Arthur Llanos, MD, FPCP", PerformingUnit = "DRMC Diagnostic Imaging Center",
+                        Findings = "FIXTURE-DRAFT-FINDINGS: draft not for release."
+                    },
+                    new RadiologyStudy
+                    {
+                        PatientRecordId = patient.Id, AccessionNumber = "DRMC-RAD-2026-0349",
+                        StudyName = "Screening mammogram", Modality = RadiologyModality.Mammography, BodyRegion = "Breasts",
+                        PerformedAt = clinicalNow.AddDays(-3), Status = RadiologyStatus.PendingVerification,
+                        OrderingPhysician = "Dr. Stephanie Joy Garcia, MD, FPOGS", PerformingUnit = "DRMC Diagnostic Imaging Center"
+                    },
+                });
             }
 
             // Exact dose times are child rows (PrescriptionId + DoseTime is unique), not inferred

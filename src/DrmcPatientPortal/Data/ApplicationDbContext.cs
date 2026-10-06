@@ -14,6 +14,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     // Patient clinical records
     public DbSet<LabResult> LabResults => Set<LabResult>();
     public DbSet<LabResultItem> LabResultItems => Set<LabResultItem>();
+    public DbSet<RadiologyStudy> RadiologyStudies => Set<RadiologyStudy>();
     public DbSet<ClinicalEncounter> ClinicalEncounters => Set<ClinicalEncounter>();
     public DbSet<Prescription> Prescriptions => Set<Prescription>();
     public DbSet<MedicationDoseSchedule> MedicationDoseSchedules => Set<MedicationDoseSchedule>();
@@ -69,7 +70,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         foreach (var type in new[] { typeof(Doctor), typeof(PublicAdvisory), typeof(ClinicalEncounter),
                      typeof(LabResult), typeof(LabResultItem), typeof(Prescription),
-                     typeof(MedicationDoseSchedule), typeof(PatientAllergy) })
+                     typeof(MedicationDoseSchedule), typeof(PatientAllergy), typeof(RadiologyStudy) })
             builder.Entity(type).Property<byte[]>("RowVersion").IsRequired().IsRowVersion();
 
         builder.Entity<AdminAuditLog>(e =>
@@ -117,6 +118,33 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasIndex(x => x.PatientRecordId);
             e.HasIndex(x => x.ClinicalEncounterId);
             e.HasIndex(x => x.AccessionNumber);
+        });
+
+        builder.Entity<RadiologyStudy>(e =>
+        {
+            e.HasOne(x => x.Patient)
+                .WithMany(p => p.RadiologyStudies)
+                .HasForeignKey(x => x.PatientRecordId)
+                .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(x => x.Encounter)
+                .WithMany()
+                .HasForeignKey(x => x.ClinicalEncounterId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+            // Accession numbers are unique ignoring case, matching the lab accession comparison.
+            e.Property(x => x.AccessionNumber).HasMaxLength(RadiologyStudy.AccessionLength).UseCollation("Latin1_General_100_CI_AS");
+            e.HasIndex(x => x.AccessionNumber).IsUnique();
+            e.HasIndex(x => x.PatientRecordId);
+            e.HasIndex(x => x.ClinicalEncounterId);
+            e.HasIndex(x => new { x.Status, x.ReleasedAt });
+            foreach (var name in new[] { nameof(RadiologyStudy.StudyName), nameof(RadiologyStudy.BodyRegion), nameof(RadiologyStudy.OrderingPhysician),
+                         nameof(RadiologyStudy.RadiologistName), nameof(RadiologyStudy.PerformingUnit) })
+                e.Property(name).HasMaxLength(RadiologyStudy.NameLength);
+            foreach (var name in new[] { nameof(RadiologyStudy.ClinicalIndication), nameof(RadiologyStudy.Technique), nameof(RadiologyStudy.Comparison),
+                         nameof(RadiologyStudy.AmendmentNote) })
+                e.Property(name).HasMaxLength(RadiologyStudy.ShortTextLength);
+            foreach (var name in new[] { nameof(RadiologyStudy.Impression), nameof(RadiologyStudy.PlainLanguageSummary), nameof(RadiologyStudy.InternalNotes) })
+                e.Property(name).HasMaxLength(RadiologyStudy.ReportTextLength);
+            e.Property(x => x.Findings).HasMaxLength(RadiologyStudy.FindingsLength);
         });
 
         builder.Entity<ClinicalEncounter>(e =>

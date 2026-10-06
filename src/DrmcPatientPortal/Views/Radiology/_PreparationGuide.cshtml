@@ -1,0 +1,45 @@
+@model ClinicalDepartment
+@* General guidance only. [UNVERIFIED: DRMC Radiology to confirm wording; no fasting hours, fees or schedules are stated on purpose.] *@
+<section class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" aria-labelledby="radiologyPrepHeading" data-testid="radiology-prep-guide">
+    <h2 id="radiologyPrepHeading" class="h5 fw-bold text-dark mb-1">Preparing for your imaging study</h2>
+    <p class="small text-muted mb-3">
+        This is general guidance. Your doctor's request has the exact instructions for your study.
+        If you are unsure, call Radiology at <strong>@Model.LocalExtension</strong>.
+    </p>
+
+    <h3 class="h6 fw-bold text-primary-drmc">For every study</h3>
+    <ul class="small text-dark mb-3">
+        @foreach (var item in RadiologyPreparation.GeneralItems)
+        {
+            <li>@item</li>
+        }
+    </ul>
+
+    <div class="alert alert-warning border-0 rounded-3 small mb-3" role="note">
+        <h3 class="h6 fw-bold mb-2"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i> Tell the staff first</h3>
+        <ul class="mb-0">
+            @foreach (var notice in RadiologyPreparation.SafetyNotices)
+            {
+                <li>@notice</li>
+            }
+        </ul>
+    </div>
+
+    <h3 class="h6 fw-bold text-primary-drmc">By type of study</h3>
+    <div class="d-flex flex-column gap-2">
+        @foreach (var guide in RadiologyPreparation.Guides)
+        {
+            <details class="border rounded-3 px-3 py-2 bg-light" id="prep-@guide.Key">
+                <summary class="fw-semibold small text-dark py-1">
+                    <i class="bi @guide.Icon me-1 text-primary-drmc" aria-hidden="true"></i> @guide.Title
+                </summary>
+                <ul class="small text-dark mt-2 mb-1">
+                    @foreach (var item in guide.Items)
+                    {
+                        <li>@item</li>
+                    }
+                </ul>
+            </details>
+        }
+    </div>
+</section>

@@ -107,6 +107,7 @@ builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
 // PHI and security access audit logging service
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.Configure<PatientDocumentStorageOptions>(builder.Configuration.GetSection("PatientDocuments"));
+builder.Services.Configure<PatientResultsOptions>(builder.Configuration.GetSection(PatientResultsOptions.SectionName));
 builder.Services.AddScoped<IPatientDocumentStorage, PatientDocumentStorage>();
 builder.Services.AddHostedService<TemporaryDocumentCleanupService>();
 
@@ -131,9 +132,11 @@ builder.Services.AddSession(options =>
         : CookieSecurePolicy.Always;
 });
 
-builder.Services.AddAuthorization(options => options.AddPolicy("AdminAccess", policy =>
-    policy.RequireAuthenticatedUser().RequireRole("Admin").AddRequirements(new AdminRequirement())));
+builder.Services.AddAuthorization(AdminPolicies.Register);
 builder.Services.AddScoped<IAuthorizationHandler, AdminAuthorizationHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, StaffAuthorizationHandler>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<AdminAccessScope>();
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, AdminAuthorizationResultHandler>();
 builder.Services.AddScoped<AdminWrites>();
 builder.Services.AddSingleton<ImportStaging>();
@@ -257,15 +260,7 @@ app.MapControllerRoute(
 app.MapRazorPages()
    .WithStaticAssets();
 
-foreach (var endpoint in ((Microsoft.AspNetCore.Routing.IEndpointRouteBuilder)app).DataSources.SelectMany(source => source.Endpoints))
-{
-    var action = endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor>();
-    if (action is null || !action.RouteValues.TryGetValue("area", out var area) || area != "Admin") continue;
-    if (endpoint.Metadata.GetMetadata<IAllowAnonymous>() is not null)
-        throw new InvalidOperationException("Admin endpoints must not allow anonymous access.");
-    if (!endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>().Any(data => data.Policy == "AdminAccess"))
-        throw new InvalidOperationException("Admin endpoints must require the AdminAccess authorization policy.");
-}
+AdminEndpointGuard.Validate(((Microsoft.AspNetCore.Routing.IEndpointRouteBuilder)app).DataSources.SelectMany(source => source.Endpoints));
 
 app.Run();
 

@@ -452,7 +452,15 @@ textarea:focus-visible,
     font-size: 1.15rem;
 }
 
-.mobile-more-link:hover {
+.mobile-more-link .mobile-more-icon {
+    width: 1.15rem;
+    height: 1.15rem;
+    flex-shrink: 0;
+    object-fit: contain;
+}
+
+.mobile-more-link:hover,
+.mobile-more-link.active {
     color: var(--drmc-primary);
     border-color: #bdd1e2;
 }
@@ -2812,3 +2820,42 @@ code,
         transition-duration: 0.01ms !important;
     }
 }
+
+/* Radiology filters: search field ahead of the shared lab filter layout. */
+.lab-filter-form.has-search {
+    grid-template-columns: minmax(200px, 1.2fr) minmax(180px, 1fr) minmax(180px, 1fr) auto;
+}
+
+.lab-filter-form.has-search .radiology-search-field { grid-column: 1; grid-row: 1; min-width: 0; }
+.lab-filter-form.has-search .lab-category-field { grid-column: 2; }
+.lab-filter-form.has-search .lab-date-field { grid-column: 3; }
+.lab-filter-form.has-search .lab-filter-actions { grid-column: 4; }
+.lab-filter-form.has-search .lab-custom-date { grid-column: 3 / 5; }
+
+/* Tablet and small desktop: search gets its own row so the filters and actions are not clipped. */
+@media (min-width: 768px) and (max-width: 1199.98px) {
+    .lab-filter-form.has-search { grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto; }
+    .lab-filter-form.has-search .radiology-search-field { grid-column: 1 / -1; grid-row: 1; }
+    .lab-filter-form.has-search .lab-category-field { grid-column: 1; grid-row: 2; }
+    .lab-filter-form.has-search .lab-date-field { grid-column: 2; grid-row: 2; }
+    .lab-filter-form.has-search .lab-filter-actions { grid-column: 3; grid-row: 2; }
+    .lab-filter-form.has-search .lab-custom-date { grid-column: 2 / 4; grid-row: 3; }
+}
+
+@media (max-width: 767.98px) {
+    .lab-filter-form.has-search .radiology-search-field { margin-bottom: 0.5rem; }
+    .lab-filter-form.has-search .radiology-search-field .form-label {
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
+    .lab-filter-form.has-search .lab-category-field { grid-column: 1; }
+    .lab-filter-form.has-search .lab-date-field,
+    .lab-filter-form.has-search .lab-custom-date,
+    .lab-filter-form.has-search .lab-filter-actions { grid-column: 1; }
+}
+
+.radiology-report-section + .radiology-report-section { margin-top: 1rem; }
+.radiology-report-text { white-space: pre-line; }
+
+/* Released lab values (PatientResults:ShowFullResults): scroll sideways on narrow screens instead of breaking words. */
+.lab-values-table { min-width: 32rem; }

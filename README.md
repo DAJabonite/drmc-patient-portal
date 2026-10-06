@@ -1,6 +1,6 @@
 # DRMC Patient Portal
 
-ASP.NET Core MVC and Identity application for Davao Regional Medical Center. Public pages provide hospital information, doctor listings and advisories. Patients can register, manage encrypted ID documents and view their linked hospital records. The staff Admin area manages patient records, clinical availability, public content and reconciled imports.
+ASP.NET Core MVC and Identity application for Davao Regional Medical Center. Public pages provide hospital information, doctor listings and advisories. Patients can register, manage encrypted ID documents and view their linked hospital records, including the availability of laboratory results and radiology (imaging) studies. The staff Admin area manages patient records, clinical availability, public content and reconciled imports.
 
 This application is not connected to hospital clinical, pharmacy, billing or social-work systems. Demonstration records, schedules and guidance require institutional approval before production use.
 
@@ -69,6 +69,7 @@ The container binds to `127.0.0.1` only and keeps data in the `drmc-sqlserver` v
 | `Imports__StagingPath` | Encrypted import staging; default the current user's local application-data DRMC/ImportStaging directory |
 | `Notifications__Email__*` | SMTP host, port, TLS, credentials and sender |
 | `Notifications__Sms__*` | HTTPS webhook, API key and sender ID |
+| `PatientResults__ShowFullResults` | Show released laboratory values and radiology reports to the owning patient; default `false`. Keep it `false` in tracked settings until DRMC approves full results in the portal |
 | `Identity__RequireConfirmedAccount` | Require a confirmed email before sign-in; default `true`. In Development the confirmation link is written to the console |
 
 Relative storage paths resolve from the application content root. Restrict directory permissions to the app identity and approved operators. Retain the key ring across releases and back it up together with patient documents and the database.
@@ -81,6 +82,7 @@ Back up the database before applying or reversing migrations. New migrations are
 2. `20261004162211_AdminConcurrencyAudit`: adds concurrency tokens and staff audit storage. Downgrade removes staff history and concurrency columns; do not use it on a database whose history must be retained.
 3. `20261005042232_AdminImportBatches`: stores operational import-job metadata. Downgrade is blocked when import history exists.
 4. `20261005070928_AdminImportLeases`: adds nullable worker ownership and lease fields plus a status/lease index, without rewriting existing rows. Downgrade is blocked when import history exists.
+5. `20261006024312_AddRadiologyStudies`: adds the `RadiologyStudies` table (unique accession number ignoring case, owning patient record, optional encounter, concurrency token). No existing rows are changed. Downgrade is blocked when radiology studies exist.
 
 The initial SQL Server migration is `20260929123803_InitialSqlServer`. During upgrade, drain and stop older builds, apply migrations, then run only the new build. Older workers cannot respect the lease protocol.
 
@@ -93,7 +95,7 @@ export DRMC_TEST_SQLSERVER="Server=localhost,1433;User Id=sa;Password=$MSSQL_SA_
 dotnet test DrmcPatientPortal.slnx
 ```
 
-The tests cover public pages, the sign-in requirement, patient record isolation, the not-found page, the Content Security Policy, email confirmation and readable lab categories. GitHub Actions (`.github/workflows/ci.yml`) runs the build with warnings as errors, a pending-migration check and these tests on every pull request against a SQL Server service container.
+The tests cover public pages, the sign-in requirement, patient record isolation, the not-found page, the Content Security Policy, email confirmation, readable lab categories, the Admin access matrix for Admin, LabStaff and RadiologyStaff, staff role grants, radiology Admin CRUD, the patient Radiology page and navigation, and the `PatientResults:ShowFullResults` switch in both positions. GitHub Actions (`.github/workflows/ci.yml`) runs the build with warnings as errors, a pending-migration check and these tests on every pull request against a SQL Server service container.
 
 Views must not use inline `<script>` blocks or `on*` attributes, because the Content Security Policy only allows `script-src 'self'`. Put scripts in `wwwroot/js`; use `data-auto-submit` on a form control or `data-confirm="..."` on a form for the common cases.
 
@@ -129,9 +131,19 @@ dotnet run --project src/DrmcPatientPortal --launch-profile http
 
 5. Remove both bootstrap variables, restart, sign out and sign in with an authenticator code. Open `/Admin`.
 
-The Admin role is created idempotently at startup. Bootstrap only promotes an existing, email-confirmed, 2FA-enabled, non-locked-out account. Every startup while bootstrap is enabled logs a warning, including when no email is configured.
+The Admin, LabStaff and RadiologyStaff roles are created idempotently at startup. Bootstrap only promotes an existing, email-confirmed, 2FA-enabled, non-locked-out account. Every startup while bootstrap is enabled logs a warning, including when no email is configured.
 
-All Admin endpoints require the Admin role, currently confirmed email, enabled 2FA, a non-locked-out account and an `amr=mfa` sign-in claim. Password-only and remembered-browser sessions do not qualify. Anonymous requests receive the normal Identity login challenge with `ReturnUrl`; authenticated requests failing these rules receive HTTP 403. Select **Forget this browser** under Two-factor authentication, then sign out and sign in with an authenticator code. Admin writes require antiforgery tokens. Startup rejects anonymous Admin endpoints or endpoints missing the Admin policy.
+All Admin endpoints require a staff role allowed for that section (see Staff Roles), currently confirmed email, enabled 2FA, a non-locked-out account and an `amr=mfa` sign-in claim. Password-only and remembered-browser sessions do not qualify. Anonymous requests receive the normal Identity login challenge with `ReturnUrl`; authenticated requests failing these rules receive HTTP 403. Select **Forget this browser** under Two-factor authentication, then sign out and sign in with an authenticator code. Admin writes require antiforgery tokens. Startup rejects anonymous Admin endpoints and Admin controllers without a registered staff policy.
+
+## Staff Roles
+
+| Role | Admin sections |
+| --- | --- |
+| Admin | Everything, including `/Admin/StaffAccess` |
+| LabStaff | Dashboard, `/Admin/LabResults`, `/Admin/LabResultItems` |
+| RadiologyStaff | Dashboard, `/Admin/RadiologyStudies` |
+
+To add staff: the person registers, confirms their email and enables two-factor authentication. An Admin opens `/Admin/StaffAccess`, selects the account and grants LabStaff or RadiologyStaff. Admin itself is only granted through bootstrap. Grants and revocations take effect on the next request, refresh the account's security stamp and are written to the staff audit log. Staff see only their sections in the sidebar and dashboard; the dashboard hides the audit feed and import status from non-Admin staff. The portal's Administration link appears after the person signs in again. Staff choose patients through the existing patient context picker, which shows name and hospital number only.
 
 ## Admin Area
 
@@ -142,7 +154,9 @@ All Admin endpoints require the Admin role, currently confirmed email, enabled 2
 | `/Admin/PublicAdvisories` | Sanitized public advisories |
 | `/Admin/ClinicalEncounters` | Dashboard and visit records |
 | `/Admin/LabResults` | Laboratory availability |
-| `/Admin/LabResultItems` | Staff-only items within a selected lab |
+| `/Admin/LabResultItems` | Items within a selected lab (patients see them only when `PatientResults:ShowFullResults` is on) |
+| `/Admin/RadiologyStudies` | Imaging studies, reports, release time and staff-only internal notes |
+| `/Admin/StaffAccess` | Grant or revoke LabStaff and RadiologyStaff (Admin only) |
 | `/Admin/Prescriptions` | Medications and refills |
 | `/Admin/MedicationDoseSchedules` | Dose times within a selected prescription |
 | `/Admin/PatientAllergies` | Patient allergies |
@@ -157,7 +171,13 @@ Hospital patient records exist independently of portal accounts. Staff verify id
 
 Changes and staff audit entries commit together. Registry and clinical audit entries retain field names only, not earlier medical values; they cannot reconstruct prior records. Doctors and PublicAdvisories retain old/new values. Staff clinical views log affected patient references before display; failed audit persistence prevents display. The patient activity page remains unchanged. Both audit tables are append-only through application guards and have no edit/delete endpoints. Database access controls and retention procedures remain an operational responsibility.
 
-General Identity administration, sensitive ID-document metadata, audit tables, migration history and import system metadata have no generic editor. Laboratory item values remain staff-only; the patient laboratory claiming guide is retained. New advisory saves sanitize HTML, but existing legacy HTML is not rewritten; review it before publication. The existing inline-script CSP allowance is unchanged.
+General Identity administration, sensitive ID-document metadata, audit tables, migration history and import system metadata have no generic editor. Laboratory item values and result summaries are staff-only by default; when `PatientResults:ShowFullResults` is switched on, released results (and released radiology reports) are shown to the owning patient, and clinical and internal notes stay staff-only. The patient laboratory claiming guide is retained. New advisory saves sanitize HTML, but existing legacy HTML is not rewritten; review it before publication. The existing inline-script CSP allowance is unchanged.
+
+## Patient Radiology
+
+`/Patient/Radiology` lists the signed-in patient's own imaging studies with imaging-type, date and search filters, a preparation guide and an overview of DRMC imaging services. A study is "Ready for claiming" once its status is Final or Amended and its release time (Manila time) has passed; otherwise it shows "Report in progress". Report sections and the plain-language summary are shown only for released studies and only when `PatientResults:ShowFullResults` is on. Another patient's study returns 404. Internal notes never reach patient pages. The portal shows no images; films and CDs are claimed from DRMC Radiology. Each detail view is recorded as `VIEW_RADIOLOGY_REPORT` in the patient activity log.
+
+To try full results locally, set `$env:PatientResults__ShowFullResults = 'true'` before `dotnet run`. Do not commit it.
 
 ## CSV and Excel Imports
 
@@ -206,4 +226,4 @@ No portable recovery option is implemented. Any future change must preserve decr
 
 Representative source files and expected dataset volume are still needed. Fixed templates do not promise compatibility with arbitrary legacy spreadsheets. Batch limits are safety bounds, not performance guarantees; execution holds one serializable transaction for the whole batch and other writers may cause an atomic failure.
 
-Confirm the meaning of existing clinical timestamps, approve audit/import/document retention and establish key backup/recovery ownership. Departments, OPD and Malasakit guides, privacy/terms, official links and facility instructions remain hard-coded; decide whether they should become managed content. Clinical integrations, authoritative content and institutional deployment approval remain outside this application's current scope.
+Confirm the meaning of existing clinical timestamps, approve audit/import/document retention and establish key backup/recovery ownership. Radiology needs to confirm the patient preparation guide, the films/CD and report releasing window, hours and claiming procedure, and whether the Basement 1 location and Local 208 shown on patient pages are current; the portal marks these as to be confirmed and shows no images. Approve whether patients may see full results before switching `PatientResults:ShowFullResults` on. The Filipino and Cebuano "Radiology" navigation labels need translator review. Departments, OPD and Malasakit guides, privacy/terms, official links and facility instructions remain hard-coded; decide whether they should become managed content. Clinical integrations, authoritative content and institutional deployment approval remain outside this application's current scope.

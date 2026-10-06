@@ -29,6 +29,7 @@ public sealed class PatientEditor : AdminEntity<PatientRecord, PatientInput>
         {
             ["Encounters"] = await db.ClinicalEncounters.CountAsync(e => e.PatientRecordId == entity.Id, token),
             ["Labs"] = await db.LabResults.CountAsync(e => e.PatientRecordId == entity.Id, token),
+            ["Radiology studies"] = await db.RadiologyStudies.CountAsync(e => e.PatientRecordId == entity.Id, token),
             ["Prescriptions"] = await db.Prescriptions.CountAsync(e => e.PatientRecordId == entity.Id, token),
             ["Allergies"] = await db.PatientAllergies.CountAsync(e => e.PatientRecordId == entity.Id, token)
         };

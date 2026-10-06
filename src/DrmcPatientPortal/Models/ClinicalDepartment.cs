@@ -91,6 +91,9 @@ public static class ClinicalDepartments
         ),
     };
 
+    // The Radiology entry is the single source for imaging location and local number on patient pages.
+    public static ClinicalDepartment Radiology => All.Single(d => d.Name == "Radiology");
+
     public static readonly string Heading = "Clinical Departments";
     public static readonly string Subheading = "DRMC specialities and services";
 }

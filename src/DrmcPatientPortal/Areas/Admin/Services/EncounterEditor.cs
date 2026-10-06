@@ -24,7 +24,11 @@ public sealed class EncounterEditor : ClinicalEditor<ClinicalEncounter, Encounte
         FollowUpDate = entity.FollowUpDate, FollowUpNotes = entity.FollowUpNotes
     };
     public override async Task<IReadOnlyDictionary<string, int>> DependentsAsync(ApplicationDbContext db, ClinicalEncounter entity, CancellationToken token) =>
-        new Dictionary<string, int> { ["Labs"] = await db.LabResults.CountAsync(l => l.ClinicalEncounterId == entity.Id, token) };
+        new Dictionary<string, int>
+        {
+            ["Labs"] = await db.LabResults.CountAsync(l => l.ClinicalEncounterId == entity.Id, token),
+            ["Radiology studies"] = await db.RadiologyStudies.CountAsync(r => r.ClinicalEncounterId == entity.Id, token)
+        };
     public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, EncounterInput input, ClinicalEncounter entity,
         OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
     {

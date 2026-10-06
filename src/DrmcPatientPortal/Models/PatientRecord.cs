@@ -14,6 +14,7 @@ public class PatientRecord
     public byte[] RowVersion { get; set; } = [];
     public ICollection<ClinicalEncounter> Encounters { get; set; } = new List<ClinicalEncounter>();
     public ICollection<LabResult> LabResults { get; set; } = new List<LabResult>();
+    public ICollection<RadiologyStudy> RadiologyStudies { get; set; } = new List<RadiologyStudy>();
     public ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();
     public ICollection<PatientAllergy> Allergies { get; set; } = new List<PatientAllergy>();
 }

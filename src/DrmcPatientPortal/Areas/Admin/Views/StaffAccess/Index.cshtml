@@ -1,0 +1,101 @@
+@model StaffAccessPage
+@using DrmcPatientPortal.Areas.Admin.Security
+@{
+    ViewData["Title"] = "Staff access";
+}
+<div class="admin-page-header">
+    <div>
+        <p class="admin-eyebrow">Operations</p>
+        <h1 class="admin-title">Staff access</h1>
+        <p class="admin-subtitle">Grant or revoke Laboratory and Radiology staff roles. Accounts need a confirmed email and two-factor authentication. Admin access is never granted here.</p>
+    </div>
+</div>
+@if (TempData["AdminError"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+@if (TempData["AdminSuccess"] is string success) { <div class="alert alert-success" role="status">@success</div> }
+<div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+<div class="admin-card">
+    <div class="admin-card-header">
+        <form method="get" class="d-flex flex-grow-1 flex-wrap gap-2" role="search">
+            <div class="admin-search">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <label for="search" class="visually-hidden">Search accounts by email or name</label>
+                <input id="search" name="search" value="@Model.Search" maxlength="256" class="form-control" type="search" placeholder="Search by email or name" />
+            </div>
+            <label for="staffScope" class="visually-hidden">Accounts to show</label>
+            <select id="staffScope" name="all" class="form-select w-auto">
+                <option value="false" selected="@(!Model.AllAccounts)">Staff accounts</option>
+                <option value="true" selected="@Model.AllAccounts">All accounts</option>
+            </select>
+            <button class="btn btn-outline-secondary" type="submit">Search</button>
+        </form>
+        <span class="admin-result-count tabular">@Model.Total accounts</span>
+    </div>
+    @if (Model.Rows.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="table admin-table admin-table-stack">
+                <thead><tr><th scope="col">Account</th><th scope="col">Sign-in requirements</th><th scope="col">Staff roles</th><th scope="col" class="text-end">Change access</th></tr></thead>
+                <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td class="text-break"><span class="fw-semibold">@row.Email</span><div class="admin-muted small">@row.Name</div></td>
+                        <td>
+                            <span class="admin-chips">
+                                <span class="@AdminChips.Css(row.EmailConfirmed ? "yes" : "no")">Email @(row.EmailConfirmed ? "confirmed" : "not confirmed")</span>
+                                <span class="@AdminChips.Css(row.TwoFactorEnabled ? "yes" : "no")">2FA @(row.TwoFactorEnabled ? "on" : "off")</span>
+                                @if (row.LockedOut) { <span class="@AdminChips.Css("failed")">Locked out</span> }
+                            </span>
+                        </td>
+                        <td>
+                            @if (row.Roles.Count == 0) { <span class="admin-muted">None</span> }
+                            else { <span class="admin-chips">@foreach (var role in row.Roles) { <span class="@AdminChips.Css("active")">@StaffRoles.Label(role)</span> }</span> }
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex flex-wrap gap-2 justify-content-end">
+                                @foreach (var role in StaffRoles.Grantable)
+                                {
+                                    var has = row.Roles.Contains(role);
+                                    <form asp-area="Admin" asp-controller="StaffAccess" asp-action="Update" method="post" class="d-inline">
+                                        <input type="hidden" name="userId" value="@row.Id" />
+                                        <input type="hidden" name="role" value="@role" />
+                                        <input type="hidden" name="grant" value="@(has ? "false" : "true")" />
+                                        <input type="hidden" name="concurrencyStamp" value="@row.ConcurrencyStamp" />
+                                        <input type="hidden" name="search" value="@Model.Search" />
+                                        <input type="hidden" name="all" value="@(Model.AllAccounts ? "true" : "false")" />
+                                        <input type="hidden" name="page" value="@Model.Page" />
+                                        @if (has)
+                                        {
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Revoke @StaffRoles.Label(role).ToLowerInvariant()<span class="visually-hidden"> from @row.Email</span></button>
+                                        }
+                                        else if (row.EligibleForGrant)
+                                        {
+                                            <button type="submit" class="btn btn-sm btn-outline-primary">Grant @StaffRoles.Label(role).ToLowerInvariant()<span class="visually-hidden"> to @row.Email</span></button>
+                                        }
+                                        else
+                                        {
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary" disabled aria-describedby="eligibility-@row.Id">Grant @StaffRoles.Label(role).ToLowerInvariant()</button>
+                                        }
+                                    </form>
+                                }
+                            </div>
+                            @if (!row.EligibleForGrant) { <div id="eligibility-@row.Id" class="admin-muted small mt-1">Needs a confirmed email and 2FA before a role can be granted.</div> }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="admin-empty"><span class="admin-empty-icon"><i class="bi bi-person-lock" aria-hidden="true"></i></span><h2>No accounts found</h2><p>Choose "All accounts" and search by email to find an account to grant access.</p></div>
+    }
+    <nav class="admin-card-footer" aria-label="Account pages">
+        <span class="tabular">Page @Model.Page of @Model.Pages</span>
+        <span class="d-flex gap-2">
+            <a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-all="@Model.AllAccounts" asp-route-page="@(Model.Page - 1)" class="btn btn-sm btn-outline-secondary @(Model.Page == 1 ? "disabled" : "")" aria-label="Previous page"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
+            <a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-all="@Model.AllAccounts" asp-route-page="@(Model.Page + 1)" class="btn btn-sm btn-outline-secondary @(Model.Page == Model.Pages ? "disabled" : "")" aria-label="Next page"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+        </span>
+    </nav>
+</div>
