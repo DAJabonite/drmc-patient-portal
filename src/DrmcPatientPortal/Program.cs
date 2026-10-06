@@ -108,6 +108,7 @@ builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.Configure<PatientDocumentStorageOptions>(builder.Configuration.GetSection("PatientDocuments"));
 builder.Services.Configure<PatientResultsOptions>(builder.Configuration.GetSection(PatientResultsOptions.SectionName));
+builder.Services.Configure<PatientRegistrationOptions>(builder.Configuration.GetSection(PatientRegistrationOptions.Section));
 builder.Services.AddScoped<IPatientDocumentStorage, PatientDocumentStorage>();
 builder.Services.AddHostedService<TemporaryDocumentCleanupService>();
 

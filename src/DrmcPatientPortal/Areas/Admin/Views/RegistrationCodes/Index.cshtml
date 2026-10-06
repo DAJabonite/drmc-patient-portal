@@ -1,0 +1,82 @@
+@model RegistrationCodeList
+@{
+    ViewData["Title"] = "Registration codes";
+    var from = Model.Total == 0 ? 0 : (Model.Page - 1) * 25 + 1;
+    var to = Math.Min(Model.Page * 25, Model.Total);
+}
+<div class="admin-page-header">
+    <div>
+        <p class="admin-eyebrow">Patient records</p>
+        <h1 class="admin-title">Registration codes</h1>
+        <p class="admin-subtitle">Hospital record codes prove a person has a DRMC record and link it to the portal account they create. Issue one only after checking the patient's ID in person.</p>
+    </div>
+    <div class="admin-page-actions">
+        <a asp-area="Admin" asp-action="Create" class="btn btn-primary"><i class="bi bi-qr-code me-1" aria-hidden="true"></i>Issue code</a>
+    </div>
+</div>
+@if (TempData["AdminStatus"] is string status) { <div class="alert alert-success" role="status">@status</div> }
+@if (TempData["AdminError"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+<div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+<div class="admin-card">
+    <div class="admin-card-header">
+        <form method="get" class="d-flex flex-grow-1 gap-2" role="search">
+            <div class="admin-search">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <label for="search" class="visually-hidden">Search registration codes</label>
+                <input id="search" name="search" value="@Model.Search" maxlength="450" class="form-control" type="search" placeholder="Search name, hospital number or last 5 characters" />
+            </div>
+            <button class="btn btn-outline-secondary" type="submit">Search</button>
+        </form>
+        <span class="admin-result-count tabular">@if (Model.Total > 0) { <text>Showing @from–@to of @Model.Total</text> } else { <text>0 codes</text> }</span>
+    </div>
+    @if (Model.Rows.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="table table-hover admin-table admin-table-stack">
+                <thead><tr><th scope="col">Patient</th><th scope="col">Code</th><th scope="col">Issued</th><th scope="col">Status</th><th scope="col" class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+                <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td class="text-break">
+                            <span class="fw-semibold">@row.PatientName</span>
+                            <div class="admin-muted small">Hospital number: @(row.HospitalNumber ?? "unassigned")</div>
+                        </td>
+                        <td><span class="font-monospace" aria-label="Code ending in @row.Hint">•••••-•••••-@row.Hint</span></td>
+                        <td class="text-break">
+                            @row.IssuingPoint
+                            <div class="admin-muted small tabular">@row.IssuedAt.ToString("MMM d, yyyy h:mm tt") · @(row.Status == RegistrationCodeStatus.Redeemed ? "Used " + row.RedeemedAt!.Value.ToString("MMM d, yyyy") : "Expires " + row.ExpiresAt.ToString("MMM d, yyyy h:mm tt"))</div>
+                        </td>
+                        <td><span class="@AdminChips.Css(row.Status.ToString())">@row.Status</span></td>
+                        <td class="text-end text-nowrap">
+                            @if (row.Status == RegistrationCodeStatus.Active)
+                            {
+                                <form method="post" asp-area="Admin" asp-action="Revoke" asp-route-id="@row.Id" class="d-inline" data-confirm="Revoke this code? The patient will need a new code to sign up.">
+                                    <input type="hidden" name="rowVersion" value="@row.RowVersion" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Revoke<span class="visually-hidden"> code for @row.PatientName</span></button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="admin-empty">
+            <span class="admin-empty-icon"><i class="bi bi-qr-code" aria-hidden="true"></i></span>
+            <h2>@(string.IsNullOrEmpty(Model.Search) ? "No codes issued yet" : "No matching codes")</h2>
+            <p>@(string.IsNullOrEmpty(Model.Search) ? "Issue a code when a patient with a hospital record asks to create a portal account." : "Try a different search term.")</p>
+            @if (!string.IsNullOrEmpty(Model.Search)) { <a asp-area="Admin" asp-action="Index" class="btn btn-outline-secondary">Clear search</a> }
+        </div>
+    }
+    <nav class="admin-card-footer" aria-label="Code pages">
+        <span class="tabular">Page @Model.Page of @Model.Pages</span>
+        <span class="d-flex gap-2">
+            <a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-page="@(Model.Page - 1)" class="btn btn-sm btn-outline-secondary @(Model.Page == 1 ? "disabled" : "")" aria-label="Previous page"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
+            <a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-page="@(Model.Page + 1)" class="btn btn-sm btn-outline-secondary @(Model.Page == Model.Pages ? "disabled" : "")" aria-label="Next page"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+        </span>
+    </nav>
+</div>

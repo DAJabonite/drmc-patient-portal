@@ -376,6 +376,121 @@ $(function () {
         }
     });
 
+    // Hospital record code: format as XXXXX-XXXXX-XXXXX, prefill from a QR link (#code=...), and
+    // scan a QR with the camera where the browser supports BarcodeDetector.
+    const recordCodeInput = document.getElementById('hospitalRecordCode');
+    const recordCodePanel = document.getElementById('hospitalRecordCodePanel');
+    const recordCodeStatus = document.getElementById('hospitalRecordCodeStatus');
+    const scanButton = document.getElementById('btnScanRecordCode');
+    const scanner = document.getElementById('recordCodeScanner');
+    const scanVideo = document.getElementById('recordCodeVideo');
+    const dobInput = document.getElementById('txtDob');
+    const codeAlphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+    let scanStream = null;
+    let scanTimer = null;
+
+    function canonicalCode(value) {
+        let out = '';
+        for (const raw of String(value || '').toUpperCase()) {
+            const c = raw === 'O' ? '0' : (raw === 'I' || raw === 'L') ? '1' : raw;
+            if (codeAlphabet.includes(c)) out += c;
+        }
+        return out.slice(0, 15);
+    }
+
+    function formatCode(value) {
+        const c = canonicalCode(value);
+        return c.match(/.{1,5}/g)?.join('-') ?? '';
+    }
+
+    function codeFromScan(text) {
+        try {
+            const url = new URL(text);
+            const fromHash = new URLSearchParams(url.hash.slice(1)).get('code');
+            if (fromHash) return fromHash;
+        } catch { /* not a URL; treat as the code itself */ }
+        return text;
+    }
+
+    function setRecordCode(value, message) {
+        recordCodeInput.value = formatCode(value);
+        recordCodePanel.classList.toggle('is-filled', canonicalCode(recordCodeInput.value).length === 15);
+        recordCodeStatus.textContent = message || '';
+        if (recordCodeInput.value) validator.element(recordCodeInput);
+    }
+
+    recordCodeInput.addEventListener('input', function () {
+        const caret = recordCodeInput.selectionStart === recordCodeInput.value.length;
+        const formatted = formatCode(recordCodeInput.value);
+        if (formatted !== recordCodeInput.value && caret) recordCodeInput.value = formatted;
+        recordCodePanel.classList.toggle('is-filled', canonicalCode(recordCodeInput.value).length === 15);
+        recordCodeStatus.textContent = '';
+    });
+    recordCodeInput.addEventListener('blur', function () {
+        if (recordCodeInput.value) recordCodeInput.value = formatCode(recordCodeInput.value);
+    });
+
+    // The code travels in the URL fragment, which is never sent to the server; remove it from the
+    // address bar and history once read.
+    const hashCode = new URLSearchParams(window.location.hash.slice(1)).get('code');
+    if (hashCode) {
+        setRecordCode(hashCode, 'Filled in from your QR code.');
+        document.getElementById('hospitalCodeNotice').classList.remove('d-none');
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+
+    function stopScan() {
+        if (scanTimer) { clearTimeout(scanTimer); scanTimer = null; }
+        scanStream?.getTracks().forEach(t => t.stop());
+        scanStream = null;
+        scanVideo.srcObject = null;
+        scanner.classList.add('d-none');
+        scanButton.setAttribute('aria-expanded', 'false');
+    }
+
+    if ('BarcodeDetector' in window && navigator.mediaDevices?.getUserMedia) {
+        scanButton.classList.remove('d-none');
+        scanButton.addEventListener('click', async function () {
+            if (scanStream) { stopScan(); scanButton.focus(); return; }
+            let detector;
+            try {
+                const formats = await window.BarcodeDetector.getSupportedFormats();
+                if (!formats.includes('qr_code')) throw new Error('QR not supported');
+                detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+                scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+            } catch {
+                stopScan();
+                recordCodeStatus.textContent = 'The camera could not be opened. Type the code printed under the QR instead.';
+                return;
+            }
+            scanner.classList.remove('d-none');
+            scanButton.setAttribute('aria-expanded', 'true');
+            recordCodeStatus.textContent = 'Point your camera at the QR code on your slip.';
+            scanVideo.srcObject = scanStream;
+            await scanVideo.play().catch(() => { });
+            const tick = async function () {
+                if (!scanStream) return;
+                try {
+                    const found = await detector.detect(scanVideo);
+                    if (found.length) {
+                        const value = codeFromScan(found[0].rawValue);
+                        stopScan();
+                        if (canonicalCode(value).length === 15) {
+                            setRecordCode(value, 'Code scanned. Check that it matches your slip.');
+                        } else {
+                            recordCodeStatus.textContent = 'That QR code is not a DRMC hospital record code. Type the code printed on your slip.';
+                        }
+                        recordCodeInput.focus();
+                        return;
+                    }
+                } catch { /* frame not ready yet */ }
+                scanTimer = setTimeout(tick, 250);
+            };
+            tick();
+        });
+        document.getElementById('btnStopScan').addEventListener('click', function () { stopScan(); scanButton.focus(); });
+    }
+
     form.addEventListener('submit', function (event) {
         if (submitting) { event.preventDefault(); return; }
         if (!accepted) { event.preventDefault(); consentModal.show(); return; }
@@ -398,6 +513,15 @@ $(function () {
             input.focus();
             return;
         }
+        // A hospital record code is checked against the date of birth, which is optional otherwise.
+        if (recordCodeInput.value.trim() && !dobInput.value) {
+            event.preventDefault();
+            updateProgress(3);
+            showFeedback(3, 'Enter your date of birth to use a hospital record code. It must match your hospital record.');
+            dobInput.focus();
+            return;
+        }
+        if (scanStream) stopScan();
         submitting = true;
         const submit = document.getElementById('registerSubmit');
         submit.disabled = true;

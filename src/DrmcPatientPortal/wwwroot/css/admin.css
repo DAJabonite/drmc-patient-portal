@@ -309,3 +309,20 @@
     .admin-table-stack, .admin-table-stack tbody { display: block; width: 100%; }
 }
 @media (max-width: 991.98px) { .admin-table-cards.admin-audit-table { min-width: 0; } }
+
+/* Registration code slip */
+.registration-slip-grid { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 1.5rem; align-items: center; margin-bottom: 1.25rem; }
+.registration-slip-qr { background: #fff; border: 1px solid var(--admin-gridline); border-radius: .5rem; padding: .5rem; line-height: 0; }
+.registration-slip-qr svg { width: 100%; height: auto; display: block; }
+.registration-slip-code { font-size: clamp(1.4rem, 3.2vw, 2rem); font-weight: 700; letter-spacing: .08em; color: var(--drmc-primary-deep); margin-bottom: 1rem; word-break: break-all; }
+.registration-slip-meta { padding: 0; }
+.registration-slip-steps { padding-left: 1.2rem; }
+@media (max-width: 575.98px) {
+    .registration-slip-grid { grid-template-columns: minmax(0, 1fr); }
+    .registration-slip-qr { max-width: 240px; }
+}
+@media print {
+    .admin-sidebar, .admin-topbar, .admin-no-print, .skip-link { display: none !important; }
+    .admin-main-column, .admin-main { margin: 0 !important; padding: 0 !important; }
+    .registration-slip { border: 1px solid #000; box-shadow: none; }
+}

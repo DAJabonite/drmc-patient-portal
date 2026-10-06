@@ -1,0 +1,37 @@
+@model RegistrationCodeSlip
+@{ ViewData["Title"] = "Registration code issued"; }
+<div class="admin-page-header admin-no-print">
+    <div>
+        <p class="admin-eyebrow">Registration codes</p>
+        <h1 class="admin-title">Code issued</h1>
+        <p class="admin-subtitle">Print or show this slip now. For security, the full code is shown only once and cannot be displayed again.</p>
+    </div>
+    <div class="admin-page-actions">
+        <a asp-area="Admin" asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Done</a>
+        <button type="button" class="btn btn-primary" data-admin-print><i class="bi bi-printer me-1" aria-hidden="true"></i>Print slip</button>
+    </div>
+</div>
+<div class="alert alert-success admin-no-print" role="status">The code was issued and the action was recorded in the audit history.</div>
+<section class="admin-card registration-slip" aria-labelledby="slipTitle">
+    <div class="admin-card-body">
+        <div class="registration-slip-grid">
+            <div class="registration-slip-qr" role="img" aria-label="QR code that opens portal signup with this code filled in">@Html.Raw(Model.QrSvg)</div>
+            <div>
+                <p class="admin-eyebrow mb-1">Davao Regional Medical Center · Patient Portal</p>
+                <h2 class="h4 fw-bold mb-2" id="slipTitle">Your hospital record code</h2>
+                <p class="registration-slip-code font-monospace" data-registration-code aria-label="Code @string.Join(" ", Model.Code.ToCharArray())">@Model.Code</p>
+                <dl class="admin-dl registration-slip-meta">
+                    <div><dt>Patient</dt><dd>@Model.Context.Patient.FullName</dd></div>
+                    <div><dt>Issuing point</dt><dd>@Model.IssuingPoint</dd></div>
+                    <div><dt>Valid until</dt><dd class="tabular">@Model.ExpiresAt.ToString("MMMM d, yyyy h:mm tt") (Philippine time)</dd></div>
+                </dl>
+            </div>
+        </div>
+        <ol class="registration-slip-steps small mb-0">
+            <li>Scan the QR code with your phone camera, or go to the portal and choose <strong>Create account</strong>.</li>
+            <li>On the <strong>Credentials</strong> step, enter this code in <strong>Hospital record code</strong>.</li>
+            <li>Enter the same date of birth that is on your hospital record. The code works once.</li>
+        </ol>
+        <p class="small text-muted mt-3 mb-0">Keep this slip private. DRMC staff will never ask you for this code by phone, text or social media.</p>
+    </div>
+</section>

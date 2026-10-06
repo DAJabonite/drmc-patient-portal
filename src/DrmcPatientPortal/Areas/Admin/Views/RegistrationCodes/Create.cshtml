@@ -1,0 +1,54 @@
+@model RegistrationCodeIssuePage
+@{
+    ViewData["Title"] = "Issue registration code";
+    var days = ViewData["LifetimeDays"] is int d ? d : 7;
+    var blocked = Model.Linked || !Model.HasBirthDate;
+}
+<div class="admin-page-header">
+    <div>
+        <p class="admin-eyebrow">Registration codes · Step 2</p>
+        <h1 class="admin-title">Issue registration code</h1>
+        <p class="admin-subtitle">Check the patient's valid ID against this record, then give them the printed code or QR. It works once and expires in @days days.</p>
+    </div>
+    <span class="@(Model.Linked ? "admin-chip admin-chip-success" : "admin-chip")">Portal account: @(Model.Linked ? "Linked" : "Unlinked")</span>
+</div>
+<partial name="_CodeContext" model="Model.Context.Patient" />
+@if (Model.Linked)
+{
+    <div class="alert alert-info" role="status">This hospital record is already linked to a portal account, so the patient does not need a code. To sign in, they use the email address on that account.</div>
+}
+else if (!Model.HasBirthDate)
+{
+    <div class="alert alert-warning" role="status">This record has no birth date. Signup checks the code against the birth date, so add it to the hospital record before issuing a code.</div>
+}
+else if (Model.ActiveCodes > 0)
+{
+    <div class="alert alert-warning" role="status">This patient already has an active code. Issuing a new one revokes the earlier code.</div>
+}
+<form method="post" asp-area="Admin" asp-action="Create" asp-route-id="@Model.Context.Patient.Id" class="admin-card admin-form">
+    <div class="admin-card-header"><h2 class="admin-card-title">Identity check</h2></div>
+    <div class="admin-card-body">
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+        <dl class="admin-dl mb-3">
+            <div><dt>Full name on record</dt><dd>@Model.Context.Patient.FullName</dd></div>
+            <div><dt>Birth date on record</dt><dd class="tabular">@(Model.Context.Patient.DateOfBirth?.ToString("MMMM d, yyyy") ?? "Not recorded")</dd></div>
+        </dl>
+        <div class="mb-3">
+            <label asp-for="Input.IssuingPoint" class="form-label">Issuing point</label>
+            <select asp-for="Input.IssuingPoint" class="form-select" disabled="@blocked">
+                @foreach (var point in RegistrationCodeIssuingPoints.All) { <option value="@point">@point</option> }
+            </select>
+            <span asp-validation-for="Input.IssuingPoint" class="text-danger"></span>
+        </div>
+        <div class="form-check">
+            <input asp-for="Input.IdentityVerified" class="form-check-input" disabled="@blocked" />
+            <label asp-for="Input.IdentityVerified" class="form-check-label">Staff checked the patient's valid ID against this record</label>
+        </div>
+        <span asp-validation-for="Input.IdentityVerified" class="text-danger"></span>
+    </div>
+    <div class="admin-form-actions">
+        <a asp-area="Admin" asp-action="Create" asp-route-id="" class="btn btn-outline-secondary me-auto">Back</a>
+        <button type="submit" class="btn btn-primary" disabled="@blocked"><i class="bi bi-qr-code me-1" aria-hidden="true"></i>Issue code</button>
+    </div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

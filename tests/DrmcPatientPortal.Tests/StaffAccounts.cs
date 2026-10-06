@@ -16,6 +16,7 @@ internal static partial class StaffAccounts
     public const string AdminEmail = "admin.staff@fixtures.test";
     public const string LabEmail = "lab.staff@fixtures.test";
     public const string RadiologyEmail = "radiology.staff@fixtures.test";
+    public const string PatientServicesEmail = "pacd.staff@fixtures.test";
 
     private static readonly ConcurrentDictionary<(object, string), Task<HttpClient>> Sessions = new();
 
@@ -32,6 +33,7 @@ internal static partial class StaffAccounts
     public static Task<HttpClient> AdminAsync(PortalFactory factory) => SignInAsync(factory, AdminEmail, "Admin");
     public static Task<HttpClient> LabAsync(PortalFactory factory) => SignInAsync(factory, LabEmail, "LabStaff");
     public static Task<HttpClient> RadiologyAsync(PortalFactory factory) => SignInAsync(factory, RadiologyEmail, "RadiologyStaff");
+    public static Task<HttpClient> PatientServicesAsync(PortalFactory factory) => SignInAsync(factory, PatientServicesEmail, "PatientServicesStaff");
 
     // Sessions are cached per host so one authenticator code is never replayed for the same account.
     public static Task<HttpClient> SignInAsync<T>(WebApplicationFactory<T> host, string email, params string[] roles) where T : class =>

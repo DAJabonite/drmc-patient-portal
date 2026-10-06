@@ -26,6 +26,7 @@ public sealed class HomeController(ApplicationDbContext db, AdminAccessScope sco
         var counters = new (string Controller, Func<Task<int>> Count)[]
         {
             ("Patients", () => db.PatientRecords.CountAsync(cancellationToken)),
+            ("RegistrationCodes", () => db.PatientRegistrationCodes.CountAsync(cancellationToken)),
             ("ClinicalEncounters", () => db.ClinicalEncounters.CountAsync(cancellationToken)),
             ("LabResults", () => db.LabResults.CountAsync(cancellationToken)),
             ("LabResultItems", () => db.LabResultItems.CountAsync(cancellationToken)),
@@ -43,6 +44,7 @@ public sealed class HomeController(ApplicationDbContext db, AdminAccessScope sco
             if (Can(controller)) counts[controller] = await count();
 
         var now = DrmcPatientPortal.Services.ClinicalClock.WallTime(DateTimeOffset.UtcNow);
+        var utcNow = DateTime.UtcNow;
         var metrics = new (string Controller, Func<Task<AdminMetric>> Build)[]
         {
             ("LabResults", async () => { var n = await db.LabResults.CountAsync(l => l.Status != "Available", cancellationToken);
@@ -54,6 +56,9 @@ public sealed class HomeController(ApplicationDbContext db, AdminAccessScope sco
                 return new AdminMetric("Imports in progress", n, "bi-arrow-repeat", "Imports", "Staged, validating or awaiting approval", n > 0); }),
             ("Patients", async () => { var n = await db.PatientRecords.CountAsync(p => p.PortalUserId == null, cancellationToken);
                 return new AdminMetric("Unlinked patient records", n, "bi-link-45deg", "Patients", "No verified portal account yet", n > 0); }),
+            ("RegistrationCodes", async () => { var n = await db.PatientRegistrationCodes.CountAsync(c =>
+                    c.RedeemedAtUtc == null && c.RevokedAtUtc == null && c.ExpiresAtUtc > utcNow, cancellationToken);
+                return new AdminMetric("Active registration codes", n, "bi-qr-code", "RegistrationCodes", "Issued and waiting for patient signup"); }),
             ("Prescriptions", async () => { var n = await db.Prescriptions.CountAsync(p => p.Status == PrescriptionStatus.Active, cancellationToken);
                 return new AdminMetric("Active prescriptions", n, "bi-capsule", "Prescriptions", "Visible on patient medication lists"); }),
         };

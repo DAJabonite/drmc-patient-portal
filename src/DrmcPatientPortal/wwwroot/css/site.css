@@ -3046,3 +3046,15 @@ code,
 
 /* Released lab values (PatientResults:ShowFullResults): scroll sideways on narrow screens instead of breaking words. */
 .lab-values-table { min-width: 32rem; }
+
+/* Hospital record code (signup Credentials step) */
+.registration-record-code { background: #f4f8fc; border-color: #c9d9ea !important; }
+.registration-record-code-body { min-width: 0; }
+.registration-record-code-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: #fff; border: 1px solid #c9d9ea; color: var(--drmc-primary); font-size: 1.15rem; }
+.registration-code-input { font-family: var(--bs-font-monospace); letter-spacing: .06em; text-transform: uppercase; }
+.registration-code-input::placeholder { letter-spacing: .06em; }
+.registration-record-code.is-filled { border-color: #146c43 !important; }
+.registration-record-scanner video { display: block; width: 100%; max-width: 320px; aspect-ratio: 1; object-fit: cover; border-radius: .5rem; background: #0b1f33; }
+@media (max-width: 575.98px) {
+    .registration-record-code-icon { display: none; }
+}

@@ -23,6 +23,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
     public DbSet<ImportBatch> ImportBatches => Set<ImportBatch>();
     public DbSet<PatientIdDocument> PatientIdDocuments => Set<PatientIdDocument>();
+    public DbSet<PatientRegistrationCode> PatientRegistrationCodes => Set<PatientRegistrationCode>();
 
     private void GuardAuditHistory()
     {
@@ -91,6 +92,20 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasIndex(x => x.PortalUserId).IsUnique();
             e.HasOne(x => x.PortalUser).WithOne(x => x.PatientRecord)
                 .HasForeignKey<PatientRecord>(x => x.PortalUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<PatientRegistrationCode>(e =>
+        {
+            e.HasOne(x => x.PatientRecord).WithMany()
+                .HasForeignKey(x => x.PatientRecordId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(x => x.CodeHash).HasMaxLength(32).IsFixedLength();
+            e.HasIndex(x => x.CodeHash).IsUnique();
+            e.HasIndex(x => x.PatientRecordId);
+            e.Property(x => x.CodeHint).HasMaxLength(PatientRegistrationCode.HintLength);
+            e.Property(x => x.IssuingPoint).HasMaxLength(PatientRegistrationCode.IssuingPointLength);
+            e.Property(x => x.IssuedById).HasMaxLength(450);
+            e.Property(x => x.IssuedByEmail).HasMaxLength(256);
+            e.Property(x => x.RedeemedByUserId).HasMaxLength(450);
         });
 
         builder.Entity<Doctor>(e =>
