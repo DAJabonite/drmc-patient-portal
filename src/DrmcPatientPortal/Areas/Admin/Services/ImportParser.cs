@@ -124,7 +124,7 @@ public static class ImportParser
         rows.Add(new(template.Name, number, template.Columns.Zip(values).ToDictionary(pair => pair.First, pair => pair.Second)));
     }
 
-    public static byte[] EmptyWorkbook()
+    public static byte[] ExampleWorkbook()
     {
         using var stream = new MemoryStream();
         using (var zip = new ZipArchive(stream, ZipArchiveMode.Create, true))
@@ -165,9 +165,15 @@ public static class ImportParser
                 var template = ImportTemplates.All[i];
                 Part("xl/worksheets/sheet" + (i + 1) + ".xml", xml =>
                 {
-                    xml.WriteStartElement("worksheet", spreadsheet); xml.WriteStartElement("sheetData"); xml.WriteStartElement("row"); xml.WriteAttributeString("r", "1");
-                    foreach (var column in template.Columns) { xml.WriteStartElement("c"); xml.WriteAttributeString("t", "inlineStr"); xml.WriteStartElement("is"); xml.WriteElementString("t", column); xml.WriteEndElement(); xml.WriteEndElement(); }
-                    xml.WriteEndElement(); xml.WriteEndElement(); xml.WriteEndElement();
+                    xml.WriteStartElement("worksheet", spreadsheet); xml.WriteStartElement("sheetData");
+                    var number = 1;
+                    foreach (var row in new[] { template.Columns }.Concat(ImportExamples.Rows(template, true)))
+                    {
+                        xml.WriteStartElement("row"); xml.WriteAttributeString("r", (number++).ToString(CultureInfo.InvariantCulture));
+                        foreach (var value in row) { xml.WriteStartElement("c"); xml.WriteAttributeString("t", "inlineStr"); xml.WriteStartElement("is"); xml.WriteElementString("t", value); xml.WriteEndElement(); xml.WriteEndElement(); }
+                        xml.WriteEndElement();
+                    }
+                    xml.WriteEndElement(); xml.WriteEndElement();
                 });
             }
         }

@@ -1,18 +1,19 @@
 @model ImportIndex
 @using DrmcPatientPortal.Areas.Admin.Services
-@{ ViewData["Title"] = "Imports"; var pages = Math.Max(1, (Model.Total + 24) / 25); }
+@{ ViewData["Title"] = "Imports"; var pages = Math.Max(1, (Model.Total + 24) / 25); var statuses = (IReadOnlyDictionary<Guid, ImportStatusDisplay>)ViewData["ImportStatuses"]!; }
 <div class="admin-page-header">
     <div>
         <p class="admin-eyebrow">Operations</p>
         <h1 class="admin-title">Imports</h1>
-        <p class="admin-subtitle">Upload a file, reconcile patients, review the dry run, then approve. Nothing is written until approval.</p>
+        <p class="admin-subtitle">Upload data, review setup, validate the records, then approve and monitor the batch. Records are created only after approval.</p>
     </div>
 </div>
+<partial name="_Stages" />
 @if (TempData["ImportMessage"] is string message) { <div class="alert alert-warning" role="alert">@message</div> }
 <div class="row g-3 mb-3">
     <div class="col-xl-8">
         <form asp-action="Upload" method="post" enctype="multipart/form-data" class="admin-card admin-form h-100">
-            <div class="admin-card-header"><h2 class="admin-card-title">Upload a batch</h2><span class="admin-chip admin-chip-info admin-chip-plain">Step 1 of 4</span></div>
+            <div class="admin-card-header"><h2 class="admin-card-title">Upload</h2><span class="admin-chip admin-chip-info admin-chip-plain">Step 1 of 4</span></div>
             <div class="admin-card-body">
                 <div class="row g-3">
                     <div class="col-md-6"><label for="template" class="form-label">Template</label><select id="template" name="Template" class="form-select" required><option value="Workbook_v1">Workbook v1 (.xlsx)</option>@foreach (var template in ImportTemplates.All) { <option value="@template.Sheet">@template.Sheet (.csv)</option> }</select></div>
@@ -26,6 +27,8 @@
         <div class="admin-card h-100">
             <div class="admin-card-header"><h2 class="admin-card-title">Templates</h2></div>
             <div class="admin-card-body d-flex flex-wrap gap-2">
+                <p class="small w-100 mb-1">Each download contains five fictional examples. Replace or remove all example rows before importing real data. Keep headers and sheet names unchanged.</p>
+                <p class="small w-100 mb-1">The workbook links its example patients and related records within the batch. Separate clinical CSVs require explicit patient matching. LabResults CSV requires the corresponding ClinicalEncounters example records to exist first; LabResultItems requires LabResults, and MedicationDoseSchedules requires Prescriptions. Their <code>existing:</code> references must identify the corresponding imported parent records, or be replaced with your own existing references.</p>
                 <a asp-action="Template" asp-route-name="Workbook_v1" class="btn btn-sm btn-outline-primary"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Workbook v1</a>
                 @foreach (var template in ImportTemplates.All) { <a asp-action="Template" asp-route-name="@template.Sheet" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download me-1" aria-hidden="true"></i>@template.Name CSV</a> }
             </div>
@@ -43,7 +46,7 @@
                 <td class="tabular text-nowrap">@batch.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
                 <td data-label="Batch"><a asp-action="Details" asp-route-id="@batch.Id" class="admin-record-link admin-id">@batch.Id.ToString("N")[..12]</a></td>
                 <td data-label="Template">@batch.Template</td>
-                <td data-label="Status"><span class="@AdminChips.Css(batch.Status.ToString())">@AdminChips.Humanize(batch.Status)</span></td>
+                <td data-label="Status"><span class="@statuses[batch.Id].Css">@statuses[batch.Id].Text</span></td>
                 <td class="text-lg-end tabular" data-label="Rows">@batch.RowCount</td>
             </tr>
         }

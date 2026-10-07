@@ -1,21 +1,27 @@
 @model ImportReconciliation
-@{ ViewData["Title"] = "Reconciliation"; var options = (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewData["Patients"]!; }
+@{ var clinical = Model.TotalGroups > 0; ViewData["Title"] = clinical ? "Match patients" : "Review setup"; var options = (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewData["Patients"]!; }
 <div class="admin-page-header">
     <div>
         <p class="admin-eyebrow">Imports · Step 2 of 4</p>
-        <h1 class="admin-title">Reconciliation</h1>
-        <p class="admin-subtitle">Match each source patient group to an existing hospital record, or confirm a new one.</p>
+        <h1 class="admin-title">@ViewData["Title"]</h1>
+        <p class="admin-subtitle">@(clinical ? "Match each source patient group to an existing hospital record, or confirm a new one." : "No patient matching required. Validate the batch to review the proposed records before approval.")</p>
     </div>
     <div class="admin-page-actions"><a asp-action="Details" asp-route-id="@Model.Batch.Id" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Batch status</a></div>
 </div>
+<partial name="_Stages" />
 @if (TempData["ImportMessage"] is string message) { <div class="alert alert-warning" role="alert">@message</div> }
 <div class="admin-card">
+    @if (clinical)
+    {
     <div class="admin-card-header">
         <form method="get" class="d-flex flex-grow-1 gap-2" role="search"><input type="hidden" name="page" value="@Model.Page" /><div class="admin-search"><i class="bi bi-search" aria-hidden="true"></i><label for="patientSearch" class="visually-hidden">Patient search</label><input id="patientSearch" name="patientSearch" value="@ViewData["PatientSearch"]" maxlength="450" class="form-control" placeholder="Filter existing records by name or hospital number" /></div><button class="btn btn-outline-secondary" type="submit">Search patients</button></form>
         <span class="admin-result-count tabular">@Model.TotalGroups source groups</span>
     </div>
+    }
     <form asp-action="DryRun" asp-route-id="@Model.Batch.Id" method="post" class="admin-form">
         <input name="RowVersion" type="hidden" value="@Model.Input.RowVersion" />
+        @if (clinical)
+        {
         <ol class="admin-step-list">
         @for (var i = 0; i < Model.Groups.Count; i++)
         {
@@ -36,9 +42,14 @@
             </li>
         }
         </ol>
+        }
+        else
+        {
+            <div class="admin-card-body"><h2 class="h6">No patient matching required</h2><p class="mb-0">@Model.Batch.Template · @Model.Batch.RowCount records. Validation checks values and duplicates without creating records.</p></div>
+        }
         <div class="admin-form-actions justify-content-between">
-            <nav aria-label="Source group pages" class="d-flex align-items-center gap-2 small"><a asp-action="Reconcile" asp-route-id="@Model.Batch.Id" asp-route-page="@(Math.Max(1, Model.Page - 1))" asp-route-patientSearch="@ViewData["PatientSearch"]" class="btn btn-sm btn-outline-secondary" aria-label="Previous page"><i class="bi bi-chevron-left" aria-hidden="true"></i></a><span class="tabular">Page @Model.Page of @Math.Max(1, (Model.TotalGroups + 24) / 25)</span><a asp-action="Reconcile" asp-route-id="@Model.Batch.Id" asp-route-page="@(Model.Page + 1)" asp-route-patientSearch="@ViewData["PatientSearch"]" class="btn btn-sm btn-outline-secondary" aria-label="Next page"><i class="bi bi-chevron-right" aria-hidden="true"></i></a></nav>
-            <button type="submit" class="btn btn-primary"><i class="bi bi-check2-square me-1" aria-hidden="true"></i>Save mappings and dry run</button>
+            @if (clinical) { <nav aria-label="Source group pages" class="d-flex align-items-center gap-2 small"><a asp-action="Reconcile" asp-route-id="@Model.Batch.Id" asp-route-page="@(Math.Max(1, Model.Page - 1))" asp-route-patientSearch="@ViewData["PatientSearch"]" class="btn btn-sm btn-outline-secondary" aria-label="Previous page"><i class="bi bi-chevron-left" aria-hidden="true"></i></a><span class="tabular">Page @Model.Page of @Math.Max(1, (Model.TotalGroups + 24) / 25)</span><a asp-action="Reconcile" asp-route-id="@Model.Batch.Id" asp-route-page="@(Model.Page + 1)" class="btn btn-sm btn-outline-secondary" aria-label="Next page"><i class="bi bi-chevron-right" aria-hidden="true"></i></a></nav> }
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check2-square me-1" aria-hidden="true"></i>@(clinical ? "Save matches and validate" : "Validate batch")</button>
         </div>
     </form>
 </div>

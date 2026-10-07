@@ -90,7 +90,8 @@
                     {
                         <li class="justify-content-between align-items-center">
                             <span><a asp-area="Admin" asp-controller="Imports" asp-action="Details" asp-route-id="@batch.Id" class="fw-semibold text-decoration-none">@batch.Template</a><span class="admin-feed-meta d-block tabular">@batch.RowCount rows · @batch.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC</span></span>
-                            <span class="@AdminChips.Css(batch.Status.ToString())">@AdminChips.Humanize(batch.Status)</span>
+                            @{ var status = ((IReadOnlyDictionary<Guid, DrmcPatientPortal.Areas.Admin.Services.ImportStatusDisplay>)ViewData["ImportStatuses"]!)[batch.Id]; }
+                            <span class="@status.Css">@status.Text</span>
                         </li>
                     }
                 </ul>

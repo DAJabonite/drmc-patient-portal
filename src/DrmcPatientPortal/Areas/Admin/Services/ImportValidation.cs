@@ -159,7 +159,7 @@ public static class ImportValidation
         }
         var report = new ImportReport(rows.Select(row => new ImportRowReview(row.Template, row.Number, row.Fields.GetValueOrDefault("SourcePatientKey") ?? "",
             row.Fields.GetValueOrDefault("SourceRecordKey") ?? row.Fields.GetValueOrDefault("Slug") ?? "",
-            patients.TryGetValue(row.Fields.GetValueOrDefault("SourcePatientKey")?.Trim() ?? "", out var mapped) ? mapped.Id < 0 ? "Create new record" : "Existing patient #" + mapped.Id : "Unmapped",
+            !ImportTemplates.Get(row.Template).Clinical ? "Create record" : patients.TryGetValue(row.Fields.GetValueOrDefault("SourcePatientKey")?.Trim() ?? "", out var mapped) ? mapped.Id < 0 ? "Create new record" : "Existing patient #" + mapped.Id : "Unmapped",
             reviews[row].Distinct().ToArray())).ToList(),
             nodes.GroupBy(node => node.Template).ToDictionary(group => group.Key, group => group.Count()), ImportStaging.ApprovalHash(envelope));
         return new(report, nodes);

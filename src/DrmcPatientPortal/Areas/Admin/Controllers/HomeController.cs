@@ -1,5 +1,6 @@
 using DrmcPatientPortal.Areas.Admin.Models;
 using DrmcPatientPortal.Areas.Admin.Security;
+using DrmcPatientPortal.Areas.Admin.Services;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DrmcPatientPortal.Areas.Admin.Controllers;
 
 [Area("Admin")]
-public sealed class HomeController(ApplicationDbContext db, AdminAccessScope scope) : Controller
+public sealed class HomeController(ApplicationDbContext db, AdminAccessScope scope, ImportStaging staging) : Controller
 {
     private static readonly ImportStatus[] OpenImportStatuses =
     [
@@ -72,6 +73,7 @@ public sealed class HomeController(ApplicationDbContext db, AdminAccessScope sco
         var recentImports = Can("Imports")
             ? await db.ImportBatches.AsNoTracking().OrderByDescending(b => b.CreatedAtUtc).Take(5).ToListAsync(cancellationToken)
             : [];
+        ViewData["ImportStatuses"] = await ImportStatusDisplay.LoadAsync(recentImports, staging, cancellationToken);
         return View(new AdminDashboard(AdminNavigation.For(roles), attention, counts, recentAudit, recentImports));
     }
 }
