@@ -72,6 +72,7 @@ The container binds to `127.0.0.1` only and keeps data in the `drmc-sqlserver` v
 | `PatientResults__ShowFullResults` | Show released laboratory values and radiology reports to the owning patient; default `false`. Keep it `false` in tracked settings until DRMC approves full results in the portal |
 | `PatientRegistration__RequireHospitalRecordCode` | Require a hospital record code at signup; default `true`, so only patients with a DRMC hospital record can create an account. Set `false` only for a supervised rollout where staff link accounts manually |
 | `PatientRegistration__CodeLifetimeDays` | How long a hospital record code stays valid; default `7`, limited to 1–30 days |
+| `StaffInvitations__LifetimeDays` | How long an unused staff invitation stays valid; default `3`, limited to 1–14 days |
 | `Identity__RequireConfirmedAccount` | Require a confirmed email before sign-in; default `true`. In Development the confirmation link is written to the console |
 
 Relative storage paths resolve from the application content root. Restrict directory permissions to the app identity and approved operators. Retain the key ring across releases and back it up together with patient documents and the database.
@@ -86,6 +87,7 @@ Back up the database before applying or reversing migrations. New migrations are
 4. `20261005070928_AdminImportLeases`: adds nullable worker ownership and lease fields plus a status/lease index, without rewriting existing rows. Downgrade is blocked when import history exists.
 5. `20261006024312_AddRadiologyStudies`: adds the `RadiologyStudies` table (unique accession number ignoring case, owning patient record, optional encounter, concurrency token). No existing rows are changed. Downgrade is blocked when radiology studies exist.
 6. `20261006164919_AddPatientRegistrationCodes`: adds the `PatientRegistrationCodes` table (owning patient record with cascade delete, unique SHA-256 code hash, 5-character hint, issuing point, issuer, issue, expiry, redemption and revocation times, concurrency token). No existing rows are changed. Downgrade is blocked when codes exist.
+7. `20261007035528_AddStaffInvitations`: adds the `StaffInvitations` table (invited email and normalized email, staff role, unique SHA-256 code hash, 5-character hint, inviting Admin, creation, expiry, acceptance, role-grant and revocation times, accepting account, concurrency token). No existing rows are changed. Downgrade is blocked when invitations exist.
 
 The initial SQL Server migration is `20260929123803_InitialSqlServer`. During upgrade, drain and stop older builds, apply migrations, then run only the new build. Older workers cannot respect the lease protocol.
 
@@ -98,7 +100,7 @@ export DRMC_TEST_SQLSERVER="Server=localhost,1433;User Id=sa;Password=$MSSQL_SA_
 dotnet test DrmcPatientPortal.slnx
 ```
 
-The tests cover public pages, the sign-in requirement, patient record isolation, the not-found page, the Content Security Policy, email confirmation, readable lab categories, the Admin access matrix for Admin, LabStaff, RadiologyStaff and PatientServicesStaff, hospital record codes (format, issuing, single use, concurrency, expiry, revocation, birth-date match and required mode), staff role grants, radiology Admin CRUD, the patient Radiology page and navigation, and the `PatientResults:ShowFullResults` switch in both positions. GitHub Actions (`.github/workflows/ci.yml`) runs the build with warnings as errors, a pending-migration check and these tests on every pull request against a SQL Server service container.
+The tests cover public pages, the sign-in requirement, patient record isolation, the not-found page, the Content Security Policy, email confirmation, readable lab categories, the Admin access matrix for Admin, LabStaff, RadiologyStaff and PatientServicesStaff, hospital record codes (format, issuing, single use, concurrency, expiry, revocation, birth-date match and required mode), staff invitations (email-bound single use, expiry, revocation, never granting Admin, role granted only after email confirmation and 2FA), first-Admin setup (only the bootstrap email, only until an Admin exists), staff role grants, radiology Admin CRUD, the patient Radiology page and navigation, and the `PatientResults:ShowFullResults` switch in both positions. GitHub Actions (`.github/workflows/ci.yml`) runs the build with warnings as errors, a pending-migration check and these tests on every pull request against a SQL Server service container.
 
 Views must not use inline `<script>` blocks or `on*` attributes, because the Content Security Policy only allows `script-src 'self'`. Put scripts in `wwwroot/js`; use `data-auto-submit` on a form control or `data-confirm="..."` on a form for the common cases.
 
@@ -121,20 +123,23 @@ Stable fixture account IDs are retained. Seeding runs transactionally only when 
 
 ## First Admin
 
-1. Apply migrations, start the Development app with `PatientRegistration__RequireHospitalRecordCode=false` (no patient records exist yet, so no hospital record code can be issued), and register an account using Identity registration. Bootstrap never creates an account or password. Remove the variable again after step 5.
-2. Confirm the email using the Development confirmation link printed in the console, or the configured delivery service outside Development.
-3. In account management, enroll an authenticator and enable two-factor authentication.
-4. Set the following variables for that existing account and restart:
+Signup requires a hospital record code, and the first Admin has no one to issue one. While bootstrap is enabled and **no Admin exists yet**, the configured bootstrap email may sign up without a code. Every other email still needs a code, and the exemption closes as soon as any account holds the Admin role.
+
+1. Apply migrations, set the bootstrap variables for the email the first Admin will use, and start the app:
 
 ```powershell
 $env:AdminBootstrap__Enabled = 'true'
-$env:AdminBootstrap__Email = Read-Host 'Confirmed staff account email'
+$env:AdminBootstrap__Email = Read-Host 'First Admin email'
 dotnet run --project src/DrmcPatientPortal --launch-profile http
 ```
 
-5. Remove both bootstrap variables, restart, sign out and sign in with an authenticator code. Open `/Admin`.
+2. Open **Create account** and register with exactly that email. Leave **Hospital record code** empty. Startup logs that bootstrap is waiting for this account, and the signup is written to the activity log as `FIRST_ADMIN_SIGNUP`. Bootstrap never creates an account or password.
+3. Confirm the email using the Development confirmation link printed in the console, or the configured delivery service outside Development.
+4. In account management, enroll an authenticator and enable two-factor authentication.
+5. Restart with the same variables. Bootstrap promotes the account to Admin.
+6. Remove both bootstrap variables, restart, sign out and sign in with an authenticator code. Open `/Admin`.
 
-The Admin, LabStaff and RadiologyStaff roles are created idempotently at startup. Bootstrap only promotes an existing, email-confirmed, 2FA-enabled, non-locked-out account. Every startup while bootstrap is enabled logs a warning, including when no email is configured.
+The Admin, LabStaff and RadiologyStaff roles are created idempotently at startup. Bootstrap only promotes an existing, email-confirmed, 2FA-enabled, non-locked-out account; if the configured account does not exist yet, startup logs a warning and waits for it to sign up. Every startup while bootstrap is enabled logs a warning, including when no email is configured.
 
 All Admin endpoints require a staff role allowed for that section (see Staff Roles), currently confirmed email, enabled 2FA, a non-locked-out account and an `amr=mfa` sign-in claim. Password-only and remembered-browser sessions do not qualify. Anonymous requests receive the normal Identity login challenge with `ReturnUrl`; authenticated requests failing these rules receive HTTP 403. Select **Forget this browser** under Two-factor authentication, then sign out and sign in with an authenticator code. Admin writes require antiforgery tokens. Startup rejects anonymous Admin endpoints and Admin controllers without a registered staff policy.
 
@@ -147,7 +152,7 @@ All Admin endpoints require a staff role allowed for that section (see Staff Rol
 | RadiologyStaff | Dashboard, `/Admin/RadiologyStudies` |
 | PatientServicesStaff | Dashboard, `/Admin/RegistrationCodes` (PACD and clinic desks) |
 
-To add staff: the person registers, confirms their email and enables two-factor authentication. Because signup requires a hospital record code by default, staff who have no DRMC patient record can only register while an Admin temporarily sets `PatientRegistration__RequireHospitalRecordCode=false` while they register. An Admin opens `/Admin/StaffAccess`, selects the account and grants LabStaff, RadiologyStaff or PatientServicesStaff. Admin itself is only granted through bootstrap. Grants and revocations take effect on the next request, refresh the account's security stamp and are written to the staff audit log. Staff see only their sections in the sidebar and dashboard; the dashboard hides the audit feed and import status from non-Admin staff. The portal's Administration link appears after the person signs in again. Staff choose patients through the existing patient context picker, which shows name and hospital number only.
+To add staff, an Admin sends a **staff invitation** (see Staff Invitations below); the person signs up with it, confirms their email and enables two-factor authentication, and the invited role is granted automatically. For someone who already has a portal account (for example an employee who is also a patient), an Admin opens `/Admin/StaffAccess`, selects the account and grants LabStaff, RadiologyStaff or PatientServicesStaff. Admin itself is only granted through bootstrap. Grants and revocations take effect on the next request, refresh the account's security stamp and are written to the staff audit log. Staff see only their sections in the sidebar and dashboard; the dashboard hides the audit feed and import status from non-Admin staff. The portal's Administration link appears after the person signs in again. Staff choose patients through the existing patient context picker, which shows name and hospital number only.
 
 ## Admin Area
 
@@ -162,6 +167,7 @@ To add staff: the person registers, confirms their email and enables two-factor 
 | `/Admin/LabResultItems` | Items within a selected lab (patients see them only when `PatientResults:ShowFullResults` is on) |
 | `/Admin/RadiologyStudies` | Imaging studies, reports, release time and staff-only internal notes |
 | `/Admin/StaffAccess` | Grant or revoke LabStaff, RadiologyStaff and PatientServicesStaff (Admin only) |
+| `/Admin/StaffInvitations` | Invite staff by email and role, list invitations and revoke unused ones (Admin only) |
 | `/Admin/Prescriptions` | Medications and refills |
 | `/Admin/MedicationDoseSchedules` | Dose times within a selected prescription |
 | `/Admin/PatientAllergies` | Patient allergies |
@@ -187,7 +193,19 @@ A hospital record code shows that a person has a record at DRMC and links that r
 3. The QR opens `/Identity/Account/Register#code=…`. The code is in the URL fragment, which browsers do not send to the server. On the **Credentials** step, the **Hospital record code** field is filled in from the QR, typed by the patient, or scanned with the camera where the browser supports `BarcodeDetector`. Input is not case-sensitive and ignores spaces and hyphens.
 4. Signup checks the code before creating the account. The code must be active (not used, revoked or expired), its record must still be unlinked, and the date of birth entered must match the record. If any check fails, signup shows one generic message and creates no account. On success, the code is marked used and the record is linked in a single serializable transaction, and `LINK_HOSPITAL_RECORD` is written to the patient activity log. If a later signup step fails, the account is removed and the code is released so it can be used again.
 
-A code is **required** to create a portal account: patients without a DRMC hospital record cannot get a code, so they cannot sign up. The signup page says so at the top, and a missing code is rejected on the server before any account is created. Setting `PatientRegistration:RequireHospitalRecordCode` to `false` makes the code optional again; accounts created that way can be linked by an Admin through **Verified portal link**.
+A code is **required** to create a portal account: patients without a DRMC hospital record cannot get a code, so they cannot sign up. The signup page says so at the top, and a missing code is rejected on the server before any account is created. Setting `PatientRegistration:RequireHospitalRecordCode` to `false` makes the code optional again; accounts created that way can be linked by an Admin through **Verified portal link**. Staff use a staff invitation instead of a code, and the first Admin uses first-Admin setup (see First Admin).
+
+## Staff Invitations
+
+Staff usually have no hospital record, so they cannot get a hospital record code. An Admin invites them instead; patient signup stays strict.
+
+1. An Admin opens **Staff invitations › Invite staff** (also linked from Staff access), enters the staff member's work email and picks LabStaff, RadiologyStaff or PatientServicesStaff. Admin is never granted by invitation. If an account with that email already exists, the Admin is sent to Staff access instead.
+2. The portal emails a one-time link and shows it once with a QR code to print or show. The code has the same `XXXXX-XXXXX-XXXXX` format as hospital record codes but lives in its own table; only a SHA-256 hash and the last five characters are stored. A new invitation for the same email revokes the earlier unused one. Invitations expire after `StaffInvitations:LifetimeDays` (default 3). Invite and revoke actions are written to the staff audit log.
+3. The link opens `/Identity/Account/Register#invite=…`. On **Credentials**, the **Staff invitation code** panel replaces the hospital record code panel. Staff can also switch to it with **DRMC staff with an invitation? Use it instead** and type the code.
+4. Signup checks that the invitation is unused, not revoked, not expired and was sent to the email being registered. Any failure shows one generic message and creates no account. On success the invitation is marked accepted with a conditional update (a second signup with the same code fails), and `ACCEPT_STAFF_INVITATION` is written to the activity log.
+5. The role is **not** granted at signup. It is granted automatically once the account has a confirmed email and two-factor authentication, right after the email is confirmed or 2FA is turned on, whichever comes last. The grant refreshes the security stamp and is written to the staff audit log under the inviting Admin. The person then signs out and signs in with an authenticator code to open Administration.
+
+Admins can revoke an invitation while it is **Invited** or **Awaiting setup**; a revoked invitation never grants its role.
 
 ## Patient Radiology
 

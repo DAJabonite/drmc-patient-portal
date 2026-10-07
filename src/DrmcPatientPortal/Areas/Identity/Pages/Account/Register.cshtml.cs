@@ -43,11 +43,17 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
         private readonly IPatientDocumentStorage _documentStorage;
         private readonly IAuditLogService _auditLog;
         private readonly PatientRegistrationOptions _registrationOptions;
+        private readonly FirstAdminSignup _firstAdminSignup;
 
         // One message for every code failure (unknown, used, revoked, expired, already linked or
         // birth date mismatch), so the form never reveals which part was wrong.
         public const string HospitalRecordCodeError =
             "We could not verify this hospital record code. Check the code and your date of birth on the Review step, or ask the PACD or your clinic for a new code.";
+
+        // One message for every invitation failure (unknown, used, revoked, expired or a different
+        // email address).
+        public const string StaffInvitationError =
+            "We could not verify this staff invitation. Use the email address the invitation was sent to, or ask a portal Admin for a new invitation.";
 
         public RegisterModel(
             UserManager<ApplicationUser> userManager,
@@ -59,7 +65,8 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             ApplicationDbContext db,
             IPatientDocumentStorage documentStorage,
             IAuditLogService auditLog,
-            IOptions<PatientRegistrationOptions> registrationOptions)
+            IOptions<PatientRegistrationOptions> registrationOptions,
+            FirstAdminSignup firstAdminSignup)
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -72,9 +79,26 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             _documentStorage = documentStorage;
             _auditLog = auditLog;
             _registrationOptions = registrationOptions.Value;
+            _firstAdminSignup = firstAdminSignup;
         }
 
         public bool RequireHospitalRecordCode => _registrationOptions.RequireHospitalRecordCode;
+
+        // Staff sign up with an Admin invitation instead of a hospital record code.
+        public bool StaffInvitationMode => !string.IsNullOrWhiteSpace(Input?.StaffInvitationCode);
+
+        // While first-Admin setup is open, the browser cannot know which email is exempt, so the
+        // code is checked only on the server (it stays required for every other email).
+        public bool FirstAdminSetupOpen { get; private set; }
+
+        public bool RequireCodeInBrowser => RequireHospitalRecordCode && !StaffInvitationMode && !FirstAdminSetupOpen;
+
+        public override async Task OnPageHandlerExecutionAsync(Microsoft.AspNetCore.Mvc.Filters.PageHandlerExecutingContext context,
+            Microsoft.AspNetCore.Mvc.Filters.PageHandlerExecutionDelegate next)
+        {
+            FirstAdminSetupOpen = RequireHospitalRecordCode && await _firstAdminSignup.IsOpenAsync(HttpContext.RequestAborted);
+            await next();
+        }
 
         [BindProperty]
         public InputModel Input { get; set; }
@@ -154,6 +178,10 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             [StringLength(64, ErrorMessage = "Enter the 15-character code exactly as printed.")]
             [Display(Name = "Hospital record code")]
             public string HospitalRecordCode { get; set; }
+
+            [StringLength(64, ErrorMessage = "Enter the 15-character invitation code exactly as sent.")]
+            [Display(Name = "Staff invitation code")]
+            public string StaffInvitationCode { get; set; }
 
             [Display(Name = "Data Privacy Consent (RA 10173)")]
             public bool PrivacyConsent { get; set; }
@@ -258,11 +286,26 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             if (Input.IdType == PhilippineIdTypes.OtherGovernment && string.IsNullOrWhiteSpace(Input.OtherGovernmentIdName))
                 ModelState.AddModelError("Input.OtherGovernmentIdName", "Enter the ID name and government issuer.");
 
+            StaffInvitation invitation = null;
+            if (StaffInvitationMode)
+            {
+                var canonicalInvite = HospitalRecordCodes.Normalize(Input.StaffInvitationCode);
+                if (canonicalInvite is null)
+                    ModelState.AddModelError("Input.StaffInvitationCode", "Enter the 15-character invitation code exactly as sent, for example 7KQ2M-X9D4T-H3VNP.");
+                else if (ModelState.IsValid)
+                {
+                    invitation = await FindAcceptableInvitationAsync(canonicalInvite, Input.Email);
+                    if (invitation is null) ModelState.AddModelError("Input.StaffInvitationCode", StaffInvitationError);
+                }
+            }
+
             PatientRegistrationCode recordCode = null;
             var canonicalCode = HospitalRecordCodes.Normalize(Input.HospitalRecordCode);
             if (string.IsNullOrWhiteSpace(Input.HospitalRecordCode))
             {
-                if (RequireHospitalRecordCode)
+                // A staff invitation or first-Admin setup replaces the hospital record code.
+                var exempt = StaffInvitationMode || await _firstAdminSignup.AllowsAsync(Input.Email, HttpContext.RequestAborted);
+                if (RequireHospitalRecordCode && !exempt)
                     ModelState.AddModelError("Input.HospitalRecordCode", "Enter the hospital record code you received from the PACD or your clinic.");
             }
             else if (canonicalCode is null)
@@ -311,6 +354,15 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                         return Page();
                     }
 
+                    if (invitation is not null && !await AcceptInvitationAsync(invitation.Id, user.Id))
+                    {
+                        // Used, revoked or expired between the check and now.
+                        if (recordCode is not null) await ReleaseCodeAsync(recordCode.Id, user.Id);
+                        await _userManager.DeleteAsync(user);
+                        ModelState.AddModelError("Input.StaffInvitationCode", StaffInvitationError);
+                        return Page();
+                    }
+
                     try
                     {
                         await SavePatientIdDocumentAsync(user);
@@ -319,6 +371,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                     {
                         _logger.LogError(ex, "Failed to persist PatientIdDocument for user {UserId}", user.Id);
                         if (recordCode is not null) await ReleaseCodeAsync(recordCode.Id, user.Id);
+                        if (invitation is not null) await ReleaseInvitationAsync(invitation.Id, user.Id);
                         await _userManager.DeleteAsync(user);
                         ModelState.AddModelError(string.Empty, "We could not securely save the identity document. Please upload it again.");
                         return Page();
@@ -328,6 +381,20 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                     {
                         await _auditLog.LogAsync(user.Id, "LINK_HOSPITAL_RECORD", $"PatientRecord/{recordCode.PatientRecordId}",
                             $"Hospital record linked at signup with a code issued by {recordCode.IssuingPoint}.",
+                            HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown");
+                    }
+
+                    if (invitation is not null)
+                    {
+                        await _auditLog.LogAsync(user.Id, "ACCEPT_STAFF_INVITATION", $"StaffInvitation/{invitation.Id}",
+                            "Staff account created with an Admin invitation. The role is granted after email confirmation and two-factor authentication.",
+                            HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown");
+                    }
+                    else if (recordCode is null && RequireHospitalRecordCode)
+                    {
+                        _logger.LogWarning("First Admin account created without a hospital record code while AdminBootstrap is enabled.");
+                        await _auditLog.LogAsync(user.Id, "FIRST_ADMIN_SIGNUP", "AdminBootstrap",
+                            "Account created without a hospital record code during first-Admin setup.",
                             HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown");
                     }
 
@@ -493,6 +560,49 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             catch (Exception ex) when (ex is DbUpdateException or Microsoft.Data.SqlClient.SqlException)
             {
                 _logger.LogError(ex, "Hospital record code {CodeId} could not be released", codeId);
+            }
+        }
+
+        // An invitation is acceptable when it is unused, not revoked, not expired and was sent to the
+        // email address used for this signup.
+        private async Task<StaffInvitation> FindAcceptableInvitationAsync(string canonicalCode, string email)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return null;
+            var hash = HospitalRecordCodes.Hash(canonicalCode);
+            var normalized = _userManager.NormalizeEmail(email.Trim());
+            var now = DateTime.UtcNow;
+            return await _db.StaffInvitations.AsNoTracking()
+                .Where(i => i.CodeHash == hash && i.NormalizedEmail == normalized && i.AcceptedAtUtc == null && i.RevokedAtUtc == null && i.ExpiresAtUtc > now)
+                .SingleOrDefaultAsync(HttpContext.RequestAborted);
+        }
+
+        // Conditional update: a concurrent second signup or a revoke in between fails closed.
+        private async Task<bool> AcceptInvitationAsync(int invitationId, string userId)
+        {
+            var now = DateTime.UtcNow;
+            try
+            {
+                return await _db.StaffInvitations
+                    .Where(i => i.Id == invitationId && i.AcceptedAtUtc == null && i.RevokedAtUtc == null && i.ExpiresAtUtc > now)
+                    .ExecuteUpdateAsync(s => s.SetProperty(i => i.AcceptedAtUtc, now).SetProperty(i => i.AcceptedByUserId, userId), CancellationToken.None) == 1;
+            }
+            catch (Exception ex) when (ex is DbUpdateException or InvalidOperationException or Microsoft.Data.SqlClient.SqlException)
+            {
+                _logger.LogError(ex, "Staff invitation {InvitationId} could not be accepted", invitationId);
+                return false;
+            }
+        }
+
+        private async Task ReleaseInvitationAsync(int invitationId, string userId)
+        {
+            try
+            {
+                await _db.StaffInvitations.Where(i => i.Id == invitationId && i.AcceptedByUserId == userId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(i => i.AcceptedAtUtc, (DateTime?)null).SetProperty(i => i.AcceptedByUserId, (string)null), CancellationToken.None);
+            }
+            catch (Exception ex) when (ex is DbUpdateException or Microsoft.Data.SqlClient.SqlException)
+            {
+                _logger.LogError(ex, "Staff invitation {InvitationId} could not be released", invitationId);
             }
         }
 

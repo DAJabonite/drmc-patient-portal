@@ -32,6 +32,7 @@ public sealed class AccessMatrixTests(PortalFactory factory)
         ("Imports", ["/Admin/Imports"]),
         ("Audit", ["/Admin/Audit"]),
         ("StaffAccess", ["/Admin/StaffAccess"]),
+        ("StaffInvitations", ["/Admin/StaffInvitations", "/Admin/StaffInvitations/Create"]),
     ];
 
     private static readonly Dictionary<string, string[]> StaffFamilies = new()

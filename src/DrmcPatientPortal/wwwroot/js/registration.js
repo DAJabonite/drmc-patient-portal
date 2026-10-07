@@ -406,6 +406,8 @@ $(function () {
     function codeFromScan(text) {
         try {
             const url = new URL(text);
+            const invite = new URLSearchParams(url.hash.slice(1)).get('invite');
+            if (invite) { setStaffMode(true, invite); return null; }
             const fromHash = new URLSearchParams(url.hash.slice(1)).get('code');
             if (fromHash) return fromHash;
         } catch { /* not a URL; treat as the code itself */ }
@@ -430,10 +432,61 @@ $(function () {
         if (recordCodeInput.value) recordCodeInput.value = formatCode(recordCodeInput.value);
     });
 
-    // The code travels in the URL fragment, which is never sent to the server; remove it from the
+    // Staff invitation: an Admin-issued code that replaces the hospital record code for staff,
+    // who usually have no hospital record. Only one of the two panels is shown at a time.
+    const staffPanel = document.getElementById('staffInvitationPanel');
+    const staffInput = document.getElementById('staffInvitationCode');
+    const requirementLine = document.getElementById('hospitalCodeRequirement');
+    const recordCodeRequired = recordCodePanel.dataset.codeRequired === 'true';
+
+    function setStaffMode(staff, invite) {
+        recordCodePanel.classList.toggle('d-none', staff);
+        staffPanel.classList.toggle('d-none', !staff);
+        requirementLine?.classList.toggle('d-none', staff);
+        if (staff) {
+            if (scanStream) stopScan();
+            recordCodeInput.value = '';
+            recordCodePanel.classList.remove('is-filled');
+            // jQuery Validate also reads the HTML required attribute, so drop both.
+            recordCodeInput.removeAttribute('required');
+            $(recordCodeInput).rules('remove', 'required');
+            validator.element(recordCodeInput);
+            if (invite) staffInput.value = formatCode(invite);
+            staffPanel.classList.toggle('is-filled', canonicalCode(staffInput.value).length === 15);
+        } else {
+            staffInput.value = '';
+            staffPanel.classList.remove('is-filled');
+            validator.element(staffInput);
+            if (recordCodeRequired) {
+                recordCodeInput.setAttribute('required', '');
+                $(recordCodeInput).rules('add', { required: true, messages: { required: 'Enter the hospital record code you received from the PACD or your clinic.' } });
+            }
+        }
+    }
+
+    staffInput.addEventListener('input', function () {
+        const caret = staffInput.selectionStart === staffInput.value.length;
+        const formatted = formatCode(staffInput.value);
+        if (formatted !== staffInput.value && caret) staffInput.value = formatted;
+        staffPanel.classList.toggle('is-filled', canonicalCode(staffInput.value).length === 15);
+    });
+    staffInput.addEventListener('blur', function () {
+        if (staffInput.value) staffInput.value = formatCode(staffInput.value);
+    });
+    document.getElementById('btnUseStaffInvite').addEventListener('click', function () { setStaffMode(true); staffInput.focus(); });
+    document.getElementById('btnUseRecordCode').addEventListener('click', function () { setStaffMode(false); recordCodeInput.focus(); });
+    if (!staffPanel.classList.contains('d-none')) setStaffMode(true);
+
+    // Codes travel in the URL fragment, which is never sent to the server; remove them from the
     // address bar and history once read.
-    const hashCode = new URLSearchParams(window.location.hash.slice(1)).get('code');
-    if (hashCode) {
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const hashCode = hashParams.get('code');
+    const hashInvite = hashParams.get('invite');
+    if (hashInvite) {
+        setStaffMode(true, hashInvite);
+        document.getElementById('staffInviteNotice').classList.remove('d-none');
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+    } else if (hashCode) {
         setRecordCode(hashCode, 'Filled in from your QR code.');
         document.getElementById('hospitalCodeNotice').classList.remove('d-none');
         history.replaceState(null, '', window.location.pathname + window.location.search);
@@ -475,6 +528,7 @@ $(function () {
                     if (found.length) {
                         const value = codeFromScan(found[0].rawValue);
                         stopScan();
+                        if (value === null) return;
                         if (canonicalCode(value).length === 15) {
                             setRecordCode(value, 'Code scanned. Check that it matches your slip.');
                         } else {

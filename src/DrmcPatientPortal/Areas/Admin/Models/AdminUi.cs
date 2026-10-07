@@ -31,6 +31,7 @@ public static class AdminNavigation
             new("Imports", "Imports", "bi-file-earmark-arrow-up", "CSV and Excel batches with reconciliation."),
             new("Audit", "Audit history", "bi-journal-text", "Staff access and change history."),
             new("StaffAccess", "Staff access", "bi-person-lock", "Grant or revoke Laboratory, Radiology and Patient services staff roles."),
+            new("StaffInvitations", "Staff invitations", "bi-envelope-plus", "One-time signup invitations for staff without a hospital record."),
         ]),
     ];
 
@@ -58,8 +59,8 @@ public static class AdminChips
         var v = value?.Trim().ToLowerInvariant() ?? string.Empty;
         return v switch
         {
-            "available" or "final" or "linked" or "redeemed" or "active" or "succeeded" or "completed" or "normal" or "valid" or "yes" or "mild" => ChipTone.Success,
-            "in progress" or "pending verification" or "staged" or "validated" or "queued" or "running" or "validationqueued"
+            "available" or "final" or "linked" or "redeemed" or "activated" or "active" or "succeeded" or "completed" or "normal" or "valid" or "yes" or "mild" => ChipTone.Success,
+            "in progress" or "awaiting setup" or "pending verification" or "staged" or "validated" or "queued" or "running" or "validationqueued"
                 or "validating" or "approvalqueued" or "approving" or "moderate" or "on hold" or "onhold" => ChipTone.Warning,
             "failed" or "severe" or "critical" or "high" or "low" or "critical high" or "critical low" => ChipTone.Danger,
             "unlinked" or "cancelled" or "expired" or "revoked" or "discontinued" or "inactive" or "no" => ChipTone.Neutral,

@@ -1,0 +1,38 @@
+@model StaffInvitationInput
+@using DrmcPatientPortal.Areas.Admin.Security
+@{
+    ViewData["Title"] = "Invite staff";
+    var days = ViewData["LifetimeDays"] is int d ? d : 3;
+}
+<div class="admin-page-header">
+    <div>
+        <p class="admin-eyebrow">Staff invitations</p>
+        <h1 class="admin-title">Invite staff</h1>
+        <p class="admin-subtitle">The staff member gets a one-time signup link by email, and you can also print or show it. It works only with this email address and expires in @days days.</p>
+    </div>
+</div>
+<form method="post" asp-area="Admin" asp-action="Create" class="admin-card admin-form">
+    <div class="admin-card-header"><h2 class="admin-card-title">Invitation</h2></div>
+    <div class="admin-card-body">
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+        <div class="mb-3">
+            <label asp-for="Email" class="form-label"></label>
+            <input asp-for="Email" class="form-control" autocomplete="off" spellcheck="false" placeholder="name@drmc.doh.gov.ph" aria-describedby="emailHelp" />
+            <div id="emailHelp" class="form-text">The staff member must sign up with exactly this address.</div>
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+        <div class="mb-1">
+            <label asp-for="Role" class="form-label"></label>
+            <select asp-for="Role" class="form-select" aria-describedby="roleHelp">
+                @foreach (var role in StaffRoles.Grantable) { <option value="@role">@StaffRoles.Label(role)</option> }
+            </select>
+            <div id="roleHelp" class="form-text">Granted automatically after the account confirms its email and turns on two-factor authentication. Admin access is never granted by invitation.</div>
+            <span asp-validation-for="Role" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="admin-form-actions">
+        <a asp-area="Admin" asp-action="Index" class="btn btn-outline-secondary me-auto">Cancel</a>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-envelope-plus me-1" aria-hidden="true"></i>Send invitation</button>
+    </div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

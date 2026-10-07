@@ -211,7 +211,15 @@ public static class AdminBootstrap
         if (string.IsNullOrWhiteSpace(email)) return;
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var user = await users.FindByEmailAsync(email);
-        if (user is null || !user.EmailConfirmed || !user.TwoFactorEnabled || await users.IsLockedOutAsync(user))
+        if (user is null)
+        {
+            // First-Admin setup: signup lets this email register without a hospital record code
+            // until an Admin exists. Promotion happens on a later restart once it is ready.
+            scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("AdminBootstrap")
+                .LogWarning("Admin bootstrap is waiting for the configured account to sign up, confirm its email and enable two-factor authentication.");
+            return;
+        }
+        if (!user.EmailConfirmed || !user.TwoFactorEnabled || await users.IsLockedOutAsync(user))
             throw new InvalidOperationException("Admin bootstrap requires an existing email-confirmed, 2FA-enabled account that is not locked out.");
         if (!await users.IsInRoleAsync(user, "Admin") && !(await users.AddToRoleAsync(user, "Admin")).Succeeded)
             throw new InvalidOperationException("Admin bootstrap promotion failed.");

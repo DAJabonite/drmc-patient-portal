@@ -24,6 +24,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ImportBatch> ImportBatches => Set<ImportBatch>();
     public DbSet<PatientIdDocument> PatientIdDocuments => Set<PatientIdDocument>();
     public DbSet<PatientRegistrationCode> PatientRegistrationCodes => Set<PatientRegistrationCode>();
+    public DbSet<StaffInvitation> StaffInvitations => Set<StaffInvitation>();
 
     private void GuardAuditHistory()
     {
@@ -106,6 +107,21 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.Property(x => x.IssuedById).HasMaxLength(450);
             e.Property(x => x.IssuedByEmail).HasMaxLength(256);
             e.Property(x => x.RedeemedByUserId).HasMaxLength(450);
+        });
+
+        builder.Entity<StaffInvitation>(e =>
+        {
+            e.Property(x => x.Email).HasMaxLength(StaffInvitation.EmailLength);
+            e.Property(x => x.NormalizedEmail).HasMaxLength(StaffInvitation.EmailLength);
+            e.HasIndex(x => x.NormalizedEmail);
+            e.Property(x => x.Role).HasMaxLength(StaffInvitation.RoleLength);
+            e.Property(x => x.CodeHash).HasMaxLength(32).IsFixedLength();
+            e.HasIndex(x => x.CodeHash).IsUnique();
+            e.Property(x => x.CodeHint).HasMaxLength(PatientRegistrationCode.HintLength);
+            e.Property(x => x.InvitedById).HasMaxLength(450);
+            e.Property(x => x.InvitedByEmail).HasMaxLength(256);
+            e.Property(x => x.AcceptedByUserId).HasMaxLength(450);
+            e.HasIndex(x => x.AcceptedByUserId);
         });
 
         builder.Entity<Doctor>(e =>

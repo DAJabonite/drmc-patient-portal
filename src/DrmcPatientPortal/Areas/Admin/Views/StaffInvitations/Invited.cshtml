@@ -1,0 +1,44 @@
+@model StaffInvitationSlip
+@using DrmcPatientPortal.Areas.Admin.Security
+@{ ViewData["Title"] = "Staff invitation sent"; }
+<div class="admin-page-header admin-no-print">
+    <div>
+        <p class="admin-eyebrow">Staff invitations</p>
+        <h1 class="admin-title">Invitation created</h1>
+        <p class="admin-subtitle">For security, the full invitation code is shown only once and cannot be displayed again.</p>
+    </div>
+    <div class="admin-page-actions">
+        <a asp-area="Admin" asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Done</a>
+        <button type="button" class="btn btn-primary" data-admin-print><i class="bi bi-printer me-1" aria-hidden="true"></i>Print</button>
+    </div>
+</div>
+@if (Model.Emailed)
+{
+    <div class="alert alert-success admin-no-print" role="status">We emailed the signup link to <strong>@Model.Email</strong>. The action was recorded in the audit history.</div>
+}
+else
+{
+    <div class="alert alert-warning admin-no-print" role="status">The email could not be sent. Print this page or show the QR code to <strong>@Model.Email</strong> instead.</div>
+}
+<section class="admin-card registration-slip" aria-labelledby="slipTitle">
+    <div class="admin-card-body">
+        <div class="registration-slip-grid">
+            <div class="registration-slip-qr" role="img" aria-label="QR code that opens portal signup with this invitation filled in">@Html.Raw(Model.QrSvg)</div>
+            <div>
+                <p class="admin-eyebrow mb-1">Davao Regional Medical Center · Patient Portal</p>
+                <h2 class="h4 fw-bold mb-2" id="slipTitle">Staff invitation</h2>
+                <p class="registration-slip-code font-monospace" data-registration-code aria-label="Code @string.Join(" ", Model.Code.ToCharArray())">@Model.Code</p>
+                <dl class="admin-dl registration-slip-meta">
+                    <div><dt>Email address</dt><dd class="text-break">@Model.Email</dd></div>
+                    <div><dt>Staff role</dt><dd>@StaffRoles.Label(Model.Role)</dd></div>
+                    <div><dt>Valid until</dt><dd class="tabular">@Model.ExpiresAt.ToString("MMMM d, yyyy h:mm tt") (Philippine time)</dd></div>
+                </dl>
+            </div>
+        </div>
+        <ol class="registration-slip-steps small mb-0">
+            <li>Open the emailed link or scan the QR code, then complete <strong>Create account</strong> using <strong>@Model.Email</strong>.</li>
+            <li>Confirm your email address from the message the portal sends you.</li>
+            <li>Sign in and turn on two-factor authentication. Your staff role is added then; sign out and back in to open Administration.</li>
+        </ol>
+    </div>
+</section>
