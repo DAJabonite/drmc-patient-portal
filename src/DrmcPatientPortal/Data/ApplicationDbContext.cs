@@ -136,6 +136,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<LabResult>(e =>
         {
+            e.Property(x => x.ReportFileName).HasMaxLength(36);
             e.HasOne(x => x.Patient)
                 .WithMany(u => u.LabResults)
                 .HasForeignKey(x => x.PatientRecordId)

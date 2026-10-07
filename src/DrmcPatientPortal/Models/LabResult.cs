@@ -15,6 +15,9 @@ public class LabResult
     public DateTime? ReleasedAt { get; set; }
     public string Status { get; set; } = "Available"; // Available, In progress, Pending Verification
     public string ResultSummary { get; set; } = string.Empty;
+    public string? ReportFileName { get; set; }
+    public long? ReportSize { get; set; }
+    public DateTime? ReportUploadedAtUtc { get; set; }
 
     public string OrderingPhysician { get; set; } = string.Empty; // e.g. "Dr. Arthur Llanos, MD, FPCP"
     public string PathologistName { get; set; } = string.Empty;   // e.g. "Dr. Manuel Santos, MD, FPSP"

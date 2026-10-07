@@ -113,6 +113,8 @@ builder.Services.Configure<StaffInvitationOptions>(builder.Configuration.GetSect
 builder.Services.AddScoped<StaffInvitationActivator>();
 builder.Services.AddScoped<FirstAdminSignup>();
 builder.Services.AddScoped<IPatientDocumentStorage, PatientDocumentStorage>();
+builder.Services.Configure<LabReportStorageOptions>(builder.Configuration.GetSection("LabReports"));
+builder.Services.AddScoped<ILabReportStorage, LabReportStorage>();
 builder.Services.AddHostedService<TemporaryDocumentCleanupService>();
 
 var keyRingPath = builder.Configuration["DataProtection:KeyRingPath"] ?? Path.Combine(builder.Environment.ContentRootPath, "App_Data", "DataProtectionKeys");
