@@ -304,9 +304,9 @@ Remove any bootstrap settings also saved in user-secrets or deployment configura
 
 ### 4. Save recovery codes
 
-While signed in, open `/Identity/Account/Manage/GenerateRecoveryCodes` and select **Generate Recovery Codes**. Store the ten codes privately; custom authenticator enrollment does not automatically show them. A newly generated set replaces the old set.
+After first-time authenticator setup, the portal automatically shows ten recovery codes. Save them privately before leaving the page; each code works once and the list is only shown once. For an existing account, open the account menu → **Two-Factor Auth (2FA)** → **Recovery Codes** and select **Generate Recovery Codes** (or **Generate New Recovery Codes**). Confirm on the next screen and save the new set. Generating replacements invalidates the previous set; reconfiguring the same authenticator preserves any codes you still have.
 
-To use one, enter your email and password normally. At the pending authenticator challenge, open `/Identity/Account/LoginWithRecoveryCode?returnUrl=%2FAdmin` in the same browser session and submit an unused code. Each code works once. It does not bypass current role, confirmation or lockout checks.
+To use one, enter your email and password normally. At the authenticator challenge, select **Can't use your authenticator? Use a recovery code** and submit an unused code. Each code works once. It does not bypass current role, confirmation or lockout checks.
 
 The Admin, LabStaff, RadiologyStaff and PatientServicesStaff roles are created idempotently at startup. Bootstrap only promotes an existing, email-confirmed, 2FA-enabled, non-locked-out account; if the configured account does not exist yet, startup logs a warning and waits for signup. Every startup with bootstrap enabled logs a warning, including when no email is configured. An existing account that has not completed these checks blocks bootstrap startup; disable bootstrap to finish setup.
 
