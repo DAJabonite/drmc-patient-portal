@@ -78,6 +78,33 @@ else
     </div>
 }
 
+@if (Model.Is2faEnabled)
+{
+    <section class="border-top pt-4 mt-4" aria-labelledby="recovery-codes-heading">
+        <h4 id="recovery-codes-heading" class="h6 fw-bold text-dark mb-3">Recovery Codes</h4>
+        <p class="small text-muted">
+            Use a recovery code to sign in if you lose access to your authenticator app. Each code can be used once.
+        </p>
+        @if (Model.RecoveryCodesLeft == 0)
+        {
+            <div class="alert alert-warning rounded-4 small" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>
+                You have no recovery codes left. Generate a set and save it somewhere safe.
+            </div>
+        }
+        else
+        {
+            <p class="small fw-semibold text-dark">
+                @Model.RecoveryCodesLeft @(Model.RecoveryCodesLeft == 1 ? "recovery code remaining." : "recovery codes remaining.")
+            </p>
+        }
+        <a id="recovery-codes" asp-page="./GenerateRecoveryCodes" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold shadow-xs">
+            <i class="bi bi-key me-1" aria-hidden="true"></i>
+            @(Model.RecoveryCodesLeft == 0 ? "Generate Recovery Codes" : "Generate New Recovery Codes")
+        </a>
+    </section>
+}
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 }

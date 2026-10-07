@@ -14,7 +14,7 @@
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link rounded-3 fw-semibold @(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("TwoFactor") == true || ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Authenticator") == true ? "active bg-primary-drmc text-white" : "text-dark bg-light")" id="two-factor" asp-page="./TwoFactorAuthentication">
+        <a class="nav-link rounded-3 fw-semibold @(ManageNavPages.TwoFactorAuthenticationNavClass(ViewContext) == "active" ? "active bg-primary-drmc text-white" : "text-dark bg-light")" id="two-factor" asp-page="./TwoFactorAuthentication">
             <i class="bi bi-shield-lock me-2"></i> Two-Factor Auth (2FA)
         </a>
     </li>

@@ -42,6 +42,9 @@ public class EnableAuthenticatorModel : PageModel
     public string[]? RecoveryCodes { get; set; }
 
     [TempData]
+    public string? RecoveryCodesOwner { get; set; }
+
+    [TempData]
     public string? StatusMessage { get; set; }
 
     [BindProperty]
@@ -106,6 +109,16 @@ public class EnableAuthenticatorModel : PageModel
         var role = await _invitations.TryActivateAsync(user, HttpContext.RequestAborted);
         if (role is not null)
             StatusMessage += $" Your {DrmcPatientPortal.Areas.Admin.Security.StaffRoles.Label(role).ToLowerInvariant()} role is now active. Sign out, then sign in with your authenticator code to open Administration.";
+
+        if (await _userManager.CountRecoveryCodesAsync(user) == 0)
+        {
+            var codes = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10)
+                ?? throw new InvalidOperationException("Unable to generate two-factor recovery codes.");
+            RecoveryCodes = codes.ToArray();
+            // Keep GUID-shaped Identity IDs as strings when TempData is deserialized.
+            RecoveryCodesOwner = $"user:{userId}";
+            return RedirectToPage("./ShowRecoveryCodes");
+        }
 
         return RedirectToPage("./TwoFactorAuthentication");
     }
