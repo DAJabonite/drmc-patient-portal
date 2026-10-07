@@ -4,10 +4,13 @@ ASP.NET Core MVC and Identity application for Davao Regional Medical Center. Pub
 
 This application is not connected to hospital clinical, pharmacy, billing or social-work systems. Demonstration records, schedules and guidance require institutional approval before production use.
 
+Start with [Local Setup](#local-setup), then [First Admin](#first-admin), [Staff Invitations](#staff-invitations) and the [Admin Management Walkthrough](#admin-management-walkthrough). Developers can also use [Testing](#testing), [Configuration](#configuration) and [Database Migrations](#database-migrations); deployment operators should review [Server Hosting and Handover](#server-hosting-and-handover) and [Key Protection and Recovery](#key-protection-and-recovery).
+
 ## Prerequisites
 
-- .NET 10 SDK and Entity Framework Core command-line tool 10.0.11.
-- SQL Server; SQL Server Express with Windows authentication is suitable for local development.
+- Git, the [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0), and Entity Framework Core command-line tool 10.0.11.
+- SQL Server; SQL Server Express with Windows authentication is suitable for local development. Install [SQL Server Management Studio (SSMS)](https://learn.microsoft.com/en-us/ssms/install/install) separately to create databases and explore tables.
+- An authenticator app for Admin and staff two-factor authentication (2FA).
 - Windows when opting into current-user DPAPI protection.
 - Writable, persistent directories for encryption keys, encrypted patient documents and import staging, outside Git and the web root.
 - SMTP and HTTPS SMS delivery configuration outside Development. Development sends delivery details to the console.
@@ -16,38 +19,162 @@ The application uses EF Core 10, SQL Server, Bootstrap 5, Razor Pages, Identity,
 
 ## Local Setup
 
-From the repository root, restore and build:
+Follow these steps for a fresh Windows development installation. Use a dedicated portal database and fictional records for the walkthrough. Existing installations should back up their database, encryption keys and documents before applying updates; ordinary startup does not require deleting anything.
 
-```powershell
-dotnet restore DrmcPatientPortal.slnx
-dotnet build DrmcPatientPortal.slnx -c Release
-dotnet tool install --global dotnet-ef --version 10.0.11
+### 1. Install SQL Server and SSMS
+
+These are separate tools:
+
+| Tool | What it does |
+| --- | --- |
+| SQL Server Express | Runs the database engine and stores databases |
+| SQL Server Configuration Manager | Manages SQL services and network settings |
+| SSMS | Connects to the engine, creates databases, browses tables and runs SQL queries |
+
+If SQL Server Express is already running, keep that instance. Otherwise download Express from [Microsoft SQL Server downloads](https://www.microsoft.com/en-us/sql-server/sql-server-downloads). For a configurable installation, choose **Custom**, then a new standalone installation with **Database Engine Services**, instance name **SQLEXPRESS**, **Windows authentication**, and your Windows user added as a SQL administrator for local development. See [Microsoft's installation walkthrough](https://learn.microsoft.com/en-us/sql/database-engine/install-windows/install-sql-server-from-the-installation-wizard-setup).
+
+Install SSMS from [Microsoft's official installer page](https://learn.microsoft.com/en-us/ssms/install/install). Run `vs_SSMS.exe`, complete installation, then **Launch**. Optional workloads are unnecessary for this walkthrough. If the page fails in an embedded browser, try Edge or Chrome, or use the page's [official installer link](https://aka.ms/ssms/22/release/vs_SSMS.exe). The installer uses Visual Studio Installer; the Visual Studio IDE is not required.
+
+In SSMS, connect with:
+
+| Connection field | Local value |
+| --- | --- |
+| Server name | `localhost\SQLEXPRESS` |
+| Authentication | Windows Authentication |
+| Database name | Default |
+| Encrypt | Mandatory |
+
+If connection fails with **The certificate chain was issued by an authority that is not trusted**, enable **Trust Server Certificate** and reconnect to this local instance. This keeps encryption enabled while skipping server certificate verification; see [Microsoft's certificate guidance](https://learn.microsoft.com/en-us/troubleshoot/sql/database-engine/connect/error-message-when-you-connect). A deployed server should use a trusted certificate and certificate validation.
+
+Object Explorer should now show the server and its **Databases** folder. If the engine cannot be reached, confirm **SQL Server (SQLEXPRESS)** is running in Configuration Manager. SSMS alone does not install or run the database engine.
+
+### 2. Create your own empty database in SSMS
+
+1. Right-click **Databases → New Database**.
+2. Enter **DrmcPatientPortal_Dev** as the database name.
+3. Under **Options**, set **Collation** to **Latin1_General_100_BIN2**.
+4. Leave the other settings at their defaults, select **OK**, and refresh **Databases**.
+
+Alternatively, use **New Query** against `master` and run this once instead of using the dialog:
+
+```sql
+CREATE DATABASE [DrmcPatientPortal_Dev]
+COLLATE Latin1_General_100_BIN2;
 ```
 
-Use the installed matching tool if it is already available. Development configuration targets `localhost\SQLEXPRESS`, database `DrmcPatientPortal_Dev`, with integrated authentication. Deployment configuration contains placeholders. Environment variables use double underscores for nested settings; keep credentials in user-secrets or a deployment secret store, never in tracked configuration.
+Verify the database you created:
 
-Before applying migrations, check the resolved connection, including any environment or user-secret overrides. For local development, use only the following target:
+```sql
+USE [DrmcPatientPortal_Dev];
+
+SELECT DB_NAME() AS DatabaseName,
+       DATABASEPROPERTYEX(DB_NAME(), 'Collation') AS CollationName;
+SELECT name AS TableName FROM sys.tables ORDER BY name;
+```
+
+Expect the chosen name, `Latin1_General_100_BIN2`, and no application tables yet. Do not change the collation of a populated database to repeat this exercise. Each independent developer can use a distinct name, such as `DrmcPatientPortal_Dev_Alex`; replace it consistently in the SQL and PowerShell commands below.
+
+### 3. Clone, restore and build
+
+Open PowerShell in the parent folder where you want the source code:
 
 ```powershell
+git clone https://github.com/DAJabonite/drmc-patient-portal.git
+Set-Location drmc-patient-portal
+git branch --show-current
+git log -1 --oneline
+```
+
+A normal clone starts on `master`. Use a new empty destination if a previous copy exists. GitHub contains code and migrations, not your local database, accounts, secrets or encrypted uploads. Deleting a project folder does not delete a database stored by SQL Server.
+
+From the repository root, check the tools, restore packages and build:
+
+```powershell
+dotnet --version
+dotnet restore DrmcPatientPortal.slnx
+dotnet build DrmcPatientPortal.slnx -c Release --no-restore -warnaserror
+dotnet ef --version
+```
+
+Stop and resolve any restore or build errors before continuing. If the EF tool is missing, run `dotnet tool install --global dotnet-ef --version 10.0.11`; if another version is installed, use `dotnet tool update --global dotnet-ef --version 10.0.11`. Confirm the version afterward.
+
+`DrmcPatientPortal.slnx` is the XML solution file grouping the application and `tests/DrmcPatientPortal.Tests`. **Restore** downloads each project's NuGet dependencies from its `.csproj`; it does not restore or modify a database. Keep test source in GitHub so developers and CI can verify changes. Generated `bin/`, `obj/` and `TestResults/` output is already ignored. No npm build step is needed for the checked-in browser assets.
+
+### 4. Configure this terminal and apply migrations
+
+Run from the repository root. These environment variables apply to processes launched from this PowerShell window; repeat this block in a new window before running the portal. Set the database name to the one you created in SSMS:
+
+```powershell
+$databaseName = 'DrmcPatientPortal_Dev'
 $env:ASPNETCORE_ENVIRONMENT = 'Development'
-$env:ConnectionStrings__DefaultConnection = 'Server=localhost\SQLEXPRESS;Database=DrmcPatientPortal_Dev;Integrated Security=True;Encrypt=True;TrustServerCertificate=True'
+$env:AdminBootstrap__Enabled = 'false'
+$env:DevelopmentFixtures__Enabled = 'false'
+$env:ConnectionStrings__DefaultConnection = "Server=localhost\SQLEXPRESS;Database=$databaseName;Integrated Security=True;Encrypt=True;TrustServerCertificate=True"
+
+# Quiet database queries while keeping [EMAIL OUTBOX] messages and warnings.
+$env:Logging__LogLevel__Microsoft = 'Warning'
+
+# Give this installation persistent storage outside Git and the web root.
+$localStorage = Join-Path $env:LOCALAPPDATA "DRMC\PatientPortal\$databaseName"
+$env:DataProtection__KeyRingPath = Join-Path $localStorage 'DataProtectionKeys'
+$env:PatientDocuments__RootPath = Join-Path $localStorage 'PatientIdDocuments'
+$env:PatientDocuments__TemporaryPath = Join-Path $localStorage 'TempUploads'
+$env:Imports__StagingPath = Join-Path $localStorage 'ImportStaging'
+
 $target = [System.Data.SqlClient.SqlConnectionStringBuilder]::new($env:ConnectionStrings__DefaultConnection)
 Write-Host "Migration target: server=$($target.DataSource); database=$($target.InitialCatalog)"
-if ($target.DataSource -ne 'localhost\SQLEXPRESS' -or $target.InitialCatalog -ne 'DrmcPatientPortal_Dev') { throw 'Unexpected database target' }
+if ($target.DataSource -ne 'localhost\SQLEXPRESS' -or $target.InitialCatalog -ne $databaseName) {
+    throw 'Unexpected database target'
+}
+
 dotnet ef database update --project src/DrmcPatientPortal -- --environment Development
+```
+
+The explicit connection overrides Development user-secrets and tracked settings for this process. All clones under the same Windows user share the project's `UserSecretsId`; use per-terminal settings for independent installations. Environment variables use double underscores for nested settings. Store credentials outside Git; the connection above uses your Windows identity and needs no SQL password.
+
+EF applies the committed migrations and creates the application tables. It can create a missing database itself when permitted, but the SSMS step lets you create and inspect it manually. Do not create another Initial migration or invent the portal tables. The initial migration does not transfer old SQLite data.
+
+When EF reports `Done.`, refresh **Tables** in SSMS and verify:
+
+```sql
+USE [DrmcPatientPortal_Dev]; -- Use your chosen database name.
+
+SELECT MigrationId FROM dbo.__EFMigrationsHistory ORDER BY MigrationId;
+SELECT COUNT(*) AS AccountCount FROM dbo.AspNetUsers;
+SELECT COUNT(*) AS PatientRecordCount FROM dbo.PatientRecords;
+```
+
+This version has eight migrations, ending in `20261007035528_AddStaffInvitations`. A fresh installation has zero accounts and hospital patient records. Starting the app does not automatically apply migrations or seed demo data when fixtures are disabled.
+
+### 5. Start the portal
+
+Keep the same terminal open:
+
+```powershell
 dotnet run --project src/DrmcPatientPortal --launch-profile http
 ```
 
-Open `http://localhost:5095`. Startup requires a reachable, fully migrated database in every environment; migrations are not applied automatically. No database reset is needed for ordinary startup. SQL Server creates the schema with `Latin1_General_100_BIN2` collation; an existing empty database must already use that collation. The initial migration does not transfer SQLite data.
+Open [http://localhost:5095](http://localhost:5095). Empty directory and clinical pages are expected until staff add records. Stop the running app with **Ctrl+C** before changing environment variables; an already-running process does not pick up those changes.
+
+`--project src/DrmcPatientPortal` selects the application from the repository root. `--launch-profile http` selects the Development/HTTP settings in `src/DrmcPatientPortal/Properties/launchSettings.json`. If your current folder is already `src/DrmcPatientPortal`, `dotnet run` uses that project and its default applicable launch profile. `.\run.ps1` is another launcher; it does not create the schema.
+
+For local HTTPS, run `dotnet dev-certs https --trust`, then use `--launch-profile https` and open `https://localhost:7104`. A phone's `localhost` points to the phone, so QR rehearsal on another device needs a reachable test HTTPS host and correct link origin.
+
+Continue with [First Admin](#first-admin), then [Staff Invitations](#staff-invitations) and [Admin Management Walkthrough](#admin-management-walkthrough).
 
 ### macOS, Linux, or Docker SQL Server
 
-Without SQL Server Express, run SQL Server Developer edition from `compose.yaml` (requires Docker; Apple silicon uses amd64 emulation):
+Without SQL Server Express, run SQL Server Developer edition from `compose.yaml` (requires Docker and a compatible Linux x86-64 container host; ARM emulation is not a supported SQL Server deployment). See [Microsoft's container guidance](https://learn.microsoft.com/en-us/sql/linux/containers/deploy):
 
 ```bash
+dotnet restore DrmcPatientPortal.slnx
+dotnet build DrmcPatientPortal.slnx -c Release --no-restore -warnaserror
 export MSSQL_SA_PASSWORD='<local-only strong password>'
 docker compose up -d --wait
 export ASPNETCORE_ENVIRONMENT=Development
+export AdminBootstrap__Enabled=false
+export DevelopmentFixtures__Enabled=false
+export Logging__LogLevel__Microsoft=Warning
 export ConnectionStrings__DefaultConnection="Server=localhost,1433;Database=DrmcPatientPortal_Dev;User Id=sa;Password=$MSSQL_SA_PASSWORD;Encrypt=True;TrustServerCertificate=True"
 dotnet ef database update --project src/DrmcPatientPortal -- --environment Development
 dotnet run --project src/DrmcPatientPortal --launch-profile http
@@ -95,6 +222,15 @@ The initial SQL Server migration is `20260929123803_InitialSqlServer`. During up
 
 `tests/DrmcPatientPortal.Tests` holds integration tests that boot the app with `WebApplicationFactory`. Each run creates a uniquely named SQL Server database, applies migrations, seeds synthetic fixtures and drops it afterwards. Point the tests at a server whose login may create databases, without a database name:
 
+For Windows SQL Server Express, run from the repository root:
+
+```powershell
+$env:DRMC_TEST_SQLSERVER = 'Server=localhost\SQLEXPRESS;Integrated Security=True;Encrypt=True;TrustServerCertificate=True'
+dotnet test DrmcPatientPortal.slnx -c Release
+```
+
+For the Docker server above:
+
 ```bash
 export DRMC_TEST_SQLSERVER="Server=localhost,1433;User Id=sa;Password=$MSSQL_SA_PASSWORD;Encrypt=True;TrustServerCertificate=True"
 dotnet test DrmcPatientPortal.slnx
@@ -123,9 +259,11 @@ Stable fixture account IDs are retained. Seeding runs transactionally only when 
 
 ## First Admin
 
-Signup requires a hospital record code, and the first Admin has no one to issue one. While bootstrap is enabled and **no Admin exists yet**, the configured bootstrap email may sign up without a code. Every other email still needs a code, and the exemption closes as soon as any account holds the Admin role.
+Signup requires a hospital record code, and the first Admin has no one to issue one. While bootstrap is enabled and **no Admin exists yet**, the configured bootstrap email may sign up without a code. Every other email still needs a code or staff invitation. The exemption closes as soon as any account holds the Admin role.
 
-1. Apply migrations, set the bootstrap variables for the email the first Admin will use, and start the app:
+### 1. Enable bootstrap for one email
+
+Complete Local Setup first. Stop any running portal with **Ctrl+C**, then use the same PowerShell window with the database and storage settings still set:
 
 ```powershell
 $env:AdminBootstrap__Enabled = 'true'
@@ -133,15 +271,46 @@ $env:AdminBootstrap__Email = Read-Host 'First Admin email'
 dotnet run --project src/DrmcPatientPortal --launch-profile http
 ```
 
-2. Open **Create account** and register with exactly that email. Leave **Hospital record code** empty. Startup logs that bootstrap is waiting for this account, and the signup is written to the activity log as `FIRST_ADMIN_SIGNUP`. Bootstrap never creates an account or password.
-3. Confirm the email using the Development confirmation link printed in the console, or the configured delivery service outside Development.
-4. In account management, enroll an authenticator and enable two-factor authentication.
-5. Restart with the same variables. Bootstrap promotes the account to Admin.
-6. Remove both bootstrap variables, restart, sign out and sign in with an authenticator code. Open `/Admin`.
+### 2. Register, confirm email and enable 2FA
 
-The Admin, LabStaff and RadiologyStaff roles are created idempotently at startup. Bootstrap only promotes an existing, email-confirmed, 2FA-enabled, non-locked-out account; if the configured account does not exist yet, startup logs a warning and waits for it to sign up. Every startup while bootstrap is enabled logs a warning, including when no email is configured.
+1. Open `/Identity/Account/Register`, accept the privacy notice and terms, and complete the ID/identity steps. Manual entry is available; an ID photo is optional.
+2. Register using **exactly the bootstrap email**. Leave **Hospital record code** empty. If the page still requires it, reload after starting with bootstrap enabled and check the configured email. Every other email continues to need a patient code or staff invitation.
+3. In Development, find the newest **`[EMAIL OUTBOX]`** in PowerShell. Copy the complete URL inside the email's `href` quotes, excluding the quotes and surrounding HTML. Replace every **`&amp;` with `&`**, then paste into the browser. For example, `...?userId=123&amp;code=ABC` becomes `...?userId=123&code=ABC`. Real HTML email delivered through SMTP is encoded correctly as-is; email clients decode the separators when clicked.
+4. Sign in after confirmation and open `/Identity/Account/Manage/TwoFactorAuthentication`. Set up Microsoft Authenticator, Google Authenticator or another TOTP app, scan the QR (or enter its key), and verify a current six-digit code.
 
-All Admin endpoints require a staff role allowed for that section (see Staff Roles), currently confirmed email, enabled 2FA, a non-locked-out account and an `amr=mfa` sign-in claim. Password-only and remembered-browser sessions do not qualify. Anonymous requests receive the normal Identity login challenge with `ReturnUrl`; authenticated requests failing these rules receive HTTP 403. Select **Forget this browser** under Two-factor authentication, then sign out and sign in with an authenticator code. Admin writes require antiforgery tokens. Startup rejects anonymous Admin endpoints and Admin controllers without a registered staff policy.
+Keep this session running until both email confirmation and 2FA are complete. Startup logs that bootstrap is waiting for the account; it never creates an account or password. The signup is written to the activity log as `FIRST_ADMIN_SIGNUP`.
+
+If the link is invalid or incomplete, use **Request a new link** at `/Identity/Account/ResendEmailConfirmation` and copy the newest complete URL with the separators decoded. Quiet Microsoft logs using `$env:Logging__LogLevel__Microsoft = 'Warning'` before startup; `[EMAIL OUTBOX]` remains visible. If you need to restart while the account is unfinished, set `$env:AdminBootstrap__Enabled = 'false'` first. Finish confirmation and 2FA, then re-enable bootstrap for promotion.
+
+### 3. Promote, disable bootstrap and sign in with MFA
+
+Once email and 2FA are complete, stop the app. Re-enable bootstrap if you temporarily disabled it, confirm its email is still the registered address, and restart:
+
+```powershell
+$env:AdminBootstrap__Enabled = 'true'
+$env:AdminBootstrap__Email = Read-Host 'Same registered first Admin email'
+dotnet run --project src/DrmcPatientPortal --launch-profile http
+```
+
+Startup promotes the existing eligible account. After startup succeeds, stop again and run without bootstrap:
+
+```powershell
+$env:AdminBootstrap__Enabled = 'false'
+Remove-Item Env:AdminBootstrap__Email -ErrorAction SilentlyContinue
+dotnet run --project src/DrmcPatientPortal --launch-profile http
+```
+
+Remove any bootstrap settings also saved in user-secrets or deployment configuration. Sign out, then sign in using your password and an authenticator code; leave **Remember this device** unchecked. Open `/Admin`. If access is denied, use **Forget this browser** in 2FA management, sign out, and sign in with a fresh authenticator code.
+
+### 4. Save recovery codes
+
+While signed in, open `/Identity/Account/Manage/GenerateRecoveryCodes` and select **Generate Recovery Codes**. Store the ten codes privately; custom authenticator enrollment does not automatically show them. A newly generated set replaces the old set.
+
+To use one, enter your email and password normally. At the pending authenticator challenge, open `/Identity/Account/LoginWithRecoveryCode?returnUrl=%2FAdmin` in the same browser session and submit an unused code. Each code works once. It does not bypass current role, confirmation or lockout checks.
+
+The Admin, LabStaff, RadiologyStaff and PatientServicesStaff roles are created idempotently at startup. Bootstrap only promotes an existing, email-confirmed, 2FA-enabled, non-locked-out account; if the configured account does not exist yet, startup logs a warning and waits for signup. Every startup with bootstrap enabled logs a warning, including when no email is configured. An existing account that has not completed these checks blocks bootstrap startup; disable bootstrap to finish setup.
+
+All Admin endpoints require a staff role allowed for that section (see Staff Roles), currently confirmed email, enabled 2FA, a non-locked-out account and an `amr=mfa` sign-in claim. Password-only and remembered-browser sessions do not qualify. Anonymous requests receive the normal Identity login challenge with `ReturnUrl`; authenticated requests failing these rules receive HTTP 403. Admin writes require antiforgery tokens. Startup rejects anonymous Admin endpoints and Admin controllers without a registered staff policy.
 
 ## Staff Roles
 
@@ -182,16 +351,16 @@ Hospital patient records exist independently of portal accounts. Staff verify id
 
 Changes and staff audit entries commit together. Registry and clinical audit entries retain field names only, not earlier medical values; they cannot reconstruct prior records. Doctors and PublicAdvisories retain old/new values. Staff clinical views log affected patient references before display; failed audit persistence prevents display. The patient activity page remains unchanged. Both audit tables are append-only through application guards and have no edit/delete endpoints. Database access controls and retention procedures remain an operational responsibility.
 
-General Identity administration, sensitive ID-document metadata, audit tables, migration history and import system metadata have no generic editor. Laboratory item values and result summaries are staff-only by default; when `PatientResults:ShowFullResults` is switched on, released results (and released radiology reports) are shown to the owning patient, and clinical and internal notes stay staff-only. The patient laboratory claiming guide is retained. New advisory saves sanitize HTML, but existing legacy HTML is not rewritten; review it before publication. The existing inline-script CSP allowance is unchanged.
+General Identity administration, sensitive ID-document metadata, audit tables, migration history and import system metadata have no generic editor. Laboratory item values and result summaries are staff-only by default; when `PatientResults:ShowFullResults` is switched on, released results (and released radiology reports) are shown to the owning patient, and clinical and internal notes stay staff-only. The patient laboratory claiming guide is retained. New advisory saves sanitize HTML, but existing legacy HTML is not rewritten; review it before publication. The Content Security Policy requires scripts to be loaded from the app's own external JavaScript files.
 
 ## Hospital Record Codes
 
-A hospital record code shows that a person has a record at DRMC and links that record to the portal account they create, without a separate staff linking step. The design follows the MyChart activation-code pattern and NIST SP 800-63A enrollment-code guidance. See [the plan](docs/design/hospital-record-code-plan.md).
+A hospital record code shows that a person has a record at DRMC and links that record to the portal account they create, without a separate staff linking step. The code is an enrollment credential for a verified hospital record, separate from a staff invitation.
 
 1. At the PACD or a clinic desk (for example the Red Star Clinic), Patient services staff or an Admin check the patient's valid ID against the hospital record. They then open **Registration codes › Issue code**, or **Registration code** on the patient's details page.
 2. The record must be unlinked and must have a birth date. Staff choose the issuing point, confirm the identity check, and print or show the slip. The slip has the code in the form `XXXXX-XXXXX-XXXXX` and a QR code. The full code is shown only once and is never stored: the database keeps a SHA-256 hash and the last five characters. Issuing a new code revokes any earlier active code for that record. Each issue and revoke is written to the staff audit log.
 3. The QR opens `/Identity/Account/Register#code=…`. The code is in the URL fragment, which browsers do not send to the server. On the **Credentials** step, the **Hospital record code** field is filled in from the QR, typed by the patient, or scanned with the camera where the browser supports `BarcodeDetector`. Input is not case-sensitive and ignores spaces and hyphens.
-4. Signup checks the code before creating the account. The code must be active (not used, revoked or expired), its record must still be unlinked, and the date of birth entered must match the record. If any check fails, signup shows one generic message and creates no account. On success, the code is marked used and the record is linked in a single serializable transaction, and `LINK_HOSPITAL_RECORD` is written to the patient activity log. If a later signup step fails, the account is removed and the code is released so it can be used again.
+4. Signup checks the code before creating the account. The code must be active (not used, revoked or expired), its record must still be unlinked, and the date of birth entered must match the record. If any check fails, signup shows one generic message and creates no account. On success, the code is marked used and the record is linked in a single serializable transaction, and `LINK_HOSPITAL_RECORD` is written to the patient activity log. Failures while accepting a code or invitation attempt account/link cleanup. A later audit or email-delivery failure can leave a created account and linked record; check state and resend confirmation instead of registering repeatedly.
 
 A code is **required** to create a portal account: patients without a DRMC hospital record cannot get a code, so they cannot sign up. The signup page says so at the top, and a missing code is rejected on the server before any account is created. Setting `PatientRegistration:RequireHospitalRecordCode` to `false` makes the code optional again; accounts created that way can be linked by an Admin through **Verified portal link**. Staff use a staff invitation instead of a code, and the first Admin uses first-Admin setup (see First Admin).
 
@@ -205,7 +374,84 @@ Staff usually have no hospital record, so they cannot get a hospital record code
 4. Signup checks that the invitation is unused, not revoked, not expired and was sent to the email being registered. Any failure shows one generic message and creates no account. On success the invitation is marked accepted with a conditional update (a second signup with the same code fails), and `ACCEPT_STAFF_INVITATION` is written to the activity log.
 5. The role is **not** granted at signup. It is granted automatically once the account has a confirmed email and two-factor authentication, right after the email is confirmed or 2FA is turned on, whichever comes last. The grant refreshes the security stamp and is written to the staff audit log under the inviting Admin. The person then signs out and signs in with an authenticator code to open Administration.
 
-Admins can revoke an invitation while it is **Invited** or **Awaiting setup**; a revoked invitation never grants its role.
+For local staff rehearsal, use a different email from Admin and the practice patient. Copy the invitation's signup URL into a separate browser profile, or sign the patient out of the private session first. Staff use the invitation instead of a hospital record code. Confirm email using the newest `[EMAIL OUTBOX]` link with `&amp;` replaced by `&`, then enable 2FA. No app restart or Admin bootstrap is needed to activate an invited role; sign out/in with an authenticator code after completing setup.
+
+Admins can revoke an invitation while it is **Invited** or **Awaiting setup**; a revoked invitation never grants its role. Expiry limits accepting an unused invitation. An accepted invitation can remain Awaiting setup until confirmation and 2FA are completed, unless revoked. To grant access to someone who already has a confirmed portal account, use **Staff access** rather than creating another account.
+
+## Admin Management Walkthrough
+
+Use a separate development database and fictional people for these checks. Keep the Admin signed in in one browser profile and the patient in another. Private windows in the same browser usually share a session; use a different profile/browser for staff, or sign the patient out before testing staff. The short steps below describe the current forms and patient pages.
+
+### 1. Add directory doctors and understand physician selection
+
+Open **Doctors** (`/Admin/Doctors`) and create a fictional doctor with the required **Full name**, **Title** and **Department**. Select a department from the form's fixed catalog; there is no database Departments editor. Complete optional profile fields as needed and leave **Is active** enabled to show the doctor in `/Directory`. Use approved roster details for a real deployment.
+
+Encounter, lab, radiology and prescription forms offer two physician sources:
+
+| Choice | What staff enter |
+| --- | --- |
+| Directory | Select an existing doctor in **Directory physician** |
+| Historical name | Type the physician documented on the record in **Historical physician name**; leave the directory choice Unassigned |
+
+Only the selected source is used. The clinical record stores a name snapshot, so editing the directory later does not automatically rename earlier records. For practice without a directory doctor, use Historical name and a fictional name such as `Dr. Demo Physician`. Lab forms require both an ordering physician and pathologist; radiology forms require the requesting physician and reporting radiologist.
+
+### 2. Create a hospital record and enroll its patient
+
+1. In **Patients** (`/Admin/Patients`), create **Test Patient** with birth date **1990-01-01**. Hospital number is optional; leave it empty rather than inventing one. Saving creates a hospital record, not a login.
+2. Open its **Details → Registration code**, or **Registration codes → Issue code** and select the record. Choose the issuing point, confirm the identity check for this fictional rehearsal, and issue the code. In a real workflow, staff first verify the patient's ID against the hospital record.
+3. Copy or print the slip. The full code is shown once. A new code revokes the earlier active one; keep real slips private.
+4. In the patient's separate session, open `/Identity/Account/Register`, enter the code on the Credentials step, use a different email from Admin, and enter the matching birth date on the Review step. Confirm the email using the same Development `[EMAIL OUTBOX]` process, then sign in.
+5. Back in Admin, patient Details should show **Portal account: Linked**. This page does not display the linked email, and the top-right email belongs to the signed-in Admin. Patient signup does not rename the hospital record.
+
+For a database learning check, run this read-only query in SSMS using the record's actual ID:
+
+```sql
+USE [DrmcPatientPortal_Dev]; -- Use your chosen database name.
+
+SELECT p.Id, p.FullName, u.Email AS LinkedAccountEmail, u.EmailConfirmed
+FROM dbo.PatientRecords AS p
+LEFT JOIN dbo.AspNetUsers AS u ON u.Id = p.PortalUserId
+WHERE p.Id = 1; -- Replace with the practice patient ID shown in Admin.
+```
+
+The email should be the patient account and `EmailConfirmed` should be `1`. Linking uses the valid code and matching birth date, not a name comparison. For real enrollment, record verified identity details. An already-linked record cannot receive a new enrollment code; existing accounts use the separately verified linking workflow.
+
+### 3. Add a visit and check the patient view
+
+In **Encounters** (`/Admin/ClinicalEncounters`), create a record for Test Patient. Enter a unique reference such as `DEMO-VISIT-001`, the encounter date/time in Manila, a department from the dropdown, the visit type and a physician. Optional complaints, summaries and instructions should be fictional for practice. Save, then open **Visits** in the linked patient's session and verify the new visit appears.
+
+### 4. Link a lab to the visit and distinguish lab items
+
+The encounter form does not create lab records. Open **Lab results** (`/Admin/LabResults`), select Test Patient and create one separately. Enter a unique accession number such as `DEMO-LAB-001`, a test name, category, collection time and both physician choices. In **Encounter**, select `DEMO-VISIT-001`; the dropdown lists only this patient's encounters.
+
+For an available practice result, choose **Available** and set **Released at (Manila)** to a time that has passed and is not before collection. Save and refresh the patient's **Visits → visit details** and **Lab results**. The visit's lab section shows records linked through Encounter. Its empty wording, "No lab results were ordered," indicates no linked portal lab records; it does not establish what the hospital ordered.
+
+| Admin section | What it stores |
+| --- | --- |
+| Lab results | Overall test record, accession number, patient/visit, availability, collection/release times, physicians and summary |
+| Lab items | Measurements attached to that lab, including parameter, value, unit, reference range and flag |
+
+For example, one CBC lab can contain hemoglobin, white blood cell and platelet items. Create the lab first, then select it under **Lab items** (`/Admin/LabResultItems`) to add measurements. Patients see availability by default; items and detailed summaries are shown only for released results when `PatientResults:ShowFullResults` is enabled. Clinical notes remain staff-only. **Lab report PDF upload is not implemented**; it is a requested future change, not a setup step.
+
+### 5. Add radiology and understand release status
+
+In **Radiology** (`/Admin/RadiologyStudies`), create a fictional study for the patient with a unique accession number, study name, modality, body region, performed time and physician choices. Select the visit in **Encounter** if applicable. Save and inspect **Radiology** (`/Patient/Radiology`) in the patient's session.
+
+**Final** and **Amended** both need a release time, findings and impression; Amended also needs an amendment note. Amended means the report has been revised. Patient availability is **Ready for claiming** only when the status is Final or Amended **and** the release time has passed in Manila. A future release still shows **Report in progress**. Performed time is separate, and release cannot precede the exam. With full results disabled, report sections remain concealed even when ready; the portal does not display imaging files.
+
+### 6. Add prescriptions and dose schedules
+
+In **Prescriptions** (`/Admin/Prescriptions`), create a fictional entry for Test Patient. Complete the Rx number, generic name, department, physician, prescribed/valid-until dates and refill counts. Set **Active** for the schedule rehearsal; remaining refills cannot exceed total refills. Use fictional dosage/instructions for testing and the clinician's documented prescription for actual records.
+
+Open **Dose schedules** (`/Admin/MedicationDoseSchedules`), select that prescription, then add a dose time such as `08:00` and a display order such as `0`. In the patient's **Medications** (`/Patient/Medications`), refresh the daily medication schedule. It groups the saved doses by time and shows medication names and dosage. Only schedules belonging to Active prescriptions appear there.
+
+### 7. Test staff permissions and explore the remaining tools
+
+Follow [Staff Invitations](#staff-invitations) for a separate LabStaff account. Complete confirmation and 2FA, then sign out/in with an authenticator code. Confirm access to Lab results and Lab items and denial of Admin-only Staff access. Repeat with RadiologyStaff or PatientServicesStaff when rehearsing those workflows; use the role matrix above as the expected access.
+
+Admin can also create **Allergies**, manage **Public advisories**, use **Imports**, and review **Audit**. Allergies belong to the selected hospital patient; advisory saves sanitize HTML. Imports require template review and reconciliation before approval. Audit is read-only. **Compact rows** in the top bar reduces table row spacing; click again for comfortable rows. The choice is remembered in that browser and is most visible in record lists.
+
+Before client handover, repeat this workflow with two unrelated synthetic patients to verify each login sees only its linked records. Record the deployed commit, migration state, server/database, storage locations and responsible operators. Confirm institutional content, notifications and recovery in the actual hosting environment.
 
 ## Patient Radiology
 
@@ -215,11 +461,43 @@ To try full results locally, set `$env:PatientResults__ShowFullResults = 'true'`
 
 ## CSV and Excel Imports
 
-Download versioned CSV headers or the nine-sheet workbook from `/Admin/Imports`. CSV targets one `*_v1` template; `.xlsx` targets `Workbook_v1` and fixed named sheets. Preserve the supplied column order. Unknown columns, sheets, Identity fields and arbitrary mappings are rejected. See [Import Templates](docs/import-templates.md) for columns and value formats.
+Download versioned CSV headers or the nine-sheet workbook from `/Admin/Imports`. CSV targets one `*_v1` template; `.xlsx` targets `Workbook_v1` and fixed named sheets. Preserve the supplied column order. Unknown columns, sheets, Identity fields and arbitrary mappings are rejected. See [Import Template Reference](#import-template-reference) below for columns and value formats.
 
 Staff reconcile every source patient group to an existing hospital record or explicitly approve creating a new one. Source keys, names and birth dates are review aids, not automatic matching rules. Child rows also reference a source parent. Imports never link portal accounts, merge records, update existing rows or skip duplicates.
 
 Upload, save mappings, queue a dry run, review errors and proposed counts, then queue approval. Dry run, approval and execution run on the durable worker; requests return to a polling status page. Dry runs write no clinical rows. Approval binds the file hash, mappings and validation version; changes require another dry run. Validation loads existing keys and relationships in bounded set-based queries, and execution checks them again within its transaction. The initiating staff account must remain eligible throughout.
+
+### Import Template Reference
+
+Download the running app's templates rather than rebuilding headers manually. Headers and worksheet names are case-sensitive, fixed and ordered. The current validation version is `1.1.0`; template names still end in `_v1`. No dedicated radiology-study import exists in this version; use its Admin form.
+
+Patient and clinical templates start with `SourcePatientKey,SourcePatientName,SourceBirthDate`. A non-empty source patient key is required and limited to 200 characters. Names and birth dates are optional review hints, not automatic matching rules. The table's additional context follows those common columns, then the entity columns in the listed order:
+
+| Worksheet | Additional context | Entity columns |
+| --- | --- | --- |
+| Patients_v1 | None | FullName, DateOfBirth, HospitalNumber |
+| Doctors_v1 | No common patient context | FullName, Title, Department, SubSpecialty, ClinicRoom, ScheduleSummary, OffersTeleconsult, Biography, PrcLicenseMasked, IsActive |
+| PublicAdvisories_v1 | No common patient context | Title, Slug, Category, Priority, Summary, ContentHtml, ImageUrl, IssuingUnit, PublishedAt, EffectiveUntil, IsPinned |
+| ClinicalEncounters_v1 | SourceRecordKey | EncounterReference, EncounterDate, Department, Type, HistoricalDoctorName, ChiefComplaint, PrimaryDiagnosis, SecondaryDiagnosis, ClinicalSummary, CarePlanAndInstructions, VitalSignsRecorded, FollowUpDate, FollowUpNotes |
+| LabResults_v1 | SourceRecordKey, SourceEncounterKey | AccessionNumber, TestName, Category, CollectedAt, ReleasedAt, Status, HistoricalDoctorName, Pathologist.HistoricalDoctorName, ResultSummary, PerformingUnit, ClinicalNotes |
+| LabResultItems_v1 | SourceLabKey | ParameterName, Value, Unit, ReferenceRange, Flag |
+| Prescriptions_v1 | SourceRecordKey | RxNumber, GenericName, BrandName, Dosage, DosageForm, Frequency, Instructions, Department, PrescribedAt, ValidUntil, LastRefillDate, RefillsTotal, RefillsRemaining, Status, HistoricalDoctorName |
+| MedicationDoseSchedules_v1 | SourcePrescriptionKey | DoseTime, DisplayOrder |
+| PatientAllergies_v1 | None | Allergen, Reaction, Severity, RecordedAt |
+
+`SourceRecordKey` is a non-empty label unique within its parent template in the batch. Parent references use `batch:<SourceRecordKey>` for a row in the workbook or `existing:<hospital reference>` for an encounter reference, lab accession or Rx number. Prefixes are case-sensitive; hospital references are compared without case sensitivity. References are limited to 450 characters including the prefix. Missing, ambiguous or cross-patient parents block the batch; parent rows may follow children because validation orders dependencies. CSV targets one template and can reference existing parents. Workbook sheets can include batch parents and children.
+
+Multiple groups may deliberately map to one existing hospital record; new groups are not merged automatically. Patient-template rows must explicitly create new records, not map to existing ones. Missing hospital numbers remain empty; duplicate numbers block creation. Children inherit the verified parent's patient ownership.
+
+Value formats:
+
+- Dates use `yyyy-MM-dd`; date/time uses `yyyy-MM-ddTHH:mm:ss` with up to seven fractional digits and no time-zone suffix. Clinical values are Manila wall time; advisory publication/effectivity is UTC.
+- Dose time uses `HH:mm`, `HH:mm:ss` or fractional seconds accepted by the form. Excel date/time cells are converted to invariant formats. Hospital numbers and source identifiers must be text cells to preserve leading zeros.
+- Booleans use `true` or `false` (empty is false); integers use base-10 whole numbers. Enums use exact declared names or defined numeric values. Departments must match the canonical catalog in `src/DrmcPatientPortal/Models/ClinicalDepartment.cs`. Lab status is Available, In progress or Pending Verification.
+- CSV is UTF-8 (optional BOM), comma-delimited, with double-quoted fields and doubled inner quotes. Workbooks must contain values, not formulas. Do not add Identity, audit, ownership, rowversion or system-generated columns.
+- Physician imports use explicit HistoricalDoctorName snapshots and the pathologist snapshot for labs; directory IDs are not import columns. Doctor Title is required. Advisory HTML uses the form's sanitizer and accepts HTTPS or safe relative links.
+
+Duplicate references, slugs, hospital numbers and dose times block the batch. Imports also reject duplicate doctor name/department pairs, same-parent lab parameters and same-patient allergy names. These are duplicate checks, not identity matching or merge rules. Required values and field lengths follow the corresponding Admin form, including its 100,000-character cap where applicable.
 
 ### Limits and Recovery
 
@@ -255,6 +533,22 @@ The client must choose and approve a protection and backup strategy:
 | Accept the risk | Explicitly accept plaintext keys protected only by storage controls, or opt into machine/account-bound DPAPI and accept its recovery limitations. Document the choice and recovery responsibilities. |
 
 No portable recovery option is implemented. Any future change must preserve decryption of existing patient documents and queued imports before retiring the old identity. Encryption does not protect against a compromised application identity or database/storage administrator.
+
+## Server Hosting and Handover
+
+The Windows walkthrough above uses Development and console notifications. A client server needs a separate approved database, trusted TLS, a dedicated application identity, persistent storage and real delivery settings. SQL Server Developer edition is for development/testing; the DBA selects the production edition, capacity, authentication and runtime/schema permissions.
+
+For IIS, install IIS and the matching .NET 10 Hosting Bundle, then publish the reviewed source:
+
+```powershell
+dotnet publish src/DrmcPatientPortal -c Release -o ./output/publish
+```
+
+Configure the hosted app's environment and secrets through the app pool/deployment system, not a developer's temporary PowerShell window. Set Production, the real connection, `Notifications__Email__*` SMTP settings, `Notifications__Sms__*` HTTPS delivery settings, and absolute paths for the key ring, patient documents, temporary uploads and import staging. Grant the app identity the required filesystem access. An integrated SQL connection uses that runtime identity, not the interactive developer's account. Keep fixtures disabled and full-results disclosure at the approved setting.
+
+Stop/drain old builds, have the designated migration operator apply the committed schema with the correct target and schema permissions, then start the new build. Create the first Admin with the same temporary bootstrap, confirmation and 2FA sequence; remove bootstrap from the hosted configuration after promotion. Console confirmation links are a Development aid; verify real email delivery on the server. Generate patient/staff slips through the real HTTPS portal origin so phones can reach them; validate host/scheme handling if an additional reverse proxy is used.
+
+The deployment must keep the import worker running; configure IIS process lifetime/idle behavior for that requirement. Back up the SQL database, historical encryption keys and encrypted documents together and test recovery with the deployment identity. Replacing published code must preserve those data directories. Review [Key Protection and Recovery](#key-protection-and-recovery), the import limits, and client inputs below before handover.
 
 ## Known Limitations and Client Inputs
 
