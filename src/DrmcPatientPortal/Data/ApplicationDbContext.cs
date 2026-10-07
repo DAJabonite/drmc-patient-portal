@@ -199,6 +199,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<Prescription>(e =>
         {
+            e.Property(x => x.RouteOfAdministration).HasMaxLength(32);
             e.HasOne(x => x.Patient)
                 .WithMany(u => u.Prescriptions)
                 .HasForeignKey(x => x.PatientRecordId)

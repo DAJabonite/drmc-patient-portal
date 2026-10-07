@@ -1,5 +1,13 @@
 @model PrescriptionInput
 <input asp-for="RowVersion" type="hidden" />
+<div class="mb-3">
+    <label asp-for="RouteOfAdministration" class="form-label"></label>
+    <select asp-for="RouteOfAdministration" class="form-select">
+        <option value="">Not specified</option>
+        @foreach (var route in AdministrationRoutes.All) { <option value="@route">@route</option> }
+    </select>
+    <span asp-validation-for="RouteOfAdministration" class="text-danger"></span>
+</div>
 <div class="row g-3 mb-3">
     <div class="col-md-6"><label asp-for="RxNumber" class="form-label"></label><input asp-for="RxNumber" class="form-control" /><span asp-validation-for="RxNumber" class="text-danger"></span></div>
     <div class="col-md-6"><label asp-for="GenericName" class="form-label"></label><input asp-for="GenericName" class="form-control" /><span asp-validation-for="GenericName" class="text-danger"></span></div>
