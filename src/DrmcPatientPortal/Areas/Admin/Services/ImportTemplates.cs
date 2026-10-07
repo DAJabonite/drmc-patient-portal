@@ -72,6 +72,9 @@ public static class ImportTemplates
         var results = new List<ValidationResult>();
         Validator.TryValidateObject(input, new ValidationContext(input), results, true);
         errors.AddRange(results.Select(result => string.Join(", ", result.MemberNames) + ": invalid input."));
+        // Admin creation generates the URL; v1 imports retain the explicit, required slug contract.
+        if (input is PublicAdvisoryInput advisory && string.IsNullOrWhiteSpace(advisory.Slug))
+            errors.Add("Slug: invalid input.");
         if (input is LabInput lab) Validate(lab.Pathologist, errors);
     }
 }

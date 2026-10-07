@@ -20,8 +20,12 @@ public sealed class AdvisoryEditor : AdminEntity<PublicAdvisory, PublicAdvisoryI
     public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, PublicAdvisoryInput input,
         PublicAdvisory entity, OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
     {
-        var slug = input.Slug.Trim().ToLowerInvariant();
-        if (lookups is not null ? lookups.Exists("Slug:" + slug) : await db.PublicAdvisories.AnyAsync(a => a.Id != entity.Id && EF.Functions.Collate(a.Slug, "Latin1_General_100_CI_AS") == slug, token))
+        var slug = !create ? entity.Slug : lookups is null
+            ? await AdvisorySlugs.CreateAsync(db, input.Title, token)
+            : input.Slug.Trim().ToLowerInvariant();
+        if (create && lookups is not null && string.IsNullOrEmpty(slug))
+            return WriteResult.Invalid("Advisory imports require an explicit slug.");
+        if (create && lookups is not null && lookups.Exists("Slug:" + slug))
             return WriteResult.Invalid("An advisory already uses this slug, including a case variant.");
         var content = AdvisoryHtml.Clean(input.ContentHtml);
         if (content.Length > 100000) return WriteResult.Invalid("Cleaned content must be at most 100,000 characters.");
