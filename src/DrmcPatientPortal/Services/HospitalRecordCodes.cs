@@ -50,7 +50,9 @@ public static class HospitalRecordCodes
 public sealed class PatientRegistrationOptions
 {
     public const string Section = "PatientRegistration";
-    public bool RequireHospitalRecordCode { get; set; }
+    // On by default: portal accounts are only for patients who already have a DRMC hospital record.
+    // Only set false for a supervised rollout where staff link accounts manually afterwards.
+    public bool RequireHospitalRecordCode { get; set; } = true;
     public int CodeLifetimeDays { get; set; } = 7;
     public TimeSpan CodeLifetime => TimeSpan.FromDays(Math.Clamp(CodeLifetimeDays, 1, 30));
 }

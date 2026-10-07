@@ -14,6 +14,10 @@
                     <span class="fw-bold fs-5 text-primary-drmc">Davao Regional Medical Center</span>
                 </a>
                 <h1 class="h3 fw-bold text-primary-drmc mb-1">Create your patient account</h1>
+                @if (Model.RequireHospitalRecordCode)
+                {
+                    <p class="small text-muted mb-0 registration-record-required" id="hospitalCodeRequirement"><i class="bi bi-hospital me-1" aria-hidden="true"></i> For patients with a DRMC hospital record. You will need the hospital record code from the PACD or your clinic, such as the Red Star Clinic.</p>
+                }
             </div>
 
             <ol class="registration-stepper mb-4" id="wizardStepperNav" aria-label="Registration progress">
@@ -344,7 +348,14 @@
                                         <span class="registration-record-code-icon" aria-hidden="true"><i class="bi bi-hospital"></i></span>
                                         <div class="flex-grow-1 registration-record-code-body">
                                             <label asp-for="Input.HospitalRecordCode" for="hospitalRecordCode" class="form-label fw-semibold mb-1">Hospital record code @if (!Model.RequireHospitalRecordCode) { <span class="registration-optional">(Optional)</span> }</label>
-                                            <p class="small text-muted mb-2" id="hospitalRecordCodeHelp">Been admitted or treated at DRMC? Ask the PACD or your clinic (such as the Red Star Clinic) for a code. It shows you have a hospital record and links your records to this account. Your date of birth must match your hospital record.</p>
+                                            @if (Model.RequireHospitalRecordCode)
+                                            {
+                                                <p class="small text-muted mb-2" id="hospitalRecordCodeHelp">Enter the code from the slip you received at the PACD or your clinic (such as the Red Star Clinic). It shows you have a DRMC hospital record and links your records to this account. Your date of birth must match your hospital record. No code yet? Visit the PACD with a valid ID to get one.</p>
+                                            }
+                                            else
+                                            {
+                                                <p class="small text-muted mb-2" id="hospitalRecordCodeHelp">Been admitted or treated at DRMC? Ask the PACD or your clinic (such as the Red Star Clinic) for a code. It shows you have a hospital record and links your records to this account. Your date of birth must match your hospital record.</p>
+                                            }
                                             <div class="input-group">
                                                 @if (Model.RequireHospitalRecordCode)
                                                 {

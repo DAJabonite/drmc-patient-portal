@@ -70,7 +70,7 @@ The container binds to `127.0.0.1` only and keeps data in the `drmc-sqlserver` v
 | `Notifications__Email__*` | SMTP host, port, TLS, credentials and sender |
 | `Notifications__Sms__*` | HTTPS webhook, API key and sender ID |
 | `PatientResults__ShowFullResults` | Show released laboratory values and radiology reports to the owning patient; default `false`. Keep it `false` in tracked settings until DRMC approves full results in the portal |
-| `PatientRegistration__RequireHospitalRecordCode` | Require a hospital record code at signup; default `false`, so anyone can still register and be linked later by staff |
+| `PatientRegistration__RequireHospitalRecordCode` | Require a hospital record code at signup; default `true`, so only patients with a DRMC hospital record can create an account. Set `false` only for a supervised rollout where staff link accounts manually |
 | `PatientRegistration__CodeLifetimeDays` | How long a hospital record code stays valid; default `7`, limited to 1–30 days |
 | `Identity__RequireConfirmedAccount` | Require a confirmed email before sign-in; default `true`. In Development the confirmation link is written to the console |
 
@@ -121,7 +121,7 @@ Stable fixture account IDs are retained. Seeding runs transactionally only when 
 
 ## First Admin
 
-1. Apply migrations, start the Development app and register an account using Identity registration. Bootstrap never creates an account or password.
+1. Apply migrations, start the Development app with `PatientRegistration__RequireHospitalRecordCode=false` (no patient records exist yet, so no hospital record code can be issued), and register an account using Identity registration. Bootstrap never creates an account or password. Remove the variable again after step 5.
 2. Confirm the email using the Development confirmation link printed in the console, or the configured delivery service outside Development.
 3. In account management, enroll an authenticator and enable two-factor authentication.
 4. Set the following variables for that existing account and restart:
@@ -147,7 +147,7 @@ All Admin endpoints require a staff role allowed for that section (see Staff Rol
 | RadiologyStaff | Dashboard, `/Admin/RadiologyStudies` |
 | PatientServicesStaff | Dashboard, `/Admin/RegistrationCodes` (PACD and clinic desks) |
 
-To add staff: the person registers, confirms their email and enables two-factor authentication. An Admin opens `/Admin/StaffAccess`, selects the account and grants LabStaff, RadiologyStaff or PatientServicesStaff. Admin itself is only granted through bootstrap. Grants and revocations take effect on the next request, refresh the account's security stamp and are written to the staff audit log. Staff see only their sections in the sidebar and dashboard; the dashboard hides the audit feed and import status from non-Admin staff. The portal's Administration link appears after the person signs in again. Staff choose patients through the existing patient context picker, which shows name and hospital number only.
+To add staff: the person registers, confirms their email and enables two-factor authentication. Because signup requires a hospital record code by default, staff who have no DRMC patient record can only register while an Admin temporarily sets `PatientRegistration__RequireHospitalRecordCode=false` while they register. An Admin opens `/Admin/StaffAccess`, selects the account and grants LabStaff, RadiologyStaff or PatientServicesStaff. Admin itself is only granted through bootstrap. Grants and revocations take effect on the next request, refresh the account's security stamp and are written to the staff audit log. Staff see only their sections in the sidebar and dashboard; the dashboard hides the audit feed and import status from non-Admin staff. The portal's Administration link appears after the person signs in again. Staff choose patients through the existing patient context picker, which shows name and hospital number only.
 
 ## Admin Area
 
@@ -187,7 +187,7 @@ A hospital record code shows that a person has a record at DRMC and links that r
 3. The QR opens `/Identity/Account/Register#code=…`. The code is in the URL fragment, which browsers do not send to the server. On the **Credentials** step, the **Hospital record code** field is filled in from the QR, typed by the patient, or scanned with the camera where the browser supports `BarcodeDetector`. Input is not case-sensitive and ignores spaces and hyphens.
 4. Signup checks the code before creating the account. The code must be active (not used, revoked or expired), its record must still be unlinked, and the date of birth entered must match the record. If any check fails, signup shows one generic message and creates no account. On success, the code is marked used and the record is linked in a single serializable transaction, and `LINK_HOSPITAL_RECORD` is written to the patient activity log. If a later signup step fails, the account is removed and the code is released so it can be used again.
 
-Codes are optional unless `PatientRegistration:RequireHospitalRecordCode` is `true`. Accounts created without a code can still be linked by an Admin through **Verified portal link**.
+A code is **required** to create a portal account: patients without a DRMC hospital record cannot get a code, so they cannot sign up. The signup page says so at the top, and a missing code is rejected on the server before any account is created. Setting `PatientRegistration:RequireHospitalRecordCode` to `false` makes the code optional again; accounts created that way can be linked by an Admin through **Verified portal link**.
 
 ## Patient Radiology
 

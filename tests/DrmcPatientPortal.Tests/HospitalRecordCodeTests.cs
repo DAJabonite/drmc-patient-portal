@@ -7,6 +7,7 @@ using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace DrmcPatientPortal.Tests;
 
@@ -296,41 +297,66 @@ public sealed partial class HospitalRecordCodeTests(PortalFactory factory)
         Assert.Contains("Enter the 15-character code exactly as printed", await response.Content.ReadAsStringAsync());
     }
 
-    [Fact]
-    public async Task Signup_without_a_code_still_works_and_stays_unlinked()
+    private HttpClient OptionalModeClient(out IDisposable host)
     {
-        var email = Email();
-        var response = await SignupAsync(factory.CreatePortalClient(), email, null, null);
-        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        using var scope = factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var user = await db.Users.SingleAsync(u => u.Email == email);
-        Assert.False(await db.PatientRecords.AnyAsync(p => p.PortalUserId == user.Id));
+        var optional = factory.WithWebHostBuilder(b => b.UseSetting("PatientRegistration:RequireHospitalRecordCode", "false"));
+        host = optional;
+        return optional.CreateClient(new() { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
     }
 
     [Fact]
-    public async Task Credentials_step_shows_the_optional_code_field_without_inline_script()
+    public void Hospital_record_code_is_required_by_default()
+    {
+        Assert.True(new PatientRegistrationOptions().RequireHospitalRecordCode);
+        Assert.True(factory.Services.GetRequiredService<IOptions<PatientRegistrationOptions>>().Value.RequireHospitalRecordCode);
+    }
+
+    [Fact]
+    public async Task Signup_without_a_code_is_rejected_and_creates_no_account()
+    {
+        var client = factory.CreatePortalClient();
+        var page = await client.GetStringAsync("/Identity/Account/Register");
+        Assert.Contains("id=\"hospitalCodeRequirement\"", page);
+        Assert.DoesNotMatch("Hospital record code\\s*<span class=\"registration-optional\">", page);
+        Assert.Matches("id=\"hospitalRecordCode\"[^>]*data-val-required=", page);
+        foreach (var code in new string?[] { null, "", "   " })
+        {
+            var email = Email();
+            var response = await SignupAsync(client, email, code, BirthDate);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Contains("Enter the hospital record code you received", await response.Content.ReadAsStringAsync());
+            using var scope = factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            Assert.False(await db.Users.AnyAsync(u => u.Email == email));
+        }
+    }
+
+    [Fact]
+    public async Task Credentials_step_shows_the_code_field_without_inline_script()
     {
         var html = await factory.CreatePortalClient().GetStringAsync("/Identity/Account/Register");
         Assert.Contains("id=\"hospitalRecordCode\"", html);
-        Assert.Contains("Hospital record code", html);
-        Assert.Matches("Hospital record code\\s*<span class=\"registration-optional\">\\(Optional\\)", html);
+        Assert.Contains("No code yet? Visit the PACD", html);
         Assert.Contains("Red Star Clinic", html);
         Assert.DoesNotMatch("<script(?![^>]*src=)[^>]*>", html);
     }
 
     [Fact]
-    public async Task Required_mode_rejects_signup_without_a_code()
+    public async Task Optional_mode_keeps_open_signup_and_leaves_the_account_unlinked()
     {
-        using var required = factory.WithWebHostBuilder(b => b.UseSetting("PatientRegistration:RequireHospitalRecordCode", "true"));
-        var client = required.CreateClient(new() { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
-        var page = await client.GetStringAsync("/Identity/Account/Register");
-        Assert.DoesNotMatch("Hospital record code\\s*<span class=\"registration-optional\">", page);
-        Assert.Contains("id=\"hospitalRecordCode\"", page);
-        var email = Email();
-        var response = await SignupAsync(client, email, null, null);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("Enter the hospital record code you received", await response.Content.ReadAsStringAsync());
-        Assert.Null((await StateAsync(await NewPatientAsync(), email)).User);
+        var client = OptionalModeClient(out var host);
+        using (host)
+        {
+            var page = await client.GetStringAsync("/Identity/Account/Register");
+            Assert.Matches("Hospital record code\\s*<span class=\"registration-optional\">\\(Optional\\)", page);
+            Assert.DoesNotContain("id=\"hospitalCodeRequirement\"", page);
+            var email = Email();
+            var response = await SignupAsync(client, email, null, null);
+            Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+            using var scope = factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var user = await db.Users.SingleAsync(u => u.Email == email);
+            Assert.False(await db.PatientRecords.AnyAsync(p => p.PortalUserId == user.Id));
+        }
     }
 }
