@@ -1,0 +1,83 @@
+@model StaffInvitationList
+@using DrmcPatientPortal.Areas.Admin.Security
+@using DrmcPatientPortal.Services
+@{
+    ViewData["Title"] = "Staff invitations";
+    var from = Model.Total == 0 ? 0 : (Model.Page - 1) * 25 + 1;
+    var to = Math.Min(Model.Page * 25, Model.Total);
+}
+<div class="admin-page-header">
+    <div>
+        <p class="admin-eyebrow">Operations</p>
+        <h1 class="admin-title">Staff invitations</h1>
+        <p class="admin-subtitle">Staff usually have no hospital record, so they sign up with an invitation instead of a hospital record code. Each invitation works once, only for its email address, and grants its role after the account confirms its email and turns on two-factor authentication.</p>
+    </div>
+    <div class="admin-page-actions">
+        <a asp-area="Admin" asp-controller="StaffAccess" asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-person-lock me-1" aria-hidden="true"></i>Staff access</a>
+        <a asp-area="Admin" asp-action="Create" class="btn btn-primary"><i class="bi bi-envelope-plus me-1" aria-hidden="true"></i>Invite staff</a>
+    </div>
+</div>
+@if (TempData["AdminStatus"] is string status) { <div class="alert alert-success" role="status">@status</div> }
+@if (TempData["AdminError"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+<div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+<div class="admin-card">
+    <div class="admin-card-header">
+        <form method="get" class="d-flex flex-grow-1 gap-2" role="search">
+            <div class="admin-search">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <label for="search" class="visually-hidden">Search staff invitations</label>
+                <input id="search" name="search" value="@Model.Search" maxlength="256" class="form-control" type="search" placeholder="Search email or last 5 characters" />
+            </div>
+            <button class="btn btn-outline-secondary" type="submit">Search</button>
+        </form>
+        <span class="admin-result-count tabular">@if (Model.Total > 0) { <text>Showing @from–@to of @Model.Total</text> } else { <text>0 invitations</text> }</span>
+    </div>
+    @if (Model.Rows.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="table table-hover admin-table admin-table-stack">
+                <thead><tr><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Invitation</th><th scope="col">Status</th><th scope="col" class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+                <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    var label = StaffInvitationCodes.Label(row.Status);
+                    <tr>
+                        <td class="text-break"><span class="fw-semibold">@row.Email</span><div class="admin-muted small">Invited by @row.InvitedBy</div></td>
+                        <td>@StaffRoles.Label(row.Role)</td>
+                        <td>
+                            <span class="font-monospace" aria-label="Code ending in @row.Hint">•••••-•••••-@row.Hint</span>
+                            <div class="admin-muted small tabular">@row.CreatedAt.ToString("MMM d, yyyy h:mm tt") · @(row.AcceptedAt is { } accepted ? "Account created " + accepted.ToString("MMM d, yyyy") : "Expires " + row.ExpiresAt.ToString("MMM d, yyyy h:mm tt"))</div>
+                        </td>
+                        <td><span class="@AdminChips.Css(label)">@label</span></td>
+                        <td class="text-end text-nowrap">
+                            @if (row.Status is StaffInvitationStatus.Invited or StaffInvitationStatus.AwaitingSetup)
+                            {
+                                <form method="post" asp-area="Admin" asp-action="Revoke" asp-route-id="@row.Id" class="d-inline" data-confirm="Revoke this invitation? No staff role will be granted from it.">
+                                    <input type="hidden" name="rowVersion" value="@row.RowVersion" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Revoke<span class="visually-hidden"> invitation for @row.Email</span></button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="admin-empty">
+            <span class="admin-empty-icon"><i class="bi bi-envelope-plus" aria-hidden="true"></i></span>
+            <h2>@(string.IsNullOrEmpty(Model.Search) ? "No invitations yet" : "No matching invitations")</h2>
+            <p>@(string.IsNullOrEmpty(Model.Search) ? "Invite a staff member to let them create an account without a hospital record code." : "Try a different search term.")</p>
+            @if (!string.IsNullOrEmpty(Model.Search)) { <a asp-area="Admin" asp-action="Index" class="btn btn-outline-secondary">Clear search</a> }
+        </div>
+    }
+    <nav class="admin-card-footer" aria-label="Invitation pages">
+        <span class="tabular">Page @Model.Page of @Model.Pages</span>
+        <span class="d-flex gap-2">
+            <a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-page="@(Model.Page - 1)" class="btn btn-sm btn-outline-secondary @(Model.Page == 1 ? "disabled" : "")" aria-label="Previous page"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
+            <a asp-area="Admin" asp-action="Index" asp-route-search="@Model.Search" asp-route-page="@(Model.Page + 1)" class="btn btn-sm btn-outline-secondary @(Model.Page == Model.Pages ? "disabled" : "")" aria-label="Next page"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+        </span>
+    </nav>
+</div>

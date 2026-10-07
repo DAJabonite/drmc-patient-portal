@@ -7,7 +7,10 @@
     <div>
         <p class="admin-eyebrow">Operations</p>
         <h1 class="admin-title">Staff access</h1>
-        <p class="admin-subtitle">Grant or revoke Laboratory and Radiology staff roles. Accounts need a confirmed email and two-factor authentication. Admin access is never granted here.</p>
+        <p class="admin-subtitle">Grant or revoke Laboratory, Radiology and Patient services staff roles. Accounts need a confirmed email and two-factor authentication. Admin access is never granted here.</p>
+    </div>
+    <div class="admin-page-actions">
+        <a asp-area="Admin" asp-controller="StaffInvitations" asp-action="Create" class="btn btn-primary"><i class="bi bi-envelope-plus me-1" aria-hidden="true"></i>Invite staff</a>
     </div>
 </div>
 @if (TempData["AdminError"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }

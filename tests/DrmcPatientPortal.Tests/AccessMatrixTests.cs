@@ -19,6 +19,7 @@ public sealed class AccessMatrixTests(PortalFactory factory)
     [
         ("Home", ["/Admin"]),
         ("Patients", ["/Admin/Patients", "/Admin/Patients/Create"]),
+        ("RegistrationCodes", ["/Admin/RegistrationCodes", "/Admin/RegistrationCodes/Create"]),
         ("ClinicalEncounters", ["/Admin/ClinicalEncounters", "/Admin/ClinicalEncounters/Create"]),
         ("LabResults", ["/Admin/LabResults", "/Admin/LabResults/Create"]),
         ("LabResultItems", ["/Admin/LabResultItems", "/Admin/LabResultItems/Create"]),
@@ -31,12 +32,14 @@ public sealed class AccessMatrixTests(PortalFactory factory)
         ("Imports", ["/Admin/Imports"]),
         ("Audit", ["/Admin/Audit"]),
         ("StaffAccess", ["/Admin/StaffAccess"]),
+        ("StaffInvitations", ["/Admin/StaffInvitations", "/Admin/StaffInvitations/Create"]),
     ];
 
     private static readonly Dictionary<string, string[]> StaffFamilies = new()
     {
         ["LabStaff"] = ["Home", "LabResults", "LabResultItems"],
         ["RadiologyStaff"] = ["Home", "RadiologyStudies"],
+        ["PatientServicesStaff"] = ["Home", "RegistrationCodes"],
     };
 
     private async Task<HttpClient> ClientFor(string actor) => actor switch
@@ -44,6 +47,7 @@ public sealed class AccessMatrixTests(PortalFactory factory)
         "Admin" => await StaffAccounts.AdminAsync(factory),
         "LabStaff" => await StaffAccounts.LabAsync(factory),
         "RadiologyStaff" => await StaffAccounts.RadiologyAsync(factory),
+        "PatientServicesStaff" => await StaffAccounts.PatientServicesAsync(factory),
         "Patient" => await PatientAsync(),
         "LabStaffWithout2FA" => await NoMfaLabStaffAsync(),
         _ => factory.CreatePortalClient(),
@@ -69,6 +73,7 @@ public sealed class AccessMatrixTests(PortalFactory factory)
     [InlineData("Admin")]
     [InlineData("LabStaff")]
     [InlineData("RadiologyStaff")]
+    [InlineData("PatientServicesStaff")]
     [InlineData("Patient")]
     [InlineData("LabStaffWithout2FA")]
     [InlineData("Anonymous")]
@@ -82,7 +87,7 @@ public sealed class AccessMatrixTests(PortalFactory factory)
             {
                 "Admin" => HttpStatusCode.OK,
                 "Anonymous" => HttpStatusCode.Redirect,
-                "LabStaff" or "RadiologyStaff" => StaffFamilies[actor].Contains(family) ? HttpStatusCode.OK : HttpStatusCode.Forbidden,
+                "LabStaff" or "RadiologyStaff" or "PatientServicesStaff" => StaffFamilies[actor].Contains(family) ? HttpStatusCode.OK : HttpStatusCode.Forbidden,
                 _ => HttpStatusCode.Forbidden,
             };
             foreach (var path in paths)
@@ -103,6 +108,11 @@ public sealed class AccessMatrixTests(PortalFactory factory)
     [InlineData("RadiologyStaff", "/Admin/LabResults/Create")]
     [InlineData("LabStaff", "/Admin/StaffAccess/Update")]
     [InlineData("RadiologyStaff", "/Admin/Imports/Upload")]
+    [InlineData("PatientServicesStaff", "/Admin/Patients/Create")]
+    [InlineData("PatientServicesStaff", "/Admin/Patients/Link/1")]
+    [InlineData("PatientServicesStaff", "/Admin/StaffAccess/Update")]
+    [InlineData("LabStaff", "/Admin/RegistrationCodes/Create/1")]
+    [InlineData("RadiologyStaff", "/Admin/RegistrationCodes/Revoke/1")]
     public async Task Staff_writes_outside_their_scope_are_forbidden(string actor, string path)
     {
         var client = await ClientFor(actor);
@@ -152,7 +162,7 @@ public sealed class AccessMatrixTests(PortalFactory factory)
     {
         using var scope = factory.Services.CreateScope();
         var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-        foreach (var role in new[] { "Admin", "LabStaff", "RadiologyStaff" }) Assert.True(await roles.RoleExistsAsync(role), role);
+        foreach (var role in new[] { "Admin", "LabStaff", "RadiologyStaff", "PatientServicesStaff" }) Assert.True(await roles.RoleExistsAsync(role), role);
     }
 
     private static Endpoint AdminEndpoint(string controller, params object[] metadata)

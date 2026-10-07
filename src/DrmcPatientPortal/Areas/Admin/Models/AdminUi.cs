@@ -12,6 +12,7 @@ public static class AdminNavigation
         new("Patient records",
         [
             new("Patients", "Patients", "bi-people", "Hospital registry and verified portal links."),
+            new("RegistrationCodes", "Registration codes", "bi-qr-code", "Hospital record codes from PACD or a clinic desk for portal signup."),
             new("ClinicalEncounters", "Encounters", "bi-clipboard2-pulse", "OPD, emergency and inpatient visits."),
             new("LabResults", "Lab results", "bi-droplet", "Result availability and release status."),
             new("LabResultItems", "Lab items", "bi-list-check", "Staff-only analyte values and flags."),
@@ -29,7 +30,8 @@ public static class AdminNavigation
         [
             new("Imports", "Imports", "bi-file-earmark-arrow-up", "CSV and Excel batches with reconciliation."),
             new("Audit", "Audit history", "bi-journal-text", "Staff access and change history."),
-            new("StaffAccess", "Staff access", "bi-person-lock", "Grant or revoke Laboratory and Radiology staff roles."),
+            new("StaffAccess", "Staff access", "bi-person-lock", "Grant or revoke Laboratory, Radiology and Patient services staff roles."),
+            new("StaffInvitations", "Staff invitations", "bi-envelope-plus", "One-time signup invitations for staff without a hospital record."),
         ]),
     ];
 
@@ -57,11 +59,11 @@ public static class AdminChips
         var v = value?.Trim().ToLowerInvariant() ?? string.Empty;
         return v switch
         {
-            "available" or "final" or "linked" or "active" or "succeeded" or "completed" or "normal" or "valid" or "yes" or "mild" => ChipTone.Success,
-            "in progress" or "pending verification" or "staged" or "validated" or "queued" or "running" or "validationqueued"
+            "available" or "final" or "linked" or "redeemed" or "activated" or "active" or "succeeded" or "completed" or "normal" or "valid" or "yes" or "mild" => ChipTone.Success,
+            "in progress" or "awaiting setup" or "pending verification" or "staged" or "validated" or "queued" or "running" or "validationqueued"
                 or "validating" or "approvalqueued" or "approving" or "moderate" or "on hold" or "onhold" => ChipTone.Warning,
             "failed" or "severe" or "critical" or "high" or "low" or "critical high" or "critical low" => ChipTone.Danger,
-            "unlinked" or "cancelled" or "expired" or "discontinued" or "inactive" or "no" => ChipTone.Neutral,
+            "unlinked" or "cancelled" or "expired" or "revoked" or "discontinued" or "inactive" or "no" => ChipTone.Neutral,
             _ => ChipTone.Info,
         };
     }

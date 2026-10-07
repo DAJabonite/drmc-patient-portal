@@ -28,25 +28,30 @@ public sealed class AdminAuthorizationHandler(UserManager<ApplicationUser> users
 
 public static class StaffRoles
 {
-    public const string Admin = "Admin", Lab = "LabStaff", Radiology = "RadiologyStaff";
-    public static readonly IReadOnlyList<string> All = [Admin, Lab, Radiology];
+    public const string Admin = "Admin", Lab = "LabStaff", Radiology = "RadiologyStaff", PatientServices = "PatientServicesStaff";
+    public static readonly IReadOnlyList<string> All = [Admin, Lab, Radiology, PatientServices];
     // The Staff access screen may grant or revoke only these roles; Admin is never grantable there.
-    public static readonly IReadOnlyList<string> Grantable = [Lab, Radiology];
-    public static string Label(string role) => role switch { Lab => "Laboratory staff", Radiology => "Radiology staff", _ => role };
+    public static readonly IReadOnlyList<string> Grantable = [Lab, Radiology, PatientServices];
+    public static string Label(string role) => role switch
+    {
+        Lab => "Laboratory staff", Radiology => "Radiology staff", PatientServices => "Patient services staff", _ => role,
+    };
 }
 
 // Explicit, fail-closed controller-to-policy registry for the Admin area. Any Admin-area
 // controller not listed here requires AdminAccess.
 public static class AdminPolicies
 {
-    public const string Admin = "AdminAccess", Lab = "LabStaffAccess", Radiology = "RadiologyStaffAccess", Console = "StaffConsoleAccess";
+    public const string Admin = "AdminAccess", Lab = "LabStaffAccess", Radiology = "RadiologyStaffAccess", Console = "StaffConsoleAccess",
+        PatientServices = "PatientServicesAccess";
 
     public static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> Roles = new Dictionary<string, IReadOnlyList<string>>
     {
         [Admin] = [StaffRoles.Admin],
         [Lab] = [StaffRoles.Admin, StaffRoles.Lab],
         [Radiology] = [StaffRoles.Admin, StaffRoles.Radiology],
-        [Console] = [StaffRoles.Admin, StaffRoles.Lab, StaffRoles.Radiology],
+        [PatientServices] = [StaffRoles.Admin, StaffRoles.PatientServices],
+        [Console] = [StaffRoles.Admin, StaffRoles.Lab, StaffRoles.Radiology, StaffRoles.PatientServices],
     };
 
     public static readonly IReadOnlyDictionary<string, string> Controllers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -55,6 +60,7 @@ public static class AdminPolicies
         ["LabResults"] = Lab,
         ["LabResultItems"] = Lab,
         ["RadiologyStudies"] = Radiology,
+        ["RegistrationCodes"] = PatientServices,
     };
 
     public static string For(string? controller) => controller is not null && Controllers.TryGetValue(controller, out var policy) ? policy : Admin;
@@ -64,7 +70,7 @@ public static class AdminPolicies
     public static void Register(AuthorizationOptions options)
     {
         options.AddPolicy(Admin, policy => policy.RequireAuthenticatedUser().RequireRole(StaffRoles.Admin).AddRequirements(new AdminRequirement()));
-        foreach (var name in new[] { Lab, Radiology, Console })
+        foreach (var name in new[] { Lab, Radiology, PatientServices, Console })
             options.AddPolicy(name, policy => policy.RequireAuthenticatedUser().AddRequirements(new StaffRequirement(Roles[name])));
     }
 }
@@ -205,7 +211,15 @@ public static class AdminBootstrap
         if (string.IsNullOrWhiteSpace(email)) return;
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var user = await users.FindByEmailAsync(email);
-        if (user is null || !user.EmailConfirmed || !user.TwoFactorEnabled || await users.IsLockedOutAsync(user))
+        if (user is null)
+        {
+            // First-Admin setup: signup lets this email register without a hospital record code
+            // until an Admin exists. Promotion happens on a later restart once it is ready.
+            scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("AdminBootstrap")
+                .LogWarning("Admin bootstrap is waiting for the configured account to sign up, confirm its email and enable two-factor authentication.");
+            return;
+        }
+        if (!user.EmailConfirmed || !user.TwoFactorEnabled || await users.IsLockedOutAsync(user))
             throw new InvalidOperationException("Admin bootstrap requires an existing email-confirmed, 2FA-enabled account that is not locked out.");
         if (!await users.IsInRoleAsync(user, "Admin") && !(await users.AddToRoleAsync(user, "Admin")).Succeeded)
             throw new InvalidOperationException("Admin bootstrap promotion failed.");

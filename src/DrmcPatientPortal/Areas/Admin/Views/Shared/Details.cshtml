@@ -12,7 +12,8 @@
     </div>
     <div class="admin-page-actions">
         <a asp-area="Admin" asp-action="Index" asp-route-contextId="@indexContext" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back</a>
-        @if (controller == "Patients") { <a asp-area="Admin" asp-action="Link" asp-route-id="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-link-45deg me-1" aria-hidden="true"></i>Verified portal link</a> }
+        @if (controller == "Patients") { <a asp-area="Admin" asp-action="Link" asp-route-id="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-link-45deg me-1" aria-hidden="true"></i>Verified portal link</a>
+            <a asp-area="Admin" asp-controller="RegistrationCodes" asp-action="Create" asp-route-id="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-qr-code me-1" aria-hidden="true"></i>Registration code</a> }
         @if (controller == "LabResults") { <a asp-controller="LabResultItems" asp-area="Admin" asp-action="Index" asp-route-contextId="@indexContext" asp-route-contextId="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-list-check me-1" aria-hidden="true"></i>Lab items</a> }
         @if (controller == "Prescriptions") { <a asp-controller="MedicationDoseSchedules" asp-area="Admin" asp-action="Index" asp-route-contextId="@indexContext" asp-route-contextId="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-clock me-1" aria-hidden="true"></i>Dose schedules</a> }
         <a asp-area="Admin" asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit</a>

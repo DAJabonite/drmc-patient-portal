@@ -1,6 +1,7 @@
 using System.Buffers.Text;
 using System.Text;
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account;
 
 [AllowAnonymous]
 [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
-public sealed class ConfirmEmailModel(UserManager<ApplicationUser> users) : PageModel
+public sealed class ConfirmEmailModel(UserManager<ApplicationUser> users, StaffInvitationActivator invitations) : PageModel
 {
     public bool IsConfirmed { get; private set; }
     public string ReturnUrl { get; private set; } = string.Empty;
@@ -26,6 +27,8 @@ public sealed class ConfirmEmailModel(UserManager<ApplicationUser> users) : Page
                 var token = Encoding.UTF8.GetString(Base64Url.DecodeFromChars(code));
                 var result = await users.ConfirmEmailAsync(user, token);
                 IsConfirmed = result.Succeeded;
+                // Invited staff who already turned on 2FA get their role now.
+                if (IsConfirmed) await invitations.TryActivateAsync(user, HttpContext.RequestAborted);
             }
         }
 

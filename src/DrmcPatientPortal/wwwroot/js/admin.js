@@ -16,3 +16,6 @@
         try { localStorage.setItem(key, compact ? "compact" : "comfortable"); } catch { /* ignore */ }
     });
 })();
+
+// Print buttons (registration code slip).
+document.querySelectorAll("[data-admin-print]").forEach((button) => button.addEventListener("click", () => window.print()));

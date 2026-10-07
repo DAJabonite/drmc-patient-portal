@@ -376,6 +376,175 @@ $(function () {
         }
     });
 
+    // Hospital record code: format as XXXXX-XXXXX-XXXXX, prefill from a QR link (#code=...), and
+    // scan a QR with the camera where the browser supports BarcodeDetector.
+    const recordCodeInput = document.getElementById('hospitalRecordCode');
+    const recordCodePanel = document.getElementById('hospitalRecordCodePanel');
+    const recordCodeStatus = document.getElementById('hospitalRecordCodeStatus');
+    const scanButton = document.getElementById('btnScanRecordCode');
+    const scanner = document.getElementById('recordCodeScanner');
+    const scanVideo = document.getElementById('recordCodeVideo');
+    const dobInput = document.getElementById('txtDob');
+    const codeAlphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+    let scanStream = null;
+    let scanTimer = null;
+
+    function canonicalCode(value) {
+        let out = '';
+        for (const raw of String(value || '').toUpperCase()) {
+            const c = raw === 'O' ? '0' : (raw === 'I' || raw === 'L') ? '1' : raw;
+            if (codeAlphabet.includes(c)) out += c;
+        }
+        return out.slice(0, 15);
+    }
+
+    function formatCode(value) {
+        const c = canonicalCode(value);
+        return c.match(/.{1,5}/g)?.join('-') ?? '';
+    }
+
+    function codeFromScan(text) {
+        try {
+            const url = new URL(text);
+            const invite = new URLSearchParams(url.hash.slice(1)).get('invite');
+            if (invite) { setStaffMode(true, invite); return null; }
+            const fromHash = new URLSearchParams(url.hash.slice(1)).get('code');
+            if (fromHash) return fromHash;
+        } catch { /* not a URL; treat as the code itself */ }
+        return text;
+    }
+
+    function setRecordCode(value, message) {
+        recordCodeInput.value = formatCode(value);
+        recordCodePanel.classList.toggle('is-filled', canonicalCode(recordCodeInput.value).length === 15);
+        recordCodeStatus.textContent = message || '';
+        if (recordCodeInput.value) validator.element(recordCodeInput);
+    }
+
+    recordCodeInput.addEventListener('input', function () {
+        const caret = recordCodeInput.selectionStart === recordCodeInput.value.length;
+        const formatted = formatCode(recordCodeInput.value);
+        if (formatted !== recordCodeInput.value && caret) recordCodeInput.value = formatted;
+        recordCodePanel.classList.toggle('is-filled', canonicalCode(recordCodeInput.value).length === 15);
+        recordCodeStatus.textContent = '';
+    });
+    recordCodeInput.addEventListener('blur', function () {
+        if (recordCodeInput.value) recordCodeInput.value = formatCode(recordCodeInput.value);
+    });
+
+    // Staff invitation: an Admin-issued code that replaces the hospital record code for staff,
+    // who usually have no hospital record. Only one of the two panels is shown at a time.
+    const staffPanel = document.getElementById('staffInvitationPanel');
+    const staffInput = document.getElementById('staffInvitationCode');
+    const requirementLine = document.getElementById('hospitalCodeRequirement');
+    const recordCodeRequired = recordCodePanel.dataset.codeRequired === 'true';
+
+    function setStaffMode(staff, invite) {
+        recordCodePanel.classList.toggle('d-none', staff);
+        staffPanel.classList.toggle('d-none', !staff);
+        requirementLine?.classList.toggle('d-none', staff);
+        if (staff) {
+            if (scanStream) stopScan();
+            recordCodeInput.value = '';
+            recordCodePanel.classList.remove('is-filled');
+            // jQuery Validate also reads the HTML required attribute, so drop both.
+            recordCodeInput.removeAttribute('required');
+            $(recordCodeInput).rules('remove', 'required');
+            validator.element(recordCodeInput);
+            if (invite) staffInput.value = formatCode(invite);
+            staffPanel.classList.toggle('is-filled', canonicalCode(staffInput.value).length === 15);
+        } else {
+            staffInput.value = '';
+            staffPanel.classList.remove('is-filled');
+            validator.element(staffInput);
+            if (recordCodeRequired) {
+                recordCodeInput.setAttribute('required', '');
+                $(recordCodeInput).rules('add', { required: true, messages: { required: 'Enter the hospital record code you received from the PACD or your clinic.' } });
+            }
+        }
+    }
+
+    staffInput.addEventListener('input', function () {
+        const caret = staffInput.selectionStart === staffInput.value.length;
+        const formatted = formatCode(staffInput.value);
+        if (formatted !== staffInput.value && caret) staffInput.value = formatted;
+        staffPanel.classList.toggle('is-filled', canonicalCode(staffInput.value).length === 15);
+    });
+    staffInput.addEventListener('blur', function () {
+        if (staffInput.value) staffInput.value = formatCode(staffInput.value);
+    });
+    document.getElementById('btnUseStaffInvite').addEventListener('click', function () { setStaffMode(true); staffInput.focus(); });
+    document.getElementById('btnUseRecordCode').addEventListener('click', function () { setStaffMode(false); recordCodeInput.focus(); });
+    if (!staffPanel.classList.contains('d-none')) setStaffMode(true);
+
+    // Codes travel in the URL fragment, which is never sent to the server; remove them from the
+    // address bar and history once read.
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const hashCode = hashParams.get('code');
+    const hashInvite = hashParams.get('invite');
+    if (hashInvite) {
+        setStaffMode(true, hashInvite);
+        document.getElementById('staffInviteNotice').classList.remove('d-none');
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+    } else if (hashCode) {
+        setRecordCode(hashCode, 'Filled in from your QR code.');
+        document.getElementById('hospitalCodeNotice').classList.remove('d-none');
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+
+    function stopScan() {
+        if (scanTimer) { clearTimeout(scanTimer); scanTimer = null; }
+        scanStream?.getTracks().forEach(t => t.stop());
+        scanStream = null;
+        scanVideo.srcObject = null;
+        scanner.classList.add('d-none');
+        scanButton.setAttribute('aria-expanded', 'false');
+    }
+
+    if ('BarcodeDetector' in window && navigator.mediaDevices?.getUserMedia) {
+        scanButton.classList.remove('d-none');
+        scanButton.addEventListener('click', async function () {
+            if (scanStream) { stopScan(); scanButton.focus(); return; }
+            let detector;
+            try {
+                const formats = await window.BarcodeDetector.getSupportedFormats();
+                if (!formats.includes('qr_code')) throw new Error('QR not supported');
+                detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+                scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+            } catch {
+                stopScan();
+                recordCodeStatus.textContent = 'The camera could not be opened. Type the code printed under the QR instead.';
+                return;
+            }
+            scanner.classList.remove('d-none');
+            scanButton.setAttribute('aria-expanded', 'true');
+            recordCodeStatus.textContent = 'Point your camera at the QR code on your slip.';
+            scanVideo.srcObject = scanStream;
+            await scanVideo.play().catch(() => { });
+            const tick = async function () {
+                if (!scanStream) return;
+                try {
+                    const found = await detector.detect(scanVideo);
+                    if (found.length) {
+                        const value = codeFromScan(found[0].rawValue);
+                        stopScan();
+                        if (value === null) return;
+                        if (canonicalCode(value).length === 15) {
+                            setRecordCode(value, 'Code scanned. Check that it matches your slip.');
+                        } else {
+                            recordCodeStatus.textContent = 'That QR code is not a DRMC hospital record code. Type the code printed on your slip.';
+                        }
+                        recordCodeInput.focus();
+                        return;
+                    }
+                } catch { /* frame not ready yet */ }
+                scanTimer = setTimeout(tick, 250);
+            };
+            tick();
+        });
+        document.getElementById('btnStopScan').addEventListener('click', function () { stopScan(); scanButton.focus(); });
+    }
+
     form.addEventListener('submit', function (event) {
         if (submitting) { event.preventDefault(); return; }
         if (!accepted) { event.preventDefault(); consentModal.show(); return; }
@@ -398,6 +567,15 @@ $(function () {
             input.focus();
             return;
         }
+        // A hospital record code is checked against the date of birth, which is optional otherwise.
+        if (recordCodeInput.value.trim() && !dobInput.value) {
+            event.preventDefault();
+            updateProgress(3);
+            showFeedback(3, 'Enter your date of birth to use a hospital record code. It must match your hospital record.');
+            dobInput.focus();
+            return;
+        }
+        if (scanStream) stopScan();
         submitting = true;
         const submit = document.getElementById('registerSubmit');
         submit.disabled = true;

@@ -16,6 +16,7 @@ public class EnableAuthenticatorModel : PageModel
     private readonly ILogger<EnableAuthenticatorModel> _logger;
     private readonly UrlEncoder _urlEncoder;
     private readonly IQrCodeService _qrCodeService;
+    private readonly StaffInvitationActivator _invitations;
 
     private const string AuthenticatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
 
@@ -23,12 +24,14 @@ public class EnableAuthenticatorModel : PageModel
         UserManager<ApplicationUser> userManager,
         ILogger<EnableAuthenticatorModel> logger,
         UrlEncoder urlEncoder,
-        IQrCodeService qrCodeService)
+        IQrCodeService qrCodeService,
+        StaffInvitationActivator invitations)
     {
         _userManager = userManager;
         _logger = logger;
         _urlEncoder = urlEncoder;
         _qrCodeService = qrCodeService;
+        _invitations = invitations;
     }
 
     public string SharedKey { get; set; } = string.Empty;
@@ -97,6 +100,12 @@ public class EnableAuthenticatorModel : PageModel
         _logger.LogInformation("User with ID '{UserId}' has enabled 2FA with an authenticator app.", userId);
 
         StatusMessage = "Your authenticator app has been verified and 2FA is now active.";
+
+        // Invited staff with a confirmed email get their role now. Staff pages need a sign-in
+        // with an authenticator code, so they sign in again to open Administration.
+        var role = await _invitations.TryActivateAsync(user, HttpContext.RequestAborted);
+        if (role is not null)
+            StatusMessage += $" Your {DrmcPatientPortal.Areas.Admin.Security.StaffRoles.Label(role).ToLowerInvariant()} role is now active. Sign out, then sign in with your authenticator code to open Administration.";
 
         return RedirectToPage("./TwoFactorAuthentication");
     }
