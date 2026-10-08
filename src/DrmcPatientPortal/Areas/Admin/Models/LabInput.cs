@@ -5,6 +5,7 @@ namespace DrmcPatientPortal.Areas.Admin.Models;
 
 public sealed class LabInput : PhysicianInput
 {
+    [Display(Name = "Lab report PDF (optional)")] public IFormFile? Report { get; set; }
     [Required, StringLength(100000), Display(Name = "Accession number")] public string AccessionNumber { get; set; } = "";
     [Required, StringLength(100000), Display(Name = "Test name")] public string TestName { get; set; } = "";
     [EnumDataType(typeof(LabCategory))] public LabCategory Category { get; set; }

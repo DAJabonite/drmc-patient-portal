@@ -152,7 +152,7 @@ public class LabResultsController : Controller
 
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
         await _auditLog.LogAsync(user.Id, "VIEW_LAB_REPORT", $"LabResult/{id}",
-            showFullResults ? "Viewed released laboratory result values." : "Viewed laboratory result claiming notice and availability.", ip);
+            showFullResults ? "Viewed released laboratory result values." : "Viewed laboratory report availability.", ip);
 
         return View("Details", result);
     }

@@ -8,9 +8,41 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DrmcPatientPortal.Areas.Admin.Controllers;
 
+[RequestSizeLimit(LabReportStorage.MaximumBytes + 1024 * 1024)]
+[RequestFormLimits(MultipartBodyLengthLimit = LabReportStorage.MaximumBytes + 1024 * 1024)]
 public sealed class LabResultsController(ApplicationDbContext db, AdminWrites writes, ILabReportStorage storage,
     ILogger<LabResultsController> logger) : AdminCrudController<LabResult, LabInput>(db, writes, new LabEditor())
 {
+    private string? previousReport;
+
+    protected override async Task<WriteResult> SaveRecordAsync(ApplicationDbContext database, LabInput input, LabResult entity, CancellationToken token)
+    {
+        // Creation needs the generated lab ID before storage can bind encryption to the record.
+        // Both saves and the required audit remain in the existing transaction.
+        await database.SaveChangesAsync(token);
+        if (input.Report is null) return WriteResult.Success;
+        StoredLabReport stored;
+        try { stored = await storage.StoreAsync(entity.Id, input.Report, token); }
+        catch (InvalidDataException error) { return WriteResult.Invalid(error.Message); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        { return WriteResult.Invalid("The PDF could not be stored. Choose the file again and try saving."); }
+        previousReport = entity.ReportFileName;
+        entity.ReportFileName = stored.FileName;
+        entity.ReportSize = stored.Size;
+        entity.ReportUploadedAtUtc = DateTime.UtcNow;
+        await database.SaveChangesAsync(token);
+        return WriteResult.Success;
+    }
+
+    protected override void RecordSaved()
+    {
+        // Keep the old PDF until the new record metadata and audit have committed.
+        if (previousReport is null) return;
+        try { storage.Delete(previousReport); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        { logger.LogWarning("An unreferenced lab report could not be removed after saving."); }
+    }
+
     [HttpGet]
     public async Task<IActionResult> Report(int id, CancellationToken token)
     {

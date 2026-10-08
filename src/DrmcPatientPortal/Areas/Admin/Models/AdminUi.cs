@@ -14,7 +14,7 @@ public static class AdminNavigation
             new("Patients", "Patients", "bi-people", "Hospital registry and verified portal links."),
             new("RegistrationCodes", "Registration codes", "bi-qr-code", "Hospital record codes from PACD or a clinic desk for portal signup."),
             new("ClinicalEncounters", "Encounters", "bi-clipboard2-pulse", "OPD, emergency and inpatient visits."),
-            new("LabResults", "Lab results", "bi-droplet", "Result availability and release status."),
+            new("LabResults", "Lab results", "bi-droplet", "Laboratory records and protected PDF reports."),
             new("LabResultItems", "Lab items", "bi-list-check", "Staff-only analyte values and flags."),
             new("RadiologyStudies", "Radiology", "bi-lungs", "Imaging studies, reports and release status."),
             new("Prescriptions", "Prescriptions", "bi-capsule", "Active and completed medications."),

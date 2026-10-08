@@ -332,7 +332,7 @@ To add staff, an Admin sends a **staff invitation** (see Staff Invitations below
 | `/Admin/Doctors` | Public doctor directory |
 | `/Admin/PublicAdvisories` | Sanitized public advisories |
 | `/Admin/ClinicalEncounters` | Dashboard and visit records |
-| `/Admin/LabResults` | Laboratory availability |
+| `/Admin/LabResults` | Laboratory records and protected PDF reports |
 | `/Admin/LabResultItems` | Items within a selected lab (patients see them only when `PatientResults:ShowFullResults` is on) |
 | `/Admin/RadiologyStudies` | Imaging studies, reports, release time and staff-only internal notes |
 | `/Admin/StaffAccess` | Grant or revoke LabStaff, RadiologyStaff and PatientServicesStaff (Admin only) |
@@ -351,7 +351,7 @@ Hospital patient records exist independently of portal accounts. Staff verify id
 
 Changes and staff audit entries commit together. Registry and clinical audit entries retain field names only, not earlier medical values; they cannot reconstruct prior records. Doctors and PublicAdvisories retain old/new values. Staff clinical views log affected patient references before display; failed audit persistence prevents display. The patient activity page remains unchanged. Both audit tables are append-only through application guards and have no edit/delete endpoints. Database access controls and retention procedures remain an operational responsibility.
 
-General Identity administration, sensitive ID-document metadata, audit tables, migration history and import system metadata have no generic editor. Laboratory item values and result summaries are staff-only by default; when `PatientResults:ShowFullResults` is switched on, released results (and released radiology reports) are shown to the owning patient, and clinical and internal notes stay staff-only. The patient laboratory claiming guide is retained. New advisory saves sanitize HTML, but existing legacy HTML is not rewritten; review it before publication. The Content Security Policy requires scripts to be loaded from the app's own external JavaScript files.
+General Identity administration, sensitive ID-document metadata, audit tables, migration history and import system metadata have no generic editor. Laboratory item values and result summaries are staff-only by default; when `PatientResults:ShowFullResults` is switched on, released results (and released radiology reports) are shown to the owning patient, and clinical and internal notes stay staff-only. Patient laboratory details provide protected PDF access instead of the previous claiming guide. New advisory saves sanitize HTML, but existing legacy HTML is not rewritten; review it before publication. The Content Security Policy requires scripts to be loaded from the app's own external JavaScript files.
 
 ## Hospital Record Codes
 
@@ -431,7 +431,11 @@ For an available practice result, choose **Available** and set **Released at (Ma
 | Lab results | Overall test record, accession number, patient/visit, availability, collection/release times, physicians and summary |
 | Lab items | Measurements attached to that lab, including parameter, value, unit, reference range and flag |
 
-For example, one CBC lab can contain hemoglobin, white blood cell and platelet items. Create the lab first, then select it under **Lab items** (`/Admin/LabResultItems`) to add measurements. Patients see availability by default; items and detailed summaries are shown only for released results when `PatientResults:ShowFullResults` is enabled. Clinical notes remain staff-only. **Lab report PDF upload is not implemented**; it is a requested future change, not a setup step.
+For example, one CBC lab can contain hemoglobin, white blood cell and platelet items. Create the lab first, then select it under **Lab items** (`/Admin/LabResultItems`) to add measurements. Structured items and summaries are optional and remain supported. They are shown to patients only for released results when `PatientResults:ShowFullResults` is enabled. Clinical notes remain staff-only.
+
+Attach a PDF of up to 10 MiB directly on the lab Create/Edit form, or manage it from record details. Leaving the upload blank preserves the current PDF. Patient lists show a green **Report available** action only when a PDF is attached, the status is Available, the release time has passed in Manila, and `PatientResults:ShowFullResults` is enabled. Each view/download requires the owning patient's current account password; no plaintext account password is stored in a lab record. The downloaded PDF itself does not have a file password.
+
+Reports are encrypted in private storage configured by `LabReports:RootPath` (default `App_Data/LabReports`, outside `wwwroot`). Preserve and back up this directory with the database and Data Protection key ring. The existing `AddLabReportAttachments` migration creates `ReportFileName`, `ReportSize`, and `ReportUploadedAtUtc` on `LabResults`; fresh installations obtain these through the normal database migration command. The revised forms and patient pages require no further schema changes or column removals.
 
 ### 5. Add radiology and understand release status
 

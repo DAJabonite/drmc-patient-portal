@@ -8,7 +8,7 @@
     </div>
 </div>
 @if (Model.Context is not null) { <partial name="_Context" model="Model.Context" /> }
-<form asp-area="Admin" asp-action="Create" asp-route-id="@Model.Context?.RouteId" method="post" class="admin-card admin-form">
+<form asp-area="Admin" asp-action="Create" asp-route-id="@Model.Context?.RouteId" method="post" enctype="@(Model.Input is LabInput ? "multipart/form-data" : null)" class="admin-card admin-form">
     <div class="admin-card-body">
         <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
         <partial name="@Model.FormPartial" model="Model.Input" />

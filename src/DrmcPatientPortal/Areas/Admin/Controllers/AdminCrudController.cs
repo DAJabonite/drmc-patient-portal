@@ -73,12 +73,18 @@ public abstract class AdminCrudController<TEntity, TInput>(ApplicationDbContext 
             var entity = new TEntity();
             var validation = await editor.ApplyAsync(database, input, entity, freshContext, true, cancellationToken);
             if (!validation.Succeeded) return validation;
-            database.Set<TEntity>().Add(entity); await database.SaveChangesAsync(cancellationToken);
+            database.Set<TEntity>().Add(entity);
+            var saved = await SaveRecordAsync(database, input, entity, cancellationToken);
+            if (!saved.Succeeded) return saved;
             await AdminAudit.AddAsync(database, User, "Create", editor.Name, AdminEntity<TEntity, TInput>.Id(database, entity).ToString(CultureInfo.InvariantCulture),
                 editor.PatientId(entity), after: AdminAudit.Values(database, entity), cancellationToken: cancellationToken);
             return WriteResult.Success;
         }, cancellationToken);
-        if (result.Succeeded) return RedirectToAction(nameof(Index), new { area = "Admin", contextId = editor.NeedsContext ? context?.RouteId : null });
+        if (result.Succeeded)
+        {
+            RecordSaved();
+            return RedirectToAction(nameof(Index), new { area = "Admin", contextId = editor.NeedsContext ? context?.RouteId : null });
+        }
         AddError(result);
         return await Form("Create", input, null, context, cancellationToken);
     }
@@ -114,12 +120,17 @@ public abstract class AdminCrudController<TEntity, TInput>(ApplicationDbContext 
                     await editor.RecordContextAsync(database, current, cancellationToken), false, cancellationToken);
                 if (!validation.Succeeded) return validation;
                 database.Entry(current).Property("RowVersion").OriginalValue = version;
-                await database.SaveChangesAsync(cancellationToken);
+                var saved = await SaveRecordAsync(database, input, current, cancellationToken);
+                if (!saved.Succeeded) return saved;
                 await AdminAudit.AddAsync(database, User, "Edit", editor.Name, id.ToString(CultureInfo.InvariantCulture), editor.PatientId(current),
                     before, AdminAudit.Values(database, current), cancellationToken: cancellationToken);
                 return WriteResult.Success;
             }, cancellationToken);
-            if (result.Succeeded) return RedirectToAction(nameof(Index), new { area = "Admin", contextId = editor.NeedsContext ? context?.RouteId : null });
+            if (result.Succeeded)
+            {
+                RecordSaved();
+                return RedirectToAction(nameof(Index), new { area = "Admin", contextId = editor.NeedsContext ? context?.RouteId : null });
+            }
             AddError(result);
         }
         await ReadAudit([entity], "Edit", cancellationToken);
@@ -159,6 +170,13 @@ public abstract class AdminCrudController<TEntity, TInput>(ApplicationDbContext 
         TempData["AdminError"] = result.Error;
         return RedirectToAction(nameof(Delete), new { area = "Admin", id });
     }
+
+    protected virtual async Task<WriteResult> SaveRecordAsync(ApplicationDbContext database, TInput input, TEntity entity, CancellationToken token)
+    {
+        await database.SaveChangesAsync(token);
+        return WriteResult.Success;
+    }
+    protected virtual void RecordSaved() { }
 
     protected Task<TEntity?> Find(ApplicationDbContext database, int id, CancellationToken token) =>
         editor.Query(database).SingleOrDefaultAsync(e => EF.Property<int>(e, "Id") == id, token);

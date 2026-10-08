@@ -1,7 +1,15 @@
 @model LabInput
 @{ var doctors = (IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewData["Doctors"]!; }
 <input asp-for="RowVersion" type="hidden" />
-<p class="small text-muted">Save the lab record, then manage its PDF from record details. Structured items and the result summary are optional; existing values are retained.</p>
+<fieldset class="border rounded-3 p-3 mb-3">
+    <legend class="h6 float-none w-auto px-2">Official lab report</legend>
+    <label asp-for="Report" class="form-label"></label>
+    <input asp-for="Report" type="file" accept=".pdf,application/pdf" class="form-control" aria-describedby="labReportHelp labReportLock" />
+    <span asp-validation-for="Report" class="text-danger"></span>
+    <p id="labReportHelp" class="small text-muted mt-2 mb-1">PDF only, up to 10 MiB. Upload or replace it when saving. Leave blank to keep the current report.</p>
+    <p id="labReportLock" class="small text-muted mb-0"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Portal access requires the linked patient's current account password for each view or download. Downloaded PDFs do not have a file password.</p>
+</fieldset>
+<p class="small text-muted">Patients see “Report available” when a PDF is attached and released for online access. Structured items and the result summary are optional.</p>
 <div class="row g-3">
     <div class="col-md-6"><label asp-for="AccessionNumber" class="form-label"></label><input asp-for="AccessionNumber" class="form-control" /><span asp-validation-for="AccessionNumber" class="text-danger"></span></div>
     <div class="col-md-6"><label asp-for="TestName" class="form-label"></label><input asp-for="TestName" class="form-control" /><span asp-validation-for="TestName" class="text-danger"></span></div>

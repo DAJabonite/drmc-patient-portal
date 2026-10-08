@@ -53,10 +53,7 @@
                 <div class="col-md-6">
                     <div class="p-3 bg-light rounded-3 border h-100">
                         <span class="small text-muted d-block mb-1">Clinical Room Location</span>
-                        <strong class="h6 fw-bold text-dark mb-0">@doc.ClinicRoom</strong>
-                        <div class="small text-muted mt-1">
-                            @(Model.DepartmentInfo?.Location ?? "OPD Complex")
-                        </div>
+                        <strong class="h6 fw-bold text-dark mb-0">@(string.IsNullOrWhiteSpace(doc.ClinicRoom) ? "Location not provided" : doc.ClinicRoom)</strong>
                     </div>
                 </div>
 
