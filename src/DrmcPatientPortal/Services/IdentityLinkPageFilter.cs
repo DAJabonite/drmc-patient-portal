@@ -64,3 +64,17 @@ public sealed class IdentityLinkPageFilter(UserManager<ApplicationUser> userMana
         Content = "Link invalid or expired. Request a new link and try again."
     };
 }
+
+public sealed class LocalReturnUrlPageFilter : IPageFilter
+{
+    public void OnPageHandlerSelected(PageHandlerSelectedContext context) { }
+
+    public void OnPageHandlerExecuting(PageHandlerExecutingContext context)
+    {
+        if (context.HandlerArguments.TryGetValue("returnUrl", out var value) && value is string returnUrl &&
+            !new Microsoft.AspNetCore.Mvc.Routing.UrlHelper(context).IsLocalUrl(returnUrl))
+            context.HandlerArguments["returnUrl"] = null;
+    }
+
+    public void OnPageHandlerExecuted(PageHandlerExecutedContext context) { }
+}
