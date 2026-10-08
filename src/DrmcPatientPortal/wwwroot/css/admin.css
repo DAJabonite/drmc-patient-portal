@@ -279,7 +279,7 @@
     .admin-table-stack tbody tr:last-child { border-bottom: 0; }
     .admin-table-stack tbody td { display: block; padding: 0; border: 0; }
     .admin-table-stack tbody td:first-child { flex: 1 1 0; min-width: 0; }
-    .admin-table-stack tbody td:last-child { order: -1; margin-left: auto; flex: none; }
+    .admin-table-stack tbody td:last-child { order: -1; margin-left: auto; flex: none; max-width: 100%; }
     .admin-table-stack tbody td:first-child { order: -2; }
     .admin-table-stack tbody td:not(:first-child):not(:last-child) { flex: 1 1 100%; }
     .admin-table-stack .text-break { word-break: normal !important; overflow-wrap: anywhere; }
