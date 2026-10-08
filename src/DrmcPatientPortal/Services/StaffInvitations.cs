@@ -54,6 +54,7 @@ public sealed class StaffInvitationActivator(ApplicationDbContext db, UserManage
     public async Task<string?> TryActivateAsync(ApplicationUser user, CancellationToken cancellationToken = default)
     {
         if (!user.EmailConfirmed || !user.TwoFactorEnabled || await users.IsLockedOutAsync(user)) return null;
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         var invitation = await db.StaffInvitations.AsNoTracking().Where(i => i.AcceptedByUserId == user.Id && i.RoleGrantedAtUtc == null && i.RevokedAtUtc == null)
             .OrderByDescending(i => i.Id).FirstOrDefaultAsync(cancellationToken);
         if (invitation is null || !StaffRoles.Grantable.Contains(invitation.Role)) return null;
@@ -73,7 +74,7 @@ public sealed class StaffInvitationActivator(ApplicationDbContext db, UserManage
                 return null;
             }
         }
-        await users.UpdateSecurityStampAsync(user);
+        if (!(await users.UpdateSecurityStampAsync(user)).Succeeded) return null;
         // Recorded in the staff audit history under the Admin who sent the invitation.
         db.AdminAuditLogs.Add(new AdminAuditLog
         {
@@ -82,6 +83,7 @@ public sealed class StaffInvitationActivator(ApplicationDbContext db, UserManage
             ChangedFields = System.Text.Json.JsonSerializer.Serialize(new[] { invitation.Role, "StaffInvitation" }),
         });
         await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         logger.LogInformation("Staff invitation {InvitationId} activated", invitation.Id);
         return invitation.Role;
     }
