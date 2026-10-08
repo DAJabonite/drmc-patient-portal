@@ -58,7 +58,7 @@ public class LoginWith2faModel : PageModel
             return RedirectToPage("./Login", new { returnUrl });
         }
 
-        ReturnUrl = returnUrl;
+        ReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : Url.Content("~/Patient/Home");
         RememberMe = rememberMe;
 
         return Page();
@@ -73,12 +73,14 @@ public class LoginWith2faModel : PageModel
             return RedirectToPage("./Login", new { returnUrl });
         }
 
+        returnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : Url.Content("~/Patient/Home");
+        ReturnUrl = returnUrl;
+        RememberMe = rememberMe;
+
         if (!ModelState.IsValid)
         {
             return Page();
         }
-
-        returnUrl ??= Url.Content("~/Patient/Home");
 
         var authenticatorCode = Input.TwoFactorCode.Replace(" ", string.Empty).Replace("-", string.Empty);
 

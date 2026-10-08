@@ -48,8 +48,6 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
         /// </summary>
         public string ReturnUrl { get; set; }
 
-        public bool EmailNotConfirmed { get; private set; }
-
         /// <summary>
         ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
@@ -125,13 +123,6 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                 if (result.RequiresTwoFactor)
                 {
                     return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = Input.RememberMe });
-                }
-                if (result.IsNotAllowed)
-                {
-                    // Only reached after a correct password, so this does not reveal whether an email is registered.
-                    _logger.LogInformation("Sign-in blocked until the account email is confirmed.");
-                    EmailNotConfirmed = true;
-                    return Page();
                 }
                 if (result.IsLockedOut)
                 {
