@@ -29,11 +29,13 @@ public class PatientController : Controller
         }
 
         var encounters = await _db.ClinicalEncounters
+            .AsNoTracking()
             .Where(e => e.Patient.PortalUserId == user.Id)
             .OrderByDescending(e => e.EncounterDate)
             .ToListAsync();
 
         var latestLab = await _db.LabResults
+            .AsNoTracking()
             .Where(l => l.Patient.PortalUserId == user.Id)
             .OrderByDescending(l => l.CollectedAt)
             .ToListAsync();
