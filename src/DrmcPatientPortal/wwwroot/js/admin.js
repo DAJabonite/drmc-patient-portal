@@ -19,3 +19,15 @@
 
 // Print buttons (registration code slip).
 document.querySelectorAll("[data-admin-print]").forEach((button) => button.addEventListener("click", () => window.print()));
+
+document.addEventListener("DOMContentLoaded", () => {
+    const validator = window.jQuery?.validator;
+    if (!validator) return;
+    const originalStep = validator.methods.step;
+    validator.methods.step = function (value, element, param) {
+        if (element.type === "time" || element.type === "datetime-local") {
+            return this.optional(element) || (!element.validity.badInput && !element.validity.stepMismatch);
+        }
+        return originalStep.call(this, value, element, param);
+    };
+});

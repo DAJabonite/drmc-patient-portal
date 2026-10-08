@@ -171,6 +171,8 @@ builder.Services.AddRazorPages(options =>
             model => model.Filters.Add(new Microsoft.AspNetCore.Mvc.TypeFilterAttribute(typeof(IdentityLinkPageFilter))));
     options.Conventions.AddAreaPageApplicationModelConvention("Identity", "/Account/Manage/DeletePersonalData",
         model => model.Filters.Add(new Microsoft.AspNetCore.Mvc.TypeFilterAttribute(typeof(DeletePersonalDataPageFilter))));
+    options.Conventions.AddAreaPageApplicationModelConvention("Identity", "/Account/Logout",
+        model => model.Filters.Add(new LocalReturnUrlPageFilter()));
     foreach (var page in new[] { "/Account/ExternalLogin", "/Account/Manage/ExternalLogins" })
         options.Conventions.AddAreaPageApplicationModelConvention("Identity", page,
             model => model.Filters.Add(new Microsoft.AspNetCore.Mvc.TypeFilterAttribute(typeof(ExternalLoginPageFilter))));

@@ -14,6 +14,20 @@ public sealed class ExternalLoginPageFilter(
 
     public async Task OnPageHandlerExecutionAsync(PageHandlerExecutingContext context, PageHandlerExecutionDelegate next)
     {
+        if (HttpMethods.IsGet(context.HttpContext.Request.Method) &&
+            context.ActionDescriptor.ViewEnginePath == "/Account/Manage/ExternalLogins" &&
+            context.HandlerMethod?.Name == "LinkLoginCallback")
+        {
+            var userId = signInManager.UserManager.GetUserId(context.HttpContext.User);
+            if (userId is null || await signInManager.GetExternalLoginInfoAsync(userId) is null)
+            {
+                tempDataFactory.GetTempData(context.HttpContext)["StatusMessage"] =
+                    "The external sign-in request expired. Try linking your account again.";
+                context.Result = new RedirectToPageResult("/Account/Manage/ExternalLogins", new { area = "Identity" });
+                return;
+            }
+        }
+
         if (HttpMethods.IsPost(context.HttpContext.Request.Method))
         {
             var managing = context.ActionDescriptor.ViewEnginePath == "/Account/Manage/ExternalLogins";

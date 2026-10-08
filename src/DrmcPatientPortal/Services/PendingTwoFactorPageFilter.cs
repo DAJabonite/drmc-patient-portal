@@ -23,6 +23,9 @@ public sealed class PendingTwoFactorPageFilter(
             return;
         }
 
+        var url = new Microsoft.AspNetCore.Mvc.Routing.UrlHelper(context);
+        var returnUrl = context.HandlerArguments.TryGetValue("returnUrl", out var value) ? value as string : null;
+        context.HandlerArguments["returnUrl"] = url.IsLocalUrl(returnUrl) ? returnUrl : url.Content("~/Patient/Home");
         await next();
     }
 }

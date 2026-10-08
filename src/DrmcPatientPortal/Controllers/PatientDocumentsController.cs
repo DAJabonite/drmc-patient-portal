@@ -94,5 +94,7 @@ public class PatientDocumentsController : Controller
         }
         catch (FileNotFoundException) { return NotFound(); }
         catch (InvalidDataException) { return NotFound(); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
+        { return StatusCode(503); }
     }
 }

@@ -196,6 +196,10 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
 
             public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
             {
+                if (DateOfBirth?.Date > ClinicalClock.Today)
+                {
+                    yield return new ValidationResult("Date of birth cannot be in the future.", new[] { nameof(DateOfBirth) });
+                }
                 if (!float.IsFinite(OcrConfidence))
                 {
                     yield return new ValidationResult("Enter a finite OCR confidence value.", new[] { nameof(OcrConfidence) });

@@ -43,7 +43,7 @@
             <div class="masthead-tools d-flex align-items-center gap-3">
                 <div class="dropdown">
                     <button class="btn btn-sm btn-outline-light dropdown-toggle header-control d-flex align-items-center gap-2"
-                            type="button" id="langDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Select language">
+                            type="button" id="langDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Select language: @(currentCulture.StartsWith("fil") ? "Filipino" : currentCulture.StartsWith("ceb") ? "Cebuano" : "English")">
                         <i class="bi bi-translate" aria-hidden="true"></i>
                         <span>@(currentCulture.StartsWith("fil") ? "Filipino" : currentCulture.StartsWith("ceb") ? "Cebuano" : "English")</span>
                     </button>
@@ -110,7 +110,7 @@
                     <li class="nav-item"><a class="nav-link @(isMedications ? "active" : null)" aria-current="@(isMedications ? "page" : null)" asp-area="" asp-controller="Medications" asp-action="Index">@Loc["Nav_Medication"]</a></li>
                     <li class="nav-item"><a class="nav-link @(isRadiology ? "active" : null)" aria-current="@(isRadiology ? "page" : null)" asp-area="" asp-controller="Radiology" asp-action="Index">@Loc["Nav_Radiology"]</a></li>
                 }
-                @if (User.IsInRole("Admin") || User.IsInRole("LabStaff") || User.IsInRole("RadiologyStaff"))
+                @if (User.IsInRole("Admin") || User.IsInRole("LabStaff") || User.IsInRole("RadiologyStaff") || User.IsInRole("PatientServicesStaff"))
                 {
                     <li class="nav-item"><a class="nav-link" asp-area="Admin" asp-controller="Home" asp-action="Index">Administration</a></li>
                 }

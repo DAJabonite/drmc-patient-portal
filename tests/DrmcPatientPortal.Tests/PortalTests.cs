@@ -107,7 +107,10 @@ public sealed class PortalTests(PortalFactory factory)
         var client = factory.CreatePortalClient();
         var response = await client.SignInAsync(email, PortalFactory.Password);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("id=\"email-not-confirmed\"", await response.Content.ReadAsStringAsync());
+        var html = await response.Content.ReadAsStringAsync();
+        Assert.Contains("Invalid login attempt.", html);
+        Assert.Contains("/Identity/Account/ResendEmailConfirmation", html);
+        Assert.DoesNotContain("id=\"email-not-confirmed\"", html);
         Assert.Equal(HttpStatusCode.Redirect, (await client.GetAsync("/Patient/Home")).StatusCode);
     }
 }

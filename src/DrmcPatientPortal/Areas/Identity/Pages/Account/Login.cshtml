@@ -19,14 +19,6 @@
 
             <form id="account" method="post">
                 <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
-                @if (Model.EmailNotConfirmed)
-                {
-                    <div class="alert alert-warning small mb-3" role="alert" id="email-not-confirmed">
-                        @Loc["Login_EmailNotConfirmed"]
-                        <a asp-page="./ResendEmailConfirmation" asp-route-returnUrl="@Model.ReturnUrl" class="alert-link d-block mt-1">@Loc["Login_ResendConfirmation"]</a>
-                    </div>
-                }
-
                 <div class="mb-3">
                     <label asp-for="Input.Email" class="form-label">Email address</label>
                     <div class="input-group">
@@ -64,6 +56,10 @@
                     <button id="login-submit" type="submit" class="w-100 btn btn-lg btn-drmc fw-bold py-2">Sign in</button>
                 </div>
             </form>
+
+            <div class="text-center mt-3">
+                <a asp-page="./ResendEmailConfirmation" asp-route-returnUrl="@Model.ReturnUrl" class="small">@Loc["Login_ResendConfirmation"]</a>
+            </div>
 
             <div class="auth-divider my-4">
                 <span class="small text-muted">or</span>
