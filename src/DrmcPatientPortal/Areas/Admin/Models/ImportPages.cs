@@ -47,5 +47,5 @@ public sealed class ImportEnvelope
 }
 public sealed record ImportCommand(string Nonce, string FileHash, string Version, List<ImportMapping> Mappings);
 public sealed record ImportIndex(IReadOnlyList<ImportBatch> Rows, int Page, int Total);
-public sealed record ImportDetail(ImportBatch Batch, ImportReport? Report, int Page);
+public sealed record ImportDetail(ImportBatch Batch, ImportReport? Report, int Page, bool ReportVerified = false);
 public sealed record ImportReconciliation(ImportBatch Batch, IReadOnlyList<ImportGroup> Groups, ImportDryRun Input, int Page, int TotalGroups);

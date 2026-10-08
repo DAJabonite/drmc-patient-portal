@@ -10,6 +10,8 @@ public sealed class PrescriptionInput : PhysicianInput
     [StringLength(100000), Display(Name = "Brand name")] public string? BrandName { get; set; }
     [StringLength(100000)] public string? Dosage { get; set; }
     [StringLength(100000), Display(Name = "Dosage form")] public string? DosageForm { get; set; }
+    [StringLength(32), RegularExpression(AdministrationRoutes.Pattern, ErrorMessage = "Select a listed route of administration."),
+        Display(Name = "Route of administration")] public string? RouteOfAdministration { get; set; }
     [StringLength(100000)] public string? Frequency { get; set; }
     [StringLength(100000)] public string? Instructions { get; set; }
     [Required, StringLength(100000)] public string Department { get; set; } = "";

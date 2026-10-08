@@ -7,7 +7,7 @@ namespace DrmcPatientPortal.Areas.Admin.Models;
 public sealed class PublicAdvisoryInput : AdminInput, IValidatableObject
 {
     [Required, StringLength(100000)] public string Title { get; set; } = "";
-    [Required, StringLength(450), RegularExpression("[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*", ErrorMessage = "Use letters, digits and single hyphens for the slug.")]
+    [StringLength(450), RegularExpression("[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*", ErrorMessage = "Use letters, digits and single hyphens for the slug.")]
     public string Slug { get; set; } = "";
     [EnumDataType(typeof(AdvisoryCategory))] public AdvisoryCategory Category { get; set; }
     [EnumDataType(typeof(AdvisoryPriority))] public AdvisoryPriority Priority { get; set; }

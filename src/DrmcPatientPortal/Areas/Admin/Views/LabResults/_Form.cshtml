@@ -1,6 +1,7 @@
 @model LabInput
 @{ var doctors = (IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewData["Doctors"]!; }
 <input asp-for="RowVersion" type="hidden" />
+<p class="small text-muted">Save the lab record, then manage its PDF from record details. Structured items and the result summary are optional; existing values are retained.</p>
 <div class="row g-3">
     <div class="col-md-6"><label asp-for="AccessionNumber" class="form-label"></label><input asp-for="AccessionNumber" class="form-control" /><span asp-validation-for="AccessionNumber" class="text-danger"></span></div>
     <div class="col-md-6"><label asp-for="TestName" class="form-label"></label><input asp-for="TestName" class="form-control" /><span asp-validation-for="TestName" class="text-danger"></span></div>

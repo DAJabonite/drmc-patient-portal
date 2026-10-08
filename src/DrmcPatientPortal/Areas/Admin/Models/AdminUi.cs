@@ -28,7 +28,7 @@ public static class AdminNavigation
         ]),
         new("Operations",
         [
-            new("Imports", "Imports", "bi-file-earmark-arrow-up", "CSV and Excel batches with reconciliation."),
+            new("Imports", "Imports", "bi-file-earmark-arrow-up", "CSV and Excel batches with review and approval."),
             new("Audit", "Audit history", "bi-journal-text", "Staff access and change history."),
             new("StaffAccess", "Staff access", "bi-person-lock", "Grant or revoke Laboratory, Radiology and Patient services staff roles."),
             new("StaffInvitations", "Staff invitations", "bi-envelope-plus", "One-time signup invitations for staff without a hospital record."),

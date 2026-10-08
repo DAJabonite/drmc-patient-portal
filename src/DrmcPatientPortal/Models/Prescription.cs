@@ -11,6 +11,7 @@ public class Prescription
     public string? BrandName { get; set; }                  // e.g. "Glucophage"
     public string Dosage { get; set; } = string.Empty;     // e.g. "500 mg"
     public string DosageForm { get; set; } = string.Empty; // Tablet, Capsule, Syrup, Inhaler
+    public string? RouteOfAdministration { get; set; }
     public string Frequency { get; set; } = string.Empty;  // "Twice daily with meals (8:00 AM, 6:00 PM)"
     public string Instructions { get; set; } = string.Empty; // "Take with or immediately after meals."
 

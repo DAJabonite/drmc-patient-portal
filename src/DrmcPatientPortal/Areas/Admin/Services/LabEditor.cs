@@ -11,6 +11,8 @@ public sealed class LabEditor : ClinicalEditor<LabResult, LabInput>
 {
     public override string Name => "LabResults";
     public override string Title => "Laboratory availability";
+    public override IReadOnlyList<RecordField> Fields(ApplicationDbContext db, LabResult entity) =>
+        base.Fields(db, entity).Where(f => f.Label != nameof(LabResult.ReportFileName)).ToArray();
     public override string SearchColumn => "AccessionNumber";
     public override int? PatientId(LabResult entity) => entity.PatientRecordId;
     public override string Summary(LabResult entity) => entity.TestName + " | " + entity.Status;

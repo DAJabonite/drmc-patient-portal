@@ -17,17 +17,23 @@ public class LabResultsController : Controller
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IAuditLogService _auditLog;
     private readonly IOptionsMonitor<PatientResultsOptions> _resultsOptions;
+    private readonly SignInManager<ApplicationUser> _signIn;
+    private readonly ILabReportStorage _storage;
 
     public LabResultsController(
         ApplicationDbContext db,
         UserManager<ApplicationUser> userManager,
         IAuditLogService auditLog,
-        IOptionsMonitor<PatientResultsOptions> resultsOptions)
+        IOptionsMonitor<PatientResultsOptions> resultsOptions,
+        SignInManager<ApplicationUser> signIn,
+        ILabReportStorage storage)
     {
         _db = db;
         _userManager = userManager;
         _auditLog = auditLog;
         _resultsOptions = resultsOptions;
+        _signIn = signIn;
+        _storage = storage;
     }
 
     // GET /Patient/LabResults
@@ -116,6 +122,7 @@ public class LabResultsController : Controller
             TotalAvailable = results.Count(r => r.Status == "Available"),
             TotalInProgress = results.Count(r => r.Status != "Available")
         };
+        ViewData["PdfDisclosureEnabled"] = _resultsOptions.CurrentValue.ShowFullResults;
 
         return View(model);
     }
@@ -141,12 +148,55 @@ public class LabResultsController : Controller
         var showFullResults = _resultsOptions.CurrentValue.ShowFullResults
             && PatientResultsDisclosure.IsReleased(result, PatientResultsDisclosure.ManilaNow);
         ViewData["ShowFullResults"] = showFullResults;
+        ViewData["CanAccessPdf"] = showFullResults && result.ReportFileName is not null;
 
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
         await _auditLog.LogAsync(user.Id, "VIEW_LAB_REPORT", $"LabResult/{id}",
             showFullResults ? "Viewed released laboratory result values." : "Viewed laboratory result claiming notice and availability.", ip);
 
-        return View(result);
+        return View("Details", result);
+    }
+
+    [HttpPost("Report/{id:int}"), ValidateAntiForgeryToken]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Report(int id, string? password, string? intent, CancellationToken token)
+    {
+        Response.Headers.CacheControl = "no-store, private";
+        Response.Headers.Pragma = "no-cache";
+        Response.Headers["X-Content-Type-Options"] = "nosniff";
+        var user = await _userManager.GetUserAsync(User);
+        if (user is null) return Challenge();
+        var lab = await _db.LabResults.AsNoTracking().SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token);
+        if (!Eligible(lab)) return NotFound();
+        if (intent is not ("view" or "download")) return BadRequest();
+        if (string.IsNullOrEmpty(password) || password.Length > 1024)
+            return await PasswordError(id, "Enter your login password for each View or Download action.");
+        var verified = await _signIn.CheckPasswordSignInAsync(user, password, lockoutOnFailure: true);
+        if (!verified.Succeeded)
+            return await PasswordError(id, verified.IsLockedOut ? "Your account is temporarily locked. Try again after the lockout period." : "The password could not be verified. Please try again.");
+        byte[] bytes;
+        try { bytes = await _storage.ReadAsync(id, lab!.ReportFileName!, token); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
+        { return StatusCode(503); }
+        var fresh = await _db.LabResults.AsNoTracking().SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token);
+        if (!Eligible(fresh) || fresh!.ReportFileName != lab!.ReportFileName) return NotFound();
+        await _auditLog.LogAsync(user.Id, intent == "view" ? "VIEW_LAB_PDF" : "DOWNLOAD_LAB_PDF", $"LabResult/{id}",
+            intent == "view" ? "Viewed laboratory report PDF." : "Downloaded laboratory report PDF.",
+            HttpContext.Connection.RemoteIpAddress?.ToString() ?? "");
+        fresh = await _db.LabResults.AsNoTracking().SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token);
+        if (!Eligible(fresh) || fresh!.ReportFileName != lab.ReportFileName || await _userManager.IsLockedOutAsync(user)) return NotFound();
+        Response.Headers.ContentDisposition = $"{(intent == "view" ? "inline" : "attachment")}; filename=\"lab-report-{id}.pdf\"";
+        return File(bytes, "application/pdf");
+    }
+
+    private bool Eligible(LabResult? lab) => lab?.ReportFileName is not null && _resultsOptions.CurrentValue.ShowFullResults
+        && PatientResultsDisclosure.IsReleased(lab, PatientResultsDisclosure.ManilaNow);
+
+    private async Task<IActionResult> PasswordError(int id, string message)
+    {
+        ModelState.Clear(); // Never return the submitted password in the page.
+        ModelState.AddModelError("", message);
+        return await Details(id);
     }
 }
 

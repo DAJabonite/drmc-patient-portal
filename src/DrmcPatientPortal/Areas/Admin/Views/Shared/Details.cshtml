@@ -20,3 +20,7 @@
     </div>
 </div>
 <partial name="_Fields" model="Model" />
+@if (controller == "LabResults")
+{
+    <a asp-area="Admin" asp-action="Report" asp-route-id="@Model.Id" class="btn btn-primary mt-3">Manage lab report PDF</a>
+}

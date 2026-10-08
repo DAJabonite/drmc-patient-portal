@@ -32,9 +32,12 @@ public sealed class ImportWorkflow(IServiceScopeFactory scopes, ImportStaging st
     {
         var batch = await db.ImportBatches.SingleOrDefaultAsync(batch => batch.Id == id, token);
         if (!Editable(batch, input.RowVersion) || batch!.Status != ImportStatus.Validated) return WriteResult.Stale;
-        if (!input.Confirm) return WriteResult.Invalid("Confirm the reconciliation decisions before approval.");
+        if (!input.Confirm) return WriteResult.Invalid("Confirm the reviewed records and proposed counts before approval.");
         if (batch.ValidationVersion != ImportTemplates.ValidationVersion || batch.ValidationHash != input.Hash)
-            return WriteResult.Invalid("The file, mappings or validation version changed. Run a new dry run.");
+            return WriteResult.Invalid("The file, mappings or validation version changed. Validate and review the batch again.");
+        var envelope = await staging.LoadAsync(id, token);
+        if (!ImportStatusDisplay.VerifiedReport(batch, envelope))
+            return WriteResult.Invalid("Review required. Resolve validation errors and validate the batch again before approval.");
         var account = await db.Users.SingleOrDefaultAsync(user => user.Id == actor.FindFirstValue(ClaimTypes.NameIdentifier), token);
         if (account is null) return WriteResult.Invalid("The approving staff account is unavailable.");
         batch.ApprovedById = account.Id; batch.ApprovedByEmail = account.Email ?? ""; batch.ApprovedAtUtc = null;
