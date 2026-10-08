@@ -17,7 +17,7 @@
     var medicationActive = currentController == "Medications";
     var radiologyActive = currentController == "Radiology";
     var malasakitActive = currentController == "Malasakit";
-    var staffConsole = User.IsInRole("Admin") || User.IsInRole("LabStaff") || User.IsInRole("RadiologyStaff");
+    var staffConsole = User.IsInRole("Admin") || User.IsInRole("LabStaff") || User.IsInRole("RadiologyStaff") || User.IsInRole("PatientServicesStaff");
 }
 
 @if (!isAdminArea)

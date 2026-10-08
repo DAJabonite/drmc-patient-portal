@@ -3060,3 +3060,8 @@ code,
 @media (max-width: 575.98px) {
     .registration-record-code-icon { display: none; }
 }
+
+#main-content > .row {
+    margin-left: 0;
+    margin-right: 0;
+}
