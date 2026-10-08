@@ -5,13 +5,12 @@
     <div>
         <p class="admin-eyebrow">Operations</p>
         <h1 class="admin-title">Imports</h1>
-        <p class="admin-subtitle">Upload data, review setup, validate the records, then approve and monitor the batch. Records are created only after approval.</p>
+        <p class="admin-subtitle">Upload a completed template, review it, then approve the import.</p>
     </div>
 </div>
-<partial name="_Stages" />
 @if (TempData["ImportMessage"] is string message) { <div class="alert alert-warning" role="alert">@message</div> }
 <div class="row g-3 mb-3">
-    <div class="col-xl-8">
+    <div class="col-12">
         <form asp-action="Upload" method="post" enctype="multipart/form-data" class="admin-card admin-form h-100">
             <div class="admin-card-header"><h2 class="admin-card-title">Upload</h2><span class="admin-chip admin-chip-info admin-chip-plain">Step 1 of 4</span></div>
             <div class="admin-card-body">
@@ -23,14 +22,46 @@
             <div class="admin-form-actions"><button class="btn btn-primary" type="submit"><i class="bi bi-upload me-1" aria-hidden="true"></i>Upload</button></div>
         </form>
     </div>
-    <div class="col-xl-4">
+    <div class="col-12">
         <div class="admin-card h-100">
             <div class="admin-card-header"><h2 class="admin-card-title">Templates</h2></div>
-            <div class="admin-card-body d-flex flex-wrap gap-2">
-                <p class="small w-100 mb-1">Each download contains five fictional examples. Replace or remove all example rows before importing real data. Keep headers and sheet names unchanged.</p>
-                <p class="small w-100 mb-1">The workbook links its example patients and related records within the batch. Separate clinical CSVs require explicit patient matching. LabResults CSV requires the corresponding ClinicalEncounters example records to exist first; LabResultItems requires LabResults, and MedicationDoseSchedules requires Prescriptions. Their <code>existing:</code> references must identify the corresponding imported parent records, or be replaced with your own existing references.</p>
-                <a asp-action="Template" asp-route-name="Workbook_v1" class="btn btn-sm btn-outline-primary"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Workbook v1</a>
-                @foreach (var template in ImportTemplates.All) { <a asp-action="Template" asp-route-name="@template.Sheet" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download me-1" aria-hidden="true"></i>@template.Name CSV</a> }
+            <div class="admin-card-body">
+                <p class="small text-muted mb-3">Each template has five sample rows. Replace or remove them before importing. Keep headers and sheet names unchanged.</p>
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                    <div>
+                        <h3 class="h6 mb-1">Excel workbook</h3>
+                        <p class="small text-muted mb-0">All templates in one file, with related records linked within the batch.</p>
+                    </div>
+                    <a asp-action="Template" asp-route-name="Workbook_v1" class="btn btn-sm btn-outline-primary"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Download XLSX</a>
+                </div>
+                <details class="border-top pt-3">
+                    <summary class="fw-semibold">Individual CSV templates <span class="small text-muted">(@ImportTemplates.All.Count)</span></summary>
+                    <p class="small text-muted mt-2 mb-3">Import one record type at a time. Clinical CSVs require patient matching; <code>existing:</code> references must point to saved records.</p>
+                    <div class="row row-cols-1 row-cols-md-3 g-2">
+                        @foreach (var template in ImportTemplates.All)
+                        {
+                            var (label, description) = template.Name switch
+                            {
+                                "Patients" => ("Patients", "Hospital patient records."),
+                                "Doctors" => ("Doctors", "Doctor profiles, rooms and schedules."),
+                                "PublicAdvisories" => ("Public advisories", "Announcements and public notices."),
+                                "ClinicalEncounters" => ("Clinical encounters", "Visits, diagnoses and care instructions."),
+                                "LabResults" => ("Lab results", "Lab reports; linked visits must exist first."),
+                                "LabResultItems" => ("Lab result items", "Individual measurements; import lab results first."),
+                                "Prescriptions" => ("Prescriptions", "Medicines, instructions and refill details."),
+                                "MedicationDoseSchedules" => ("Dose schedules", "Medication times; import prescriptions first."),
+                                "PatientAllergies" => ("Patient allergies", "Allergens, reactions and severity."),
+                                _ => (template.Name, "Records for this template.")
+                            };
+                            <div class="col">
+                                <a asp-action="Template" asp-route-name="@template.Sheet" class="list-group-item list-group-item-action border rounded-3 h-100 d-flex justify-content-between gap-2 p-3" aria-label="Download @label CSV template">
+                                    <span><span class="fw-semibold d-block">@label</span><span class="small text-muted d-block mt-1">@description</span></span>
+                                    <i class="bi bi-download text-primary-drmc" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </details>
             </div>
         </div>
     </div>

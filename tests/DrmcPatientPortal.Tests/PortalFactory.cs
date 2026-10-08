@@ -42,6 +42,7 @@ public sealed class PortalFactory : WebApplicationFactory<Program>, IAsyncLifeti
         builder.UseSetting("DataProtection:KeyRingPath", Path.Combine(_storageRoot, "keys"));
         builder.UseSetting("PatientDocuments:RootPath", Path.Combine(_storageRoot, "documents"));
         builder.UseSetting("PatientDocuments:TemporaryPath", Path.Combine(_storageRoot, "uploads"));
+        builder.UseSetting("LabReports:RootPath", Path.Combine(_storageRoot, "reports"));
     }
 
     public HttpClient CreatePortalClient() => CreateClient(new WebApplicationFactoryClientOptions

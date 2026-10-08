@@ -131,18 +131,6 @@
                         <div class="row align-items-center g-3">
                             <div class="col-md-7">
                                 <div class="record-metadata d-flex flex-wrap align-items-center gap-2 mb-1">
-                                    @if (lab.Status == "Available")
-                                    {
-                                        <span class="badge bg-success-subtle text-success rounded-pill small">
-                                            <i class="bi bi-check-circle-fill me-1"></i> @lab.Status
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill small">
-                                            <i class="bi bi-hourglass-split me-1"></i> Processing in Laboratory
-                                        </span>
-                                    }
                                     <span class="badge bg-light text-secondary border rounded-pill small">
                                         @lab.Category
                                     </span>
@@ -153,16 +141,6 @@
 
                                 <h2 class="h5 fw-bold text-primary-drmc mb-1">@lab.TestName</h2>
                                 
-                                <div class="p-2 bg-light rounded-3 border-start border-3 border-primary-subtle my-2">
-                                    <div class="small text-dark">
-                                        <i class="bi bi-geo-alt-fill text-primary-drmc me-1"></i>
-                                        Claiming Unit: <strong>@(string.IsNullOrEmpty(lab.PerformingUnit) ? "DRMC Central Clinical Diagnostic Laboratory" : lab.PerformingUnit)</strong>
-                                    </div>
-                                    <div class="small text-muted" style="font-size: 0.75rem;">
-                                        Releasing Window &middot; Ground Floor Laboratory Building
-                                    </div>
-                                </div>
-
                                 <div class="small text-muted d-flex flex-wrap gap-3" style="font-size: 0.8rem;">
                                     <span><i class="bi bi-calendar3 me-1"></i> Collected: @lab.CollectedAt.ToString("MMM d, yyyy")</span>
                                     @if (lab.ReleasedAt.HasValue)
@@ -178,18 +156,9 @@
 
                             <div class="col-md-5 text-md-end">
                                 <div class="d-flex gap-2 justify-content-md-end">
-                                    @if (canViewPdf)
-                                    {
-                                        <a asp-action="Details" asp-route-id="@lab.Id" class="btn btn-success rounded-pill px-4 fw-semibold shadow-xs">
-                                            <i class="bi bi-file-earmark-check me-1"></i> View lab report
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        <a asp-action="Details" asp-route-id="@lab.Id" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold small">
-                                            <i class="bi bi-info-circle me-1"></i> Check Status &amp; Location
-                                        </a>
-                                    }
+                                    <a asp-action="Details" asp-route-id="@lab.Id" class="btn @(canViewPdf ? "btn-success" : "btn-outline-secondary") rounded-pill px-4 fw-semibold">
+                                        <i class="bi @(canViewPdf ? "bi-lock-fill" : "bi-file-earmark-lock") me-1" aria-hidden="true"></i> @(canViewPdf ? "Report available" : "Report unavailable")
+                                    </a>
                                 </div>
                             </div>
                         </div>
