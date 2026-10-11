@@ -132,6 +132,10 @@
 
     <main id="main-content" role="main" tabindex="-1">
         @RenderBody()
+        @if (ViewData["Pagination"] is DrmcPatientPortal.Services.PortalPagination pagination)
+        {
+            <div class="container"><partial name="_Pagination" model="pagination" /></div>
+        }
     </main>
 
     <footer class="footer-drmc" role="contentinfo">

@@ -29,6 +29,9 @@ public sealed class SmsDeliveryOptions
 public sealed class SmtpEmailSender(IOptions<EmailDeliveryOptions> options) : IEmailSender
 {
     public async Task SendEmailAsync(string email, string subject, string htmlMessage)
+        => await SendEmailAsync(email, subject, htmlMessage, CancellationToken.None);
+
+    public async Task SendEmailAsync(string email, string subject, string htmlMessage, CancellationToken token)
     {
         var settings = options.Value;
         using var message = new MailMessage(settings.FromAddress, email, subject, htmlMessage) { IsBodyHtml = true };
@@ -37,7 +40,7 @@ public sealed class SmtpEmailSender(IOptions<EmailDeliveryOptions> options) : IE
             EnableSsl = settings.UseSsl,
             Credentials = new NetworkCredential(settings.Username, settings.Password)
         };
-        await client.SendMailAsync(message);
+        await client.SendMailAsync(message, token);
     }
 }
 

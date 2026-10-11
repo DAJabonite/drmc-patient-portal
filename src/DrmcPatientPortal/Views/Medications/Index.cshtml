@@ -34,7 +34,7 @@
                     <div class="min-w-0">
                         <p class="eyebrow text-danger mb-1">@Loc["Rx_SafetyAlert"]</p>
                         <h2 class="h6 fw-bold text-dark mb-1" id="medicationSafetyHeading">
-                            @(Model.Allergies.Count == 1 ? "1 documented drug allergy" : $"{Model.Allergies.Count} documented drug allergies")
+                            @(Model.AllergyPagination.Total == 1 ? "1 documented drug allergy" : $"{Model.AllergyPagination.Total} documented drug allergies")
                         </h2>
                         <p class="small text-muted mb-0 text-wrap-pretty">
                             @string.Join(", ", Model.Allergies.Select(a => a.Allergen))
@@ -55,6 +55,7 @@
                     </div>
                 </details>
             </aside>
+            <partial name="_Pagination" model="Model.AllergyPagination" />
         }
 
         <!-- Data-backed daily medication schedule -->
@@ -62,9 +63,7 @@
             <h2 class="h6 fw-bold text-primary-drmc mb-3">
                 <i class="bi bi-clock-history me-1"></i> @Loc["Rx_DailySchedule"]
             </h2>
-            @{ var scheduledDoses = Model.Prescriptions.Where(p => p.Status == PrescriptionStatus.Active)
-                .SelectMany(p => p.DoseSchedules.Select(s => new { Prescription = p, Schedule = s }))
-                .OrderBy(x => x.Schedule.DoseTime).ThenBy(x => x.Schedule.DisplayOrder).ToList(); }
+            @{ var scheduledDoses = Model.Schedules; }
             @if (scheduledDoses.Count == 0)
             {
                 <p class="small text-muted mb-0">@Loc["Rx_NoExactSchedule"]</p>
@@ -72,24 +71,25 @@
             else
             {
                 <div class="row g-3">
-                    @foreach (var group in scheduledDoses.GroupBy(x => x.Schedule.DoseTime))
+                    @foreach (var group in scheduledDoses.GroupBy(x => x.DoseTime))
                     {
                         <div class="col-sm-6 col-md-3">
                             <div class="p-3 bg-light rounded-3 border h-100">
                                 <strong class="small text-primary-drmc d-block mb-2">@group.Key.ToString("h:mm tt")</strong>
                                 <ul class="list-unstyled small text-dark mb-0">
-                                    @foreach (var dose in group) { <li>&bull; @dose.Prescription.GenericName @dose.Prescription.Dosage</li> }
+                                    @foreach (var dose in group) { <li>&bull; @dose.GenericName @dose.Dosage</li> }
                                 </ul>
                             </div>
                         </div>
                     }
                 </div>
             }
+            <partial name="_Pagination" model="Model.SchedulePagination" />
         </div>
 
         <!-- Prescriptions List -->
         <div class="mb-3 d-flex align-items-center justify-content-between">
-            <h2 class="h5 fw-bold text-primary-drmc mb-0">@Loc["Rx_ActiveOrders"] (@Model.Prescriptions.Count)</h2>
+            <h2 class="h5 fw-bold text-primary-drmc mb-0">@Loc["Rx_ActiveOrders"] (@Model.PrescriptionTotal)</h2>
         </div>
 
         <div class="d-flex flex-column gap-3">

@@ -6,9 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -22,11 +24,13 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ILogger<LoginModel> _logger;
+        private readonly AccountPrivacy _privacy;
 
-        public LoginModel(SignInManager<ApplicationUser> signInManager, ILogger<LoginModel> logger)
+        public LoginModel(SignInManager<ApplicationUser> signInManager, ILogger<LoginModel> logger, AccountPrivacy privacy)
         {
             _signInManager = signInManager;
             _logger = logger;
+            _privacy = privacy;
         }
 
         /// <summary>
@@ -112,9 +116,15 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
 
             if (ModelState.IsValid)
             {
-                // This doesn't count login failures towards account lockout
-                // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-                var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
+                var started = Stopwatch.GetTimestamp();
+                var user = await _signInManager.UserManager.FindByNameAsync(Input.Email);
+                var result = Microsoft.AspNetCore.Identity.SignInResult.Failed;
+                if (user is null || !await _signInManager.CanSignInAsync(user) || await _signInManager.UserManager.IsLockedOutAsync(user))
+                    _privacy.PerformPasswordWork(Input.Password);
+                else
+                {
+                    result = await _signInManager.PasswordSignInAsync(user, Input.Password, Input.RememberMe, lockoutOnFailure: true);
+                }
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User logged in.");
@@ -124,16 +134,9 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                 {
                     return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = Input.RememberMe });
                 }
-                if (result.IsLockedOut)
-                {
-                    _logger.LogWarning("User account locked out.");
-                    return RedirectToPage("./Lockout");
-                }
-                else
-                {
-                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-                    return Page();
-                }
+                await _privacy.FinishAsync(started, HttpContext.RequestAborted);
+                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                return Page();
             }
 
             // If we got this far, something failed, redisplay form

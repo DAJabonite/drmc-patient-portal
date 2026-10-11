@@ -20,7 +20,7 @@ namespace DrmcPatientPortal.Areas.Admin.Controllers;
 // two-factor authentication.
 [Area("Admin")]
 public sealed class StaffInvitationsController(ApplicationDbContext db, AdminWrites writes, IQrCodeService qr, IEmailSender email,
-    ILookupNormalizer normalizer, IOptions<StaffInvitationOptions> options, ILogger<StaffInvitationsController> logger) : Controller
+    ILookupNormalizer normalizer, IOptions<StaffInvitationOptions> options, ILogger<StaffInvitationsController> logger, AccountLinks links) : Controller
 {
     private const string Entity = "StaffInvitations";
 
@@ -31,9 +31,9 @@ public sealed class StaffInvitationsController(ApplicationDbContext db, AdminWri
         if (search?.Length > 256) { ModelState.AddModelError(nameof(search), "Search must be at most 256 characters."); search = null; }
         var query = db.StaffInvitations.AsNoTracking();
         if (!string.IsNullOrEmpty(search)) query = query.Where(i => EF.Functions.Collate(i.Email, "Latin1_General_100_CI_AS").Contains(search) || i.CodeHint == search.ToUpper());
-        var total = await query.CountAsync(cancellationToken);
+        var total = await SqlReadRetry.RunAsync(db, () => query.CountAsync(cancellationToken), cancellationToken);
         page = Math.Clamp(page, 1, Math.Max(1, (total + 24) / 25));
-        var invitations = await query.OrderByDescending(i => i.Id).Skip((page - 1) * 25).Take(25).ToListAsync(cancellationToken);
+        var invitations = await SqlReadRetry.RunAsync(db, () => query.OrderByDescending(i => i.Id).Skip((page - 1) * 25).Take(25).ToListAsync(cancellationToken), cancellationToken);
         var now = DateTime.UtcNow;
         var rows = invitations.Select(i => new StaffInvitationRow(i.Id, i.Email, i.Role, i.CodeHint, i.InvitedByEmail, Local(i.CreatedAtUtc), Local(i.ExpiresAtUtc),
             i.AcceptedAtUtc is { } a ? Local(a) : null, i.StatusAt(now), Convert.ToBase64String(i.RowVersion))).ToArray();
@@ -97,7 +97,7 @@ public sealed class StaffInvitationsController(ApplicationDbContext db, AdminWri
             return View(input);
         }
 
-        var registerUrl = Url.Page("/Account/Register", pageHandler: null, values: new { area = "Identity" }, protocol: Request.Scheme)!;
+        var registerUrl = links.Page(HttpContext, "/Account/Register", new { area = "Identity" });
         var signupUrl = StaffInvitationCodes.SignupUrl(registerUrl, code!);
         var emailed = true;
         try

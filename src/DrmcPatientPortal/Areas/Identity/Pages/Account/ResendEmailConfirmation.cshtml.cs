@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Text;
 using System.Text.Encodings.Web;
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -16,7 +18,9 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account;
 [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
 public sealed class ResendEmailConfirmationModel(
     UserManager<ApplicationUser> users,
-    IEmailSender emailSender,
+    IAccountEmailQueue emailSender,
+    AccountLinks links,
+    AccountPrivacy privacy,
     IStringLocalizer<SharedResource> localizer,
     ILogger<ResendEmailConfirmationModel> logger) : PageModel
 {
@@ -44,28 +48,30 @@ public sealed class ResendEmailConfirmationModel(
         if (!ModelState.IsValid)
             return Page();
 
+        var started = Stopwatch.GetTimestamp();
         var user = await users.FindByEmailAsync(Input.Email);
         if (user is not null && !await users.IsEmailConfirmedAsync(user))
         {
             var userId = await users.GetUserIdAsync(user);
             var token = await users.GenerateEmailConfirmationTokenAsync(user);
             var code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-            var callbackUrl = Url.Page("./ConfirmEmail", pageHandler: null,
-                values: new { userId, code, returnUrl = ReturnUrl }, protocol: Request.Scheme)!;
+            var callbackUrl = links.Page(HttpContext, "/Account/ConfirmEmail",
+                new { area = "Identity", userId, code, returnUrl = ReturnUrl });
 
             try
             {
-                await emailSender.SendEmailAsync(Input.Email, localizer["Verification_EmailSubject"],
+                await emailSender.EnqueueAsync(user.Id, Input.Email, localizer["Verification_EmailSubject"],
                     $"{HtmlEncoder.Default.Encode(localizer["Verification_EmailIntro"])} " +
-                    $"<a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>{HtmlEncoder.Default.Encode(localizer["Verification_EmailLinkText"])}</a>.");
+                    $"<a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>{HtmlEncoder.Default.Encode(localizer["Verification_EmailLinkText"])}</a>.", HttpContext.RequestAborted);
             }
             catch (Exception exception)
             {
                 // Delivery errors must not reveal whether the submitted address has an account.
-                logger.LogError(exception, "Email confirmation delivery failed.");
+                logger.LogError("Email confirmation queue unavailable ({ErrorType}).", exception.GetType().Name);
             }
         }
 
+        await privacy.FinishAsync(started, HttpContext.RequestAborted);
         RequestSent = true;
         // A redirect avoids sending another email when the feedback page is refreshed.
         return RedirectToPage(new { returnUrl = ReturnUrl });

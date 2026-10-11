@@ -43,7 +43,7 @@ public class LabResultsController : Controller
         string? search,
         string? dateRange = null,
         DateTime? startDate = null,
-        DateTime? endDate = null)
+        DateTime? endDate = null, int page = 1)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
@@ -104,11 +104,15 @@ public class LabResultsController : Controller
             }
         }
 
-        var allCount = await _db.LabResults.CountAsync(l => l.Patient.PortalUserId == user.Id);
+        var allCount = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.CountAsync(l => l.Patient.PortalUserId == user.Id));
+        var pagination = await PortalPagination.CreateAsync(query, _db, page);
+        ViewData["Pagination"] = pagination;
+        var available = await SqlReadRetry.RunAsync(_db, () => query.CountAsync(r => r.Status == "Available"));
 
-        var results = await query
+        var results = await SqlReadRetry.RunAsync(_db, () => query.AsNoTracking()
             .OrderByDescending(l => l.CollectedAt)
-            .ToListAsync();
+            .ThenByDescending(l => l.Id).Skip(pagination.Offset).Take(PortalPagination.Size)
+            .ToListAsync());
 
         var model = new LabResultsIndexViewModel
         {
@@ -119,8 +123,8 @@ public class LabResultsController : Controller
             SelectedEndDate = endDate,
             LabResults = results,
             TotalCount = allCount,
-            TotalAvailable = results.Count(r => r.Status == "Available"),
-            TotalInProgress = results.Count(r => r.Status != "Available")
+            TotalAvailable = available,
+            TotalInProgress = pagination.Total - available
         };
         ViewData["PdfDisclosureEnabled"] = _resultsOptions.CurrentValue.ShowFullResults;
 
@@ -134,9 +138,9 @@ public class LabResultsController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
 
-        var result = await _db.LabResults
+        var result = await SqlReadRetry.RunAsync(_db, () => _db.LabResults
             .Include(l => l.Items)
-            .FirstOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id);
+            .FirstOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id));
 
         if (result is null)
         {
@@ -166,24 +170,25 @@ public class LabResultsController : Controller
         Response.Headers["X-Content-Type-Options"] = "nosniff";
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
-        var lab = await _db.LabResults.AsNoTracking().SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token);
+        var lab = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.AsNoTracking().SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token), token);
         if (!Eligible(lab)) return NotFound();
         if (intent is not ("view" or "download")) return BadRequest();
         if (string.IsNullOrEmpty(password) || password.Length > 1024)
             return await PasswordError(id, "Enter your login password for each View or Download action.");
-        var verified = await _signIn.CheckPasswordSignInAsync(user, password, lockoutOnFailure: true);
-        if (!verified.Succeeded)
-            return await PasswordError(id, verified.IsLockedOut ? "Your account is temporarily locked. Try again after the lockout period." : "The password could not be verified. Please try again.");
+        var locked = await _userManager.IsLockedOutAsync(user);
+        var verified = !locked && await _signIn.CanSignInAsync(user) && await _userManager.CheckPasswordAsync(user, password);
+        if (!verified)
+            return await PasswordError(id, locked ? "Your account is temporarily locked. Try again after the lockout period." : "The password could not be verified. Please try again.");
         byte[] bytes;
         try { bytes = await _storage.ReadAsync(id, lab!.ReportFileName!, token); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
         { return StatusCode(503); }
-        var fresh = await _db.LabResults.AsNoTracking().SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token);
+        var fresh = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.AsNoTracking().SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token), token);
         if (!Eligible(fresh) || fresh!.ReportFileName != lab!.ReportFileName) return NotFound();
         await _auditLog.LogAsync(user.Id, intent == "view" ? "VIEW_LAB_PDF" : "DOWNLOAD_LAB_PDF", $"LabResult/{id}",
             intent == "view" ? "Viewed laboratory report PDF." : "Downloaded laboratory report PDF.",
             HttpContext.Connection.RemoteIpAddress?.ToString() ?? "");
-        fresh = await _db.LabResults.AsNoTracking().SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token);
+        fresh = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.AsNoTracking().SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token), token);
         if (!Eligible(fresh) || fresh!.ReportFileName != lab.ReportFileName || await _userManager.IsLockedOutAsync(user)) return NotFound();
         Response.Headers.ContentDisposition = $"{(intent == "view" ? "inline" : "attachment")}; filename=\"lab-report-{id}.pdf\"";
         return File(bytes, "application/pdf");

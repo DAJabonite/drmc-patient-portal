@@ -17,6 +17,7 @@ public class EnableAuthenticatorModel : PageModel
     private readonly UrlEncoder _urlEncoder;
     private readonly IQrCodeService _qrCodeService;
     private readonly StaffInvitationActivator _invitations;
+    private readonly SignInManager<ApplicationUser> _signIn;
 
     private const string AuthenticatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
 
@@ -25,13 +26,14 @@ public class EnableAuthenticatorModel : PageModel
         ILogger<EnableAuthenticatorModel> logger,
         UrlEncoder urlEncoder,
         IQrCodeService qrCodeService,
-        StaffInvitationActivator invitations)
+        StaffInvitationActivator invitations, SignInManager<ApplicationUser> signIn)
     {
         _userManager = userManager;
         _logger = logger;
         _urlEncoder = urlEncoder;
         _qrCodeService = qrCodeService;
         _invitations = invitations;
+        _signIn = signIn;
     }
 
     public string SharedKey { get; set; } = string.Empty;
@@ -89,7 +91,7 @@ public class EnableAuthenticatorModel : PageModel
         var verificationCode = Input.Code.Replace(" ", string.Empty).Replace("-", string.Empty);
 
         var is2faTokenValid = await _userManager.VerifyTwoFactorTokenAsync(
-            user, _userManager.Options.Tokens.AuthenticatorTokenProvider, verificationCode);
+            user, TokenOptions.DefaultAuthenticatorProvider, verificationCode);
 
         if (!is2faTokenValid)
         {
@@ -107,6 +109,7 @@ public class EnableAuthenticatorModel : PageModel
         // Invited staff with a confirmed email get their role now. Staff pages need a sign-in
         // with an authenticator code, so they sign in again to open Administration.
         var role = await _invitations.TryActivateAsync(user, HttpContext.RequestAborted);
+        await _signIn.RefreshSignInAsync(user);
         if (role is not null)
             StatusMessage += $" Your {DrmcPatientPortal.Areas.Admin.Security.StaffRoles.Label(role).ToLowerInvariant()} role is now active. Sign out, then sign in with your authenticator code to open Administration.";
 
@@ -129,6 +132,7 @@ public class EnableAuthenticatorModel : PageModel
         if (string.IsNullOrEmpty(unformattedKey))
         {
             await _userManager.ResetAuthenticatorKeyAsync(user);
+            await _signIn.RefreshSignInAsync(user);
             unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
         }
 

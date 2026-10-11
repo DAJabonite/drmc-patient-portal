@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -15,17 +16,19 @@ public class LoginWith2faModel : PageModel
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<LoginWith2faModel> _logger;
     private readonly IAuditLogService _auditLog;
+    private readonly AccountPrivacy _privacy;
 
     public LoginWith2faModel(
         SignInManager<ApplicationUser> signInManager,
         UserManager<ApplicationUser> userManager,
         ILogger<LoginWith2faModel> logger,
-        IAuditLogService auditLog)
+        IAuditLogService auditLog, AccountPrivacy privacy)
     {
         _signInManager = signInManager;
         _userManager = userManager;
         _logger = logger;
         _auditLog = auditLog;
+        _privacy = privacy;
     }
 
     [BindProperty]
@@ -66,6 +69,7 @@ public class LoginWith2faModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(bool rememberMe, string? returnUrl = null)
     {
+        var started = Stopwatch.GetTimestamp();
         var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
         if (user == null)
         {
@@ -99,14 +103,14 @@ public class LoginWith2faModel : PageModel
         {
             _logger.LogWarning("User with ID '{UserId}' account locked out.", userId);
             await _auditLog.LogAsync(userId, "2FA_LOGIN_LOCKOUT", $"ApplicationUser/{userId}", "Account locked out due to multiple invalid 2FA attempts.", ip);
-            return RedirectToPage("./Lockout");
         }
         else
         {
             _logger.LogWarning("Invalid authenticator code entered for user with ID '{UserId}'.", userId);
             await _auditLog.LogAsync(userId, "2FA_LOGIN_FAILED", $"ApplicationUser/{userId}", "Invalid 2FA verification passcode submitted.", ip);
-            ModelState.AddModelError(string.Empty, "Invalid verification passcode. Please check your authenticator app and try again.");
-            return Page();
         }
+        await _privacy.FinishAsync(started, HttpContext.RequestAborted);
+        ModelState.AddModelError(string.Empty, "Invalid verification passcode. Please check your authenticator app and try again.");
+        return Page();
     }
 }

@@ -1,0 +1,18 @@
+@page
+@model EmailModel
+@{ ViewData["Title"] = "Manage email"; }
+<h1 class="h3">Manage email</h1>
+@if (Model.StatusMessage is not null) { <p class="alert alert-info" role="status">@Model.StatusMessage</p> }
+<p>Current email: <strong>@Model.Email</strong></p>
+@if (!Model.IsEmailConfirmed)
+{
+    <form method="post" asp-page-handler="SendVerificationEmail"><button type="submit" class="btn btn-outline-drmc">Send verification email</button></form>
+}
+<form method="post" asp-page-handler="ChangeEmail" class="mt-3">
+    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+    <label asp-for="Input.NewEmail" class="form-label"></label>
+    <input asp-for="Input.NewEmail" class="form-control" autocomplete="email" maxlength="256" />
+    <span asp-validation-for="Input.NewEmail" class="text-danger"></span>
+    <button type="submit" class="btn btn-drmc mt-3">Change email</button>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

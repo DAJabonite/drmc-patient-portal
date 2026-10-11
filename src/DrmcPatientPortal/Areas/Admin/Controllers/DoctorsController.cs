@@ -3,6 +3,7 @@ using DrmcPatientPortal.Areas.Admin.Models;
 using DrmcPatientPortal.Areas.Admin.Services;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,16 +21,16 @@ public sealed class DoctorsController(ApplicationDbContext db, AdminWrites write
         if (!string.IsNullOrEmpty(search)) query = query.Where(d =>
             EF.Functions.Collate(d.FullName, "Latin1_General_100_CI_AS").Contains(search) ||
             EF.Functions.Collate(d.Department, "Latin1_General_100_CI_AS").Contains(search));
-        var total = await query.CountAsync(cancellationToken);
+        var total = await SqlReadRetry.RunAsync(db, () => query.CountAsync(cancellationToken), cancellationToken);
         page = Math.Clamp(page, 1, Math.Max(1, (total + 24) / 25));
-        return View(new DoctorList(await query.OrderBy(d => d.FullName).ThenBy(d => d.Id)
-            .Skip((page - 1) * 25).Take(25).ToListAsync(cancellationToken), search, page, total));
+        return View(new DoctorList(await SqlReadRetry.RunAsync(db, () => query.OrderBy(d => d.FullName).ThenBy(d => d.Id)
+            .Skip((page - 1) * 25).Take(25).ToListAsync(cancellationToken), cancellationToken), search, page, total));
     }
 
     [HttpGet]
     public async Task<IActionResult> Details([FromRoute] int id, CancellationToken cancellationToken)
     {
-        var doctor = await db.Doctors.AsNoTracking().SingleOrDefaultAsync(d => d.Id == id, cancellationToken);
+        var doctor = await SqlReadRetry.RunAsync(db, () => db.Doctors.AsNoTracking().SingleOrDefaultAsync(d => d.Id == id, cancellationToken), cancellationToken);
         return doctor is null ? NotFound() : View(doctor);
     }
 

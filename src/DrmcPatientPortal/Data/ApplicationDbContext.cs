@@ -25,6 +25,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PatientIdDocument> PatientIdDocuments => Set<PatientIdDocument>();
     public DbSet<PatientRegistrationCode> PatientRegistrationCodes => Set<PatientRegistrationCode>();
     public DbSet<StaffInvitation> StaffInvitations => Set<StaffInvitation>();
+    public DbSet<PortalSession> PortalSessions => Set<PortalSession>();
+    public DbSet<AuthenticatorConsumption> AuthenticatorConsumptions => Set<AuthenticatorConsumption>();
+    public DbSet<AccountEmail> AccountEmails => Set<AccountEmail>();
 
     private void GuardAuditHistory()
     {
@@ -50,6 +53,31 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     {
         base.OnModelCreating(builder);
         builder.UseCollation("Latin1_General_100_BIN2");
+
+        builder.Entity<PortalSession>(e =>
+        {
+            e.Property(x => x.Id).HasMaxLength(64).ValueGeneratedNever();
+            e.Property(x => x.UserId).HasMaxLength(450);
+            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.ExpiresUtc);
+        });
+        builder.Entity<AuthenticatorConsumption>(e =>
+        {
+            e.HasKey(x => new { x.UserId, x.KeyFingerprint, x.TimeStep }).IsClustered(false);
+            e.Property(x => x.UserId).HasMaxLength(450);
+            e.Property(x => x.KeyFingerprint).HasMaxLength(64);
+            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.ExpiresUtc);
+        });
+        builder.Entity<AccountEmail>(e =>
+        {
+            e.Property(x => x.Id).ValueGeneratedNever();
+            e.Property(x => x.UserId).HasMaxLength(450);
+            e.Property(x => x.LeaseOwner).HasMaxLength(64);
+            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.Status, x.NextAttemptUtc });
+            e.HasIndex(x => x.CompletedUtc);
+        });
 
         builder.Entity<ImportBatch>(e =>
         {
@@ -122,6 +150,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.Property(x => x.InvitedByEmail).HasMaxLength(256);
             e.Property(x => x.AcceptedByUserId).HasMaxLength(450);
             e.HasIndex(x => x.AcceptedByUserId);
+            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.AcceptedByUserId).OnDelete(DeleteBehavior.SetNull);
         });
 
         builder.Entity<Doctor>(e =>

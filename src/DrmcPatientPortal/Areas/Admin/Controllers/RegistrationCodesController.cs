@@ -15,7 +15,7 @@ namespace DrmcPatientPortal.Areas.Admin.Controllers;
 // number in lists; birth date appears on the issue form so it can be checked against the ID.
 [Area("Admin")]
 public sealed class RegistrationCodesController(ApplicationDbContext db, AdminWrites writes, IQrCodeService qr,
-    IOptions<PatientRegistrationOptions> options) : Controller
+    IOptions<PatientRegistrationOptions> options, AccountLinks links) : Controller
 {
     private const string Entity = "RegistrationCodes";
 
@@ -28,10 +28,10 @@ public sealed class RegistrationCodesController(ApplicationDbContext db, AdminWr
             EF.Functions.Collate(c.PatientRecord.FullName, "Latin1_General_100_CI_AS").Contains(search) ||
             c.PatientRecord.HospitalNumber != null && EF.Functions.Collate(c.PatientRecord.HospitalNumber, "Latin1_General_100_CI_AS").Contains(search) ||
             c.CodeHint == search.ToUpper());
-        var total = await query.CountAsync(cancellationToken);
+        var total = await SqlReadRetry.RunAsync(db, () => query.CountAsync(cancellationToken), cancellationToken);
         page = Math.Clamp(page, 1, Math.Max(1, (total + 24) / 25));
-        var codes = await query.OrderByDescending(c => c.Id).Skip((page - 1) * 25).Take(25)
-            .Select(c => new { Code = c, c.PatientRecord.FullName, c.PatientRecord.HospitalNumber }).ToListAsync(cancellationToken);
+        var codes = await SqlReadRetry.RunAsync(db, () => query.OrderByDescending(c => c.Id).Skip((page - 1) * 25).Take(25)
+            .Select(c => new { Code = c, c.PatientRecord.FullName, c.PatientRecord.HospitalNumber }).ToListAsync(cancellationToken), cancellationToken);
         await AdminAudit.ViewAsync(db, User, Entity, codes.Select(c => c.Code.PatientRecordId).Distinct(), "Index", cancellationToken);
         var now = DateTime.UtcNow;
         var rows = codes.Select(c => new RegistrationCodeRow(c.Code.Id, c.Code.PatientRecordId, c.FullName, c.HospitalNumber, c.Code.CodeHint,
@@ -100,7 +100,7 @@ public sealed class RegistrationCodesController(ApplicationDbContext db, AdminWr
         }
 
         Response.Headers.CacheControl = "no-store";
-        var registerUrl = Url.Page("/Account/Register", pageHandler: null, values: new { area = "Identity" }, protocol: Request.Scheme)!;
+        var registerUrl = links.Page(HttpContext, "/Account/Register", new { area = "Identity" });
         var signupUrl = HospitalRecordCodes.SignupUrl(registerUrl, code!);
         return View("Issued", new RegistrationCodeSlip(new(patient, "Hospital record code", patient.Id), code!, signupUrl,
             qr.GenerateSvgQrCode(signupUrl), input.IssuingPoint, Local(expires)));

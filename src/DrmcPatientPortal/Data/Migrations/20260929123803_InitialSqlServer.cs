@@ -16,7 +16,7 @@ namespace DrmcPatientPortal.Data.Migrations
             migrationBuilder.Sql("""
                 IF CONVERT(nvarchar(128), DATABASEPROPERTYEX(DB_NAME(), 'Collation')) <> N'Latin1_General_100_BIN2'
                     THROW 51000, 'Create the target database with Latin1_General_100_BIN2 before applying this baseline.', 1;
-                """, suppressTransaction: true);
+                """);
 
             migrationBuilder.CreateTable(
                 name: "AspNetRoles",

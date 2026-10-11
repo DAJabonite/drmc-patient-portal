@@ -20,7 +20,7 @@
                 <div class="encounter-department-field">
                     <label for="encounterDepartmentFilter" class="form-label small fw-semibold text-dark mb-1 encounter-filter-label">Visit type</label>
                     <select id="encounterDepartmentFilter" name="department" class="form-select" aria-label="Filter visits by type">
-                        <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedType))">@Loc["Enc_AllTypes"] (@Model.Encounters.Count)</option>
+                        <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedType))">@Loc["Enc_AllTypes"] (@Model.TotalCount)</option>
                         <option value="OPD" selected="@(Model.SelectedType == "OPD")">@Loc["Enc_TypeOpd"]</option>
                         <option value="Emergency" selected="@(Model.SelectedType == "Emergency")">@Loc["Enc_TypeEmergencyRoom"]</option>
                         <option value="Inpatient" selected="@(Model.SelectedType == "Inpatient")">@Loc["Enc_TypeInpatient"]</option>

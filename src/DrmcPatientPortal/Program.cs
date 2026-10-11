@@ -13,6 +13,10 @@ using DrmcPatientPortal.Areas.Admin.Security;
 using DrmcPatientPortal.Areas.Admin.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Options;
+using Microsoft.Data.SqlClient;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +26,40 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddOptions<PortalOptions>().Bind(builder.Configuration.GetSection("Portal")).ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<PortalOptions>, PortalOptionsValidator>();
+builder.Services.AddSingleton<AccountLinks>();
+builder.Services.AddOptions<AccountPrivacyOptions>().Bind(builder.Configuration.GetSection("AccountPrivacy"))
+    .Validate(x => x.MinimumResponseMilliseconds is >= 250 and <= 10000, "Account response duration must be 250–10000 ms.").ValidateOnStart();
+builder.Services.AddSingleton<AccountPrivacy>();
+builder.Services.AddOptions<AccountEmailOptions>().Bind(builder.Configuration.GetSection("AccountEmail"))
+    .Validate(x => x.MaximumAttempts is >= 1 and <= 10 && x.LifetimeMinutes is >= 1 and <= 1440 && x.RetentionDays is >= 1 and <= 30,
+        "Account email retry, expiry, or retention settings are outside the supported bounds.").ValidateOnStart();
+builder.Services.AddSingleton<IAccountEmailQueue, AccountEmailQueue>();
+builder.Services.AddSingleton<AccountEmailDispatcher>();
+builder.Services.AddOptions<PortalRateLimitOptions>().Bind(builder.Configuration.GetSection("RateLimits"))
+    .Validate(x => x.AuthenticationPerIp > 0 && x.AuthenticationPerAccount > 0 && x.EmailPerIp > 0 && x.EmailPerAccount > 0 &&
+        x.ScansPerIp > 0 && x.ConcurrentScans > 0 && x.PdfPerUser > 0, "All rate limits must be positive.").ValidateOnStart();
+builder.Services.AddSingleton<PortalRequestLimiter>();
+builder.Services.AddSingleton<PortalSessionStore>();
+builder.Services.AddScoped<PortalCookieEvents>();
+builder.Services.Configure<OcrOptions>(builder.Configuration.GetSection("Ocr"));
+builder.Services.AddSingleton<OcrRuntime>();
+builder.Services.AddHostedService(services => services.GetRequiredService<OcrRuntime>());
+builder.Services.AddHostedService<AccountEmailWorker>();
+
+var trustedProxies = builder.Configuration.GetSection("Proxy:KnownProxies").Get<string[]>() ?? [];
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        // Also constrain forwarding middleware installed by the host or environment settings.
+        options.ForwardedHeaders = trustedProxies.Length > 0
+            ? ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto : ForwardedHeaders.None;
+        options.ForwardLimit = 1;
+        options.KnownProxies.Clear();
+        options.KnownIPNetworks.Clear();
+        foreach (var address in trustedProxies) options.KnownProxies.Add(IPAddress.Parse(address));
+    });
 
 // Localization: Trilingual support for English (en), Filipino (fil), and Cebuano (ceb)
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
@@ -39,27 +77,21 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     options.Password.RequireUppercase = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireDigit = true;
-    options.Tokens.AuthenticatorTokenProvider = TokenOptions.DefaultAuthenticatorProvider;
+    options.Tokens.AuthenticatorTokenProvider = SingleUseAuthenticatorProvider.ProviderName;
     options.Lockout.AllowedForNewUsers = true;
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
 })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddUserStore<ResilientUserStore>()
+    .AddRoleStore<ResilientRoleStore>()
+    .AddTokenProvider<SingleUseAuthenticatorProvider>(SingleUseAuthenticatorProvider.ProviderName)
     .AddUserValidator<UserTextLengthValidator>();
 
 builder.Services.Configure<SecurityStampValidatorOptions>(options =>
 {
-    options.OnRefreshingPrincipal = context =>
-    {
-        // Refresh only carries proof from an already authenticated MFA ticket, never user settings.
-        if (context.CurrentPrincipal is { } current && context.NewPrincipal is { } refreshed &&
-            current.HasClaim("amr", "mfa") && current.FindFirstValue(ClaimTypes.NameIdentifier) is { Length: > 0 } userId &&
-            userId == refreshed.FindFirstValue(ClaimTypes.NameIdentifier) &&
-            refreshed.Identity is ClaimsIdentity identity && !refreshed.HasClaim("amr", "mfa"))
-            identity.AddClaim(new Claim("amr", "mfa"));
-        return Task.CompletedTask;
-    };
+    options.OnRefreshingPrincipal = PortalCookieEvents.PreserveClaims;
 });
 
 builder.Services.ConfigureApplicationCookie(options =>
@@ -69,17 +101,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
         ? CookieSecurePolicy.SameAsRequest
         : CookieSecurePolicy.Always;
-    options.Events.OnRedirectToLogin = context =>
-    {
-        context.Response.Redirect(context.RedirectUri);
-        return Task.CompletedTask;
-    };
-    options.Events.OnRedirectToAccessDenied = context =>
-    {
-        if (context.Request.Path.StartsWithSegments("/Admin")) return AdminAuthorizationResultHandler.DenyAsync(context.HttpContext);
-        context.Response.Redirect(context.RedirectUri);
-        return Task.CompletedTask;
-    };
+    options.EventsType = typeof(PortalCookieEvents);
 });
 
 if (builder.Environment.IsDevelopment())
@@ -179,6 +201,7 @@ builder.Services.AddRazorPages(options =>
 });
 
 var app = builder.Build();
+if (trustedProxies.Length > 0) app.UseForwardedHeaders();
 if (!protectKeysWithDpapi && !app.Environment.IsDevelopment())
     app.Logger.LogWarning("Data Protection keys are unprotected at rest. See the README Key Protection and Recovery section to choose and configure key protection before deployment.");
 await AdminBootstrap.InitializeAsync(app.Services, app.Configuration);
@@ -224,6 +247,14 @@ app.Use(async (context, next) =>
     {
         context.Response.Redirect("/Home/ServiceUnavailable");
     }
+    catch (Exception error) when (!context.Response.HasStarted &&
+        (error is SqlException or Microsoft.EntityFrameworkCore.Storage.RetryLimitExceededException || error.InnerException is SqlException))
+    {
+        app.Logger.LogError("Database request failed ({FailureType}).", error.GetType().Name);
+        context.Response.Clear();
+        context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+        await context.Response.WriteAsync("The service is temporarily unavailable. Please try again later.");
+    }
 });
 app.Use(async (context, next) =>
 {
@@ -254,6 +285,7 @@ app.UseRequestLocalization(localizationOptions);
 app.UseSession();
 
 app.UseAuthentication();
+app.UseMiddleware<PortalRequestControls>();
 app.UseAuthorization();
 
 app.MapStaticAssets();

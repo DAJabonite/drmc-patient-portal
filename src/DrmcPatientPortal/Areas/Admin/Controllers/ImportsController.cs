@@ -16,9 +16,9 @@ public sealed class ImportsController(ApplicationDbContext db, ImportStaging sta
     [HttpGet]
     public async Task<IActionResult> Index(int page = 1, CancellationToken cancellationToken = default)
     {
-        var total = await db.ImportBatches.CountAsync(cancellationToken);
+        var total = await SqlReadRetry.RunAsync(db, () => db.ImportBatches.CountAsync(cancellationToken), cancellationToken);
         page = Math.Clamp(page, 1, Math.Max(1, (total + 24) / 25));
-        var rows = await db.ImportBatches.AsNoTracking().OrderByDescending(batch => batch.CreatedAtUtc).ThenBy(batch => batch.Id).Skip((page - 1) * 25).Take(25).ToListAsync(cancellationToken);
+        var rows = await SqlReadRetry.RunAsync(db, () => db.ImportBatches.AsNoTracking().OrderByDescending(batch => batch.CreatedAtUtc).ThenBy(batch => batch.Id).Skip((page - 1) * 25).Take(25).ToListAsync(cancellationToken), cancellationToken);
         ViewData["ImportStatuses"] = await ImportStatusDisplay.LoadAsync(rows, staging, cancellationToken);
         return View(new ImportIndex(rows, page, total));
     }

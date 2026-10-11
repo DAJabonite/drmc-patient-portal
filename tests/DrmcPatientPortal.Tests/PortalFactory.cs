@@ -43,6 +43,9 @@ public sealed class PortalFactory : WebApplicationFactory<Program>, IAsyncLifeti
         builder.UseSetting("PatientDocuments:RootPath", Path.Combine(_storageRoot, "documents"));
         builder.UseSetting("PatientDocuments:TemporaryPath", Path.Combine(_storageRoot, "uploads"));
         builder.UseSetting("LabReports:RootPath", Path.Combine(_storageRoot, "reports"));
+        builder.UseSetting("AccountEmail:WorkerEnabled", "false");
+        foreach (var setting in new[] { "AuthenticationPerIp", "AuthenticationPerAccount", "EmailPerIp", "EmailPerAccount", "ScansPerIp", "PdfPerUser" })
+            builder.UseSetting("RateLimits:" + setting, "100000");
     }
 
     public HttpClient CreatePortalClient() => CreateClient(new WebApplicationFactoryClientOptions

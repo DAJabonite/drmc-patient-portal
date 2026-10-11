@@ -28,7 +28,7 @@ public class MyIdsModel : PageModel
 
     public IReadOnlyList<IdCardViewModel> Documents { get; private set; } = Array.Empty<IdCardViewModel>();
 
-    public async Task<IActionResult> OnGetAsync()
+    public async Task<IActionResult> OnGetAsync(int idPage = 1)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
@@ -36,10 +36,14 @@ public class MyIdsModel : PageModel
             return Challenge();
         }
 
-        Documents = await _db.PatientIdDocuments
+        var query = _db.PatientIdDocuments.Where(document => document.PatientUserId == user.Id);
+        var pagination = await PortalPagination.CreateAsync(query, _db, idPage, "idPage");
+        ViewData["Pagination"] = pagination;
+        Documents = await SqlReadRetry.RunAsync(_db, () => query
             .AsNoTracking()
             .Where(document => document.PatientUserId == user.Id)
             .OrderByDescending(document => document.CapturedAt)
+            .ThenByDescending(document => document.Id).Skip(pagination.Offset).Take(PortalPagination.Size)
             .Select(document => new IdCardViewModel
             {
                 Id = document.Id,
@@ -50,9 +54,9 @@ public class MyIdsModel : PageModel
                 HasBackPhoto = document.BackPhotoFileName != null,
                 IsManualEntry = document.IsManualEntry
             })
-            .ToListAsync();
+            .ToListAsync());
 
-        if (Documents.Count == 0 && (!string.IsNullOrWhiteSpace(user.IdType) || !string.IsNullOrWhiteSpace(user.IdNumber)))
+        if (pagination.Total == 0 && (!string.IsNullOrWhiteSpace(user.IdType) || !string.IsNullOrWhiteSpace(user.IdNumber)))
         {
             Documents = new[]
             {
