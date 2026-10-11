@@ -53,7 +53,7 @@
                                 <p class="eyebrow mb-1">Clinical care</p>
                                 <h2 class="h6 fw-bold mb-0">Visits</h2>
                             </div>
-                            <span class="summary-count">@Model.Encounters.Count</span>
+                            <span class="summary-count">@Model.EncountersCount</span>
                         </div>
                         @if (Model.Encounters.Count > 0)
                         {
@@ -83,7 +83,7 @@
                                 <p class="eyebrow mb-1">Latest updates</p>
                                 <h2 class="h6 fw-bold mb-0">Lab results</h2>
                             </div>
-                            <span class="summary-count">@Model.LabResults.Count</span>
+                            <span class="summary-count">@Model.LabResultsCount</span>
                         </div>
 
                         @if (Model.LabResults.Count > 0)

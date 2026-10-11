@@ -336,10 +336,15 @@ $(function () {
                 body: formData
             });
 
-            if (!response.ok) throw new Error('ID extraction request failed.');
-            const data = await response.json();
+            const data = await response.json().catch(() => ({}));
             ocrProcessingState.classList.add('d-none');
             btnTriggerOcr.disabled = false;
+            if (!response.ok) {
+                autofillNotice.classList.add('d-none');
+                updateProgress(2);
+                showFeedback(2, data.message || 'ID scanning is unavailable. Please try again later.');
+                return;
+            }
 
             if (data.tempFrontToken) {
                 document.getElementById('tempFrontToken').value = data.tempFrontToken;

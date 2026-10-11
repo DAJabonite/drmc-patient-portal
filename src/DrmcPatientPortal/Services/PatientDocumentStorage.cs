@@ -180,6 +180,10 @@ public sealed class PatientDocumentStorage : IPatientDocumentStorage
             using var pix = Pix.LoadFromMemory(bytes);
             if (pix.Width <= 0 || pix.Height <= 0) throw new InvalidDataException("Image dimensions are invalid.");
         }
+        catch (Exception ex) when (OcrRuntime.IsDependencyFailure(ex))
+        {
+            throw new OcrDependencyUnavailableException("Image validation is temporarily unavailable. Please try again later.", ex);
+        }
         catch (Exception ex) when (ex is not InvalidDataException)
         {
             throw new InvalidDataException("The uploaded file is not a valid JPEG or PNG image.", ex);

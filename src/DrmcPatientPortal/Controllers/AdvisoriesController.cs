@@ -1,5 +1,6 @@
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,7 +16,7 @@ public class AdvisoriesController : Controller
     }
 
     // GET /Advisories
-    public async Task<IActionResult> Index(AdvisoryCategory? category, string? search)
+    public async Task<IActionResult> Index(AdvisoryCategory? category, string? search, int page = 1)
     {
         var query = _db.PublicAdvisories.AsQueryable();
 
@@ -31,19 +32,23 @@ public class AdvisoriesController : Controller
             query = query.Where(a => a.Title.ToLower().Contains(s) || a.Summary.ToLower().Contains(s));
         }
 
-        var advisories = await query
+        var pagination = await PortalPagination.CreateAsync(query, _db, page);
+        ViewData["Pagination"] = pagination;
+        var advisories = await SqlReadRetry.RunAsync(_db, () => query.AsNoTracking()
             .OrderByDescending(a => a.IsPinned)
             .ThenByDescending(a => a.PublishedAt)
-            .ToListAsync();
+            .ThenByDescending(a => a.Id).Skip(pagination.Offset).Take(PortalPagination.Size)
+            .ToListAsync());
 
-        var pinnedAlert = await _db.PublicAdvisories
-            .FirstOrDefaultAsync(a => a.IsPinned && a.Priority == AdvisoryPriority.Urgent);
+        var pinnedAlert = await SqlReadRetry.RunAsync(_db, () => _db.PublicAdvisories.OrderByDescending(a => a.PublishedAt).ThenByDescending(a => a.Id)
+            .FirstOrDefaultAsync(a => a.IsPinned && a.Priority == AdvisoryPriority.Urgent));
 
         var model = new AdvisoriesIndexViewModel
         {
             SelectedCategory = category,
             SearchTerm = search,
             Advisories = advisories,
+            TotalCount = pagination.Total,
             PinnedAlert = pinnedAlert
         };
 
@@ -60,8 +65,8 @@ public class AdvisoriesController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var advisory = await _db.PublicAdvisories
-            .FirstOrDefaultAsync(a => a.Slug == targetSlug);
+        var advisory = await SqlReadRetry.RunAsync(_db, () => _db.PublicAdvisories
+            .FirstOrDefaultAsync(a => a.Slug == targetSlug));
 
         if (advisory is null)
         {
@@ -73,11 +78,11 @@ public class AdvisoriesController : Controller
             .ExecuteUpdateAsync(setters => setters.SetProperty(a => a.ViewCount, a => a.ViewCount + 1));
         if (advisory.ViewCount < int.MaxValue) advisory.ViewCount++;
 
-        var related = await _db.PublicAdvisories
+        var related = await SqlReadRetry.RunAsync(_db, () => _db.PublicAdvisories
             .Where(a => a.Id != advisory.Id)
             .OrderByDescending(a => a.PublishedAt)
             .Take(3)
-            .ToListAsync();
+            .ToListAsync());
 
         var model = new AdvisoryDetailViewModel
         {
@@ -91,6 +96,7 @@ public class AdvisoriesController : Controller
 
 public class AdvisoriesIndexViewModel
 {
+    public int TotalCount { get; set; }
     public AdvisoryCategory? SelectedCategory { get; set; }
     public string? SearchTerm { get; set; }
     public IReadOnlyList<PublicAdvisory> Advisories { get; set; } = Array.Empty<PublicAdvisory>();

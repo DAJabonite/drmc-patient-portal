@@ -8,23 +8,15 @@ namespace DrmcPatientPortal.Services;
 public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
 {
     private readonly ILogger<TesseractIdDocumentExtractionService> _logger;
-    private readonly string _tessDataPath;
+    private readonly OcrRuntime _runtime;
 
     public TesseractIdDocumentExtractionService(
-        IWebHostEnvironment environment,
+        OcrRuntime runtime,
         ILogger<TesseractIdDocumentExtractionService> logger)
     {
         _logger = logger;
         
-        // Locate tessdata directory
-        string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-        string candidatePath = Path.Combine(baseDir, "tessdata");
-        if (!Directory.Exists(candidatePath))
-        {
-            candidatePath = Path.Combine(environment.ContentRootPath, "tessdata");
-        }
-        _tessDataPath = candidatePath;
-        _logger.LogInformation("TesseractIdDocumentExtractionService initialized with tessdata path: {Path}", _tessDataPath);
+        _runtime = runtime;
     }
 
     public async Task<IdExtractionResult> ExtractFromBytesAsync(string idType, byte[] frontImageBytes, byte[]? backImageBytes = null)
@@ -49,7 +41,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
 
             try
             {
-                using var engine = new TesseractEngine(_tessDataPath, "eng", EngineMode.Default);
+                using var engine = _runtime.CreateEngine();
                 
                 // Process Front Image
                 using (var pixFront = Pix.LoadFromMemory(frontImageBytes))
@@ -69,6 +61,10 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
                         backConfidence = pageBack.GetMeanConfidence();
                     }
                 }
+            }
+            catch (Exception ex) when (OcrRuntime.IsDependencyFailure(ex))
+            {
+                throw new OcrDependencyUnavailableException("ID scanning is temporarily unavailable. Please try again later.", ex);
             }
             catch (Exception ex)
             {

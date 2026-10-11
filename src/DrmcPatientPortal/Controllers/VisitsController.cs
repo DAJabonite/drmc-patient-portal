@@ -32,7 +32,7 @@ public class VisitsController : Controller
         string? department,
         string? dateRange,
         DateTime? startDate = null,
-        DateTime? endDate = null)
+        DateTime? endDate = null, int page = 1)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
@@ -97,9 +97,12 @@ public class VisitsController : Controller
             }
         }
 
-        var encounters = await query
+        var pagination = await PortalPagination.CreateAsync(query, _db, page);
+        ViewData["Pagination"] = pagination;
+        var encounters = await SqlReadRetry.RunAsync(_db, () => query.AsNoTracking()
             .OrderByDescending(e => e.EncounterDate)
-            .ToListAsync();
+            .ThenByDescending(e => e.Id).Skip(pagination.Offset).Take(PortalPagination.Size)
+            .ToListAsync());
 
         var model = new VisitsIndexViewModel
         {
@@ -108,6 +111,7 @@ public class VisitsController : Controller
             SelectedStartDate = startDate,
             SelectedEndDate = endDate,
             Encounters = encounters,
+            TotalCount = pagination.Total,
         };
 
         return View(model);
@@ -120,9 +124,9 @@ public class VisitsController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
 
-        var encounter = await _db.ClinicalEncounters
+        var encounter = await SqlReadRetry.RunAsync(_db, () => _db.ClinicalEncounters
             .Include(e => e.LabResults.Where(l => l.Patient.PortalUserId == user.Id))
-            .FirstOrDefaultAsync(e => e.Id == id && e.Patient.PortalUserId == user.Id);
+            .FirstOrDefaultAsync(e => e.Id == id && e.Patient.PortalUserId == user.Id));
 
         if (encounter is null)
         {
@@ -138,6 +142,7 @@ public class VisitsController : Controller
 
 public class VisitsIndexViewModel
 {
+    public int TotalCount { get; set; }
     public string? SelectedType { get; set; }
     public string? SelectedDateRange { get; set; }
     public DateTime? SelectedStartDate { get; set; }

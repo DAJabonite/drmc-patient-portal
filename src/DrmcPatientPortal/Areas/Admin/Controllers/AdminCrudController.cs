@@ -2,6 +2,7 @@ using System.Globalization;
 using DrmcPatientPortal.Areas.Admin.Models;
 using DrmcPatientPortal.Areas.Admin.Services;
 using DrmcPatientPortal.Data;
+using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -31,9 +32,9 @@ public abstract class AdminCrudController<TEntity, TInput>(ApplicationDbContext 
         if (search?.Length > 450) { ModelState.AddModelError(nameof(search), "Search must be at most 450 characters."); search = null; }
         var query = editor.Query(db, contextId);
         if (!string.IsNullOrEmpty(search)) query = editor.Search(query, search);
-        var total = await query.CountAsync(cancellationToken);
+        var total = await SqlReadRetry.RunAsync(db, () => query.CountAsync(cancellationToken), cancellationToken);
         page = Math.Clamp(page, 1, Math.Max(1, (total + 24) / 25));
-        var entities = await query.OrderByDescending(e => EF.Property<int>(e, "Id")).Skip((page - 1) * 25).Take(25).ToListAsync(cancellationToken);
+        var entities = await SqlReadRetry.RunAsync(db, () => query.OrderByDescending(e => EF.Property<int>(e, "Id")).Skip((page - 1) * 25).Take(25).ToListAsync(cancellationToken), cancellationToken);
         await ReadAudit(entities, "Index", cancellationToken);
         return View(Shared + "Index.cshtml", new AdminList(editor.Title, entities.Select(e => new AdminRow(
             AdminEntity<TEntity, TInput>.Id(db, e), editor.Label(db, e), editor.Summary(e), editor.PatientId(e))).ToArray(), search, page, total, contextId, context));
@@ -179,7 +180,7 @@ public abstract class AdminCrudController<TEntity, TInput>(ApplicationDbContext 
     protected virtual void RecordSaved() { }
 
     protected Task<TEntity?> Find(ApplicationDbContext database, int id, CancellationToken token) =>
-        editor.Query(database).SingleOrDefaultAsync(e => EF.Property<int>(e, "Id") == id, token);
+        SqlReadRetry.RunAsync(database, () => editor.Query(database).SingleOrDefaultAsync(e => EF.Property<int>(e, "Id") == id, token), token);
     private async Task ReadAudit(IEnumerable<TEntity> entities, string key, CancellationToken token)
     {
         if (editor.Clinical) await AdminAudit.ViewAsync(db, User, editor.Name,

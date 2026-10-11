@@ -23,6 +23,55 @@ namespace DrmcPatientPortal.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.AccountEmail", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("CompletedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("ExpiresUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("LeaseExpiresUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("LeaseOwner")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset>("NextAttemptUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<byte[]>("ProtectedPayload")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompletedUtc");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("Status", "NextAttemptUtc");
+
+                    b.ToTable("AccountEmails");
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.AdminAuditLog", b =>
                 {
                     b.Property<long>("Id")
@@ -231,6 +280,30 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("AuditLogs");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.AuthenticatorConsumption", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("KeyFingerprint")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<long>("TimeStep")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("ExpiresUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("UserId", "KeyFingerprint", "TimeStep")
+                        .HasAnnotation("SqlServer:Clustered", false);
+
+                    b.HasIndex("ExpiresUtc");
+
+                    b.ToTable("AuthenticatorConsumptions");
                 });
 
             modelBuilder.Entity("DrmcPatientPortal.Models.ClinicalEncounter", b =>
@@ -829,6 +902,32 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.ToTable("PatientRegistrationCodes");
                 });
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.PortalSession", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset>("ExpiresUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("RevokedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresUtc");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PortalSessions");
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.Prescription", b =>
                 {
                     b.Property<int>("Id")
@@ -1311,6 +1410,24 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.AccountEmail", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.AuthenticatorConsumption", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.ClinicalEncounter", b =>
                 {
                     b.HasOne("DrmcPatientPortal.Models.PatientRecord", "Patient")
@@ -1404,6 +1521,15 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Navigation("PatientRecord");
                 });
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.PortalSession", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.Prescription", b =>
                 {
                     b.HasOne("DrmcPatientPortal.Models.PatientRecord", "Patient")
@@ -1430,6 +1556,14 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Navigation("Encounter");
 
                     b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.StaffInvitation", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("AcceptedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

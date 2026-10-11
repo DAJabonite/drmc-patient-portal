@@ -40,7 +40,7 @@
             }
             <label for="advisoryCategoryFilter" class="form-label small fw-semibold text-dark mb-1">Filter bulletins by category</label>
             <select id="advisoryCategoryFilter" name="category" class="form-select" data-auto-submit>
-                <option value="" selected="@(!Model.SelectedCategory.HasValue)">All Bulletins (@Model.Advisories.Count)</option>
+                <option value="" selected="@(!Model.SelectedCategory.HasValue)">All Bulletins (@Model.TotalCount)</option>
                 <option value="@AdvisoryCategory.HealthAlert" selected="@(Model.SelectedCategory == AdvisoryCategory.HealthAlert)">Health Alerts</option>
                 <option value="@AdvisoryCategory.Vaccination" selected="@(Model.SelectedCategory == AdvisoryCategory.Vaccination)">Vaccination Drives</option>
                 <option value="@AdvisoryCategory.HospitalNotice" selected="@(Model.SelectedCategory == AdvisoryCategory.HospitalNotice)">Hospital Notices</option>
@@ -52,7 +52,7 @@
         <div class="desktop-filter-pills d-none d-md-flex align-items-center gap-1 overflow-x-auto pb-1" style="max-width: 100%;">
             <a asp-action="Index" asp-route-search="@Model.SearchTerm"
                class="btn btn-sm @(!Model.SelectedCategory.HasValue ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">
-                All Bulletins (@Model.Advisories.Count)
+                All Bulletins (@Model.TotalCount)
             </a>
             <a asp-action="Index" asp-route-category="@AdvisoryCategory.HealthAlert" asp-route-search="@Model.SearchTerm"
                class="btn btn-sm @(Model.SelectedCategory == AdvisoryCategory.HealthAlert ? "btn-primary-drmc text-white" : "btn-outline-secondary") rounded-pill px-3 fw-semibold text-nowrap">

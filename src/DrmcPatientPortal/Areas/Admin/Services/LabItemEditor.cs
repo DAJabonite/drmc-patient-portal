@@ -1,5 +1,6 @@
 using DrmcPatientPortal.Areas.Admin.Models;
 using DrmcPatientPortal.Data;
+using DrmcPatientPortal.Services;
 using DrmcPatientPortal.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -31,8 +32,8 @@ public sealed class LabItemEditor : AdminEntity<LabResultItem, LabItemInput>
         var query = db.LabResults.AsQueryable();
         if (!string.IsNullOrWhiteSpace(search)) query = query.Where(l => EF.Functions.Collate(l.AccessionNumber, "Latin1_General_100_CI_AS").Contains(search) ||
             EF.Functions.Collate(l.TestName, "Latin1_General_100_CI_AS").Contains(search));
-        var count = await query.CountAsync(token); page = Math.Clamp(page, 1, Math.Max(1, (count + 24) / 25));
-        var labs = await query.OrderByDescending(l => l.Id).Skip((page - 1) * 25).Take(25).ToListAsync(token);
+        var count = await SqlReadRetry.RunAsync(db, () => query.CountAsync(token), token); page = Math.Clamp(page, 1, Math.Max(1, (count + 24) / 25));
+        var labs = await SqlReadRetry.RunAsync(db, () => query.OrderByDescending(l => l.Id).Skip((page - 1) * 25).Take(25).ToListAsync(token), token);
         return new("Select laboratory", labs.Select(l => new AdminRow(l.Id, l.AccessionNumber, l.TestName + " | Patient #" + l.PatientRecordId, l.PatientRecordId)).ToArray(), search, page, count);
     }
     public override LabItemInput Input(ApplicationDbContext db, LabResultItem entity) => new()

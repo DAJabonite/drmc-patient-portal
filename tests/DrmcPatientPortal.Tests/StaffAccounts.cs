@@ -3,6 +3,10 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Data;
+using DrmcPatientPortal.Services;
+using Microsoft.EntityFrameworkCore;
+using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,6 +42,8 @@ internal static partial class StaffAccounts
     // Sessions are cached per host so one authenticator code is never replayed for the same account.
     public static Task<HttpClient> SignInAsync<T>(WebApplicationFactory<T> host, string email, params string[] roles) where T : class =>
         Sessions.GetOrAdd((host, email), _ => CreateSessionAsync(host, email, roles));
+    public static Task<HttpClient> SignInAgainAsync<T>(WebApplicationFactory<T> host, string email, params string[] roles) where T : class =>
+        CreateSessionAsync(host, email, roles);
 
     public static async Task<string> EnsureAccountAsync(IServiceProvider services, string email, bool twoFactor = true, params string[] roles)
     {
@@ -74,7 +80,7 @@ internal static partial class StaffAccounts
         var page = await client.GetStringAsync(login.Headers.Location!.OriginalString);
         var verify = await client.PostAsync(login.Headers.Location.OriginalString, new FormUrlEncodedContent(new Dictionary<string, string>
         {
-            ["Input.TwoFactorCode"] = Totp(key),
+            ["Input.TwoFactorCode"] = await FreshTotpAsync(host.Services, email, key),
             ["Input.RememberMachine"] = "false",
             ["__RequestVerificationToken"] = Token(page),
         }));
@@ -93,6 +99,19 @@ internal static partial class StaffAccounts
         var offset = hash[^1] & 0x0f;
         var code = ((hash[offset] & 0x7f) << 24 | hash[offset + 1] << 16 | hash[offset + 2] << 8 | hash[offset + 3]) % 1_000_000;
         return code.ToString("D6");
+    }
+
+    private static async Task<string> FreshTotpAsync(IServiceProvider services, string email, string key)
+    {
+        using var scope = services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var userId = await db.Users.Where(u => u.Email == email).Select(u => u.Id).SingleAsync();
+        var fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)));
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 30;
+        var used = await db.AuthenticatorConsumptions.Where(c => c.UserId == userId && c.KeyFingerprint == fingerprint)
+            .Select(c => c.TimeStep).ToListAsync();
+        var step = new[] { now, now - 1, now + 1, now - 2, now + 2 }.First(s => !used.Contains(s));
+        return SingleUseAuthenticatorProvider.Code(key, step);
     }
 
     public static async Task<HttpResponseMessage> PostFormAsync(this HttpClient client, string formPage, string action, IDictionary<string, string> fields)

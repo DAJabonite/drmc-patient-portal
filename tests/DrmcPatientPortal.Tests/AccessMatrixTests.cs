@@ -213,6 +213,8 @@ public sealed class AccessMatrixTests(PortalFactory factory)
         Assert.Equal(HttpStatusCode.Redirect, granted.StatusCode);
         var afterGrant = await Account(email);
         Assert.NotEqual(before.Security, afterGrant.Security);
+        Assert.Equal(HttpStatusCode.Redirect, (await candidate.GetAsync("/Admin/LabResults")).StatusCode);
+        candidate = await StaffAccounts.SignInAgainAsync(factory, email);
         Assert.Equal(HttpStatusCode.OK, (await candidate.GetAsync("/Admin/LabResults")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await candidate.GetAsync("/Admin/Patients")).StatusCode);
 
@@ -238,7 +240,7 @@ public sealed class AccessMatrixTests(PortalFactory factory)
 
         var revoked = await Update(before.Id, "LabStaff", false, afterGrant.Stamp);
         Assert.Equal(HttpStatusCode.Redirect, revoked.StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, (await candidate.GetAsync("/Admin/LabResults")).StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, (await candidate.GetAsync("/Admin/LabResults")).StatusCode);
 
         using (var scope = factory.Services.CreateScope())
         {

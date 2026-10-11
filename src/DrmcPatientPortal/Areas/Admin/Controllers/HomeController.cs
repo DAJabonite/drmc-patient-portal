@@ -2,6 +2,7 @@ using DrmcPatientPortal.Areas.Admin.Models;
 using DrmcPatientPortal.Areas.Admin.Security;
 using DrmcPatientPortal.Areas.Admin.Services;
 using DrmcPatientPortal.Data;
+using DrmcPatientPortal.Services;
 using DrmcPatientPortal.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -42,7 +43,7 @@ public sealed class HomeController(ApplicationDbContext db, AdminAccessScope sco
         };
         var counts = new Dictionary<string, int>();
         foreach (var (controller, count) in counters)
-            if (Can(controller)) counts[controller] = await count();
+            if (Can(controller)) counts[controller] = await SqlReadRetry.RunAsync(db, count, cancellationToken);
 
         var now = DrmcPatientPortal.Services.ClinicalClock.WallTime(DateTimeOffset.UtcNow);
         var utcNow = DateTime.UtcNow;
@@ -65,13 +66,13 @@ public sealed class HomeController(ApplicationDbContext db, AdminAccessScope sco
         };
         var attention = new List<AdminMetric>();
         foreach (var (controller, build) in metrics)
-            if (Can(controller)) attention.Add(await build());
+            if (Can(controller)) attention.Add(await SqlReadRetry.RunAsync(db, build, cancellationToken));
 
         var recentAudit = Can("Audit")
-            ? await db.AdminAuditLogs.AsNoTracking().OrderByDescending(a => a.TimestampUtc).Take(6).ToListAsync(cancellationToken)
+            ? await SqlReadRetry.RunAsync(db, () => db.AdminAuditLogs.AsNoTracking().OrderByDescending(a => a.TimestampUtc).Take(6).ToListAsync(cancellationToken), cancellationToken)
             : [];
         var recentImports = Can("Imports")
-            ? await db.ImportBatches.AsNoTracking().OrderByDescending(b => b.CreatedAtUtc).Take(5).ToListAsync(cancellationToken)
+            ? await SqlReadRetry.RunAsync(db, () => db.ImportBatches.AsNoTracking().OrderByDescending(b => b.CreatedAtUtc).Take(5).ToListAsync(cancellationToken), cancellationToken)
             : [];
         ViewData["ImportStatuses"] = await ImportStatusDisplay.LoadAsync(recentImports, staging, cancellationToken);
         return View(new AdminDashboard(AdminNavigation.For(roles), attention, counts, recentAudit, recentImports));

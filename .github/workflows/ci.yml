@@ -10,11 +10,14 @@ permissions:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
       DOTNET_NOLOGO: "1"
       SA_PASSWORD: Ci#Throwaway-${{ github.run_id }}
+      Ocr__NativeLibraryPath: /opt/drmc/ocr
+      Ocr__TessDataPath: /usr/share/tesseract-ocr/5/tessdata
+      LD_LIBRARY_PATH: /opt/drmc/ocr/x64
     services:
       sqlserver:
         image: mcr.microsoft.com/mssql/server:2022-latest
@@ -36,6 +39,10 @@ jobs:
           dotnet-version: 10.0.x
       - name: Restore
         run: dotnet restore DrmcPatientPortal.slnx
+      - name: Install native OCR runtime (idempotent)
+        run: |
+          sudo bash scripts/setup-ocr-ubuntu.sh
+          sudo bash scripts/setup-ocr-ubuntu.sh
       - name: Build
         run: dotnet build DrmcPatientPortal.slnx -c Release --no-restore -warnaserror
       - name: Check for missing migrations

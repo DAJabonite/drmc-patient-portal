@@ -2,6 +2,7 @@ using DrmcPatientPortal.Areas.Admin.Models;
 using DrmcPatientPortal.Areas.Admin.Security;
 using DrmcPatientPortal.Areas.Admin.Services;
 using DrmcPatientPortal.Data;
+using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -24,14 +25,14 @@ public sealed class StaffAccessController(ApplicationDbContext db, AdminWrites w
         if (!string.IsNullOrEmpty(search)) query = query.Where(u =>
             u.Email != null && EF.Functions.Collate(u.Email, "Latin1_General_100_CI_AS").Contains(search) ||
             EF.Functions.Collate(u.FullName, "Latin1_General_100_CI_AS").Contains(search));
-        var total = await query.CountAsync(cancellationToken);
+        var total = await SqlReadRetry.RunAsync(db, () => query.CountAsync(cancellationToken), cancellationToken);
         page = Math.Clamp(page, 1, Math.Max(1, (total + 24) / 25));
         var now = DateTimeOffset.UtcNow;
-        var users = await query.OrderBy(u => u.Email).ThenBy(u => u.Id).Skip((page - 1) * 25).Take(25)
-            .Select(u => new { u.Id, u.Email, u.FullName, u.EmailConfirmed, u.TwoFactorEnabled, u.LockoutEnd, u.ConcurrencyStamp }).ToListAsync(cancellationToken);
+        var users = await SqlReadRetry.RunAsync(db, () => query.OrderBy(u => u.Email).ThenBy(u => u.Id).Skip((page - 1) * 25).Take(25)
+            .Select(u => new { u.Id, u.Email, u.FullName, u.EmailConfirmed, u.TwoFactorEnabled, u.LockoutEnd, u.ConcurrencyStamp }).ToListAsync(cancellationToken), cancellationToken);
         var ids = users.Select(u => u.Id).ToArray();
-        var memberships = await (from ur in db.UserRoles join r in db.Roles on ur.RoleId equals r.Id
-                                 where ids.Contains(ur.UserId) && StaffRoles.All.Contains(r.Name!) select new { ur.UserId, r.Name }).ToListAsync(cancellationToken);
+        var memberships = await SqlReadRetry.RunAsync(db, () => (from ur in db.UserRoles join r in db.Roles on ur.RoleId equals r.Id
+                                 where ids.Contains(ur.UserId) && StaffRoles.All.Contains(r.Name!) select new { ur.UserId, r.Name }).ToListAsync(cancellationToken), cancellationToken);
         var rows = users.Select(u => new StaffAccountRow(u.Id, u.Email ?? "", u.FullName, u.EmailConfirmed, u.TwoFactorEnabled, u.LockoutEnd > now,
             memberships.Where(m => m.UserId == u.Id).Select(m => m.Name!).OrderBy(n => n).ToArray(), u.ConcurrencyStamp ?? "")).ToArray();
         return View(new StaffAccessPage(rows, search, all, page, total));

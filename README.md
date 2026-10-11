@@ -144,7 +144,7 @@ SELECT COUNT(*) AS AccountCount FROM dbo.AspNetUsers;
 SELECT COUNT(*) AS PatientRecordCount FROM dbo.PatientRecords;
 ```
 
-This version has eight migrations, ending in `20261007035528_AddStaffInvitations`. A fresh installation has zero accounts and hospital patient records. Starting the app does not automatically apply migrations or seed demo data when fixtures are disabled.
+This version has **11 migrations**, ending in `20261011093226_AddPortalSecurityState`. A fresh installation has zero accounts and hospital patient records. Starting the app does not automatically apply migrations or seed demo data when fixtures are disabled.
 
 ### 5. Start the portal
 
@@ -201,6 +201,21 @@ The container binds to `127.0.0.1` only and keeps data in the `drmc-sqlserver` v
 | `PatientRegistration__CodeLifetimeDays` | How long a hospital record code stays valid; default `7`, limited to 1–30 days |
 | `StaffInvitations__LifetimeDays` | How long an unused staff invitation stays valid; default `3`, limited to 1–14 days |
 | `Identity__RequireConfirmedAccount` | Require a confirmed email before sign-in; default `true`. In Development the confirmation link is written to the console |
+| `Portal__PublicOrigin` | Required HTTPS origin in Production, such as `https://portal.example.org`; select the real domain before deployment. All account, staff invitation and hospital registration links use this origin |
+| `AllowedHosts` | Explicit semicolon-separated hostnames including the public origin host; Production rejects wildcards. Tracked defaults permit local development only |
+| `Proxy__KnownProxies__0` (and subsequent indexes) | IP addresses of trusted immediate reverse proxies. Only their forwarded client address and scheme are honored; forwarded hostnames are ignored |
+| `LabReports__RootPath` | Private encrypted PDF directory; default `App_Data/LabReports`; fixed PDF limit 10 MB |
+| `Ocr__NativeLibraryPath` | Native OCR library root containing an `x64` subdirectory; Windows normally uses the bundled native DLLs |
+| `Ocr__TessDataPath` | Directory containing `eng.traineddata`; default published `tessdata` or content-root `tessdata` |
+| `AccountPrivacy__MinimumResponseMilliseconds` | Minimum failed sign-in/reset/resend duration; default 250 ms, supported range 250–10000 |
+| `AccountEmail__MaximumAttempts` | Delivery attempts, default 5 (1–10) |
+| `AccountEmail__LifetimeMinutes` | Queued message expiry, default 60 (1–1440) |
+| `AccountEmail__RetentionDays` | Completed delivery metadata retention, default 7 (1–30) |
+| `AccountEmail__WorkerEnabled` | Default `true`; disable only in tests or when another new-build process runs the worker |
+| `RateLimits__AuthenticationPerIp` / `AuthenticationPerAccount` | Sign-in/verification limits per minute; defaults 60/IP and 10/account-plus-IP |
+| `RateLimits__EmailPerIp` / `EmailPerAccount` | Reset/resend limits per 15 minutes; defaults 20/IP and 3/account-plus-IP |
+| `RateLimits__ScansPerIp` / `ConcurrentScans` | Defaults 5 scans/minute/IP and 2 simultaneous scans/process |
+| `RateLimits__PdfPerUser` | PDF password verification requests per minute; default 10/user |
 
 Relative storage paths resolve from the application content root. Restrict directory permissions to the app identity and approved operators. Retain the key ring across releases and back it up together with patient documents and the database.
 
@@ -215,8 +230,42 @@ Back up the database before applying or reversing migrations. New migrations are
 5. `20261006024312_AddRadiologyStudies`: adds the `RadiologyStudies` table (unique accession number ignoring case, owning patient record, optional encounter, concurrency token). No existing rows are changed. Downgrade is blocked when radiology studies exist.
 6. `20261006164919_AddPatientRegistrationCodes`: adds the `PatientRegistrationCodes` table (owning patient record with cascade delete, unique SHA-256 code hash, 5-character hint, issuing point, issuer, issue, expiry, redemption and revocation times, concurrency token). No existing rows are changed. Downgrade is blocked when codes exist.
 7. `20261007035528_AddStaffInvitations`: adds the `StaffInvitations` table (invited email and normalized email, staff role, unique SHA-256 code hash, 5-character hint, inviting Admin, creation, expiry, acceptance, role-grant and revocation times, accepting account, concurrency token). No existing rows are changed. Downgrade is blocked when invitations exist.
+8. `20261007153732_AddLabReportAttachments`: adds encrypted PDF attachment metadata to laboratory results.
+9. `20261007160128_AddPrescriptionAdministrationRoute`: adds the optional prescription administration route.
+10. `20261011093226_AddPortalSecurityState`: adds revocable authentication sessions, unique authenticator-code consumption records and an encrypted account-email queue. Repairs orphan invitation acceptance references, then adds an accepting-account foreign key with `ON DELETE SET NULL`; invitation history and acceptance timestamps remain intact.
 
 The initial SQL Server migration is `20260929123803_InitialSqlServer`. During upgrade, drain and stop older builds, apply migrations, then run only the new build. Older workers cannot respect the lease protocol.
+
+The initial migration's read-only collation check participates in its schema transaction. An interrupted fresh installation rolls back and can be migrated again. For an installation partially initialized by an older build, stop the app, back up and inspect both schema and `__EFMigrationsHistory`. Restore a known complete backup, or have the migration operator reconcile the partial schema against the initial migration before retrying. For a verified empty, disposable installation, the operator may recreate the database. The app never automatically drops partial tables or patient data.
+
+### Linux OCR setup
+
+Supported Linux runtime: Ubuntu 24.04 x64. Run the idempotent setup script before starting the app:
+
+```bash
+sudo bash scripts/setup-ocr-ubuntu.sh /opt/drmc/ocr
+export Ocr__NativeLibraryPath=/opt/drmc/ocr
+export Ocr__TessDataPath=/usr/share/tesseract-ocr/5/tessdata
+export LD_LIBRARY_PATH=/opt/drmc/ocr/x64
+```
+
+For systemd, place those three values in the service's environment file. The script installs distro-managed Tesseract/Leptonica and English language data and creates app-local wrapper-compatible names under `x64`; see the [wrapper's native library loader](https://github.com/charlesw/tesseract/blob/master/src/Tesseract/Internal/InteropDotNet/LibraryLoader.cs). Do not overwrite system libraries. The application initializes the engine and processes synthetic JPEG and PNG probes before accepting requests. Missing libraries or language data stop startup with actionable diagnostics. Runtime dependency failures return 503; malformed images return 400. A valid image with unreadable text still permits manual entry.
+
+### Authentication and request controls
+
+Authentication cookies contain an opaque session identifier. Every authenticated request performs an indexed SQL session/user-stamp check. Sign-out commits revocation of that browser's session before success, including copied-cookie replay; other browsers remain signed in. Password changes rotate the initiating browser's session and invalidate other sessions on their next request. Password resets invalidate all older sessions. Sliding renewal updates an existing active session and cannot recreate a revoked session. Existing cookies from older builds require a fresh sign-in. Verified MFA survives principal refresh; authenticator sign-in codes are consumed atomically, including Identity's two adjacent time steps in each direction. Enrollment verification remains separate.
+
+Unknown, incorrect-password, locked and unconfirmed sign-ins show the same failure message and perform password-hash work. Failed sign-ins, reset requests and confirmation resends wait at least the configured duration. Account emails are encrypted with the persistent Data Protection key ring and queued in SQL, so public requests do not wait for SMTP. Workers claim atomic two-minute leases, use a 30-second transport deadline and bounded backoff, and recover abandoned leases. SMTP delivery is at least once: an interrupted acknowledgement can cause a duplicate email. Delivered, failed and expired messages have their encrypted payload cleared; metadata is retained for seven days by default. Failure logs exclude message bodies and tokens. Preserve the shared key ring for overlapping workers and restarts.
+
+Limits return HTTP 429 and `Retry-After` immediately with no rejected-request queue. Anonymous account keys use the normalized submitted email without testing account existence. Limit counters and scan concurrency are process-local: overlapping recycling temporarily increases aggregate capacity. Configure limits appropriately for the deployment and monitor 429 rates. Forged forwarding headers cannot change client identity unless sent by a configured proxy. Form text containing a decoded NUL is rejected with HTTP 400; uploaded file bytes are not inspected for NULs. PDF password checks use a separate user throttle and neither increase nor reset Identity's sign-in failure counter.
+
+Patient visits, laboratory results, radiology, prescriptions, ID wallet, directory and advisories use fixed 25-row pages, SQL totals and stable ordering. Medication schedules and allergies have independent pages. The dashboard loads only the latest visit/laboratory preview and separate SQL aggregate counts. SQL retries are opt-in for standalone reads and operations with stable idempotency keys: three retries, maximum two-second delay. Business transactions, audit writes and import execution are never replayed after an uncertain commit; existing deadlock rollback handling remains in place. See [EF Core connection resiliency](https://learn.microsoft.com/en-us/ef/core/miscellaneous/connection-resiliency).
+
+### Trusted hosting and security rollout
+
+Before deployment, choose the real public domain, set `Portal__PublicOrigin` to its HTTPS origin, and set `AllowedHosts` to explicit hostnames including that name. Production startup rejects missing origins, HTTP origins and wildcard host configuration. IIS HTTPS bindings must use the same hostname and certificate; remove broad default bindings that route unrelated hosts to this app. For out-of-process IIS hosting, explicitly configure the immediate ANCM loopback address (`127.0.0.1` or `::1`, as used by that host) in `Proxy__KnownProxies`. With an additional reverse proxy, configure only its immediate IP addresses, prevent direct public access to the upstream, and preserve the configured host. Without configured proxies, forwarded headers are ignored even when a host enables forwarding globally. See [Microsoft host filtering guidance](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/host-filtering?view=aspnetcore-10.0).
+
+Drain older builds, back up SQL, encrypted uploads/PDFs and the key ring, apply all 11 migrations, configure the origin/hosts and OCR runtime, and start only the new build. Require existing users to sign in again. Verify reset, confirmation, email-change and invitation links from the actual host. Monitor authentication-query latency, rate-limit rejections, pending/failed email deliveries and retry exhaustion. This workstation cannot run Ubuntu locally; the Ubuntu 24.04 CI job installs OCR dependencies, boots the app against SQL Server and runs the regression suite. Passing Windows tests alone does not establish Linux readiness.
 
 ## Testing
 
@@ -435,7 +484,7 @@ For example, one CBC lab can contain hemoglobin, white blood cell and platelet i
 
 Attach a PDF of up to 10 MiB directly on the lab Create/Edit form, or manage it from record details. Leaving the upload blank preserves the current PDF. Patient lists show a green **Report available** action only when a PDF is attached, the status is Available, the release time has passed in Manila, and `PatientResults:ShowFullResults` is enabled. Each view/download requires the owning patient's current account password; no plaintext account password is stored in a lab record. The downloaded PDF itself does not have a file password.
 
-Reports are encrypted in private storage configured by `LabReports:RootPath` (default `App_Data/LabReports`, outside `wwwroot`). Preserve and back up this directory with the database and Data Protection key ring. The existing `AddLabReportAttachments` migration creates `ReportFileName`, `ReportSize`, and `ReportUploadedAtUtc` on `LabResults`; fresh installations obtain these through the normal database migration command. The revised forms and patient pages require no further schema changes or column removals.
+Reports are encrypted in private storage configured by `LabReports:RootPath` (default `App_Data/LabReports`, outside `wwwroot`). Preserve and back up this directory with the database and Data Protection key ring. `AddLabReportAttachments` creates `ReportFileName`, `ReportSize`, and `ReportUploadedAtUtc` on `LabResults`. Apply the full migration chain, including `AddPortalSecurityState` for authentication and delivery state; fresh installations obtain all 11 through the normal database migration command.
 
 ### 5. Add radiology and understand release status
 

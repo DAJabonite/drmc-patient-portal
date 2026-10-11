@@ -41,7 +41,7 @@ public class RadiologyController : Controller
         string? search,
         string? dateRange = null,
         DateTime? startDate = null,
-        DateTime? endDate = null)
+        DateTime? endDate = null, int page = 1)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
@@ -112,15 +112,18 @@ public class RadiologyController : Controller
                 break;
         }
 
-        var rows = await query
+        var pagination = await PortalPagination.CreateAsync(query, _db, page);
+        ViewData["Pagination"] = pagination;
+        var rows = await SqlReadRetry.RunAsync(_db, () => query.AsNoTracking()
             .OrderByDescending(s => s.PerformedAt)
             .ThenByDescending(s => s.Id)
+            .Skip(pagination.Offset).Take(PortalPagination.Size)
             .Select(s => new
             {
                 s.Id, s.AccessionNumber, s.StudyName, s.Modality, s.BodyRegion,
                 s.PerformedAt, s.ReleasedAt, s.Status, s.OrderingPhysician
             })
-            .ToListAsync();
+            .ToListAsync());
 
         var now = PatientResultsDisclosure.ManilaNow;
         var studies = rows.Select(r =>
@@ -148,7 +151,7 @@ public class RadiologyController : Controller
             SelectedStartDate = dateRange == "custom" ? startDate : null,
             SelectedEndDate = dateRange == "custom" ? endDate : null,
             Studies = studies,
-            TotalCount = await owned.CountAsync()
+            TotalCount = await SqlReadRetry.RunAsync(_db, () => owned.CountAsync())
         });
     }
 
@@ -160,7 +163,7 @@ public class RadiologyController : Controller
         if (user is null) return Challenge();
 
         // InternalNotes is intentionally not part of this projection.
-        var study = await _db.RadiologyStudies
+        var study = await SqlReadRetry.RunAsync(_db, () => _db.RadiologyStudies
             .Where(s => s.Id == id && s.Patient.PortalUserId == user.Id)
             .Select(s => new
             {
@@ -169,7 +172,7 @@ public class RadiologyController : Controller
                 s.ClinicalIndication, s.Technique, s.Comparison, s.Findings, s.Impression,
                 s.PlainLanguageSummary, s.AmendmentNote
             })
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync());
 
         if (study is null) return NotFound();
 

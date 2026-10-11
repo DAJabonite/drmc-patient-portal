@@ -59,7 +59,7 @@
             }
             <label for="directoryDepartmentFilter" class="form-label small fw-semibold text-dark mb-1">Filter doctors by department</label>
             <select id="directoryDepartmentFilter" name="department" class="form-select" data-auto-submit>
-                <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDepartment))">All Departments (@Model.Doctors.Count)</option>
+                <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDepartment))">All Departments (@Model.TotalCount)</option>
                 @foreach (var dept in Model.Departments)
                 {
                     <option value="@dept.Name" selected="@(Model.SelectedDepartment == dept.Name)">@dept.Name</option>

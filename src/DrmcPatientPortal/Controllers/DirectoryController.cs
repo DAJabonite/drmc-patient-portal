@@ -1,5 +1,6 @@
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,7 +16,7 @@ public class DirectoryController : Controller
     }
 
     // GET /Directory
-    public async Task<IActionResult> Index(string? department, string? search, bool? teleconsultOnly)
+    public async Task<IActionResult> Index(string? department, string? search, bool? teleconsultOnly, int page = 1)
     {
         var query = _db.Doctors.Where(d => d.IsActive).AsQueryable();
 
@@ -39,7 +40,10 @@ public class DirectoryController : Controller
                                   || d.ClinicRoom.ToLower().Contains(s));
         }
 
-        var doctors = await query.OrderBy(d => d.Department).ThenBy(d => d.FullName).ToListAsync();
+        var pagination = await PortalPagination.CreateAsync(query, _db, page);
+        ViewData["Pagination"] = pagination;
+        var doctors = await SqlReadRetry.RunAsync(_db, () => query.AsNoTracking().OrderBy(d => d.Department).ThenBy(d => d.FullName)
+            .ThenBy(d => d.Id).Skip(pagination.Offset).Take(PortalPagination.Size).ToListAsync());
 
         var model = new DirectoryIndexViewModel
         {
@@ -47,6 +51,7 @@ public class DirectoryController : Controller
             SearchTerm = search,
             TeleconsultOnly = teleconsultOnly ?? false,
             Doctors = doctors,
+            TotalCount = pagination.Total,
             Departments = ClinicalDepartments.All
         };
 
@@ -56,7 +61,7 @@ public class DirectoryController : Controller
     // GET /Directory/Doctor/5
     public async Task<IActionResult> Doctor(int id)
     {
-        var doctor = await _db.Doctors.FindAsync(id);
+        var doctor = await SqlReadRetry.RunAsync(_db, () => _db.Doctors.FindAsync(id).AsTask());
         if (doctor is null)
         {
             return NotFound();
@@ -75,7 +80,7 @@ public class DirectoryController : Controller
 
     // GET /Directory/Department/Internal%20Medicine or /Directory/Department?name=Internal%20Medicine
     [HttpGet]
-    public async Task<IActionResult> Department(string? id, string? name)
+    public async Task<IActionResult> Department(string? id, string? name, int page = 1)
     {
         var deptName = name ?? id;
         if (string.IsNullOrWhiteSpace(deptName))
@@ -89,15 +94,16 @@ public class DirectoryController : Controller
             return NotFound();
         }
 
-        var doctors = await _db.Doctors
-            .Where(d => d.Department == dept.Name && d.IsActive)
-            .OrderBy(d => d.FullName)
-            .ToListAsync();
+        var query = _db.Doctors.Where(d => d.Department == dept.Name && d.IsActive);
+        var pagination = await PortalPagination.CreateAsync(query, _db, page);
+        ViewData["Pagination"] = pagination;
+        var doctors = await SqlReadRetry.RunAsync(_db, () => query.AsNoTracking().OrderBy(d => d.FullName)
+            .ThenBy(d => d.Id).Skip(pagination.Offset).Take(PortalPagination.Size).ToListAsync());
 
         var model = new DepartmentDetailViewModel
         {
             Department = dept,
-            Doctors = doctors
+            Doctors = doctors, TotalCount = pagination.Total
         };
 
         return View(model);
@@ -106,6 +112,7 @@ public class DirectoryController : Controller
 
 public class DirectoryIndexViewModel
 {
+    public int TotalCount { get; set; }
     public string? SelectedDepartment { get; set; }
     public string? SearchTerm { get; set; }
     public bool TeleconsultOnly { get; set; }
@@ -121,6 +128,7 @@ public class DoctorProfileViewModel
 
 public class DepartmentDetailViewModel
 {
+    public int TotalCount { get; set; }
     public ClinicalDepartment Department { get; set; } = null!;
     public IReadOnlyList<Doctor> Doctors { get; set; } = Array.Empty<Doctor>();
 }

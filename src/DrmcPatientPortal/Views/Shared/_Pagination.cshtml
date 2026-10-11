@@ -1,0 +1,17 @@
+@model DrmcPatientPortal.Services.PortalPagination
+@using Microsoft.AspNetCore.WebUtilities
+@{
+    string PageUrl(int page)
+    {
+        var query = Context.Request.Query.ToDictionary(x => x.Key, x => (string?)x.Value.ToString(), StringComparer.OrdinalIgnoreCase);
+        query[Model.Parameter] = page.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return QueryHelpers.AddQueryString(Context.Request.PathBase + Context.Request.Path, query);
+    }
+}
+<nav class="d-flex align-items-center justify-content-between flex-wrap gap-2 my-3" aria-label="@Model.Parameter pagination">
+    <span class="small text-muted">@Model.Total total · Page @Model.Page of @Model.Pages</span>
+    <div class="d-flex gap-2">
+        @if (Model.Page > 1) { <a class="btn btn-outline-secondary btn-sm" href="@PageUrl(Model.Page - 1)">Previous</a> }
+        @if (Model.Page < Model.Pages) { <a class="btn btn-outline-secondary btn-sm" href="@PageUrl(Model.Page + 1)">Next</a> }
+    </div>
+</nav>

@@ -37,7 +37,8 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
         private readonly IUserStore<ApplicationUser> _userStore;
         private readonly IUserEmailStore<ApplicationUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
-        private readonly IEmailSender _emailSender;
+        private readonly IAccountEmailQueue _emailSender;
+        private readonly AccountLinks _links;
         private readonly IIdDocumentExtractionService _idExtractionService;
         private readonly ApplicationDbContext _db;
         private readonly IPatientDocumentStorage _documentStorage;
@@ -60,13 +61,14 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             IUserStore<ApplicationUser> userStore,
             SignInManager<ApplicationUser> signInManager,
             ILogger<RegisterModel> logger,
-            IEmailSender emailSender,
+            IAccountEmailQueue emailSender,
             IIdDocumentExtractionService idExtractionService,
             ApplicationDbContext db,
             IPatientDocumentStorage documentStorage,
             IAuditLogService auditLog,
             IOptions<PatientRegistrationOptions> registrationOptions,
-            FirstAdminSignup firstAdminSignup)
+            FirstAdminSignup firstAdminSignup,
+            AccountLinks links)
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -80,6 +82,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             _auditLog = auditLog;
             _registrationOptions = registrationOptions.Value;
             _firstAdminSignup = firstAdminSignup;
+            _links = links;
         }
 
         public bool RequireHospitalRecordCode => _registrationOptions.RequireHospitalRecordCode;
@@ -255,11 +258,18 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                     foundSummary = result.FoundFieldsSummary
                 });
             }
+            catch (OcrDependencyUnavailableException ex)
+            {
+                await _documentStorage.DiscardStagedAsync(stagedFront?.Token, uploadSessionId, HttpContext.RequestAborted);
+                await _documentStorage.DiscardStagedAsync(stagedBack?.Token, uploadSessionId, HttpContext.RequestAborted);
+                _logger.LogError(ex, "ID scanning dependencies unavailable.");
+                return new JsonResult(new { success = false, message = "ID scanning is temporarily unavailable. Please try again later." }) { StatusCode = 503 };
+            }
             catch (InvalidDataException ex)
             {
                 await _documentStorage.DiscardStagedAsync(stagedFront?.Token, uploadSessionId, HttpContext.RequestAborted);
                 await _documentStorage.DiscardStagedAsync(stagedBack?.Token, uploadSessionId, HttpContext.RequestAborted);
-                return new JsonResult(new { success = false, message = ex.Message });
+                return new JsonResult(new { success = false, message = ex.Message }) { StatusCode = 400 };
             }
             catch (Exception ex)
             {
@@ -405,14 +415,12 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                     var userId = await _userManager.GetUserIdAsync(user);
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                     code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-                    var callbackUrl = Url.Page(
+                    var callbackUrl = _links.Page(HttpContext,
                         "/Account/ConfirmEmail",
-                        pageHandler: null,
-                        values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
-                        protocol: Request.Scheme);
+                        new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl });
 
-                    await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
-                        $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                    await _emailSender.EnqueueAsync(user.Id, Input.Email, "Confirm your email",
+                        $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.", HttpContext.RequestAborted);
 
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)
                     {

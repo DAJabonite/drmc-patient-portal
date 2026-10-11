@@ -3,6 +3,7 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -215,7 +216,8 @@ public sealed class EmailVerificationTests(PortalFactory factory)
             await client.GetAsync(response.Headers.Location!);
         }
 
-        var delivered = Assert.Single(sender.Messages);
+        await host.Services.GetRequiredService<AccountEmailDispatcher>().DispatchOnceAsync();
+        var delivered = Assert.Single(sender.Messages, message => message.Email == account.Email);
         Assert.Equal(account.Email, delivered.Email);
         var href = WebUtility.HtmlDecode(Regex.Match(delivered.Body, "href='([^']+)'").Groups[1].Value);
         Assert.Contains("returnUrl=%2FPatient%2FRadiology", href);

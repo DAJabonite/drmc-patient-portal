@@ -28,20 +28,20 @@ public class PatientController : Controller
             return Challenge();
         }
 
-        var encounters = await _db.ClinicalEncounters
+        var encounters = await SqlReadRetry.RunAsync(_db, () => _db.ClinicalEncounters
             .AsNoTracking()
             .Where(e => e.Patient.PortalUserId == user.Id)
             .OrderByDescending(e => e.EncounterDate)
-            .ToListAsync();
+            .ThenByDescending(e => e.Id).Take(1).ToListAsync());
 
-        var latestLab = await _db.LabResults
+        var latestLab = await SqlReadRetry.RunAsync(_db, () => _db.LabResults
             .AsNoTracking()
             .Where(l => l.Patient.PortalUserId == user.Id)
             .OrderByDescending(l => l.CollectedAt)
-            .ToListAsync();
+            .ThenByDescending(l => l.Id).Take(1).ToListAsync());
 
-        var activePrescriptions = await _db.Prescriptions
-            .CountAsync(p => p.Patient.PortalUserId == user.Id && p.Status == PrescriptionStatus.Active);
+        var activePrescriptions = await SqlReadRetry.RunAsync(_db, () => _db.Prescriptions
+            .CountAsync(p => p.Patient.PortalUserId == user.Id && p.Status == PrescriptionStatus.Active));
 
         var model = new PatientDashboardViewModel
         {
@@ -51,6 +51,8 @@ public class PatientController : Controller
             CreatedAt = user.CreatedAt,
             Encounters = encounters,
             LabResults = latestLab,
+            EncountersCount = await SqlReadRetry.RunAsync(_db, () => _db.ClinicalEncounters.CountAsync(e => e.Patient.PortalUserId == user.Id)),
+            LabResultsCount = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.CountAsync(e => e.Patient.PortalUserId == user.Id)),
             ActivePrescriptionsCount = activePrescriptions,
             Departments = ClinicalDepartments.All,
         };
@@ -68,11 +70,11 @@ public class PatientController : Controller
             return Challenge();
         }
 
-        var logs = await _db.AuditLogs
+        var logs = await SqlReadRetry.RunAsync(_db, () => _db.AuditLogs
             .Where(a => a.UserId == user.Id)
             .OrderByDescending(a => a.Timestamp)
             .Take(50)
-            .ToListAsync();
+            .ToListAsync());
 
         var model = new PatientAuditViewModel
         {
@@ -94,6 +96,8 @@ public class PatientDashboardViewModel
     public IReadOnlyList<ClinicalEncounter> Encounters { get; set; } = Array.Empty<ClinicalEncounter>();
     public IReadOnlyList<LabResult> LabResults { get; set; } = Array.Empty<LabResult>();
     public int ActivePrescriptionsCount { get; set; }
+    public int EncountersCount { get; set; }
+    public int LabResultsCount { get; set; }
     public IReadOnlyList<ClinicalDepartment> Departments { get; set; } = Array.Empty<ClinicalDepartment>();
 }
 
