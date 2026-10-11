@@ -28,6 +28,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PortalSession> PortalSessions => Set<PortalSession>();
     public DbSet<AuthenticatorConsumption> AuthenticatorConsumptions => Set<AuthenticatorConsumption>();
     public DbSet<AccountEmail> AccountEmails => Set<AccountEmail>();
+    public DbSet<WebsiteUsageDay> WebsiteUsageDays => Set<WebsiteUsageDay>();
+    public DbSet<WebsiteUsageMarker> WebsiteUsageMarkers => Set<WebsiteUsageMarker>();
     public DbSet<RedStarPatient> RedStarPatients => Set<RedStarPatient>();
     public DbSet<RedStarEnrollment> RedStarEnrollments => Set<RedStarEnrollment>();
     public DbSet<RedStarAppointment> RedStarAppointments => Set<RedStarAppointment>();
@@ -62,6 +64,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         base.OnModelCreating(builder);
         RedStarModel.Configure(builder);
         builder.UseCollation("Latin1_General_100_BIN2");
+
+        builder.Entity<WebsiteUsageDay>(e =>
+        {
+            e.HasKey(x => x.Day);
+            e.Property(x => x.Day).ValueGeneratedNever();
+        });
+        builder.Entity<WebsiteUsageMarker>(e =>
+        {
+            e.HasKey(x => new { x.Day, x.Audience, x.Identifier });
+            e.Property(x => x.Identifier).HasMaxLength(64).IsFixedLength().IsUnicode(false);
+            e.HasOne<WebsiteUsageDay>().WithMany().HasForeignKey(x => x.Day).OnDelete(DeleteBehavior.Cascade);
+        });
 
         builder.Entity<PortalSession>(e =>
         {

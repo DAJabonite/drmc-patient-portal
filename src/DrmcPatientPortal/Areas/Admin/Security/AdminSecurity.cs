@@ -58,6 +58,7 @@ public static class AdminPolicies
     public static readonly IReadOnlyDictionary<string, string> Controllers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
     {
         ["Home"] = Console,
+        ["WebsiteUsage"] = Admin,
         ["LabResults"] = Lab,
         ["LabResultItems"] = Lab,
         ["RadiologyStudies"] = Radiology,

@@ -20,7 +20,7 @@ public sealed class AdminTests(PortalFactory factory)
         [
             "/Admin", "/Admin/Patients", "/Admin/Patients/Create", "/Admin/ClinicalEncounters", "/Admin/LabResults",
             "/Admin/LabResultItems", "/Admin/Prescriptions", "/Admin/MedicationDoseSchedules", "/Admin/PatientAllergies",
-            "/Admin/Doctors", "/Admin/Doctors/Create", "/Admin/PublicAdvisories", "/Admin/Imports", "/Admin/Audit",
+            "/Admin/Doctors", "/Admin/Doctors/Create", "/Admin/PublicAdvisories", "/Admin/Imports", "/Admin/Audit", "/Admin/WebsiteUsage",
         ];
         foreach (var path in paths)
         {

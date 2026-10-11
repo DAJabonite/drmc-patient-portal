@@ -160,7 +160,7 @@ SELECT COUNT(*) AS AccountCount FROM dbo.AspNetUsers;
 SELECT COUNT(*) AS PatientRecordCount FROM dbo.PatientRecords;
 ```
 
-This version has **12 migrations**, ending in `20261011120435_AddPrivateRedStarRegistry`. A fresh installation has zero accounts and hospital patient records. Starting the app does not automatically apply migrations or seed demo data when fixtures are disabled.
+This version has **13 migrations**, ending in `20261011132407_AddWebsiteUsageReporting`. A fresh installation has zero accounts and hospital patient records. Starting the app does not automatically apply migrations or seed demo data when fixtures are disabled.
 
 ### 5. Start the portal
 
@@ -252,6 +252,7 @@ Back up the database before applying or reversing migrations. New migrations are
 9. `20261007160128_AddPrescriptionAdministrationRoute`: adds the optional prescription administration route.
 10. `20261011093226_AddPortalSecurityState`: adds revocable authentication sessions, unique authenticator-code consumption records and an encrypted account-email queue. Repairs orphan invitation acceptance references, then adds an accepting-account foreign key with `ON DELETE SET NULL`; invitation history and acceptance timestamps remain intact.
 11. `20261011120435_AddPrivateRedStarRegistry`: adds private clinic patients, enrollments, care/refill appointments, dispensing history, reschedule requests, reminder deliveries, encrypted import archives and append-only audit records. Shared hospital links confer no clinic access. Account deletion detaches private account bindings while preserving registry history. Downgrade is blocked while registry/import/audit records exist.
+12. `20261011132407_AddWebsiteUsageReporting`: adds daily aggregate traffic/adoption counts and temporary deduplication markers. Analytics collection defaults off; cleanup removes expired daily identifiers/keys and retains aggregates for 13 months. Downgrade removes usage reporting history.
 
 The initial SQL Server migration is `20260929123803_InitialSqlServer`. During upgrade, drain and stop older builds, apply migrations, then run only the new build. Older workers cannot respect the lease protocol.
 
@@ -583,6 +584,18 @@ Duplicate references, slugs, hospital numbers and dose times block the batch. Im
 Two independently started application processes are supported for overlapped recycle or redeploy, not general horizontal scaling. They must share the same build, database, Windows identity, protection setting, persistent key ring and staging directory. Execution is single-flight across both processes; dry run and approval may overlap. Claims use conditional status/rowversion updates, unique process owners and 60-second leases renewed about every 15 seconds. Completion is fenced by owner, rowversion and a live lease inside the business/audit transaction. A lost lease cannot commit records. No automatic replay or uncertain-commit retry is performed.
 
 For IIS, use persistent shared directories and enable Load User Profile when using current-user DPAPI. Keep the app-pool identity/profile stable. Worker polling is every two seconds; status polling is every three seconds, pauses while the page is hidden and announces status changes through a polite live region.
+
+## Website usage reporting
+
+Admin accounts with confirmed email and MFA can open `/Admin/WebsiteUsage` or use the two Today cards on the dashboard. Day, month and custom-range filters use Asia/Manila dates; custom ranges are limited to 366 days. `/Admin/WebsiteUsage/Export` downloads the same filtered daily counts as CSV. Anonymous visitors and other staff roles cannot open the report or export.
+
+`WebsiteUsage:Enabled` defaults to **false**. Apply `AddWebsiteUsageReporting` before deploying this build, rehearse with synthetic traffic in staging, and confirm the declared reporting purpose and production processing basis with DRMC's DPO before setting `WebsiteUsage__Enabled=true` outside tracked configuration. Restart after changing the setting. Disabling collection preserves existing reports and keeps cleanup active. Startup does not automatically migrate the database.
+
+Estimated visitors use a cookieless daily HMAC of the trusted-proxy-resolved IP address and User-Agent. Active patients use a separate daily HMAC of the signed-in non-staff account ID, deduplicating devices. The two audiences overlap. Visitor-days and patient-days are sums of daily counts, **not unique monthly people**. No raw addresses, browser strings, account IDs, page URLs, query strings or clinical information are stored by analytics. Shared networks, changing addresses/browsers, undetected automation and anonymous staff affect visitor estimates. Successful GET HTML pages count; Admin, Identity, files, APIs, errors, recognized bots/monitors, prefetch and DNT/GPC opt-outs do not.
+
+Daily keys are encrypted using a separate Data Protection purpose and shared through SQL Server. Keep the existing persistent key ring shared across overlapping app processes. SQL uniqueness and a transaction protect marker/counter updates across processes and restarts. Collection has a 500 ms deadline, an isolated context and sanitized failure logs; it never changes the page response on failure. Maintenance runs at startup and every minute, even with collection disabled. Enable an always-running application host for complete zero-traffic coverage (for IIS, configure AlwaysRunning/preload and avoid idle shutdown).
+
+Temporary identifiers and expired daily keys are purged after the next Manila midnight plus five minutes; aggregates are retained for 13 calendar months. Cleanup catches up after downtime. Database backups remain subject to the institution's existing backup and retention policy. Account deletion does not alter anonymous daily totals, since analytics has no persistent account binding. Today is partial; interrupted collection or a heartbeat gap exceeding two minutes is partial. Unmeasured/expired dates show Not collected. Averages use complete measured days, including true zero-traffic days. No historical backfill is attempted. Monitor sanitized `Website usage collection failed` / `Website usage maintenance failed` warnings and the report's coverage; storage outages can undercount observed traffic.
 
 ## Time-Zone Rules
 

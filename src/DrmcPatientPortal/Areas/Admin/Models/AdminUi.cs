@@ -8,7 +8,8 @@ public static class AdminNavigation
 {
     public static readonly IReadOnlyList<AdminNavSection> Sections =
     [
-        new("Overview", [new("Home", "Dashboard", "bi-grid-1x2", "Work that needs attention and recent staff activity.")]),
+        new("Overview", [new("Home", "Dashboard", "bi-grid-1x2", "Work that needs attention and recent staff activity."),
+            new("WebsiteUsage", "Website usage", "bi-graph-up", "Daily visitor estimates and active patient accounts.")]),
         new("Patient records",
         [
             new("Patients", "Patients", "bi-people", "Hospital registry and verified portal links."),
@@ -107,4 +108,5 @@ public sealed record AdminDashboard(
     IReadOnlyList<AdminMetric> Attention,
     IReadOnlyDictionary<string, int> Counts,
     IReadOnlyList<DrmcPatientPortal.Models.AdminAuditLog> RecentAudit,
-    IReadOnlyList<DrmcPatientPortal.Models.ImportBatch> RecentImports);
+    IReadOnlyList<DrmcPatientPortal.Models.ImportBatch> RecentImports,
+    WebsiteUsageReport? UsageToday = null);
