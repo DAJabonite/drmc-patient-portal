@@ -28,11 +28,19 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PortalSession> PortalSessions => Set<PortalSession>();
     public DbSet<AuthenticatorConsumption> AuthenticatorConsumptions => Set<AuthenticatorConsumption>();
     public DbSet<AccountEmail> AccountEmails => Set<AccountEmail>();
+    public DbSet<RedStarPatient> RedStarPatients => Set<RedStarPatient>();
+    public DbSet<RedStarEnrollment> RedStarEnrollments => Set<RedStarEnrollment>();
+    public DbSet<RedStarAppointment> RedStarAppointments => Set<RedStarAppointment>();
+    public DbSet<RedStarDispense> RedStarDispenses => Set<RedStarDispense>();
+    public DbSet<RedStarRescheduleRequest> RedStarRescheduleRequests => Set<RedStarRescheduleRequest>();
+    public DbSet<RedStarReminder> RedStarReminders => Set<RedStarReminder>();
+    public DbSet<RedStarAudit> RedStarAudits => Set<RedStarAudit>();
+    public DbSet<RedStarImportBatch> RedStarImportBatches => Set<RedStarImportBatch>();
 
     private void GuardAuditHistory()
     {
         ChangeTracker.DetectChanges();
-        if (ChangeTracker.Entries().Any(e => (e.Entity is AuditLog or AdminAuditLog) &&
+        if (ChangeTracker.Entries().Any(e => (e.Entity is AuditLog or AdminAuditLog or RedStarAudit) &&
             e.State is EntityState.Modified or EntityState.Deleted))
             throw new InvalidOperationException("Audit history is append-only.");
     }
@@ -52,6 +60,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        RedStarModel.Configure(builder);
         builder.UseCollation("Latin1_General_100_BIN2");
 
         builder.Entity<PortalSession>(e =>

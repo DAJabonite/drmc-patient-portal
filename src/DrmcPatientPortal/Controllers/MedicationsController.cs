@@ -15,15 +15,17 @@ public class MedicationsController : Controller
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IAuditLogService _auditLog;
+    private readonly RedStarPatientService _redStar;
 
     public MedicationsController(
         ApplicationDbContext db,
         UserManager<ApplicationUser> userManager,
-        IAuditLogService auditLog)
+        IAuditLogService auditLog, RedStarPatientService redStar)
     {
         _db = db;
         _userManager = userManager;
         _auditLog = auditLog;
+        _redStar = redStar;
     }
 
     // GET /Patient/Medications
@@ -54,6 +56,8 @@ public class MedicationsController : Controller
 
         var model = new MedicationsIndexViewModel
         {
+            RedStarEnrolled = (await _redStar.PortalStateAsync()).Enrolled,
+            RedStarRefill = await _redStar.NextRefillAsync(user.Id),
             Prescriptions = prescriptions,
             Allergies = allergies,
             ActiveCount = await SqlReadRetry.RunAsync(_db, () => owned.CountAsync(p => p.Status == PrescriptionStatus.Active)),
@@ -88,6 +92,8 @@ public class MedicationsController : Controller
 
 public class MedicationsIndexViewModel
 {
+    public bool RedStarEnrolled { get; set; }
+    public RedStarRefillCard? RedStarRefill { get; set; }
     public IReadOnlyList<Prescription> Prescriptions { get; set; } = Array.Empty<Prescription>();
     public IReadOnlyList<PatientAllergy> Allergies { get; set; } = Array.Empty<PatientAllergy>();
     public int ActiveCount { get; set; }

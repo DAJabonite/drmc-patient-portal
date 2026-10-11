@@ -1,0 +1,19 @@
+@model RedStarImportIndex
+@{ ViewData["Title"] = "Red Star imports"; var pages = Math.Max(1, (Model.Total + 24) / 25); }
+<div class="admin-page-header"><div><p class="admin-eyebrow">Red Star</p><h1 class="admin-title">Registry imports</h1><p class="admin-subtitle">Upload the registry, reconcile included rows, then approve the private import.</p></div><a asp-controller="RedStar" asp-action="Index" class="btn btn-outline-primary">Back to registry</a></div>
+@if (TempData["RedStarImportMessage"] is string message) { <div class="alert alert-info" role="status">@message</div> }
+<div class="admin-card mb-3">
+    <div class="admin-card-header"><h2 class="admin-card-title">Upload spreadsheet</h2></div>
+    <form asp-action="Upload" method="post" enctype="multipart/form-data" class="admin-form">
+        <div class="admin-card-body"><label for="registry-file" class="form-label">Red Star registry (.xlsx)</label><input id="registry-file" name="file" type="file" accept=".xlsx" class="form-control" required aria-describedby="registry-upload-help" /><p id="registry-upload-help" class="small text-muted mt-2">Maximum 10 MB and 5,000 patient rows. The original source and preview are encrypted. Every row requires an explicit include decision; names never link portal accounts. Imported schedules require staff verification.</p></div>
+        <div class="admin-form-actions"><button type="submit" class="btn btn-primary">Upload and preview</button></div>
+    </form>
+</div>
+<div class="admin-card mb-3"><div class="admin-card-header"><h2 class="admin-card-title">Export core registry</h2></div><div class="admin-card-body"><p class="small text-muted">Download the private clinic registry with recorded medicines and dates. Portal accounts, email addresses and deferred clinical columns are excluded.</p><form asp-action="Export" method="post"><button type="submit" class="btn btn-outline-primary">Download XLSX</button></form></div></div>
+<div class="admin-card"><div class="admin-card-header"><h2 class="admin-card-title">Private batches</h2><span class="admin-result-count">@Model.Total total</span></div>
+    <div class="table-responsive"><table class="table admin-table"><thead><tr><th scope="col">Created (UTC)</th><th scope="col">Batch</th><th scope="col">Status</th></tr></thead><tbody>
+    @foreach (var batch in Model.Batches) { <tr><td>@batch.CreatedUtc.ToString("yyyy-MM-dd HH:mm")</td><td><a asp-action="Reconcile" asp-route-id="@batch.Id">@batch.Id.ToString("N")[..12]</a></td><td>@(batch.ApprovedUtc.HasValue ? "Approved" : "Awaiting review")</td></tr> }
+    @if (Model.Batches.Count == 0) { <tr><td colspan="3">No private import batches yet.</td></tr> }
+    </tbody></table></div>
+    <nav aria-label="Import batch pages" class="admin-card-footer"><span>Page @Model.Page of @pages</span><span class="d-flex gap-2">@if (Model.Page > 1) { <a asp-action="Index" asp-route-page="@(Model.Page - 1)" class="btn btn-sm btn-outline-secondary">Previous</a> } @if (Model.Page < pages) { <a asp-action="Index" asp-route-page="@(Model.Page + 1)" class="btn btn-sm btn-outline-secondary">Next</a> }</span></nav>
+</div>

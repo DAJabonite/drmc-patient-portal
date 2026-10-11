@@ -2,7 +2,9 @@
 @using Microsoft.Extensions.Localization
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IStringLocalizer<SharedResource> Loc
+@inject DrmcPatientPortal.Services.RedStarPatientService RedStarPatients
 @{
+    var redStarState = await RedStarPatients.PortalStateAsync();
     var title = ViewData["Title"]?.ToString();
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
     var currentUrl = Context.Request.Path + Context.Request.QueryString;
@@ -109,13 +111,15 @@
                     <li class="nav-item"><a class="nav-link @(isResults ? "active" : null)" aria-current="@(isResults ? "page" : null)" asp-area="" asp-controller="LabResults" asp-action="Index">@Loc["Nav_Results"]</a></li>
                     <li class="nav-item"><a class="nav-link @(isMedications ? "active" : null)" aria-current="@(isMedications ? "page" : null)" asp-area="" asp-controller="Medications" asp-action="Index">@Loc["Nav_Medication"]</a></li>
                     <li class="nav-item"><a class="nav-link @(isRadiology ? "active" : null)" aria-current="@(isRadiology ? "page" : null)" asp-area="" asp-controller="Radiology" asp-action="Index">@Loc["Nav_Radiology"]</a></li>
+                    @if (redStarState.Enrolled) { <li class="nav-item"><a class="nav-link @(currentController == "RedStarPatient" ? "active" : null)" aria-current="@(currentController == "RedStarPatient" ? "page" : null)" asp-area="" asp-controller="RedStarPatient" asp-action="Index">@Loc["RS_Title"]</a></li> }
                 }
-                @if (User.IsInRole("Admin") || User.IsInRole("LabStaff") || User.IsInRole("RadiologyStaff") || User.IsInRole("PatientServicesStaff"))
+                @if (User.IsInRole("Admin") || User.IsInRole("LabStaff") || User.IsInRole("RadiologyStaff") || User.IsInRole("PatientServicesStaff") || User.IsInRole("RedStarStaff"))
                 {
                     <li class="nav-item"><a class="nav-link" asp-area="Admin" asp-controller="Home" asp-action="Index">Administration</a></li>
                 }
             </ul>
             <div class="nav-account d-flex align-items-center gap-2">
+                @if (redStarState.UnreadCount > 0) { <a class="btn btn-sm btn-outline-secondary" href="/Patient/RedStar#reminders" aria-label="@Loc["RS_Notifications"]"><i class="bi bi-bell" aria-hidden="true"></i><span class="badge bg-primary ms-1">@redStarState.UnreadCount</span><span class="visually-hidden">@Loc["RS_Notifications"]</span></a> }
                 @if (!signedIn)
                 {
                     <button class="nav-menu-trigger btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-2 px-3 py-1 text-primary-drmc fw-semibold bg-white border-primary-subtle"

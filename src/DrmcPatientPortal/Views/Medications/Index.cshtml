@@ -58,6 +58,8 @@
             <partial name="_Pagination" model="Model.AllergyPagination" />
         }
 
+        @if (Model.RedStarEnrolled) { <partial name="_RedStarRefillCard" model="Model.RedStarRefill" /> }
+
         <!-- Data-backed daily medication schedule -->
         <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
             <h2 class="h6 fw-bold text-primary-drmc mb-3">

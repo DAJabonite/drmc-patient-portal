@@ -2,8 +2,10 @@
 @using Microsoft.Extensions.Localization
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IStringLocalizer<SharedResource> Loc
+@inject DrmcPatientPortal.Services.RedStarPatientService RedStarPatients
 @{
     var signedIn = SignInManager.IsSignedIn(User);
+    var redStarState = await RedStarPatients.PortalStateAsync();
     var isAdminArea = ViewContext.RouteData.Values["area"]?.ToString() == "Admin";
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
@@ -17,7 +19,7 @@
     var medicationActive = currentController == "Medications";
     var radiologyActive = currentController == "Radiology";
     var malasakitActive = currentController == "Malasakit";
-    var staffConsole = User.IsInRole("Admin") || User.IsInRole("LabStaff") || User.IsInRole("RadiologyStaff") || User.IsInRole("PatientServicesStaff");
+    var staffConsole = User.IsInRole("Admin") || User.IsInRole("LabStaff") || User.IsInRole("RadiologyStaff") || User.IsInRole("PatientServicesStaff") || User.IsInRole("RedStarStaff");
 }
 
 @if (!isAdminArea)
@@ -83,6 +85,8 @@
                 <a class="mobile-more-link" asp-area="" asp-controller="Advisories" asp-action="Index"><i class="bi bi-megaphone" aria-hidden="true"></i><span>@Loc["Nav_Advisories"]</span></a>
                 @if (signedIn)
                 {
+                    @if (redStarState.Enrolled) { <a class="mobile-more-link" asp-area="" asp-controller="RedStarPatient" asp-action="Index"><i class="bi bi-calendar-heart" aria-hidden="true"></i><span>@Loc["RS_Title"]</span></a> }
+                    @if (redStarState.UnreadCount > 0) { <a class="mobile-more-link" href="/Patient/RedStar#reminders"><i class="bi bi-bell" aria-hidden="true"></i><span>@Loc["RS_Notifications"] (@redStarState.UnreadCount)</span></a> }
                     <a class="mobile-more-link" asp-area="" asp-controller="Patient" asp-action="Audit"><i class="bi bi-shield-check" aria-hidden="true"></i><span>@Loc["Nav_Audit"]</span></a>
                 }
                 @if (staffConsole)

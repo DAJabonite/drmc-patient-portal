@@ -1,0 +1,78 @@
+@model DrmcPatientPortal.Services.RedStarPatientPage
+@{ ViewData["Title"] = Loc["RS_Title"]; }
+<section class="page-header"><div class="container"><p class="small mb-1">@Loc["RS_Private"]</p><h1 class="display-6 fw-bold mb-0">@Loc["RS_Title"]</h1></div></section>
+<section class="section py-5 bg-light"><div class="container" style="max-width:960px">
+    @if (TempData["RedStarSaved"] is not null) { <div class="alert alert-success" role="status">@Loc["RS_Saved"]</div> }
+    <partial name="_RedStarRefillCard" model="Model.NextRefill" />
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+        <h2 class="h5">@Loc["RS_Appointments"]</h2>
+        @if (Model.Appointments.Count == 0) { <p class="text-muted mb-0">@Loc["RS_NoAppointments"]</p> }
+        @foreach (var appointment in Model.Appointments)
+        {
+            var pending = Model.Requests.Any(r => r.AppointmentId == appointment.Id && r.State == RedStarRequestState.Pending);
+            var version = Convert.ToBase64String(appointment.RowVersion);
+            <article class="border rounded-3 p-3 mt-3">
+                <div class="d-flex justify-content-between flex-wrap gap-2"><h3 class="h6 mb-0">@Loc["RS_Kind_" + appointment.Kind]</h3><strong>@appointment.DueDate.ToString("MMMM d, yyyy")</strong></div>
+                @if (!string.IsNullOrWhiteSpace(appointment.Label)) { <p class="small mt-2 mb-0">@appointment.Label</p> }
+                <p class="small text-muted mt-2">@Loc[appointment.ConfirmedUtc is not null ? "RS_Confirmed" : "RS_Scheduled"] · @Loc["RS_Program_" + appointment.Enrollment.Program]</p>
+                <div class="d-flex flex-wrap gap-2">
+                    @if (appointment.ConfirmedUtc is null)
+                    {
+                        <form asp-controller="RedStarPatient" asp-action="Confirm" asp-route-id="@appointment.Id" method="post"><input type="hidden" name="rowVersion" value="@version" /><button class="btn btn-drmc btn-sm" type="submit">@Loc["RS_Confirm"]</button></form>
+                    }
+                    @if (pending) { <span class="badge bg-info-subtle text-dark align-self-center">@Loc["RS_Pending"]</span> }
+                    else
+                    {
+                        <details class="w-100 mt-2"><summary class="text-primary-drmc fw-semibold">@Loc["RS_RequestChange"]</summary>
+                            <form asp-controller="RedStarPatient" asp-action="RequestReschedule" asp-route-id="@appointment.Id" method="post" class="mt-3">
+                                <input type="hidden" name="RowVersion" value="@version" />
+                                <label for="date-@appointment.Id" class="form-label">@Loc["RS_PreferredDate"]</label>
+                                <input id="date-@appointment.Id" name="RequestedDate" type="date" class="form-control mb-2" min="@Model.Today.ToString("yyyy-MM-dd")" max="@Model.Today.AddYears(1).ToString("yyyy-MM-dd")" required />
+                                <label for="reason-@appointment.Id" class="form-label">@Loc["RS_Reason"]</label>
+                                <textarea id="reason-@appointment.Id" name="Reason" class="form-control" maxlength="500" rows="2"></textarea>
+                                <p class="small text-muted mt-2">@Loc["RS_ChangeHelp"]</p><button class="btn btn-outline-drmc btn-sm" type="submit">@Loc["RS_SendRequest"]</button>
+                            </form>
+                        </details>
+                    }
+                </div>
+            </article>
+        }
+    </div>
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+        <h2 class="h5">@Loc["RS_History"]</h2>
+        @if (Model.History.Count == 0) { <p class="text-muted mb-0">@Loc["RS_NoHistory"]</p> }
+        else
+        {
+            <div class="table-responsive"><table class="table align-middle" style="min-width:26rem"><caption class="visually-hidden">@Loc["RS_History"]</caption><thead><tr><th scope="col">@Loc["RS_PickupDate"]</th><th scope="col">@Loc["RS_Medicines"]</th><th scope="col">@Loc["RS_DaysSupplied"]</th></tr></thead><tbody>
+            @foreach (var dispense in Model.History) { <tr><td>@dispense.DispensedDate.ToString("MMM d, yyyy")</td><td class="text-break">@dispense.Medicines</td><td>@(dispense.DaysSupplied?.ToString() ?? Loc["RS_NotRecorded"].Value)</td></tr> }
+            </tbody></table></div>
+            <nav aria-label="@Loc["RS_History"]" class="d-flex gap-3">
+            @if (Model.HistoryPage > 1) { <a asp-action="Index" asp-route-historyPage="@(Model.HistoryPage - 1)">@Loc["RS_Previous"]</a> }
+            @if (Model.HistoryPage * 25 < Model.HistoryTotal) { <a asp-action="Index" asp-route-historyPage="@(Model.HistoryPage + 1)">@Loc["RS_Next"]</a> }
+            </nav>
+        }
+    </div>
+    @if (Model.Requests.Count > 0)
+    {
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4"><h2 class="h5">@Loc["RS_Requests"]</h2><ul class="list-group list-group-flush">
+        @foreach (var request in Model.Requests) { <li class="list-group-item px-0">@request.RequestedDate.ToString("MMM d, yyyy") · @Loc["RS_Request_" + request.State]</li> }
+        </ul></div>
+    }
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4" id="reminders">
+        <h2 class="h5">@Loc["RS_Reminders"]</h2><p class="small text-muted">@Loc["RS_ReminderHelp"]</p>
+        @foreach (var notification in Model.Notifications)
+        {
+            <div class="border rounded-3 p-3 mb-2 d-flex align-items-center justify-content-between flex-wrap gap-2"><span>@Loc["RS_AppointmentReminder", notification.Appointment.DueDate.ToString("MMMM d, yyyy")]</span>
+                @if (!notification.IsRead) { <form asp-action="Read" asp-route-id="@notification.Id" method="post"><button class="btn btn-outline-secondary btn-sm" type="submit">@Loc["RS_MarkRead"]</button></form> }
+            </div>
+        }
+        <form asp-action="Preferences" method="post" class="mt-3">
+            <input type="hidden" name="rowVersion" value="@Convert.ToBase64String(Model.Patient.RowVersion)" />
+            <div class="form-check"><input class="form-check-input" id="emailReminders" name="emailEnabled" value="true" type="checkbox" checked="@Model.Patient.EmailRemindersEnabled" /><label class="form-check-label" for="emailReminders">@Loc["RS_EmailOptIn"]</label></div>
+            <p class="small text-muted mt-2">@Loc["RS_EmailHelp"]</p><button class="btn btn-outline-drmc btn-sm" type="submit">@Loc["RS_SavePreferences"]</button>
+        </form>
+    </div>
+    <aside class="card border-0 shadow-sm rounded-4 p-4"><h2 class="h5">@Loc["RS_ClinicHelp"]</h2><p>@Loc["RS_MissedHelp"]</p><p class="small">@Loc["RS_LocationHours"]</p>
+        <div class="d-flex flex-wrap gap-3"><a href="tel:+639158860527">0915 886 0527</a><a href="mailto:redstar16_drmc@yahoo.com">redstar16_drmc@yahoo.com</a><a href="https://drmc.doh.gov.ph/red-star-clinic/" target="_blank" rel="noopener">@Loc["RS_OfficialInfo"]</a></div>
+    </aside>
+</div></section>

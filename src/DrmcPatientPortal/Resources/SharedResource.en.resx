@@ -211,4 +211,56 @@
   <data name="Verification_EmailSubject" xml:space="preserve"><value>Confirm your DRMC email address</value></data>
   <data name="Verification_EmailIntro" xml:space="preserve"><value>To confirm your email address for the DRMC Patient Portal, select this link:</value></data>
   <data name="Verification_EmailLinkText" xml:space="preserve"><value>Confirm email address</value></data>
+  <data name="RS_Title" xml:space="preserve"><value>Red Star</value></data>
+  <data name="RS_Private" xml:space="preserve"><value>Your private clinic schedule</value></data>
+  <data name="RS_Saved" xml:space="preserve"><value>Your update has been saved.</value></data>
+  <data name="RS_NextRefill" xml:space="preserve"><value>Next medicine pickup</value></data>
+  <data name="RS_NoRefill" xml:space="preserve"><value>No refill date has been scheduled. Contact the clinic for help.</value></data>
+  <data name="RS_ViewSchedule" xml:space="preserve"><value>View Red Star schedule</value></data>
+  <data name="RS_OverdueDays" xml:space="preserve"><value>{0} days overdue</value></data>
+  <data name="RS_InDays" xml:space="preserve"><value>In {0} days</value></data>
+  <data name="RS_DueToday" xml:space="preserve"><value>Due today</value></data>
+  <data name="RS_Confirmed" xml:space="preserve"><value>Attendance confirmed</value></data>
+  <data name="RS_Scheduled" xml:space="preserve"><value>Scheduled</value></data>
+  <data name="RS_Appointments" xml:space="preserve"><value>Your appointments</value></data>
+  <data name="RS_NoAppointments" xml:space="preserve"><value>No upcoming appointments have been recorded.</value></data>
+  <data name="RS_Kind_Refill" xml:space="preserve"><value>Medicine pickup</value></data>
+  <data name="RS_Kind_Lab" xml:space="preserve"><value>Laboratory appointment</value></data>
+  <data name="RS_Kind_Consultation" xml:space="preserve"><value>Consultation</value></data>
+  <data name="RS_Program_ART" xml:space="preserve"><value>ART</value></data>
+  <data name="RS_Program_PrEP" xml:space="preserve"><value>PrEP</value></data>
+  <data name="RS_Program_PEP" xml:space="preserve"><value>PEP</value></data>
+  <data name="RS_Program_NewbornProphylaxis" xml:space="preserve"><value>Newborn prophylaxis</value></data>
+  <data name="RS_Program_Unverified" xml:space="preserve"><value>Awaiting clinic verification</value></data>
+  <data name="RS_Confirm" xml:space="preserve"><value>Confirm attendance</value></data>
+  <data name="RS_Pending" xml:space="preserve"><value>Change awaiting clinic review</value></data>
+  <data name="RS_RequestChange" xml:space="preserve"><value>Request a different date</value></data>
+  <data name="RS_PreferredDate" xml:space="preserve"><value>Preferred date</value></data>
+  <data name="RS_Reason" xml:space="preserve"><value>Reason (optional)</value></data>
+  <data name="RS_ChangeHelp" xml:space="preserve"><value>Your current appointment remains in place until the clinic approves a change.</value></data>
+  <data name="RS_SendRequest" xml:space="preserve"><value>Send request</value></data>
+  <data name="RS_History" xml:space="preserve"><value>Medicine pickup history</value></data>
+  <data name="RS_NoHistory" xml:space="preserve"><value>No medicine pickups have been recorded yet.</value></data>
+  <data name="RS_PickupDate" xml:space="preserve"><value>Pickup date</value></data>
+  <data name="RS_Medicines" xml:space="preserve"><value>Medicines supplied</value></data>
+  <data name="RS_DaysSupplied" xml:space="preserve"><value>Days supplied</value></data>
+  <data name="RS_NotRecorded" xml:space="preserve"><value>Not recorded</value></data>
+  <data name="RS_Previous" xml:space="preserve"><value>Previous</value></data>
+  <data name="RS_Next" xml:space="preserve"><value>Next</value></data>
+  <data name="RS_Requests" xml:space="preserve"><value>Your date change requests</value></data>
+  <data name="RS_Request_Pending" xml:space="preserve"><value>Awaiting clinic review</value></data>
+  <data name="RS_Request_Approved" xml:space="preserve"><value>Approved</value></data>
+  <data name="RS_Request_Declined" xml:space="preserve"><value>Declined; contact the clinic</value></data>
+  <data name="RS_Reminders" xml:space="preserve"><value>Appointment reminders</value></data>
+  <data name="RS_ReminderHelp" xml:space="preserve"><value>Reminders appear seven days before, on the date, seven days overdue, and monthly while a pickup remains outstanding.</value></data>
+  <data name="RS_AppointmentReminder" xml:space="preserve"><value>DRMC appointment reminder: {0}.</value></data>
+  <data name="RS_MarkRead" xml:space="preserve"><value>Mark as read</value></data>
+  <data name="RS_EmailOptIn" xml:space="preserve"><value>Send appointment reminders to my confirmed account email</value></data>
+  <data name="RS_EmailHelp" xml:space="preserve"><value>Emails use neutral DRMC wording and contain no program or medicine details. You can turn them off here anytime.</value></data>
+  <data name="RS_SavePreferences" xml:space="preserve"><value>Save reminder settings</value></data>
+  <data name="RS_ClinicHelp" xml:space="preserve"><value>Clinic contact and help</value></data>
+  <data name="RS_MissedHelp" xml:space="preserve"><value>If you missed a pickup or may run out before your appointment, contact the clinic promptly to arrange help.</value></data>
+  <data name="RS_LocationHours" xml:space="preserve"><value>Second floor, Outpatient Department (OPD). Monday–Friday, 8 AM–5 PM, as published by DRMC. Contact the clinic to confirm availability.</value></data>
+  <data name="RS_OfficialInfo" xml:space="preserve"><value>Official clinic information</value></data>
+  <data name="RS_Notifications" xml:space="preserve"><value>DRMC appointment notifications</value></data>
 </root>

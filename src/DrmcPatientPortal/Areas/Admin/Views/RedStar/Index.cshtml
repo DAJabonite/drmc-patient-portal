@@ -1,0 +1,45 @@
+@model RedStarRegistryPage
+@{ ViewData["Title"] = "Red Star registry"; var pages = Math.Max(1, (Model.Total + 24) / 25); }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div><h1 class="h3 mb-1">Red Star</h1><p class="text-muted mb-0">Refill schedules, follow-up work and private clinic records.</p></div>
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-action="Create" class="btn btn-primary">Add enrollment</a>
+        <a asp-controller="RedStarImports" asp-action="Index" class="btn btn-outline-secondary">Import registry</a>
+        <a asp-action="Deliveries" class="btn btn-outline-secondary">Reminders</a>
+        <a asp-action="Audit" class="btn btn-outline-secondary">Access history</a>
+    </div>
+</div>
+<partial name="_Status" />
+<div class="row g-3 mb-4">
+    @foreach (var item in new[] { ("today", "Due today"), ("week", "Due in the next 7 days"), ("overdue", "Overdue refill"), ("followup", "Follow-up / LTFU review"), ("verification", "Needs verification"), ("requests", "Reschedule requests") })
+    {
+        <div class="col-6 col-lg-4"><a asp-action="Index" asp-route-worklist="@item.Item1" class="card h-100 text-decoration-none @(Model.Worklist == item.Item1 ? "border-primary" : null)"><div class="card-body"><span class="d-block text-muted">@item.Item2</span><strong class="fs-3">@Model.Counts[item.Item1]</strong></div></a></div>
+    }
+</div>
+<p class="small text-muted">Follow-up review flags active ART patients with an uncollected refill at least one calendar month past its scheduled date. Staff review the record; this flag does not change enrollment status.</p>
+<div class="card mb-4"><div class="card-body">
+    <form asp-action="Index" method="get" class="row g-3 align-items-end">
+        <div class="col-md-4"><label for="search" class="form-label">Patient code / code name</label><input id="search" name="search" value="@Model.Search" maxlength="120" class="form-control" autocomplete="off" /></div>
+        <div class="col-md-3"><label for="program" class="form-label">Program</label><select id="program" name="program" class="form-select"><option value="">All programs</option>@foreach (var program in Enum.GetValues<RedStarProgram>()) { <option value="@program" selected="@(Model.Program == program)">@program</option> }</select></div>
+        <div class="col-md-3"><label for="status" class="form-label">Status</label><select id="status" name="status" class="form-select"><option value="">All statuses</option>@foreach (var status in Enum.GetValues<RedStarStatus>()) { <option value="@status" selected="@(Model.Status == status)">@AdminChips.Humanize(status)</option> }</select></div>
+        <input name="worklist" type="hidden" value="@Model.Worklist" />
+        <div class="col-md-2"><button class="btn btn-primary" type="submit">Filter</button> <a asp-action="Index" class="btn btn-link">All</a></div>
+    </form>
+</div></div>
+<div class="card"><div class="table-responsive"><table class="table align-middle mb-0">
+    <thead><tr><th scope="col">Patient code</th><th scope="col">Code name</th><th scope="col">Program</th><th scope="col">Status</th><th scope="col">Next refill</th><th scope="col">Follow-up</th><th scope="col">Requests</th></tr></thead>
+    <tbody>
+    @foreach (var row in Model.Rows)
+    {
+        <tr><td><a asp-action="Details" asp-route-id="@row.EnrollmentId" class="fw-semibold">@row.PatientCode</a></td><td>@row.CodeName</td><td>@row.Program</td><td>@AdminChips.Humanize(row.Status)</td><td>@(row.NextRefill?.ToString("dd MMM yyyy") ?? "Not scheduled")</td><td>@(row.FollowUpReview ? "Follow-up / LTFU review" : "—")</td><td>@row.PendingRequests</td></tr>
+    }
+    @if (Model.Rows.Count == 0) { <tr><td colspan="7" class="text-muted p-4">No records match these filters.</td></tr> }
+    </tbody>
+</table></div></div>
+<nav aria-label="Registry pages" class="d-flex justify-content-between align-items-center mt-3">
+    <span class="small text-muted">@Model.Total enrollments · page @Model.Page of @pages</span>
+    <div class="d-flex gap-2">
+        @if (Model.Page > 1) { <a asp-action="Index" asp-route-page="@(Model.Page - 1)" asp-route-search="@Model.Search" asp-route-worklist="@Model.Worklist" asp-route-program="@Model.Program" asp-route-status="@Model.Status" class="btn btn-outline-secondary btn-sm">Previous</a> }
+        @if (Model.Page < pages) { <a asp-action="Index" asp-route-page="@(Model.Page + 1)" asp-route-search="@Model.Search" asp-route-worklist="@Model.Worklist" asp-route-program="@Model.Program" asp-route-status="@Model.Status" class="btn btn-outline-secondary btn-sm">Next</a> }
+    </div>
+</nav>

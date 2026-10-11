@@ -40,6 +40,7 @@ public sealed class AccessMatrixTests(PortalFactory factory)
         ["LabStaff"] = ["Home", "LabResults", "LabResultItems"],
         ["RadiologyStaff"] = ["Home", "RadiologyStudies"],
         ["PatientServicesStaff"] = ["Home", "RegistrationCodes"],
+        ["RedStarStaff"] = ["Home"],
     };
 
     private async Task<HttpClient> ClientFor(string actor) => actor switch
@@ -48,6 +49,7 @@ public sealed class AccessMatrixTests(PortalFactory factory)
         "LabStaff" => await StaffAccounts.LabAsync(factory),
         "RadiologyStaff" => await StaffAccounts.RadiologyAsync(factory),
         "PatientServicesStaff" => await StaffAccounts.PatientServicesAsync(factory),
+        "RedStarStaff" => await StaffAccounts.SignInAsync(factory, "matrix.redstar@fixtures.test", "RedStarStaff"),
         "Patient" => await PatientAsync(),
         "LabStaffWithout2FA" => await NoMfaLabStaffAsync(),
         _ => factory.CreatePortalClient(),
@@ -74,6 +76,7 @@ public sealed class AccessMatrixTests(PortalFactory factory)
     [InlineData("LabStaff")]
     [InlineData("RadiologyStaff")]
     [InlineData("PatientServicesStaff")]
+    [InlineData("RedStarStaff")]
     [InlineData("Patient")]
     [InlineData("LabStaffWithout2FA")]
     [InlineData("Anonymous")]
@@ -87,7 +90,7 @@ public sealed class AccessMatrixTests(PortalFactory factory)
             {
                 "Admin" => HttpStatusCode.OK,
                 "Anonymous" => HttpStatusCode.Redirect,
-                "LabStaff" or "RadiologyStaff" or "PatientServicesStaff" => StaffFamilies[actor].Contains(family) ? HttpStatusCode.OK : HttpStatusCode.Forbidden,
+                "LabStaff" or "RadiologyStaff" or "PatientServicesStaff" or "RedStarStaff" => StaffFamilies[actor].Contains(family) ? HttpStatusCode.OK : HttpStatusCode.Forbidden,
                 _ => HttpStatusCode.Forbidden,
             };
             foreach (var path in paths)
@@ -162,7 +165,7 @@ public sealed class AccessMatrixTests(PortalFactory factory)
     {
         using var scope = factory.Services.CreateScope();
         var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-        foreach (var role in new[] { "Admin", "LabStaff", "RadiologyStaff", "PatientServicesStaff" }) Assert.True(await roles.RoleExistsAsync(role), role);
+        foreach (var role in new[] { "Admin", "LabStaff", "RadiologyStaff", "PatientServicesStaff", "RedStarStaff" }) Assert.True(await roles.RoleExistsAsync(role), role);
     }
 
     private static Endpoint AdminEndpoint(string controller, params object[] metadata)

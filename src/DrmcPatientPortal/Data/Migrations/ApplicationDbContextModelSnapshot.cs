@@ -298,8 +298,9 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Property<DateTimeOffset>("ExpiresUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.HasKey("UserId", "KeyFingerprint", "TimeStep")
-                        .HasAnnotation("SqlServer:Clustered", false);
+                    b.HasKey("UserId", "KeyFingerprint", "TimeStep");
+
+                    SqlServerKeyBuilderExtensions.IsClustered(b.HasKey("UserId", "KeyFingerprint", "TimeStep"), false);
 
                     b.HasIndex("ExpiresUtc");
 
@@ -1192,6 +1193,382 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.ToTable("RadiologyStudies");
                 });
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.RedStarAppointment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset?>("ConfirmedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("EnrollmentId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Label")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("RemindersVerified")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("State")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnrollmentId");
+
+                    b.HasIndex("State", "Kind", "DueDate");
+
+                    b.ToTable("RedStarAppointments");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.RedStarAudit", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<DateTimeOffset>("TimestampUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("RedStarAudits");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.RedStarDispense", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AppointmentId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DaysSupplied")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DispensedDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("EnrollmentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("EstimatedSupplyEnd")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Medicines")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("RecordedById")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentId")
+                        .IsUnique()
+                        .HasFilter("[AppointmentId] IS NOT NULL");
+
+                    b.HasIndex("EnrollmentId");
+
+                    b.ToTable("RedStarDispenses");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.RedStarEnrollment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("EnrolledDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Medicines")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("PatientId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Program")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReceivingHub")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("SourceStatus")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("StatusDate")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PatientId", "Program")
+                        .IsUnique();
+
+                    b.ToTable("RedStarEnrollments");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.RedStarImportBatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("ApprovedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("CreatedById")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTimeOffset>("CreatedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<byte[]>("ProtectedPreview")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<byte[]>("ProtectedSource")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("RedStarImportBatches");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.RedStarPatient", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("CodeName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("ContactNumber")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<bool>("EmailRemindersEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("HospitalNumber")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("PatientCode")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("PortalUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PatientCode")
+                        .IsUnique();
+
+                    b.HasIndex("PortalUserId")
+                        .IsUnique()
+                        .HasFilter("[PortalUserId] IS NOT NULL");
+
+                    b.ToTable("RedStarPatients");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.RedStarReminder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AppointmentId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AppointmentRevision")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Channel")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("CompletedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("LeaseExpiresUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("LeaseOwner")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset>("NextAttemptUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("PortalUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<byte[]>("ProtectedPayload")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("Stage")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<int>("State")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PortalUserId");
+
+                    b.HasIndex("State", "NextAttemptUtc");
+
+                    b.HasIndex("AppointmentId", "AppointmentRevision", "Stage", "Channel", "PortalUserId")
+                        .IsUnique()
+                        .HasFilter("[PortalUserId] IS NOT NULL");
+
+                    b.ToTable("RedStarReminders");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.RedStarRescheduleRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AppointmentId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AppointmentRevision")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("CreatedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("RequestedDate")
+                        .HasColumnType("date");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("State")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentId", "AppointmentRevision")
+                        .IsUnique()
+                        .HasFilter("[State] = 0");
+
+                    b.ToTable("RedStarRescheduleRequests");
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.StaffInvitation", b =>
                 {
                     b.Property<int>("Id")
@@ -1558,6 +1935,81 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Navigation("Patient");
                 });
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.RedStarAppointment", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.RedStarEnrollment", "Enrollment")
+                        .WithMany("Appointments")
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Enrollment");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.RedStarDispense", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.RedStarAppointment", null)
+                        .WithMany()
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DrmcPatientPortal.Models.RedStarEnrollment", "Enrollment")
+                        .WithMany("Dispenses")
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Enrollment");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.RedStarEnrollment", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.RedStarPatient", "Patient")
+                        .WithMany("Enrollments")
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.RedStarPatient", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", "PortalUser")
+                        .WithMany()
+                        .HasForeignKey("PortalUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("PortalUser");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.RedStarReminder", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.RedStarAppointment", "Appointment")
+                        .WithMany()
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DrmcPatientPortal.Models.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("PortalUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Appointment");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.RedStarRescheduleRequest", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.RedStarAppointment", "Appointment")
+                        .WithMany()
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Appointment");
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.StaffInvitation", b =>
                 {
                     b.HasOne("DrmcPatientPortal.Models.ApplicationUser", null)
@@ -1650,6 +2102,18 @@ namespace DrmcPatientPortal.Data.Migrations
             modelBuilder.Entity("DrmcPatientPortal.Models.Prescription", b =>
                 {
                     b.Navigation("DoseSchedules");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.RedStarEnrollment", b =>
+                {
+                    b.Navigation("Appointments");
+
+                    b.Navigation("Dispenses");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.RedStarPatient", b =>
+                {
+                    b.Navigation("Enrollments");
                 });
 #pragma warning restore 612, 618
         }

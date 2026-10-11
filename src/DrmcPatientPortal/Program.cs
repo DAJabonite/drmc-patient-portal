@@ -38,6 +38,12 @@ builder.Services.AddOptions<AccountEmailOptions>().Bind(builder.Configuration.Ge
         "Account email retry, expiry, or retention settings are outside the supported bounds.").ValidateOnStart();
 builder.Services.AddSingleton<IAccountEmailQueue, AccountEmailQueue>();
 builder.Services.AddSingleton<AccountEmailDispatcher>();
+builder.Services.AddOptions<RedStarOptions>().Bind(builder.Configuration.GetSection("RedStar"))
+    .Validate(x => x.MaximumAttempts is >= 1 and <= 10, "Appointment reminder attempts must be 1–10.").ValidateOnStart();
+builder.Services.AddScoped<RedStarPatientService>();
+builder.Services.AddScoped<RedStarImports>();
+builder.Services.AddSingleton<RedStarReminderService>();
+builder.Services.AddHostedService<RedStarReminderWorker>();
 builder.Services.AddOptions<PortalRateLimitOptions>().Bind(builder.Configuration.GetSection("RateLimits"))
     .Validate(x => x.AuthenticationPerIp > 0 && x.AuthenticationPerAccount > 0 && x.EmailPerIp > 0 && x.EmailPerAccount > 0 &&
         x.ScansPerIp > 0 && x.ConcurrentScans > 0 && x.PdfPerUser > 0, "All rate limits must be positive.").ValidateOnStart();

@@ -211,4 +211,56 @@
   <data name="Verification_EmailSubject" xml:space="preserve"><value>Kumpirmahin ang iyong DRMC email address</value></data>
   <data name="Verification_EmailIntro" xml:space="preserve"><value>Upang kumpirmahin ang iyong email address para sa DRMC Patient Portal, piliin ang link na ito:</value></data>
   <data name="Verification_EmailLinkText" xml:space="preserve"><value>Kumpirmahin ang email address</value></data>
+  <data name="RS_Title" xml:space="preserve"><value>Red Star</value></data>
+  <data name="RS_Private" xml:space="preserve"><value>Pribadong iskedyul ng iyong klinika</value></data>
+  <data name="RS_Saved" xml:space="preserve"><value>Na-save ang iyong pagbabago.</value></data>
+  <data name="RS_NextRefill" xml:space="preserve"><value>Susunod na pagkuha ng gamot</value></data>
+  <data name="RS_NoRefill" xml:space="preserve"><value>Wala pang iskedyul ng pagkuha ng gamot. Makipag-ugnayan sa klinika.</value></data>
+  <data name="RS_ViewSchedule" xml:space="preserve"><value>Tingnan ang iskedyul sa Red Star</value></data>
+  <data name="RS_OverdueDays" xml:space="preserve"><value>{0} araw na lampas sa iskedyul</value></data>
+  <data name="RS_InDays" xml:space="preserve"><value>Sa loob ng {0} araw</value></data>
+  <data name="RS_DueToday" xml:space="preserve"><value>Nakatakda ngayong araw</value></data>
+  <data name="RS_Confirmed" xml:space="preserve"><value>Kumpirmadong pagdalo</value></data>
+  <data name="RS_Scheduled" xml:space="preserve"><value>Naka-iskedyul</value></data>
+  <data name="RS_Appointments" xml:space="preserve"><value>Mga appointment mo</value></data>
+  <data name="RS_NoAppointments" xml:space="preserve"><value>Wala pang naitalang susunod na appointment.</value></data>
+  <data name="RS_Kind_Refill" xml:space="preserve"><value>Pagkuha ng gamot</value></data>
+  <data name="RS_Kind_Lab" xml:space="preserve"><value>Appointment sa laboratoryo</value></data>
+  <data name="RS_Kind_Consultation" xml:space="preserve"><value>Konsultasyon</value></data>
+  <data name="RS_Program_ART" xml:space="preserve"><value>ART</value></data>
+  <data name="RS_Program_PrEP" xml:space="preserve"><value>PrEP</value></data>
+  <data name="RS_Program_PEP" xml:space="preserve"><value>PEP</value></data>
+  <data name="RS_Program_NewbornProphylaxis" xml:space="preserve"><value>Prophylaxis para sa bagong silang</value></data>
+  <data name="RS_Program_Unverified" xml:space="preserve"><value>Naghihintay ng beripikasyon ng klinika</value></data>
+  <data name="RS_Confirm" xml:space="preserve"><value>Kumpirmahin ang pagdalo</value></data>
+  <data name="RS_Pending" xml:space="preserve"><value>Hinihintay ang pagsusuri ng klinika</value></data>
+  <data name="RS_RequestChange" xml:space="preserve"><value>Humiling ng ibang petsa</value></data>
+  <data name="RS_PreferredDate" xml:space="preserve"><value>Gustong petsa</value></data>
+  <data name="RS_Reason" xml:space="preserve"><value>Dahilan (opsyonal)</value></data>
+  <data name="RS_ChangeHelp" xml:space="preserve"><value>Mananatili ang kasalukuyang appointment hanggang aprubahan ng klinika ang pagbabago.</value></data>
+  <data name="RS_SendRequest" xml:space="preserve"><value>Ipadala ang kahilingan</value></data>
+  <data name="RS_History" xml:space="preserve"><value>Kasaysayan ng pagkuha ng gamot</value></data>
+  <data name="RS_NoHistory" xml:space="preserve"><value>Wala pang naitalang pagkuha ng gamot.</value></data>
+  <data name="RS_PickupDate" xml:space="preserve"><value>Petsa ng pagkuha</value></data>
+  <data name="RS_Medicines" xml:space="preserve"><value>Mga gamot na ibinigay</value></data>
+  <data name="RS_DaysSupplied" xml:space="preserve"><value>Bilang ng araw ng suplay</value></data>
+  <data name="RS_NotRecorded" xml:space="preserve"><value>Hindi naitala</value></data>
+  <data name="RS_Previous" xml:space="preserve"><value>Nakaraan</value></data>
+  <data name="RS_Next" xml:space="preserve"><value>Susunod</value></data>
+  <data name="RS_Requests" xml:space="preserve"><value>Mga kahilingan mong baguhin ang petsa</value></data>
+  <data name="RS_Request_Pending" xml:space="preserve"><value>Hinihintay ang pagsusuri ng klinika</value></data>
+  <data name="RS_Request_Approved" xml:space="preserve"><value>Inaprubahan</value></data>
+  <data name="RS_Request_Declined" xml:space="preserve"><value>Hindi inaprubahan; makipag-ugnayan sa klinika</value></data>
+  <data name="RS_Reminders" xml:space="preserve"><value>Mga paalala sa appointment</value></data>
+  <data name="RS_ReminderHelp" xml:space="preserve"><value>May paalala pitong araw bago, sa mismong araw, pitong araw pagkatapos, at buwan-buwan habang hindi pa nakukuha ang gamot.</value></data>
+  <data name="RS_AppointmentReminder" xml:space="preserve"><value>Paalala sa appointment sa DRMC: {0}.</value></data>
+  <data name="RS_MarkRead" xml:space="preserve"><value>Markahang nabasa</value></data>
+  <data name="RS_EmailOptIn" xml:space="preserve"><value>Magpadala ng paalala sa aking kumpirmadong email</value></data>
+  <data name="RS_EmailHelp" xml:space="preserve"><value>Pangkalahatang DRMC na mensahe ang email, walang detalye ng programa o gamot. Maaari mo itong patayin dito anumang oras.</value></data>
+  <data name="RS_SavePreferences" xml:space="preserve"><value>I-save ang mga setting ng paalala</value></data>
+  <data name="RS_ClinicHelp" xml:space="preserve"><value>Kontak at tulong ng klinika</value></data>
+  <data name="RS_MissedHelp" xml:space="preserve"><value>Kung hindi ka nakakuha o maaaring maubos ang gamot bago ang appointment, makipag-ugnayan agad sa klinika.</value></data>
+  <data name="RS_LocationHours" xml:space="preserve"><value>Ikalawang palapag, Outpatient Department (OPD). Lunes–Biyernes, 8 AM–5 PM, ayon sa DRMC. Kumpirmahin sa klinika ang oras ng serbisyo.</value></data>
+  <data name="RS_OfficialInfo" xml:space="preserve"><value>Opisyal na impormasyon ng klinika</value></data>
+  <data name="RS_Notifications" xml:space="preserve"><value>Mga abiso sa appointment sa DRMC</value></data>
 </root>
