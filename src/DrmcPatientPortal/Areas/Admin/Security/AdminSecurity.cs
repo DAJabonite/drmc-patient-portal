@@ -28,13 +28,13 @@ public sealed class AdminAuthorizationHandler(UserManager<ApplicationUser> users
 
 public static class StaffRoles
 {
-    public const string Admin = "Admin", Lab = "LabStaff", Radiology = "RadiologyStaff", PatientServices = "PatientServicesStaff";
-    public static readonly IReadOnlyList<string> All = [Admin, Lab, Radiology, PatientServices];
+    public const string Admin = "Admin", Lab = "LabStaff", Radiology = "RadiologyStaff", PatientServices = "PatientServicesStaff", RedStar = "RedStarStaff";
+    public static readonly IReadOnlyList<string> All = [Admin, Lab, Radiology, PatientServices, RedStar];
     // The Staff access screen may grant or revoke only these roles; Admin is never grantable there.
-    public static readonly IReadOnlyList<string> Grantable = [Lab, Radiology, PatientServices];
+    public static readonly IReadOnlyList<string> Grantable = [Lab, Radiology, PatientServices, RedStar];
     public static string Label(string role) => role switch
     {
-        Lab => "Laboratory staff", Radiology => "Radiology staff", PatientServices => "Patient services staff", _ => role,
+        Lab => "Laboratory staff", Radiology => "Radiology staff", PatientServices => "Patient services staff", RedStar => "Red Star staff", _ => role,
     };
 }
 
@@ -43,7 +43,7 @@ public static class StaffRoles
 public static class AdminPolicies
 {
     public const string Admin = "AdminAccess", Lab = "LabStaffAccess", Radiology = "RadiologyStaffAccess", Console = "StaffConsoleAccess",
-        PatientServices = "PatientServicesAccess";
+        PatientServices = "PatientServicesAccess", RedStar = "RedStarAccess";
 
     public static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> Roles = new Dictionary<string, IReadOnlyList<string>>
     {
@@ -51,7 +51,8 @@ public static class AdminPolicies
         [Lab] = [StaffRoles.Admin, StaffRoles.Lab],
         [Radiology] = [StaffRoles.Admin, StaffRoles.Radiology],
         [PatientServices] = [StaffRoles.Admin, StaffRoles.PatientServices],
-        [Console] = [StaffRoles.Admin, StaffRoles.Lab, StaffRoles.Radiology, StaffRoles.PatientServices],
+        [RedStar] = [StaffRoles.RedStar],
+        [Console] = [StaffRoles.Admin, StaffRoles.Lab, StaffRoles.Radiology, StaffRoles.PatientServices, StaffRoles.RedStar],
     };
 
     public static readonly IReadOnlyDictionary<string, string> Controllers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -61,6 +62,8 @@ public static class AdminPolicies
         ["LabResultItems"] = Lab,
         ["RadiologyStudies"] = Radiology,
         ["RegistrationCodes"] = PatientServices,
+        ["RedStar"] = RedStar,
+        ["RedStarImports"] = RedStar,
     };
 
     public static string For(string? controller) => controller is not null && Controllers.TryGetValue(controller, out var policy) ? policy : Admin;
@@ -70,7 +73,7 @@ public static class AdminPolicies
     public static void Register(AuthorizationOptions options)
     {
         options.AddPolicy(Admin, policy => policy.RequireAuthenticatedUser().RequireRole(StaffRoles.Admin).AddRequirements(new AdminRequirement()));
-        foreach (var name in new[] { Lab, Radiology, PatientServices, Console })
+        foreach (var name in new[] { Lab, Radiology, PatientServices, RedStar, Console })
             options.AddPolicy(name, policy => policy.RequireAuthenticatedUser().AddRequirements(new StaffRequirement(Roles[name])));
     }
 }

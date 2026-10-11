@@ -502,7 +502,8 @@ public sealed class InitialMigrationRollbackTests
             await using var sql = new SqlConnection(connection.ConnectionString); await sql.OpenAsync();
             await using var query = sql.CreateCommand(); query.CommandText = "SELECT COUNT(*) FROM sys.tables WHERE name <> '__EFMigrationsHistory'";
             Assert.Equal(0, (int)(await query.ExecuteScalarAsync())!);
-            await db.Database.MigrateAsync(); Assert.Equal(11, (await db.Database.GetAppliedMigrationsAsync()).Count());
+            await db.Database.MigrateAsync(); Assert.Empty(await db.Database.GetPendingMigrationsAsync());
+            Assert.Contains("20261011120435_AddPrivateRedStarRegistry", await db.Database.GetAppliedMigrationsAsync());
         }
         finally { await db.Database.EnsureDeletedAsync(); }
     }

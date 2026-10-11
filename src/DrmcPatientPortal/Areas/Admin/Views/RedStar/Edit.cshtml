@@ -1,0 +1,13 @@
+@model RedStarEnrollmentInput
+@{ ViewData["Title"] = "Edit Red Star enrollment"; var enrollmentId = ViewData["EnrollmentId"] as int? ?? 0; }
+<div class="d-flex justify-content-between align-items-center gap-3 mb-4">
+    <div><h1 class="h3 mb-1">Edit enrollment</h1><p class="text-muted mb-0">Verify imported information and record program or status changes.</p></div>
+    <a asp-action="Details" asp-route-id="@enrollmentId" class="btn btn-outline-secondary">Back to record</a>
+</div>
+<div class="card"><div class="card-body p-4">
+    <form asp-action="Edit" asp-route-id="@enrollmentId" method="post" autocomplete="off">
+        <partial name="_EnrollmentForm" model="Model" />
+        <p class="small text-muted">Closing an enrollment cancels its scheduled care dates, pending requests and reminders. Patient identity edits apply across this patient's programs.</p>
+        <button type="submit" class="btn btn-primary">Save verified changes</button>
+    </form>
+</div></div>

@@ -1,0 +1,16 @@
+@model DrmcPatientPortal.Services.RedStarRefillCard
+@{ var today = DrmcPatientPortal.Services.ClinicalClock.Today; var days = Model is null ? 0 : (Model.DueDate.Date - today).Days; }
+<section class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" aria-labelledby="redStarRefillHeading">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div><p class="small text-muted mb-1">@Loc["RS_Title"]</p><h2 class="h5 fw-bold text-primary-drmc" id="redStarRefillHeading">@Loc["RS_NextRefill"]</h2>
+            @if (Model is null) { <p class="text-muted mb-0">@Loc["RS_NoRefill"]</p> }
+            else
+            {
+                <p class="h4 fw-bold mb-2">@Model.DueDate.ToString("MMMM d, yyyy")</p>
+                <span class="badge @(days < 0 ? "bg-danger-subtle text-danger" : "bg-primary-subtle text-primary")">@(days < 0 ? Loc["RS_OverdueDays", -days] : days == 0 ? Loc["RS_DueToday"] : Loc["RS_InDays", days])</span>
+                <span class="small ms-2">@Loc[Model.Confirmed ? "RS_Confirmed" : "RS_Scheduled"]</span>
+                @if (!string.IsNullOrWhiteSpace(Model.Medicines)) { <p class="small mt-3 mb-0 text-break">@Model.Medicines</p> }
+            }
+        </div><a asp-area="" asp-controller="RedStarPatient" asp-action="Index" class="btn btn-outline-drmc rounded-pill">@Loc["RS_ViewSchedule"]</a>
+    </div>
+</section>

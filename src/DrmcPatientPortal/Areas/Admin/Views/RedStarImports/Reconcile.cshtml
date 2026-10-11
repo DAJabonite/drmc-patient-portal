@@ -1,0 +1,45 @@
+@model RedStarImportReview
+@using DrmcPatientPortal.Services
+@{ ViewData["Title"] = "Reconcile registry"; var pages = Math.Max(1, (Model.Preview.Rows.Count + 24) / 25); var approved = Model.Batch.ApprovedUtc.HasValue; }
+<div class="admin-page-header"><div><p class="admin-eyebrow">Red Star imports</p><h1 class="admin-title">@(approved ? "Approved registry batch" : "Reconcile registry")</h1><p class="admin-subtitle">@Model.Preview.Rows.Count patient rows · @Model.Preview.IgnoredRows blank or explanatory rows skipped · @Model.Preview.Choices.Count saved include decisions</p></div><a asp-action="Index" class="btn btn-outline-primary">Back to imports</a></div>
+@if (TempData["RedStarImportMessage"] is string message) { <div class="alert alert-info" role="status">@message</div> }
+<div class="alert alert-secondary">Existing records require their explicit private record ID. Verify the clinic code and identifying details in the <a asp-controller="RedStar" asp-action="Index">registry</a> before selecting an update. Blank medicine and date fields preserve existing values. Included updates can replace a schedule; reminders remain inactive on newly imported schedules.</div>
+<details class="admin-card mb-3"><summary class="admin-card-header">Deferred source columns (@Model.Preview.DeferredColumns.Count)</summary><div class="admin-card-body"><p class="small text-muted">These columns remain in the protected original workbook and are not clinical chart entries in this release.</p><ul>@foreach (var column in Model.Preview.DeferredColumns) { <li>@column</li> }</ul><form asp-action="Source" asp-route-id="@Model.Batch.Id" method="post"><button class="btn btn-outline-secondary" type="submit">Download protected original</button></form></div></details>
+<form asp-action="Reconcile" asp-route-id="@Model.Batch.Id" method="post" class="admin-form">
+    <input type="hidden" name="Version" value="@Convert.ToBase64String(Model.Batch.RowVersion)" /><input type="hidden" name="Page" value="@Model.Page" />
+    @for (var i = 0; i < Model.Rows.Count; i++)
+    {
+        var row = Model.Rows[i]; var choice = Model.Choices[i]; var prefix = $"Choices[{i}]"; var uid = $"import-{i}";
+        <fieldset class="admin-card mb-3" disabled="@(approved ? "disabled" : null)">
+            <legend class="admin-card-header h6">@row.Sheet · source row @row.Number</legend>
+            <div class="admin-card-body">
+                <input type="hidden" name="@(prefix).Key" value="@choice.Key" />
+                <div class="form-check mb-3"><input id="@(uid)-include" name="@(prefix).Include" value="true" type="checkbox" class="form-check-input" checked="@(choice.Include ? "checked" : null)" /><input type="hidden" name="@(prefix).Include" value="false" /><label for="@(uid)-include" class="form-check-label fw-semibold">Include this row on approval</label></div>
+                @if (row.Warnings.Count > 0) { <ul class="small text-muted">@foreach (var warning in row.Warnings) { <li>@warning</li> }</ul> }
+                @if (Model.Candidates[row.Key].Count > 0) { <p class="small"><strong>Possible existing records (never auto-selected):</strong> @foreach (var candidate in Model.Candidates[row.Key]) { <span class="d-inline-block me-3">ID @candidate.Id · @candidate.PatientCode @candidate.CodeName</span> }</p> }
+                <div class="row g-3">
+                    <div class="col-md-4"><label for="@(uid)-existing" class="form-label">Existing private record ID (blank creates new)</label><input id="@(uid)-existing" name="@(prefix).ExistingPatientId" value="@choice.ExistingPatientId" type="number" min="1" class="form-control" /></div>
+                    <div class="col-md-4"><label for="@(uid)-code" class="form-label">Patient code</label><input id="@(uid)-code" name="@(prefix).PatientCode" value="@choice.PatientCode" maxlength="80" class="form-control" /></div>
+                    <div class="col-md-4"><label for="@(uid)-codename" class="form-label">Code name</label><input id="@(uid)-codename" name="@(prefix).CodeName" value="@choice.CodeName" maxlength="120" class="form-control" /></div>
+                    <div class="col-md-6"><label for="@(uid)-name" class="form-label">Full name</label><input id="@(uid)-name" name="@(prefix).FullName" value="@choice.FullName" maxlength="200" class="form-control" /></div>
+                    <div class="col-md-3"><label for="@(uid)-hospital" class="form-label">Hospital number</label><input id="@(uid)-hospital" name="@(prefix).HospitalNumber" value="@choice.HospitalNumber" maxlength="80" class="form-control" /></div>
+                    <div class="col-md-3"><label for="@(uid)-contact" class="form-label">Contact number</label><input id="@(uid)-contact" name="@(prefix).ContactNumber" value="@choice.ContactNumber" maxlength="40" class="form-control" /></div>
+                    <div class="col-12"><label for="@(uid)-address" class="form-label">Address</label><input id="@(uid)-address" name="@(prefix).Address" value="@choice.Address" maxlength="500" class="form-control" /></div>
+                    <div class="col-md-4"><label for="@(uid)-program" class="form-label">Program</label><select id="@(uid)-program" name="@(prefix).Program" class="form-select">@foreach (var program in Enum.GetValues<RedStarProgram>()) { <option value="@program" selected="@(choice.Program == program ? "selected" : null)">@program</option> }</select></div>
+                    <div class="col-md-4"><label for="@(uid)-status" class="form-label">Status</label><select id="@(uid)-status" name="@(prefix).Status" class="form-select">@foreach (var status in Enum.GetValues<RedStarStatus>()) { <option value="@status" selected="@(choice.Status == status ? "selected" : null)">@status</option> }</select></div>
+                    <div class="col-md-4"><label for="@(uid)-hub" class="form-label">Receiving hub</label><input id="@(uid)-hub" name="@(prefix).ReceivingHub" value="@choice.ReceivingHub" maxlength="200" class="form-control" /></div>
+                    <div class="col-12"><label for="@(uid)-medicines" class="form-label">Recorded medicines</label><textarea id="@(uid)-medicines" name="@(prefix).Medicines" maxlength="2000" class="form-control" rows="2">@choice.Medicines</textarea></div>
+                    <div class="col-md-4"><label for="@(uid)-enrolled" class="form-label">Enrollment date</label><input id="@(uid)-enrolled" name="@(prefix).EnrolledDate" value="@choice.EnrolledDate?.ToString("yyyy-MM-dd")" type="date" class="form-control" /></div>
+                    <div class="col-md-4"><label for="@(uid)-start" class="form-label">Treatment/course start</label><input id="@(uid)-start" name="@(prefix).StartDate" value="@choice.StartDate?.ToString("yyyy-MM-dd")" type="date" class="form-control" /></div>
+                    <div class="col-md-4"><label for="@(uid)-statusdate" class="form-label">Status effective date</label><input id="@(uid)-statusdate" name="@(prefix).StatusDate" value="@choice.StatusDate?.ToString("yyyy-MM-dd")" type="date" class="form-control" /></div>
+                    <div class="col-md-6"><label for="@(uid)-dispensed" class="form-label">Recorded refill/pickup date</label><input id="@(uid)-dispensed" name="@(prefix).DispensedDate" value="@choice.DispensedDate?.ToString("yyyy-MM-dd")" type="date" class="form-control" /></div>
+                    <div class="col-md-6"><label for="@(uid)-next" class="form-label">Next refill date</label><input id="@(uid)-next" name="@(prefix).NextRefillDate" value="@choice.NextRefillDate?.ToString("yyyy-MM-dd")" type="date" class="form-control" /></div>
+                </div>
+                @if (row.SourceStatus is not null) { <p class="small text-muted mt-3 mb-0">Source status: @row.SourceStatus</p> }
+            </div>
+        </fieldset>
+    }
+    @if (!approved) { <div class="admin-form-actions mb-3"><button class="btn btn-primary" type="submit">Save this page's decisions</button></div> }
+</form>
+<nav aria-label="Registry row pages" class="d-flex justify-content-between align-items-center mb-3"><span>Page @Model.Page of @pages</span><span class="d-flex gap-2">@if (Model.Page > 1) { <a asp-action="Reconcile" asp-route-id="@Model.Batch.Id" asp-route-page="@(Model.Page - 1)" class="btn btn-outline-secondary">Previous</a> } @if (Model.Page < pages) { <a asp-action="Reconcile" asp-route-id="@Model.Batch.Id" asp-route-page="@(Model.Page + 1)" class="btn btn-outline-secondary">Next</a> }</span></nav>
+@if (!approved) { <div class="admin-card"><div class="admin-card-body"><h2 class="h5">Approve saved decisions</h2><p>Approval applies all @Model.Preview.Choices.Count saved include decisions across every page. Unsaved changes are excluded. Existing records are checked for changes before the batch commits.</p><form asp-action="Approve" asp-route-id="@Model.Batch.Id" method="post"><input type="hidden" name="version" value="@Convert.ToBase64String(Model.Batch.RowVersion)" /><button class="btn btn-primary" type="submit" disabled="@(Model.Preview.Choices.Count == 0 ? "disabled" : null)">Approve included rows</button></form></div></div> }

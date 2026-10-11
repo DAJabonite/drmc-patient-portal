@@ -35,7 +35,7 @@ public sealed class RegistrationCodesController(ApplicationDbContext db, AdminWr
         await AdminAudit.ViewAsync(db, User, Entity, codes.Select(c => c.Code.PatientRecordId).Distinct(), "Index", cancellationToken);
         var now = DateTime.UtcNow;
         var rows = codes.Select(c => new RegistrationCodeRow(c.Code.Id, c.Code.PatientRecordId, c.FullName, c.HospitalNumber, c.Code.CodeHint,
-            c.Code.IssuingPoint, Local(c.Code.IssuedAtUtc), Local(c.Code.ExpiresAtUtc), c.Code.RedeemedAtUtc is { } r ? Local(r) : null,
+            RegistrationCodeIssuingPoints.PublicLabel(c.Code.IssuingPoint), Local(c.Code.IssuedAtUtc), Local(c.Code.ExpiresAtUtc), c.Code.RedeemedAtUtc is { } r ? Local(r) : null,
             c.Code.StatusAt(now), Convert.ToBase64String(c.Code.RowVersion))).ToArray();
         return View(new RegistrationCodeList(rows, search, page, total));
     }

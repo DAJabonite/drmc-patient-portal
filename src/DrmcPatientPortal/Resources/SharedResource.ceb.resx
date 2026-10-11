@@ -211,4 +211,56 @@
   <data name="Verification_EmailSubject" xml:space="preserve"><value>Kumpirmaha ang imong DRMC email address</value></data>
   <data name="Verification_EmailIntro" xml:space="preserve"><value>Aron kumpirmahon ang imong email address para sa DRMC Patient Portal, pilia kini nga link:</value></data>
   <data name="Verification_EmailLinkText" xml:space="preserve"><value>Kumpirmaha ang email address</value></data>
+  <data name="RS_Title" xml:space="preserve"><value>Red Star</value></data>
+  <data name="RS_Private" xml:space="preserve"><value>Imong pribadong iskedyul sa klinika</value></data>
+  <data name="RS_Saved" xml:space="preserve"><value>Na-save ang imong kausaban.</value></data>
+  <data name="RS_NextRefill" xml:space="preserve"><value>Sunod nga pagkuha sa tambal</value></data>
+  <data name="RS_NoRefill" xml:space="preserve"><value>Wala pay iskedyul sa pagkuha sa tambal. Kontaka ang klinika.</value></data>
+  <data name="RS_ViewSchedule" xml:space="preserve"><value>Tan-awa ang iskedyul sa Red Star</value></data>
+  <data name="RS_OverdueDays" xml:space="preserve"><value>{0} ka adlaw nga nalapas sa iskedyul</value></data>
+  <data name="RS_InDays" xml:space="preserve"><value>Sulod sa {0} ka adlaw</value></data>
+  <data name="RS_DueToday" xml:space="preserve"><value>Nakatakda karong adlawa</value></data>
+  <data name="RS_Confirmed" xml:space="preserve"><value>Gikumpirma ang pagtambong</value></data>
+  <data name="RS_Scheduled" xml:space="preserve"><value>Naiskedyul</value></data>
+  <data name="RS_Appointments" xml:space="preserve"><value>Imong mga appointment</value></data>
+  <data name="RS_NoAppointments" xml:space="preserve"><value>Wala pay natala nga umaabot nga appointment.</value></data>
+  <data name="RS_Kind_Refill" xml:space="preserve"><value>Pagkuha sa tambal</value></data>
+  <data name="RS_Kind_Lab" xml:space="preserve"><value>Appointment sa laboratoryo</value></data>
+  <data name="RS_Kind_Consultation" xml:space="preserve"><value>Konsultasyon</value></data>
+  <data name="RS_Program_ART" xml:space="preserve"><value>ART</value></data>
+  <data name="RS_Program_PrEP" xml:space="preserve"><value>PrEP</value></data>
+  <data name="RS_Program_PEP" xml:space="preserve"><value>PEP</value></data>
+  <data name="RS_Program_NewbornProphylaxis" xml:space="preserve"><value>Prophylaxis alang sa bag-ong natawo</value></data>
+  <data name="RS_Program_Unverified" xml:space="preserve"><value>Naghulat sa pag-verify sa klinika</value></data>
+  <data name="RS_Confirm" xml:space="preserve"><value>Kumpirmaha ang pagtambong</value></data>
+  <data name="RS_Pending" xml:space="preserve"><value>Naghulat sa pagrepaso sa klinika</value></data>
+  <data name="RS_RequestChange" xml:space="preserve"><value>Mangayo og laing petsa</value></data>
+  <data name="RS_PreferredDate" xml:space="preserve"><value>Gipiling petsa</value></data>
+  <data name="RS_Reason" xml:space="preserve"><value>Rason (opsyonal)</value></data>
+  <data name="RS_ChangeHelp" xml:space="preserve"><value>Magpabilin ang kasamtangang appointment hangtod aprobahan sa klinika ang kausaban.</value></data>
+  <data name="RS_SendRequest" xml:space="preserve"><value>Ipadala ang hangyo</value></data>
+  <data name="RS_History" xml:space="preserve"><value>Kasaysayan sa pagkuha sa tambal</value></data>
+  <data name="RS_NoHistory" xml:space="preserve"><value>Wala pay natala nga pagkuha sa tambal.</value></data>
+  <data name="RS_PickupDate" xml:space="preserve"><value>Petsa sa pagkuha</value></data>
+  <data name="RS_Medicines" xml:space="preserve"><value>Mga tambal nga gihatag</value></data>
+  <data name="RS_DaysSupplied" xml:space="preserve"><value>Mga adlaw sa suplay</value></data>
+  <data name="RS_NotRecorded" xml:space="preserve"><value>Wala matala</value></data>
+  <data name="RS_Previous" xml:space="preserve"><value>Miagi</value></data>
+  <data name="RS_Next" xml:space="preserve"><value>Sunod</value></data>
+  <data name="RS_Requests" xml:space="preserve"><value>Imong mga hangyo sa pag-ilis sa petsa</value></data>
+  <data name="RS_Request_Pending" xml:space="preserve"><value>Naghulat sa pagrepaso sa klinika</value></data>
+  <data name="RS_Request_Approved" xml:space="preserve"><value>Giaprobahan</value></data>
+  <data name="RS_Request_Declined" xml:space="preserve"><value>Wala aprobahi; kontaka ang klinika</value></data>
+  <data name="RS_Reminders" xml:space="preserve"><value>Mga pahinumdom sa appointment</value></data>
+  <data name="RS_ReminderHelp" xml:space="preserve"><value>Adunay pahinumdom pito ka adlaw sa dili pa, sa takdang adlaw, pito ka adlaw pagkahuman, ug matag bulan samtang wala pa makuha ang tambal.</value></data>
+  <data name="RS_AppointmentReminder" xml:space="preserve"><value>Pahinumdom sa appointment sa DRMC: {0}.</value></data>
+  <data name="RS_MarkRead" xml:space="preserve"><value>Markahi nga nabasa</value></data>
+  <data name="RS_EmailOptIn" xml:space="preserve"><value>Ipadala ang mga pahinumdom sa akong gikumpirmang email</value></data>
+  <data name="RS_EmailHelp" xml:space="preserve"><value>Yano nga DRMC nga mensahe ang email, walay detalye sa programa o tambal. Mahimo nimo kining palungon dinhi bisan kanus-a.</value></data>
+  <data name="RS_SavePreferences" xml:space="preserve"><value>I-save ang mga setting sa pahinumdom</value></data>
+  <data name="RS_ClinicHelp" xml:space="preserve"><value>Kontak ug tabang sa klinika</value></data>
+  <data name="RS_MissedHelp" xml:space="preserve"><value>Kon wala ka makakuha o mahimong mahurot ang tambal sa dili pa ang appointment, kontaka dayon ang klinika.</value></data>
+  <data name="RS_LocationHours" xml:space="preserve"><value>Ikaduhang andana, Outpatient Department (OPD). Lunes–Biyernes, 8 AM–5 PM, sumala sa DRMC. Kumpirmaha sa klinika ang oras sa serbisyo.</value></data>
+  <data name="RS_OfficialInfo" xml:space="preserve"><value>Opisyal nga impormasyon sa klinika</value></data>
+  <data name="RS_Notifications" xml:space="preserve"><value>Mga abiso sa appointment sa DRMC</value></data>
 </root>

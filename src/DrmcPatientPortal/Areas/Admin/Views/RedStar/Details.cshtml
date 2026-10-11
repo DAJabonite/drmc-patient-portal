@@ -1,0 +1,165 @@
+@model RedStarDetailsPage
+@using DrmcPatientPortal.Services
+@{
+    ViewData["Title"] = "Red Star record";
+    var enrollment = Model.Enrollment;
+    var patient = enrollment.Patient;
+    var enrollmentVersion = Convert.ToBase64String(enrollment.RowVersion);
+    var patientVersion = Convert.ToBase64String(patient.RowVersion);
+    var active = enrollment.Status == RedStarStatus.Active;
+    var today = ClinicalClock.Today.ToString("yyyy-MM-dd");
+    var appointmentPages = Math.Max(1, (Model.AppointmentTotal + 24) / 25);
+    var historyPages = Math.Max(1, (Model.HistoryTotal + 24) / 25);
+    var requestPages = Math.Max(1, (Model.RequestTotal + 24) / 25);
+}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div><h1 class="h3 mb-1">@patient.PatientCode @if (!string.IsNullOrEmpty(patient.CodeName)) { <span class="text-muted">· @patient.CodeName</span> }</h1><p class="mb-0 text-muted">@enrollment.Program · @AdminChips.Humanize(enrollment.Status)</p></div>
+    <div class="d-flex flex-wrap gap-2"><a asp-action="Edit" asp-route-id="@enrollment.Id" class="btn btn-primary">Edit / verify record</a><a asp-action="Create" asp-route-patientId="@patient.Id" class="btn btn-outline-secondary">Add program</a><a asp-action="Index" class="btn btn-outline-secondary">Registry</a></div>
+</div>
+<partial name="_Status" />
+<div class="row g-4 mb-4">
+    <div class="col-lg-6"><section class="card h-100"><div class="card-body">
+        <h2 class="h5">Private identity and care</h2>
+        <dl class="row mb-0">
+            <dt class="col-sm-5">Full name</dt><dd class="col-sm-7">@patient.FullName</dd>
+            <dt class="col-sm-5">Hospital number</dt><dd class="col-sm-7">@(patient.HospitalNumber ?? "Not recorded")</dd>
+            <dt class="col-sm-5">Contact number</dt><dd class="col-sm-7">@(patient.ContactNumber ?? "Not recorded")</dd>
+            <dt class="col-sm-5">Address</dt><dd class="col-sm-7">@(patient.Address ?? "Not recorded")</dd>
+            <dt class="col-sm-5">Enrolled</dt><dd class="col-sm-7">@(enrollment.EnrolledDate?.ToString("dd MMM yyyy") ?? "Not recorded")</dd>
+            <dt class="col-sm-5">Started</dt><dd class="col-sm-7">@(enrollment.StartDate?.ToString("dd MMM yyyy") ?? "Not recorded")</dd>
+            <dt class="col-sm-5">Status date</dt><dd class="col-sm-7">@(enrollment.StatusDate?.ToString("dd MMM yyyy") ?? "Not recorded")</dd>
+            @if (enrollment.Status == RedStarStatus.TransferredOut) { <dt class="col-sm-5">Receiving hub</dt><dd class="col-sm-7">@enrollment.ReceivingHub</dd> }
+            @if (!string.IsNullOrEmpty(enrollment.SourceStatus)) { <dt class="col-sm-5">Imported status</dt><dd class="col-sm-7">@enrollment.SourceStatus</dd> }
+        </dl>
+        <h3 class="h6 mt-3">Medicines and instructions</h3><pre class="text-wrap font-monospace small mb-0">@(string.IsNullOrWhiteSpace(enrollment.Medicines) ? "Not recorded" : enrollment.Medicines)</pre>
+    </div></section></div>
+    <div class="col-lg-6"><section class="card h-100"><div class="card-body">
+        <h2 class="h5">Verified portal account</h2>
+        @if (patient.PortalUserId is null)
+        {
+            <p class="text-muted">This private clinic record has no portal account link. Verify the patient's identity and the email they use to sign in.</p>
+            <form asp-action="Link" asp-route-id="@patient.Id" method="post" autocomplete="off">
+                <input name="PatientVersion" value="@patientVersion" type="hidden" />
+                <label for="link-email" class="form-label">Existing, confirmed portal email</label><input id="link-email" name="Email" type="email" maxlength="256" required class="form-control mb-3" />
+                <div class="form-check mb-3"><input id="link-verified" name="IdentityVerified" value="true" type="checkbox" required class="form-check-input" /><label for="link-verified" class="form-check-label">I verified the patient's identity and ownership of this portal account.</label></div>
+                <button type="submit" class="btn btn-outline-primary">Link verified account</button>
+            </form>
+        }
+        else
+        {
+            <p class="text-break">@patient.PortalUser?.Email</p>
+            <p class="small text-muted">Email reminders: @(patient.EmailRemindersEnabled ? "Enabled by patient" : "Off"). Patients choose email reminders in the portal.</p>
+            <form asp-action="Unlink" asp-route-id="@patient.Id" method="post">
+                <input name="PatientVersion" value="@patientVersion" type="hidden" />
+                <div class="form-check mb-3"><input id="unlink-verified" name="IdentityVerified" value="true" type="checkbox" required class="form-check-input" /><label for="unlink-verified" class="form-check-label">I verified this record and intend to remove its portal access.</label></div>
+                <button type="submit" class="btn btn-outline-danger">Unlink and cancel pending reminders</button>
+            </form>
+        }
+        <p class="small text-muted mt-3 mb-0">Link changes cancel earlier reminders and patient requests. A newly linked account starts with email reminders off.</p>
+    </div></section></div>
+</div>
+<section class="card mb-4"><div class="card-body">
+    <h2 class="h5">Schedule care</h2>
+    @if (active)
+    {
+        <form asp-action="Schedule" asp-route-id="@enrollment.Id" method="post" class="row g-3 align-items-end">
+            <input name="EnrollmentVersion" value="@enrollmentVersion" type="hidden" />
+            <div class="col-md-3"><label for="schedule-kind" class="form-label">Kind</label><select id="schedule-kind" name="Kind" class="form-select"><option value="Refill">Medicine refill</option><option value="Lab">Lab appointment</option><option value="Consultation">Consultation</option></select></div>
+            <div class="col-md-3"><label for="schedule-date" class="form-label">Approved date</label><input id="schedule-date" name="DueDate" type="date" min="@today" required class="form-control" /></div>
+            <div class="col-md-6"><label for="schedule-label" class="form-label">Patient instructions / lab label (optional)</label><input id="schedule-label" name="Label" maxlength="200" class="form-control" /></div>
+            <div class="col-12"><div class="form-check"><input id="schedule-verified" name="RemindersVerified" value="true" type="checkbox" class="form-check-input" /><label for="schedule-verified" class="form-check-label">This date has been verified by clinic staff and may receive refill reminders.</label></div></div>
+            <div class="col-12"><button type="submit" class="btn btn-primary">Save schedule</button></div>
+        </form>
+    }
+    else { <p class="mb-0 text-muted">Verify and activate the enrollment before scheduling care.</p> }
+</div></section>
+<section class="mb-4" aria-labelledby="appointments-heading">
+    <h2 id="appointments-heading" class="h5">Care dates <span class="text-muted">(@Model.AppointmentTotal)</span></h2>
+    @foreach (var appointment in Model.Appointments)
+    {
+        var version = Convert.ToBase64String(appointment.RowVersion);
+        var scheduled = appointment.State == RedStarAppointmentState.Scheduled;
+        var refill = appointment.Kind == RedStarAppointmentKind.Refill;
+        <article class="card mb-3"><div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between gap-2 mb-2"><h3 class="h6 mb-0">@appointment.Kind · @appointment.DueDate.ToString("dd MMM yyyy")</h3><span>@(appointment.State == RedStarAppointmentState.PickedUp ? (refill ? "Picked up" : "Completed") : appointment.State.ToString())</span></div>
+            @if (!string.IsNullOrWhiteSpace(appointment.Label)) { <p class="mb-2">@appointment.Label</p> }
+            @if (scheduled)
+            {
+                <p class="small mb-3">@(appointment.RemindersVerified ? "Date verified" : "Needs staff verification") · @(appointment.ConfirmedUtc.HasValue ? "Patient confirmed attendance" : "No patient confirmation") @if (appointment.DueDate < ClinicalClock.Today) { <span class="badge bg-warning text-dark ms-2">Overdue</span> }</p>
+                @if (active)
+                {
+                    <details class="mb-3"><summary class="fw-semibold">Update / verify care date</summary>
+                        <form asp-action="UpdateAppointment" asp-route-id="@appointment.Id" method="post" class="row g-3 mt-1">
+                            <input name="AppointmentVersion" value="@version" type="hidden" /><input name="EnrollmentVersion" value="@enrollmentVersion" type="hidden" /><input name="Kind" value="@appointment.Kind" type="hidden" />
+                            <div class="col-md-4"><label for="date-@appointment.Id" class="form-label">Approved date</label><input id="date-@appointment.Id" name="DueDate" value="@appointment.DueDate.ToString("yyyy-MM-dd")" type="date" required class="form-control" /><div class="form-text">Keep an overdue date to verify it, or choose a replacement date today or later.</div></div>
+                            <div class="col-md-8"><label for="label-@appointment.Id" class="form-label">Patient instructions / label</label><input id="label-@appointment.Id" name="Label" value="@appointment.Label" maxlength="200" class="form-control" /></div>
+                            <div class="col-12"><div class="form-check"><input id="verified-@appointment.Id" name="RemindersVerified" value="true" checked="@appointment.RemindersVerified" type="checkbox" class="form-check-input" /><label for="verified-@appointment.Id" class="form-check-label">Staff verified this care date for refill reminders.</label></div></div>
+                            <div class="col-12"><button type="submit" class="btn btn-outline-primary btn-sm">Update date</button></div>
+                        </form>
+                    </details>
+                    @if (refill)
+                    {
+                        <details class="mb-3"><summary class="fw-semibold">Record medicine pickup</summary>
+                            <form asp-action="Dispense" asp-route-id="@appointment.Id" method="post" class="row g-3 mt-1" data-redstar-dispense data-continuing="@((enrollment.Program is RedStarProgram.ART or RedStarProgram.PrEP) ? "true" : "false")">
+                                <input name="AppointmentVersion" value="@version" type="hidden" /><input name="EnrollmentVersion" value="@enrollmentVersion" type="hidden" />
+                                <div class="col-md-4"><label for="dispensed-@appointment.Id" class="form-label">Dispensed date</label><input id="dispensed-@appointment.Id" name="DispensedDate" value="@today" max="@today" type="date" required class="form-control" data-dispense-date /></div>
+                                <div class="col-md-4"><label for="supply-@appointment.Id" class="form-label">Days supplied (optional)</label><input id="supply-@appointment.Id" name="DaysSupplied" type="number" min="1" max="366" class="form-control" data-days-supplied /></div>
+                                <div class="col-md-4"><label for="next-@appointment.Id" class="form-label">Approved next refill (optional)</label><input id="next-@appointment.Id" name="NextRefillDate" type="date" min="@today" class="form-control" data-next-refill /></div>
+                                <div class="col-12"><output data-supply-suggestion class="small text-muted" aria-live="polite">Enter a dispensing date and days of supply to see the supply estimate.</output><button type="button" data-use-supply-date hidden class="btn btn-outline-secondary btn-sm ms-2">Use suggested date</button><output data-supply-warning class="small text-warning-emphasis d-block" aria-live="polite"></output></div>
+                                <div class="col-12"><label for="medicines-@appointment.Id" class="form-label">Medicines dispensed</label><textarea id="medicines-@appointment.Id" name="Medicines" maxlength="2000" required rows="2" class="form-control">@enrollment.Medicines</textarea></div>
+                                <div class="col-12"><div class="form-check"><input id="next-verified-@appointment.Id" name="NextDateVerified" value="true" type="checkbox" class="form-check-input" /><label for="next-verified-@appointment.Id" class="form-check-label">Clinic staff approved the next refill date entered above.</label></div><p class="form-text mb-0">The next visit is not calculated from supply. Leave it blank when no repeat refill has been approved, including one-course PEP or newborn prophylaxis.</p></div>
+                                <div class="col-12"><button type="submit" class="btn btn-primary btn-sm">Record pickup</button></div>
+                            </form>
+                        </details>
+                    }
+                }
+                <form asp-action="CancelAppointment" asp-route-id="@appointment.Id" method="post"><input name="AppointmentVersion" value="@version" type="hidden" /><button type="submit" class="btn btn-outline-danger btn-sm">Cancel appointment and reminders</button></form>
+            }
+        </div></article>
+    }
+    @if (Model.Appointments.Count == 0) { <p class="text-muted">No care dates recorded.</p> }
+    <nav aria-label="Care date pages" class="d-flex align-items-center justify-content-between">
+        <span class="small text-muted">Page @Model.AppointmentPage of @appointmentPages</span><div class="d-flex gap-2">
+        @if (Model.AppointmentPage > 1) { <a asp-action="Details" asp-route-id="@enrollment.Id" asp-route-appointmentPage="@(Model.AppointmentPage - 1)" asp-route-historyPage="@Model.HistoryPage" asp-route-requestPage="@Model.RequestPage" class="btn btn-outline-secondary btn-sm">Previous dates</a> }
+        @if (Model.AppointmentPage < appointmentPages) { <a asp-action="Details" asp-route-id="@enrollment.Id" asp-route-appointmentPage="@(Model.AppointmentPage + 1)" asp-route-historyPage="@Model.HistoryPage" asp-route-requestPage="@Model.RequestPage" class="btn btn-outline-secondary btn-sm">Next dates</a> }
+        </div>
+    </nav>
+</section>
+<section class="card mb-4"><div class="card-body">
+    <h2 class="h5">Reschedule requests <span class="text-muted">(@Model.RequestTotal)</span></h2>
+    @foreach (var request in Model.Requests)
+    {
+        <article class="border rounded p-3 mb-3">
+            <h3 class="h6">@request.Appointment.Kind · requested @request.RequestedDate.ToString("dd MMM yyyy")</h3>
+            <p class="small text-muted mb-2">Current visit: @request.Appointment.DueDate.ToString("dd MMM yyyy") · @request.State · submitted @ClinicalClock.WallTime(request.CreatedUtc).ToString("dd MMM yyyy HH:mm")</p>
+            @if (!string.IsNullOrWhiteSpace(request.Reason)) { <p>@request.Reason</p> }
+            @if (request.State == RedStarRequestState.Pending && request.AppointmentRevision == request.Appointment.Revision && request.Appointment.State == RedStarAppointmentState.Scheduled)
+            {
+                <form asp-action="DecideRequest" asp-route-id="@request.Id" method="post" class="row g-3 align-items-end">
+                    <input name="RequestVersion" value="@Convert.ToBase64String(request.RowVersion)" type="hidden" /><input name="AppointmentVersion" value="@Convert.ToBase64String(request.Appointment.RowVersion)" type="hidden" /><input name="AppointmentRevision" value="@request.Appointment.Revision" type="hidden" />
+                    <div class="col-md-6"><label for="approved-@request.Id" class="form-label">Staff-approved date</label><input id="approved-@request.Id" name="ApprovedDate" value="@request.RequestedDate.ToString("yyyy-MM-dd")" min="@today" type="date" class="form-control" /></div>
+                    <div class="col-md-6 d-flex gap-2">@if (active) { <button name="Approve" value="true" type="submit" class="btn btn-primary">Approve date</button> }<button name="Approve" value="false" type="submit" formnovalidate class="btn btn-outline-secondary">Decline request</button></div>
+                </form>
+            }
+        </article>
+    }
+    @if (Model.Requests.Count == 0) { <p class="text-muted">No reschedule requests.</p> }
+    <nav aria-label="Request pages" class="d-flex align-items-center justify-content-between"><span class="small text-muted">Page @Model.RequestPage of @requestPages</span><div class="d-flex gap-2">
+        @if (Model.RequestPage > 1) { <a asp-action="Details" asp-route-id="@enrollment.Id" asp-route-appointmentPage="@Model.AppointmentPage" asp-route-historyPage="@Model.HistoryPage" asp-route-requestPage="@(Model.RequestPage - 1)" class="btn btn-outline-secondary btn-sm">Previous requests</a> }
+        @if (Model.RequestPage < requestPages) { <a asp-action="Details" asp-route-id="@enrollment.Id" asp-route-appointmentPage="@Model.AppointmentPage" asp-route-historyPage="@Model.HistoryPage" asp-route-requestPage="@(Model.RequestPage + 1)" class="btn btn-outline-secondary btn-sm">Next requests</a> }
+    </div></nav>
+</div></section>
+@section Scripts {
+    <script src="~/js/redstar.js" asp-append-version="true"></script>
+}
+<section class="card"><div class="card-body">
+    <h2 class="h5">Dispensing history <span class="text-muted">(@Model.HistoryTotal)</span></h2>
+    <div class="table-responsive"><table class="table"><thead><tr><th scope="col">Dispensed</th><th scope="col">Medicines</th><th scope="col">Days supplied</th><th scope="col">Estimated supply end</th></tr></thead><tbody>
+    @foreach (var dispense in Model.Dispenses) { <tr><td>@dispense.DispensedDate.ToString("dd MMM yyyy")</td><td>@dispense.Medicines</td><td>@(dispense.DaysSupplied?.ToString() ?? "Not recorded")</td><td>@(dispense.EstimatedSupplyEnd?.ToString("dd MMM yyyy") ?? "Not calculated")</td></tr> }
+    @if (Model.Dispenses.Count == 0) { <tr><td colspan="4" class="text-muted">No dispensing history recorded.</td></tr> }
+    </tbody></table></div>
+    <nav aria-label="Dispensing history pages" class="d-flex align-items-center justify-content-between"><span class="small text-muted">Page @Model.HistoryPage of @historyPages</span><div class="d-flex gap-2">
+        @if (Model.HistoryPage > 1) { <a asp-action="Details" asp-route-id="@enrollment.Id" asp-route-appointmentPage="@Model.AppointmentPage" asp-route-requestPage="@Model.RequestPage" asp-route-historyPage="@(Model.HistoryPage - 1)" class="btn btn-outline-secondary btn-sm">Previous pickups</a> }
+        @if (Model.HistoryPage < historyPages) { <a asp-action="Details" asp-route-id="@enrollment.Id" asp-route-appointmentPage="@Model.AppointmentPage" asp-route-requestPage="@Model.RequestPage" asp-route-historyPage="@(Model.HistoryPage + 1)" class="btn btn-outline-secondary btn-sm">Next pickups</a> }
+    </div></nav>
+</div></section>

@@ -6,6 +6,22 @@ This application is not connected to hospital clinical, pharmacy, billing or soc
 
 Start with [Local Setup](#local-setup), then [First Admin](#first-admin), [Staff Invitations](#staff-invitations) and the [Admin Management Walkthrough](#admin-management-walkthrough). Developers can also use [Testing](#testing), [Configuration](#configuration) and [Database Migrations](#database-migrations); deployment operators should review [Server Hosting and Handover](#server-hosting-and-handover) and [Key Protection and Recovery](#key-protection-and-recovery).
 
+## Red Star clinic
+
+Apply `AddPrivateRedStarRegistry` before running this build. The clinic's registry is under `/Admin/RedStar`; imports and exports are under `/Admin/RedStarImports`. Admin can invite and grant **Red Star staff**, but Admin alone cannot open either module. All clinic staff must confirm email, enable MFA and sign in with MFA. Registry reads/writes and source downloads have their own append-only access history.
+
+1. Add a private clinic patient and program enrollment, with clinic code, medicines and verified status. A general hospital patient link never grants private clinic access.
+2. Verify identity and ownership of an existing confirmed portal email before linking it from the clinic record. New links start with email reminders off. General registration codes use a neutral clinic-desk label.
+3. Add staff-approved refill, laboratory or consultation dates. Only verified refill dates on active enrollments can generate reminders. Attendance confirmation records intent, not medicine collection.
+4. Record a medicine pickup against its refill appointment, with actual medicines and optional days supplied. The estimated supply end is separate from the next approved visit. Continuing ART/PrEP dates can use the supply estimate as a suggestion; staff approve any repeat date. PEP/newborn courses never automatically create recurring refills.
+5. Review patient date-change requests before approving a replacement. Closing enrollment, recording pickup, changing a date or unlinking cancels obsolete reminders and requests.
+
+The patient page at `/Patient/RedStar` and Medications refill card appear only for staff-verified owners. Patients can confirm attendance, request a date change and opt into neutral email reminders to their confirmed account email. Clinic-only medicines and care records are not copied into shared prescriptions, visits or labs. Account deletion removes private portal bindings while retaining registry history.
+
+Upload the original .xlsx through the clinic import screen, review included rows and explicit existing-record matches, then approve. Blank/formatted/note rows are skipped. Deferred clinical columns stay in the protected original archive. The name-only **RHIVDA 2025** sheet stays unverified; neither a test result nor treatment enrollment is inferred. Sources/previews are encrypted with separate Data Protection purposes. Back up the key ring with the database. Core exports contain literal spreadsheet strings, not formulas. Real registry files must never be fixtures, Git files or logs.
+
+Both `RedStar:WorkerEnabled` and `RedStar:RemindersEnabled` default to **false**. After clinic verification and an SMTP rehearsal, enable both outside tracked configuration and restart. Generation runs at startup and daily at 8 AM Asia/Manila; reminder milestones are seven days before, the due date, seven days overdue, then calendar months from the original date. Catch-up creates the latest stage only. In-app reminders persist; email requires current opt-in and a confirmed account email. The queue rechecks ownership, date revision, status, consent and recipient before sending. Failures and delivery attempts are visible in the private Reminders screen. SMTP delivery is at-least-once after an interrupted send. Development's full-message console mail transport is never used for private reminders: external delivery is marked failed without logging recipients or bodies.
+
 ## Prerequisites
 
 - Git, the [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0), and Entity Framework Core command-line tool 10.0.11.
@@ -144,7 +160,7 @@ SELECT COUNT(*) AS AccountCount FROM dbo.AspNetUsers;
 SELECT COUNT(*) AS PatientRecordCount FROM dbo.PatientRecords;
 ```
 
-This version has **11 migrations**, ending in `20261011093226_AddPortalSecurityState`. A fresh installation has zero accounts and hospital patient records. Starting the app does not automatically apply migrations or seed demo data when fixtures are disabled.
+This version has **12 migrations**, ending in `20261011120435_AddPrivateRedStarRegistry`. A fresh installation has zero accounts and hospital patient records. Starting the app does not automatically apply migrations or seed demo data when fixtures are disabled.
 
 ### 5. Start the portal
 
@@ -212,6 +228,8 @@ The container binds to `127.0.0.1` only and keeps data in the `drmc-sqlserver` v
 | `AccountEmail__LifetimeMinutes` | Queued message expiry, default 60 (1–1440) |
 | `AccountEmail__RetentionDays` | Completed delivery metadata retention, default 7 (1–30) |
 | `AccountEmail__WorkerEnabled` | Default `true`; disable only in tests or when another new-build process runs the worker |
+| `RedStar__WorkerEnabled` / `RedStar__RemindersEnabled` | Both default `false`; enable after clinic verification and delivery rehearsal. The worker creates private in-app reminders and sends opted-in email |
+| `RedStar__MaximumAttempts` | Email delivery attempts, default 5 (1–10); failures are visible only to Red Star staff |
 | `RateLimits__AuthenticationPerIp` / `AuthenticationPerAccount` | Sign-in/verification limits per minute; defaults 60/IP and 10/account-plus-IP |
 | `RateLimits__EmailPerIp` / `EmailPerAccount` | Reset/resend limits per 15 minutes; defaults 20/IP and 3/account-plus-IP |
 | `RateLimits__ScansPerIp` / `ConcurrentScans` | Defaults 5 scans/minute/IP and 2 simultaneous scans/process |
@@ -233,6 +251,7 @@ Back up the database before applying or reversing migrations. New migrations are
 8. `20261007153732_AddLabReportAttachments`: adds encrypted PDF attachment metadata to laboratory results.
 9. `20261007160128_AddPrescriptionAdministrationRoute`: adds the optional prescription administration route.
 10. `20261011093226_AddPortalSecurityState`: adds revocable authentication sessions, unique authenticator-code consumption records and an encrypted account-email queue. Repairs orphan invitation acceptance references, then adds an accepting-account foreign key with `ON DELETE SET NULL`; invitation history and acceptance timestamps remain intact.
+11. `20261011120435_AddPrivateRedStarRegistry`: adds private clinic patients, enrollments, care/refill appointments, dispensing history, reschedule requests, reminder deliveries, encrypted import archives and append-only audit records. Shared hospital links confer no clinic access. Account deletion detaches private account bindings while preserving registry history. Downgrade is blocked while registry/import/audit records exist.
 
 The initial SQL Server migration is `20260929123803_InitialSqlServer`. During upgrade, drain and stop older builds, apply migrations, then run only the new build. Older workers cannot respect the lease protocol.
 
@@ -265,7 +284,7 @@ Patient visits, laboratory results, radiology, prescriptions, ID wallet, directo
 
 Before deployment, choose the real public domain, set `Portal__PublicOrigin` to its HTTPS origin, and set `AllowedHosts` to explicit hostnames including that name. Production startup rejects missing origins, HTTP origins and wildcard host configuration. IIS HTTPS bindings must use the same hostname and certificate; remove broad default bindings that route unrelated hosts to this app. For out-of-process IIS hosting, explicitly configure the immediate ANCM loopback address (`127.0.0.1` or `::1`, as used by that host) in `Proxy__KnownProxies`. With an additional reverse proxy, configure only its immediate IP addresses, prevent direct public access to the upstream, and preserve the configured host. Without configured proxies, forwarded headers are ignored even when a host enables forwarding globally. See [Microsoft host filtering guidance](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/host-filtering?view=aspnetcore-10.0).
 
-Drain older builds, back up SQL, encrypted uploads/PDFs and the key ring, apply all 11 migrations, configure the origin/hosts and OCR runtime, and start only the new build. Require existing users to sign in again. Verify reset, confirmation, email-change and invitation links from the actual host. Monitor authentication-query latency, rate-limit rejections, pending/failed email deliveries and retry exhaustion. This workstation cannot run Ubuntu locally; the Ubuntu 24.04 CI job installs OCR dependencies, boots the app against SQL Server and runs the regression suite. Passing Windows tests alone does not establish Linux readiness.
+Drain older builds, back up SQL, encrypted uploads/PDFs and the key ring, apply the full migration chain, configure the origin/hosts and OCR runtime, and start only the new build. Require existing users to sign in again. Verify reset, confirmation, email-change and invitation links from the actual host. Monitor authentication-query latency, rate-limit rejections, pending/failed email deliveries and retry exhaustion. This workstation cannot run Ubuntu locally; the Ubuntu 24.04 CI job installs OCR dependencies, boots the app against SQL Server and runs the regression suite. Passing Windows tests alone does not establish Linux readiness.
 
 ## Testing
 
@@ -484,7 +503,7 @@ For example, one CBC lab can contain hemoglobin, white blood cell and platelet i
 
 Attach a PDF of up to 10 MiB directly on the lab Create/Edit form, or manage it from record details. Leaving the upload blank preserves the current PDF. Patient lists show a green **Report available** action only when a PDF is attached, the status is Available, the release time has passed in Manila, and `PatientResults:ShowFullResults` is enabled. Each view/download requires the owning patient's current account password; no plaintext account password is stored in a lab record. The downloaded PDF itself does not have a file password.
 
-Reports are encrypted in private storage configured by `LabReports:RootPath` (default `App_Data/LabReports`, outside `wwwroot`). Preserve and back up this directory with the database and Data Protection key ring. `AddLabReportAttachments` creates `ReportFileName`, `ReportSize`, and `ReportUploadedAtUtc` on `LabResults`. Apply the full migration chain, including `AddPortalSecurityState` for authentication and delivery state; fresh installations obtain all 11 through the normal database migration command.
+Reports are encrypted in private storage configured by `LabReports:RootPath` (default `App_Data/LabReports`, outside `wwwroot`). Preserve and back up this directory with the database and Data Protection key ring. `AddLabReportAttachments` creates `ReportFileName`, `ReportSize`, and `ReportUploadedAtUtc` on `LabResults`. Apply the full migration chain through the normal database migration command.
 
 ### 5. Add radiology and understand release status
 

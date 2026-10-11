@@ -34,18 +34,19 @@ public class PatientRegistrationCode
 
 public enum RegistrationCodeStatus { Active, Redeemed, Revoked, Expired }
 
-// Places where staff hand out codes. Red Star Clinic is named by DRMC; the list stays short so
-// reports group cleanly.
+// Shared registration records must not identify a confidential clinic affiliation.
 public static class RegistrationCodeIssuingPoints
 {
     public const string Pacd = "PACD (Public Assistance and Complaints Desk)";
     public static readonly IReadOnlyList<string> All =
     [
         Pacd,
-        "Red Star Clinic",
+        "Clinic registration desk",
         "OPD clinic",
         "Emergency department",
         "Admitting / Inpatient services",
         "Medical Social Service (Malasakit Center)",
     ];
+    public static string PublicLabel(string value) => value.Contains("Red Star", StringComparison.OrdinalIgnoreCase)
+        || value.Contains("RedStar", StringComparison.OrdinalIgnoreCase) ? "Clinic registration desk" : value;
 }

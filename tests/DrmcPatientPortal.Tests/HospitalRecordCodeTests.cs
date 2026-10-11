@@ -69,7 +69,7 @@ public sealed partial class HospitalRecordCodeTests(PortalFactory factory)
 
     private static Dictionary<string, string> IssueForm(bool verified = true) => new()
     {
-        ["Input.IssuingPoint"] = "Red Star Clinic",
+        ["Input.IssuingPoint"] = "Clinic registration desk",
         ["Input.IdentityVerified"] = verified ? "true" : "false",
     };
 
@@ -128,7 +128,7 @@ public sealed partial class HospitalRecordCodeTests(PortalFactory factory)
         var staff = await StaffAccounts.PatientServicesAsync(factory);
         var form = await staff.GetStringAsync($"/Admin/RegistrationCodes/Create/{patientId}");
         Assert.Contains("March 14, 1988", form);
-        Assert.Contains("Red Star Clinic", form);
+        Assert.Contains("Clinic registration desk", form);
 
         var (response, html) = await IssueAsync(staff, patientId);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -141,7 +141,7 @@ public sealed partial class HospitalRecordCodeTests(PortalFactory factory)
         var stored = Assert.Single(codes);
         Assert.Equal(HospitalRecordCodes.Hash(canonical), stored.CodeHash);
         Assert.Equal(canonical[^5..], stored.CodeHint);
-        Assert.Equal("Red Star Clinic", stored.IssuingPoint);
+        Assert.Equal("Clinic registration desk", stored.IssuingPoint);
         Assert.Equal(StaffAccounts.PatientServicesEmail, stored.IssuedByEmail);
         Assert.InRange(stored.ExpiresAtUtc - stored.IssuedAtUtc, TimeSpan.FromDays(7) - TimeSpan.FromSeconds(1), TimeSpan.FromDays(7) + TimeSpan.FromSeconds(1));
 
@@ -337,7 +337,7 @@ public sealed partial class HospitalRecordCodeTests(PortalFactory factory)
         var html = await factory.CreatePortalClient().GetStringAsync("/Identity/Account/Register");
         Assert.Contains("id=\"hospitalRecordCode\"", html);
         Assert.Contains("No code yet? Visit the PACD", html);
-        Assert.Contains("Red Star Clinic", html);
+        Assert.Contains("Clinic registration desk", html);
         Assert.DoesNotMatch("<script(?![^>]*src=)[^>]*>", html);
     }
 
