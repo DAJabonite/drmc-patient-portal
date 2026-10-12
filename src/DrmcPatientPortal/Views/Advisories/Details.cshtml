@@ -32,7 +32,7 @@
                 </span>
             </div>
 
-            <h1 class="h3 fw-bold text-dark mb-3">@adv.Title</h1>
+            <h2 class="h3 fw-bold text-dark mb-3">@adv.Title</h2>
             
             <div class="p-3 bg-light rounded-3 border mb-4">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 text-muted small">
@@ -45,11 +45,11 @@
                 </div>
             </div>
 
-            <div class="lead fs-6 text-dark mb-4 fw-medium border-start border-4 border-primary ps-3 py-1">
+            <div class="lead fs-6 text-dark mb-4 fw-medium ps-3 py-1">
                 @adv.Summary
             </div>
 
-            <div class="advisory-content text-dark small leading-relaxed mb-4">
+            <div class="advisory-content text-dark leading-relaxed mb-4">
                 @Html.Raw(adv.ContentHtml)
             </div>
 
@@ -80,7 +80,7 @@
                                     @rel.Category.DisplayName()
                                 </span>
                                 <h3 class="h6 fw-bold text-dark mb-2">@rel.Title</h3>
-                                <span class="small text-muted mt-auto" style="font-size:0.75rem;">
+                                <span class="small text-muted mt-auto">
                                     @rel.PublishedAt.ToString("MMM d, yyyy")
                                 </span>
                                 <a asp-action="Details" asp-route-slug="@rel.Slug" class="stretched-link" aria-label="@rel.Title"></a>

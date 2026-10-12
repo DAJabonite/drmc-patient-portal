@@ -3,7 +3,6 @@
 @{ ViewData["Title"] = "Imports"; var pages = Math.Max(1, (Model.Total + 24) / 25); var statuses = (IReadOnlyDictionary<Guid, ImportStatusDisplay>)ViewData["ImportStatuses"]!; }
 <div class="admin-page-header">
     <div>
-        <p class="admin-eyebrow">Operations</p>
         <h1 class="admin-title">Imports</h1>
         <p class="admin-subtitle">Upload a completed template, review it, then approve the import.</p>
     </div>
@@ -74,7 +73,7 @@
         @foreach (var batch in Model.Rows)
         {
             <tr>
-                <td class="tabular text-nowrap">@batch.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                <td class="tabular text-nowrap" data-label="Created (UTC)">@batch.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
                 <td data-label="Batch"><a asp-action="Details" asp-route-id="@batch.Id" class="admin-record-link admin-id">@batch.Id.ToString("N")[..12]</a></td>
                 <td data-label="Template">@batch.Template</td>
                 <td data-label="Status"><span class="@statuses[batch.Id].Css">@statuses[batch.Id].Text</span></td>

@@ -5,22 +5,22 @@
 <ul class="nav nav-pills flex-column gap-2">
     <li class="nav-item">
         <a class="nav-link rounded-3 fw-semibold @(ViewContext.RouteData.Values["page"]?.ToString()?.EndsWith("Index") == true ? "active bg-primary-drmc text-white" : "text-dark bg-light")" id="profile" asp-page="./Index">
-            <i class="bi bi-person me-2"></i> Profile Details
+            <i class="bi bi-person me-2" aria-hidden="true"></i> Profile Details
         </a>
     </li>
     <li class="nav-item">
         <a class="nav-link rounded-3 fw-semibold @(ManageNavPages.MyIdsNavClass(ViewContext) == "active" ? "active bg-primary-drmc text-white" : "text-dark bg-light")" id="my-ids" asp-page="./MyIds">
-            <i class="bi bi-person-vcard me-2"></i> @Loc["Nav_MyIds"]
+            <i class="bi bi-person-vcard me-2" aria-hidden="true"></i> @Loc["Nav_MyIds"]
         </a>
     </li>
     <li class="nav-item">
         <a class="nav-link rounded-3 fw-semibold @(ManageNavPages.TwoFactorAuthenticationNavClass(ViewContext) == "active" ? "active bg-primary-drmc text-white" : "text-dark bg-light")" id="two-factor" asp-page="./TwoFactorAuthentication">
-            <i class="bi bi-shield-lock me-2"></i> Two-Factor Auth (2FA)
+            <i class="bi bi-shield-lock me-2" aria-hidden="true"></i> Two-Factor Auth (2FA)
         </a>
     </li>
     <li class="nav-item">
         <a class="nav-link rounded-3 fw-semibold text-dark bg-light" asp-controller="Patient" asp-action="Audit">
-            <i class="bi bi-journal-text me-2"></i> Access Audit Trail
+            <i class="bi bi-journal-text me-2" aria-hidden="true"></i> Access Audit Trail
         </a>
     </li>
 </ul>

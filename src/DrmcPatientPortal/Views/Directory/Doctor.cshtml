@@ -35,7 +35,7 @@
                         <span class="badge bg-primary-drmc text-white px-3 py-1 rounded-pill">
                             @doc.Department
                         </span>
-                        <span class="badge bg-info-subtle text-info-emphasis px-3 py-1 rounded-pill">
+                        <span class="badge bg-info-subtle text-info-emphasis px-3 py-1 rounded-pill text-wrap text-start">
                             @doc.SubSpecialty
                         </span>
                         @if (doc.OffersTeleconsult)
@@ -52,26 +52,23 @@
             <div class="row g-4 mb-4">
                 <div class="col-md-6">
                     <div class="p-3 bg-light rounded-3 border h-100">
-                        <span class="small text-muted d-block mb-1">Clinical Room Location</span>
+                        <span class="small text-muted d-block mb-1">Clinic room</span>
                         <strong class="h6 fw-bold text-dark mb-0">@(string.IsNullOrWhiteSpace(doc.ClinicRoom) ? "Location not provided" : doc.ClinicRoom)</strong>
                     </div>
                 </div>
 
                 <div class="col-md-6">
                     <div class="p-3 bg-light rounded-3 border h-100">
-                        <span class="small text-muted d-block mb-1">Outpatient Clinic Schedule</span>
+                        <span class="small text-muted d-block mb-1">Outpatient schedule</span>
                         <strong class="h6 fw-bold text-primary-drmc mb-0">@doc.ScheduleSummary</strong>
-                        <div class="small text-muted mt-1">
-                            Regular Clinic Consultation Hours
-                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Biography & Clinical Domains -->
             <div class="mb-4">
-                <h3 class="h6 fw-bold text-primary-drmc mb-2">Clinical Background &amp; Expertise</h3>
-                <p class="text-dark small mb-3 leading-relaxed">
+                <h2 class="h5 fw-bold text-primary-drmc mb-2">Clinical background &amp; expertise</h2>
+                <p class="text-dark mb-3 leading-relaxed">
                     @doc.Biography
                 </p>
                 <div class="p-2 bg-light rounded-3 border d-inline-flex align-items-center gap-2 small text-muted">

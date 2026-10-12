@@ -43,7 +43,7 @@
         @if (Model.History.Count == 0) { <p class="text-muted mb-0">@Loc["RS_NoHistory"]</p> }
         else
         {
-            <div class="table-responsive"><table class="table align-middle" style="min-width:26rem"><caption class="visually-hidden">@Loc["RS_History"]</caption><thead><tr><th scope="col">@Loc["RS_PickupDate"]</th><th scope="col">@Loc["RS_Medicines"]</th><th scope="col">@Loc["RS_DaysSupplied"]</th></tr></thead><tbody>
+            <div class="table-responsive" tabindex="0" role="region" aria-label="@Loc["RS_History"]"><table class="table align-middle" style="min-width:26rem"><caption class="visually-hidden">@Loc["RS_History"]</caption><thead><tr><th scope="col">@Loc["RS_PickupDate"]</th><th scope="col">@Loc["RS_Medicines"]</th><th scope="col">@Loc["RS_DaysSupplied"]</th></tr></thead><tbody>
             @foreach (var dispense in Model.History) { <tr><td>@dispense.DispensedDate.ToString("MMM d, yyyy")</td><td class="text-break">@dispense.Medicines</td><td>@(dispense.DaysSupplied?.ToString() ?? Loc["RS_NotRecorded"].Value)</td></tr> }
             </tbody></table></div>
             <nav aria-label="@Loc["RS_History"]" class="d-flex gap-3">

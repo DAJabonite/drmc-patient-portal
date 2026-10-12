@@ -1,10 +1,8 @@
 @model AdminForm
-@{ ViewData["Title"] = "Edit " + Model.Title; var indexContext = ViewContext.RouteData.Values["controller"]?.ToString() == "Patients" ? null : Model.Context?.RouteId; var nav = AdminNavigation.Find(ViewContext.RouteData.Values["controller"]?.ToString()); }
+@{ ViewData["Title"] = "Edit " + Model.Title; var indexContext = ViewContext.RouteData.Values["controller"]?.ToString() == "Patients" ? null : Model.Context?.RouteId; }
 <div class="admin-page-header">
     <div>
-        <p class="admin-eyebrow">@(nav?.Item.Label ?? "Record")</p>
         <h1 class="admin-title">Edit @Model.Title <span class="admin-id fs-6">#@Model.Id</span></h1>
-        <p class="admin-subtitle">Changes are recorded in the staff audit history.</p>
     </div>
 </div>
 @if (Model.Context is not null) { <partial name="_Context" model="Model.Context" /> }

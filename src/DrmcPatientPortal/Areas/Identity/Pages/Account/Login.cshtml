@@ -9,12 +9,7 @@
     <div class="container">
         <div class="auth-card">
             <div class="text-center mb-4">
-                <a class="d-inline-flex align-items-center gap-2 mb-2 text-decoration-none" asp-controller="Home" asp-action="Index">
-                    <img src="~/images/drmc-seal.png" alt="DRMC Seal" style="height:46px;width:auto;" />
-                    <span class="fw-bold fs-5 text-primary-drmc">Davao Regional Medical Center</span>
-                </a>
-                <h1 class="h3 fw-bold text-primary-drmc mb-1">Sign in to Portal</h1>
-                <p class="text-muted small mb-0">Access your visits, lab results, and patient services.</p>
+                <h1 class="h3 fw-bold text-primary-drmc mb-0">Sign in</h1>
             </div>
 
             <form id="account" method="post">
@@ -22,7 +17,7 @@
                 <div class="mb-3">
                     <label asp-for="Input.Email" class="form-label">Email address</label>
                     <div class="input-group">
-                        <span class="input-group-text bg-light text-muted"><i class="bi bi-envelope"></i></span>
+                        <span class="input-group-text bg-light text-muted"><i class="bi bi-envelope" aria-hidden="true"></i></span>
                         <input asp-for="Input.Email" class="form-control" autocomplete="username" placeholder="you@example.com" aria-required="true" />
                     </div>
                     <span asp-validation-for="Input.Email" class="field-validation-error"></span>
@@ -33,7 +28,7 @@
                         <label asp-for="Input.Password" for="loginPassword" class="form-label mb-0">Password</label>
                     </div>
                     <div class="input-group">
-                        <span class="input-group-text bg-light text-muted"><i class="bi bi-lock"></i></span>
+                        <span class="input-group-text bg-light text-muted"><i class="bi bi-lock" aria-hidden="true"></i></span>
                         <input asp-for="Input.Password" class="form-control" id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter your password" aria-required="true" />
                         <button class="btn btn-outline-secondary pw-toggle" type="button" aria-controls="loginPassword" aria-pressed="false" aria-label="Show password">
                             <i class="bi bi-eye" aria-hidden="true"></i>
@@ -61,12 +56,10 @@
                 <a asp-page="./ResendEmailConfirmation" asp-route-returnUrl="@Model.ReturnUrl" class="small">@Loc["Login_ResendConfirmation"]</a>
             </div>
 
-            <div class="auth-divider my-4">
-                <span class="small text-muted">or</span>
-            </div>
+            <div class="auth-divider my-4" aria-hidden="true"></div>
 
             <div class="text-center">
-                <p class="mb-0 small text-muted">
+                <p class="mb-0 text-muted">
                     New to the portal? <a asp-page="./Register" asp-route-returnUrl="@Url.Content("~/Patient/Home")" class="fw-semibold text-primary-drmc">Create an account</a>
                 </p>
             </div>

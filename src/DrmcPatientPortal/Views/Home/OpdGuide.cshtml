@@ -61,7 +61,6 @@
     <div class="container">
         <div>
             <div>
-                <p class="small text-white text-opacity-75 mb-1">Outpatient Visit Sequence</p>
                 <h1 class="display-6 fw-bold mb-0">Outpatient Department (OPD) Guide</h1>
             </div>
         </div>
@@ -85,7 +84,7 @@
         </div>
 
         <!-- Facility Selector and Inline Step Flows -->
-        <h2 id="opd-facility-heading" class="h6 text-uppercase fw-bold text-muted mb-2" style="font-size: 0.78rem; letter-spacing: 0.5px;">
+        <h2 id="opd-facility-heading" class="h6 fw-bold text-muted mb-2">
             @Loc["OpdGuide_SelectFacility"]
         </h2>
         <div id="opd-facility-accordion"
@@ -118,7 +117,7 @@
                          aria-labelledby="opd-trigger-@flow.Key"
                          data-bs-parent="#opd-facility-accordion">
                         <div class="opd-stepper-container">
-                            <p class="text-uppercase fw-bold text-muted mb-0" style="font-size: 0.78rem; letter-spacing: 0.5px;">
+                            <p class="fw-bold text-muted mb-0">
                                 @Loc["OpdGuide_PanelHeading", flow.ShortName]
                             </p>
                             <ol class="opd-stepper">

@@ -1,7 +1,7 @@
 @page
 @model EmailModel
 @{ ViewData["Title"] = "Manage email"; }
-<h1 class="h3">Manage email</h1>
+<h2 class="h3">Manage email</h2>
 @if (Model.StatusMessage is not null) { <p class="alert alert-info" role="status">@Model.StatusMessage</p> }
 <p>Current email: <strong>@Model.Email</strong></p>
 @if (!Model.IsEmailConfirmed)

@@ -3,7 +3,6 @@
 @{ ViewData["Title"] = "Staff invitation sent"; }
 <div class="admin-page-header admin-no-print">
     <div>
-        <p class="admin-eyebrow">Staff invitations</p>
         <h1 class="admin-title">Invitation created</h1>
         <p class="admin-subtitle">For security, the full invitation code is shown only once and cannot be displayed again.</p>
     </div>
@@ -25,7 +24,7 @@ else
         <div class="registration-slip-grid">
             <div class="registration-slip-qr" role="img" aria-label="QR code that opens portal signup with this invitation filled in">@Html.Raw(Model.QrSvg)</div>
             <div>
-                <p class="admin-eyebrow mb-1">Davao Regional Medical Center · Patient Portal</p>
+                <p class="text-muted mb-2">Davao Regional Medical Center · Patient Portal</p>
                 <h2 class="h4 fw-bold mb-2" id="slipTitle">Staff invitation</h2>
                 <p class="registration-slip-code font-monospace" data-registration-code aria-label="Code @string.Join(" ", Model.Code.ToCharArray())">@Model.Code</p>
                 <dl class="admin-dl registration-slip-meta">

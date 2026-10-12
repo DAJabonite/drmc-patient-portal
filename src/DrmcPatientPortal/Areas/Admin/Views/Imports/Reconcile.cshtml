@@ -2,7 +2,6 @@
 @{ var clinical = Model.TotalGroups > 0; ViewData["Title"] = clinical ? "Match patients" : "Review setup"; var options = (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewData["Patients"]!; }
 <div class="admin-page-header">
     <div>
-        <p class="admin-eyebrow">Imports</p>
         <h1 class="admin-title">@ViewData["Title"]</h1>
         <p class="admin-subtitle">@(clinical ? "Match each source patient group to an existing hospital record, or confirm a new one." : "No patient matching required. Validate the batch to review the proposed records before approval.")</p>
     </div>

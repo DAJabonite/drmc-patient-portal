@@ -10,10 +10,9 @@
     <div class="container">
         <div class="d-flex align-items-center justify-content-between gap-3">
             <div class="d-flex align-items-center gap-3 min-w-0">
-                <div class="dashboard-avatar"><i class="bi bi-person-fill" aria-hidden="true"></i></div>
+                <div class="dashboard-avatar"><i class="bi bi-person" aria-hidden="true"></i></div>
                 <div class="min-w-0">
-                    <p class="small text-white text-opacity-75 mb-0">My DRMC care</p>
-                    <h1 class="h2 fw-bold mb-0 text-truncate">Welcome, @firstName</h1>
+                    <h1 class="h2 fw-bold mb-0">Welcome, @firstName</h1>
                 </div>
             </div>
         </div>
@@ -50,8 +49,7 @@
                         <div class="summary-card-heading">
                             <span class="card-icon"><i class="bi bi-journal-medical" aria-hidden="true"></i></span>
                             <div>
-                                <p class="eyebrow mb-1">Clinical care</p>
-                                <h2 class="h6 fw-bold mb-0">Visits</h2>
+                                <h2 class="h5 fw-bold mb-0">Visits</h2>
                             </div>
                             <span class="summary-count">@Model.EncountersCount</span>
                         </div>
@@ -80,8 +78,7 @@
                         <div class="summary-card-heading">
                             <span class="card-icon"><i class="bi bi-file-earmark-medical" aria-hidden="true"></i></span>
                             <div>
-                                <p class="eyebrow mb-1">Latest updates</p>
-                                <h2 class="h6 fw-bold mb-0">Lab results</h2>
+                                <h2 class="h5 fw-bold mb-0">Lab results</h2>
                             </div>
                             <span class="summary-count">@Model.LabResultsCount</span>
                         </div>
@@ -114,12 +111,11 @@
                         <div class="summary-card-heading">
                             <span class="card-icon"><i class="bi bi-capsule" aria-hidden="true"></i></span>
                             <div>
-                                <p class="eyebrow mb-1">Daily care</p>
-                                <h2 class="h6 fw-bold mb-0">Medications</h2>
+                                <h2 class="h5 fw-bold mb-0">Medications</h2>
                             </div>
                             <span class="summary-count">@Model.ActivePrescriptionsCount</span>
                         </div>
-                        <p class="text-muted small mb-3">Review dose times, safety instructions, and prescription details.</p>
+                        <p class="text-muted mb-3">Review dose times, safety instructions, and prescription details.</p>
                         <a asp-controller="Medications" asp-action="Index" class="btn btn-primary-drmc dashboard-summary-button mt-auto">Open medications <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                     </div>
                 </article>
@@ -131,11 +127,10 @@
                         <div class="summary-card-heading">
                             <span class="card-icon"><i class="bi bi-heart-pulse" aria-hidden="true"></i></span>
                             <div>
-                                <p class="eyebrow mb-1">Assistance</p>
-                                <h2 class="h6 fw-bold mb-0">Malasakit</h2>
+                                <h2 class="h5 fw-bold mb-0">Malasakit</h2>
                             </div>
                         </div>
-                        <p class="text-muted small mb-3">Check medical assistance services and document requirements.</p>
+                        <p class="text-muted mb-3">Check medical assistance services and document requirements.</p>
                         <a asp-controller="Malasakit" asp-action="Index" class="btn btn-primary-drmc dashboard-summary-button mt-auto">Malasakit assistance <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                     </div>
                 </article>

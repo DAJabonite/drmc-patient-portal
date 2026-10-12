@@ -8,9 +8,8 @@
 }
 <div class="admin-page-header">
     <div>
-        <p class="admin-eyebrow">Operations</p>
         <h1 class="admin-title">Staff invitations</h1>
-        <p class="admin-subtitle">Staff usually have no hospital record, so they sign up with an invitation instead of a hospital record code. Each invitation works once, only for its email address, and grants its role after the account confirms its email and turns on two-factor authentication.</p>
+        <p class="admin-subtitle">Invite staff to sign up without a hospital record code. Each invitation works once for its email address; the role activates after email confirmation and two-factor setup.</p>
     </div>
     <div class="admin-page-actions">
         <a asp-area="Admin" asp-controller="StaffAccess" asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-person-lock me-1" aria-hidden="true"></i>Staff access</a>
@@ -42,14 +41,14 @@
                 {
                     var label = StaffInvitationCodes.Label(row.Status);
                     <tr>
-                        <td class="text-break"><span class="fw-semibold">@row.Email</span><div class="admin-muted small">Invited by @row.InvitedBy</div></td>
-                        <td>@StaffRoles.Label(row.Role)</td>
-                        <td>
+                        <td class="text-break" data-label="Email"><span class="fw-semibold">@row.Email</span><div class="admin-muted small">Invited by @row.InvitedBy</div></td>
+                        <td data-label="Role">@StaffRoles.Label(row.Role)</td>
+                        <td data-label="Invitation">
                             <span class="font-monospace" aria-label="Code ending in @row.Hint">•••••-•••••-@row.Hint</span>
                             <div class="admin-muted small tabular">@row.CreatedAt.ToString("MMM d, yyyy h:mm tt") · @(row.AcceptedAt is { } accepted ? "Account created " + accepted.ToString("MMM d, yyyy") : "Expires " + row.ExpiresAt.ToString("MMM d, yyyy h:mm tt"))</div>
                         </td>
-                        <td><span class="@AdminChips.Css(label)">@label</span></td>
-                        <td class="text-end text-nowrap">
+                        <td data-label="Status"><span class="@AdminChips.Css(label)">@label</span></td>
+                        <td class="text-end text-nowrap" data-label="Actions">
                             @if (row.Status is StaffInvitationStatus.Invited or StaffInvitationStatus.AwaitingSetup)
                             {
                                 <form method="post" asp-area="Admin" asp-action="Revoke" asp-route-id="@row.Id" class="d-inline" data-confirm="Revoke this invitation? No staff role will be granted from it.">

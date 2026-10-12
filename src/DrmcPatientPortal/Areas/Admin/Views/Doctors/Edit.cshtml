@@ -1,7 +1,7 @@
 @model DoctorInput
 @{ ViewData["Title"] = "Edit doctor"; }
 <div class="admin-page-header">
-    <div><p class="admin-eyebrow">Doctors</p><h1 class="admin-title">Edit doctor</h1><p class="admin-subtitle">Directory details are public. Changes are recorded in the staff audit history.</p></div>
+    <div><h1 class="admin-title">Edit doctor</h1><p class="admin-subtitle">Directory details are visible to patients.</p></div>
 </div>
 <form asp-area="Admin" asp-action="Edit" asp-route-id="@ViewData["Id"]" method="post" class="admin-card admin-form">
     <div class="admin-card-body"><partial name="_Form" model="Model" /></div>

@@ -154,8 +154,8 @@
 }
 <section class="card"><div class="card-body">
     <h2 class="h5">Dispensing history <span class="text-muted">(@Model.HistoryTotal)</span></h2>
-    <div class="table-responsive"><table class="table"><thead><tr><th scope="col">Dispensed</th><th scope="col">Medicines</th><th scope="col">Days supplied</th><th scope="col">Estimated supply end</th></tr></thead><tbody>
-    @foreach (var dispense in Model.Dispenses) { <tr><td>@dispense.DispensedDate.ToString("dd MMM yyyy")</td><td>@dispense.Medicines</td><td>@(dispense.DaysSupplied?.ToString() ?? "Not recorded")</td><td>@(dispense.EstimatedSupplyEnd?.ToString("dd MMM yyyy") ?? "Not calculated")</td></tr> }
+    <div class="table-responsive" tabindex="0" role="region" aria-label="Scrollable dispensing history table"><table class="table"><thead><tr><th scope="col">Dispensed</th><th scope="col">Medicines</th><th scope="col">Days supplied</th><th scope="col">Estimated supply end</th></tr></thead><tbody>
+    @foreach (var dispense in Model.Dispenses) { <tr><td data-label="Dispensed">@dispense.DispensedDate.ToString("dd MMM yyyy")</td><td data-label="Medicines">@dispense.Medicines</td><td data-label="Days supplied">@(dispense.DaysSupplied?.ToString() ?? "Not recorded")</td><td data-label="Estimated supply end">@(dispense.EstimatedSupplyEnd?.ToString("dd MMM yyyy") ?? "Not calculated")</td></tr> }
     @if (Model.Dispenses.Count == 0) { <tr><td colspan="4" class="text-muted">No dispensing history recorded.</td></tr> }
     </tbody></table></div>
     <nav aria-label="Dispensing history pages" class="d-flex align-items-center justify-content-between"><span class="small text-muted">Page @Model.HistoryPage of @historyPages</span><div class="d-flex gap-2">
