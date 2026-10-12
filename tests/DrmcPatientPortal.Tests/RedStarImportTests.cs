@@ -135,21 +135,70 @@ public sealed class RedStarImportTests
     }
 
     [Theory]
-    [InlineData(RedStarProgram.ART, RedStarStatus.Active, "LIVING", "NAME,Address*,HRN,Patient Code,Code Name,Enrolment/Baseline Date,ART Start Date @ RED STAR,REFILL DATE,Next Refill Date,Last Contact No. Provided,REGIMEN,TREATMENT STATUS")]
-    [InlineData(RedStarProgram.PrEP, RedStarStatus.Active, "PrEP", "Patient Name,Current Address,Patient Code,PrEP Start Date @ RED STAR,PrEP NEXT Refill Date,Last Contact No. Provided,PrEP Regimen,STATUS")]
-    [InlineData(RedStarProgram.PEP, RedStarStatus.Active, "PEP", "Patient Name,Hospital No.,Patient Code,Code Name,ART Start Date,ARV Regimen,STATUS")]
-    [InlineData(RedStarProgram.NewbornProphylaxis, RedStarStatus.Active, "NB PROPHYLAXIS", "Patient Name,Hospital No.,Patient Code,Code Name,ART Start Date,REFILL DATE,NEXT REFILL DATE,ARV Regimen,STATUS")]
-    [InlineData(RedStarProgram.ART, RedStarStatus.TransferredOut, "TRANS OUT", "Patient Name,Current Address,HRN,Patient Code,Code Name,Date Enrolled @ RED STAR,ART Start Date @ RED STAR,ARV Refill Date,Last Contact No. Provided,ARV Regimen,TRANSOUT DATE,Name of Hub*")]
-    [InlineData(RedStarProgram.ART, RedStarStatus.Deceased, "EXPIRED", "Patient Name,Last Address Resided,HRN,Patient Code,Code Name,Date Enrolled to HACT,ART Start Date @ RED STAR,ARV REGIMEN,DATE EXPIRED")]
-    public void Export_supported_headers_follow_staff_worksheet_order(RedStarProgram program, RedStarStatus status, string sheet, string prefix)
+    [InlineData(RedStarProgram.ART, RedStarStatus.Active, "LIVING", "C=NAME|G=Address*|H=HRN|I=Patient Code|T=Enrolment/Baseline Date|V=REFILL DATE|Y=REGIMEN|AB=Latest CD4|AD=VIRAL LOAD|AF=TREATMENT STATUS|AI=DATE OF COMPLETION")]
+    [InlineData(RedStarProgram.PrEP, RedStarStatus.Active, "PrEP", "C=Patient Name|E=Current Address|G=Patient Code|M=PrEP Start Date @ RED STAR|O=PrEP NEXT Refill Date|Q=PrEP Regimen|R=Date of last HIV Test|Z=STATUS")]
+    [InlineData(RedStarProgram.PEP, RedStarStatus.Active, "PEP", "C=Patient Name|E=Hospital No.|F=Patient Code|O=ART Start Date|Q=ARV Regimen|R=STATUS|S=REMARKS")]
+    [InlineData(RedStarProgram.NewbornProphylaxis, RedStarStatus.Active, "NB PROPHYLAXIS", "C=Patient Name|E=Hospital No.|F=Patient Code|O=ART Start Date|Q=REFILL DATE|R=NEXT REFILL DATE|S=ARV Regimen|T=STATUS")]
+    [InlineData(RedStarProgram.ART, RedStarStatus.TransferredOut, "TRANS OUT", "C=Patient Name|F=Current Address|G=HRN|H=Patient Code|S=Date Enrolled @ RED STAR|X=ARV Regimen|AB=TRANSOUT DATE|AC=Name of Hub*")]
+    [InlineData(RedStarProgram.ART, RedStarStatus.Deceased, "EXPIRED", "C=Patient Name|F=Last Address Resided|G=HRN|H=Patient Code|S=Date Enrolled to HACT|V=ARV REGIMEN|Z=LOCATION of Expired|AA=DATE EXPIRED")]
+    public void Export_headers_keep_the_staff_workbook_column_positions(RedStarProgram program, RedStarStatus status, string sheet, string positions)
     {
         var bytes = RedStarRegistryParser.Export([SyntheticEnrollment(program, status)]);
-        var expected = prefix.Split(',');
         var headers = Headers(bytes, sheet);
-        Assert.Equal(expected, headers.Take(expected.Length));
-        Assert.Equal(15, headers.Length);
-        Assert.DoesNotContain("UIC", headers);
-        Assert.DoesNotContain("Latest CD4", headers);
+        foreach (var specification in positions.Split('|'))
+        {
+            var pair = specification.Split('=', 2);
+            var index = pair[0].Aggregate(0, (value, character) => value * 26 + character - 'A' + 1) - 1;
+            Assert.Equal(pair[1], headers[index]);
+        }
+        Assert.True(headers.Length > 15);
+        if (sheet == "LIVING")
+        {
+            Assert.Equal("", headers[0]);
+            Assert.Equal("LEGEND", headers[1]);
+            Assert.Equal("", headers[25]);
+            Assert.Equal("", headers[26]);
+        }
+    }
+
+    [Fact]
+    public void Export_keeps_unsupported_clinical_cells_blank_and_saved_values_in_their_staff_positions()
+    {
+        var bytes = RedStarRegistryParser.Export([SyntheticEnrollment(RedStarProgram.ART, RedStarStatus.Active)]);
+        using var zip = new ZipArchive(new MemoryStream(bytes));
+        using var stream = zip.GetEntry("xl/worksheets/sheet1.xml")!.Open();
+        var row = XDocument.Load(stream).Descendants().Single(element => element.Name.LocalName == "row" && (string?)element.Attribute("r") == "2");
+        var cells = row.Elements().ToDictionary(element => element.Attribute("r")!.Value,
+            element => string.Concat(element.Descendants().Where(text => text.Name.LocalName == "t").Select(text => text.Value)));
+        Assert.Equal("Synthetic Layout Patient", cells["C2"]);
+        Assert.Equal("0000123", cells["H2"]);
+        Assert.Equal("SYN-LAYOUT", cells["I2"]);
+        Assert.Equal("Synthetic Medicine A / Synthetic Medicine B", cells["Y2"]);
+        foreach (var address in new[] { "D2", "E2", "F2", "O2", "P2", "AB2", "AC2", "AD2", "AE2", "AG2", "AH2", "AI2" })
+            Assert.Equal("", cells[address]);
+        Assert.Contains("LIVING: Latest CD4", RedStarRegistryParser.Parse(bytes).DeferredColumns);
+    }
+
+    [Theory]
+    [InlineData("LIVING", 53, 56, "Program")]
+    [InlineData("REACTIVE WHEN TESTED, NONREACTI", 53, 57, "Next Refill Date")]
+    [InlineData("TRANS OUT", 53, 56, "Next Refill Date")]
+    [InlineData("PrEP", 26, 33, "HRN")]
+    [InlineData("NB PROPHYLAXIS", 28, 34, "Address*")]
+    [InlineData("PEP", 51, 59, "Address*")]
+    [InlineData("RHIVDA 2025", 1, 15, "Address*")]
+    [InlineData("EXPIRED", 52, 58, "REFILL DATE")]
+    public void Portal_only_columns_follow_the_complete_staff_header_span(string sheet, int staffColumns, int totalColumns, string firstAdditionalHeader)
+    {
+        var headers = Headers(RedStarRegistryParser.Export([]), sheet);
+        Assert.Equal(totalColumns, headers.Length);
+        Assert.Equal(firstAdditionalHeader, headers[staffColumns]);
+        if (sheet == "REACTIVE WHEN TESTED, NONREACTI")
+        {
+            Assert.Equal("NAME", headers[2]);
+            Assert.Equal("Latest Viral Load (Date/Result)", headers[25]);
+            Assert.Equal("STATUS", headers[27]);
+        }
     }
 
     [Theory]
@@ -179,7 +228,7 @@ public sealed class RedStarImportTests
         Assert.Equal(enrollment.Medicines, row.Medicines);
         Assert.Equal(new DateTime(2026, 10, 1), row.DispensedDate);
         Assert.Equal(new DateTime(2026, 10, 31), row.NextRefillDate);
-        Assert.Empty(RedStarRegistryParser.Parse(RedStarRegistryParser.Export([enrollment])).DeferredColumns);
+        // Unsupported staff columns stay in the protected source, not in core patient fields.
     }
 
     [Fact]
@@ -187,7 +236,7 @@ public sealed class RedStarImportTests
     {
         var bytes = RedStarRegistryParser.Export([]);
         foreach (var sheet in new[] { "LIVING", "REACTIVE WHEN TESTED, NONREACTI", "TRANS OUT", "PrEP", "NB PROPHYLAXIS", "PEP", "RHIVDA 2025", "EXPIRED" })
-            Assert.Equal(15, Headers(bytes, sheet).Length);
+            Assert.True(Headers(bytes, sheet).Length >= 15);
     }
 
     private static RedStarEnrollment SyntheticEnrollment(RedStarProgram program, RedStarStatus status) => new()

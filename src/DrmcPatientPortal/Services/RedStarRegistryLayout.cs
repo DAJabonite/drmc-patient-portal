@@ -63,6 +63,15 @@ public static class RedStarRegistryLayout
     public static RedStarRegistrySheet? Find(string? name) => Sheets.SingleOrDefault(sheet =>
         string.Equals(sheet.Name, name, StringComparison.OrdinalIgnoreCase));
 
+    public static IReadOnlyList<RedStarRegistryColumn> ExportColumns(RedStarRegistrySheet sheet)
+    {
+        var staffColumns = RedStarStaffWorkbook.ForSheet(sheet.Name).Select(header =>
+            new RedStarRegistryColumn(sheet.Columns.SingleOrDefault(column =>
+                string.Equals(column.Header, header, StringComparison.OrdinalIgnoreCase))?.Field ?? "", header)).ToArray();
+        var represented = staffColumns.Where(column => column.Field.Length != 0).Select(column => column.Field).ToHashSet(StringComparer.Ordinal);
+        return staffColumns.Concat(sheet.Columns.Where(column => !represented.Contains(column.Field))).ToArray();
+    }
+
     public static string SheetFor(RedStarEnrollment enrollment) => SheetFor(enrollment.Program, enrollment.Status);
 
     public static string SheetFor(RedStarProgram program, RedStarStatus status)

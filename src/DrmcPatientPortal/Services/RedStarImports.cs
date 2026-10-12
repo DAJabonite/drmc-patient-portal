@@ -483,6 +483,7 @@ public static class RedStarRegistryParser
         var groups = enrollments.ToLookup(RedStarRegistryLayout.SheetFor, StringComparer.Ordinal);
         var sheets = RedStarRegistryLayout.Sheets.Select(sheet =>
         {
+            var columns = RedStarRegistryLayout.ExportColumns(sheet);
             var rows = groups[sheet.Name].Select(enrollment =>
             {
                 var values = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -500,8 +501,8 @@ public static class RedStarRegistryParser
                         appointment.State == RedStarAppointmentState.Scheduled).OrderBy(appointment => appointment.DueDate)
                         .Select(appointment => (DateTime?)appointment.DueDate).FirstOrDefault())
                 };
-                return sheet.Columns.Select(column => values[column.Field]).ToArray();
-            }).Prepend(sheet.Columns.Select(column => column.Header).ToArray()).ToArray();
+                return columns.Select(column => column.Field.Length == 0 ? "" : values[column.Field]).ToArray();
+            }).Prepend(columns.Select(column => column.Header).ToArray()).ToArray();
             return (sheet.Name, rows);
         }).ToList();
         return Workbook(sheets);
