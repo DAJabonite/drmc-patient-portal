@@ -122,13 +122,18 @@ public sealed class AccountEmailDispatcher(IServiceScopeFactory scopes, IDataPro
         await db.AccountEmails.Where(m =>
             (m.Status == AccountEmailStatus.Pending && m.ExpiresUtc <= now) ||
             (m.Status == AccountEmailStatus.Sending && m.LeaseExpiresUtc <= now && (m.ExpiresUtc <= now || m.Attempts >= options.Value.MaximumAttempts)))
-            .Take(100).ExecuteUpdateAsync(set => set.SetProperty(m => m.Status, AccountEmailStatus.Expired)
+            .OrderBy(m => m.ExpiresUtc).ThenBy(m => m.Id).Take(100)
+            .ExecuteUpdateAsync(set => set.SetProperty(m => m.Status, AccountEmailStatus.Expired)
                 .SetProperty(m => m.ProtectedPayload, (byte[]?)null).SetProperty(m => m.CompletedUtc, (DateTimeOffset?)now)
                 .SetProperty(m => m.LeaseOwner, (string?)null).SetProperty(m => m.LeaseExpiresUtc, (DateTimeOffset?)null), token);
         var cutoff = now.AddDays(-options.Value.RetentionDays);
-        await db.AccountEmails.Where(m => m.CompletedUtc < cutoff).Take(100).ExecuteDeleteAsync(token);
-        await db.PortalSessions.Where(s => s.ExpiresUtc <= now).Take(100).ExecuteDeleteAsync(token);
-        await db.AuthenticatorConsumptions.Where(c => c.ExpiresUtc <= now).Take(100).ExecuteDeleteAsync(token);
+        await db.AccountEmails.Where(m => m.CompletedUtc < cutoff)
+            .OrderBy(m => m.CompletedUtc).ThenBy(m => m.Id).Take(100).ExecuteDeleteAsync(token);
+        await db.PortalSessions.Where(s => s.ExpiresUtc <= now)
+            .OrderBy(s => s.ExpiresUtc).ThenBy(s => s.Id).Take(100).ExecuteDeleteAsync(token);
+        await db.AuthenticatorConsumptions.Where(c => c.ExpiresUtc <= now)
+            .OrderBy(c => c.ExpiresUtc).ThenBy(c => c.UserId).ThenBy(c => c.KeyFingerprint).ThenBy(c => c.TimeStep)
+            .Take(100).ExecuteDeleteAsync(token);
     }
 }
 
