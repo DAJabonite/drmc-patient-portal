@@ -134,6 +134,132 @@ public sealed class RedStarImportTests
         Assert.Equal("=SYNTHETIC_MEDICINE()", row.Medicines);
     }
 
+    [Theory]
+    [InlineData(RedStarProgram.ART, RedStarStatus.Active, "LIVING", "C=NAME|G=Address*|H=HRN|I=Patient Code|T=Enrolment/Baseline Date|V=REFILL DATE|Y=REGIMEN|AB=Latest CD4|AD=VIRAL LOAD|AF=TREATMENT STATUS|AI=DATE OF COMPLETION")]
+    [InlineData(RedStarProgram.PrEP, RedStarStatus.Active, "PrEP", "C=Patient Name|E=Current Address|G=Patient Code|M=PrEP Start Date @ RED STAR|O=PrEP NEXT Refill Date|Q=PrEP Regimen|R=Date of last HIV Test|Z=STATUS")]
+    [InlineData(RedStarProgram.PEP, RedStarStatus.Active, "PEP", "C=Patient Name|E=Hospital No.|F=Patient Code|O=ART Start Date|Q=ARV Regimen|R=STATUS|S=REMARKS")]
+    [InlineData(RedStarProgram.NewbornProphylaxis, RedStarStatus.Active, "NB PROPHYLAXIS", "C=Patient Name|E=Hospital No.|F=Patient Code|O=ART Start Date|Q=REFILL DATE|R=NEXT REFILL DATE|S=ARV Regimen|T=STATUS")]
+    [InlineData(RedStarProgram.ART, RedStarStatus.TransferredOut, "TRANS OUT", "C=Patient Name|F=Current Address|G=HRN|H=Patient Code|S=Date Enrolled @ RED STAR|X=ARV Regimen|AB=TRANSOUT DATE|AC=Name of Hub*")]
+    [InlineData(RedStarProgram.ART, RedStarStatus.Deceased, "EXPIRED", "C=Patient Name|F=Last Address Resided|G=HRN|H=Patient Code|S=Date Enrolled to HACT|V=ARV REGIMEN|Z=LOCATION of Expired|AA=DATE EXPIRED")]
+    public void Export_headers_keep_the_staff_workbook_column_positions(RedStarProgram program, RedStarStatus status, string sheet, string positions)
+    {
+        var bytes = RedStarRegistryParser.Export([SyntheticEnrollment(program, status)]);
+        var headers = Headers(bytes, sheet);
+        foreach (var specification in positions.Split('|'))
+        {
+            var pair = specification.Split('=', 2);
+            var index = pair[0].Aggregate(0, (value, character) => value * 26 + character - 'A' + 1) - 1;
+            Assert.Equal(pair[1], headers[index]);
+        }
+        Assert.True(headers.Length > 15);
+        if (sheet == "LIVING")
+        {
+            Assert.Equal("", headers[0]);
+            Assert.Equal("LEGEND", headers[1]);
+            Assert.Equal("", headers[25]);
+            Assert.Equal("", headers[26]);
+        }
+    }
+
+    [Fact]
+    public void Export_keeps_unsupported_clinical_cells_blank_and_saved_values_in_their_staff_positions()
+    {
+        var bytes = RedStarRegistryParser.Export([SyntheticEnrollment(RedStarProgram.ART, RedStarStatus.Active)]);
+        using var zip = new ZipArchive(new MemoryStream(bytes));
+        using var stream = zip.GetEntry("xl/worksheets/sheet1.xml")!.Open();
+        var row = XDocument.Load(stream).Descendants().Single(element => element.Name.LocalName == "row" && (string?)element.Attribute("r") == "2");
+        var cells = row.Elements().ToDictionary(element => element.Attribute("r")!.Value,
+            element => string.Concat(element.Descendants().Where(text => text.Name.LocalName == "t").Select(text => text.Value)));
+        Assert.Equal("Synthetic Layout Patient", cells["C2"]);
+        Assert.Equal("0000123", cells["H2"]);
+        Assert.Equal("SYN-LAYOUT", cells["I2"]);
+        Assert.Equal("Synthetic Medicine A / Synthetic Medicine B", cells["Y2"]);
+        foreach (var address in new[] { "D2", "E2", "F2", "O2", "P2", "AB2", "AC2", "AD2", "AE2", "AG2", "AH2", "AI2" })
+            Assert.Equal("", cells[address]);
+        Assert.Contains("LIVING: Latest CD4", RedStarRegistryParser.Parse(bytes).DeferredColumns);
+    }
+
+    [Theory]
+    [InlineData("LIVING", 53, 56, "Program")]
+    [InlineData("REACTIVE WHEN TESTED, NONREACTI", 53, 57, "Next Refill Date")]
+    [InlineData("TRANS OUT", 53, 56, "Next Refill Date")]
+    [InlineData("PrEP", 26, 33, "HRN")]
+    [InlineData("NB PROPHYLAXIS", 28, 34, "Address*")]
+    [InlineData("PEP", 51, 59, "Address*")]
+    [InlineData("RHIVDA 2025", 1, 15, "Address*")]
+    [InlineData("EXPIRED", 52, 58, "REFILL DATE")]
+    public void Portal_only_columns_follow_the_complete_staff_header_span(string sheet, int staffColumns, int totalColumns, string firstAdditionalHeader)
+    {
+        var headers = Headers(RedStarRegistryParser.Export([]), sheet);
+        Assert.Equal(totalColumns, headers.Length);
+        Assert.Equal(firstAdditionalHeader, headers[staffColumns]);
+        if (sheet == "REACTIVE WHEN TESTED, NONREACTI")
+        {
+            Assert.Equal("NAME", headers[2]);
+            Assert.Equal("Latest Viral Load (Date/Result)", headers[25]);
+            Assert.Equal("STATUS", headers[27]);
+        }
+    }
+
+    [Theory]
+    [InlineData(RedStarProgram.ART, RedStarStatus.Active)]
+    [InlineData(RedStarProgram.PrEP, RedStarStatus.Active)]
+    [InlineData(RedStarProgram.PEP, RedStarStatus.Active)]
+    [InlineData(RedStarProgram.NewbornProphylaxis, RedStarStatus.Active)]
+    [InlineData(RedStarProgram.Unverified, RedStarStatus.AwaitingVerification)]
+    [InlineData(RedStarProgram.PrEP, RedStarStatus.TransferredOut)]
+    [InlineData(RedStarProgram.PEP, RedStarStatus.Deceased)]
+    public void Staff_ordered_export_round_trips_all_existing_fields(RedStarProgram program, RedStarStatus status)
+    {
+        var enrollment = SyntheticEnrollment(program, status);
+        var row = Assert.Single(RedStarRegistryParser.Parse(RedStarRegistryParser.Export([enrollment])).Rows);
+        Assert.Equal(enrollment.Patient.FullName, row.FullName);
+        Assert.Equal(enrollment.Patient.PatientCode, row.PatientCode);
+        Assert.Equal(enrollment.Patient.CodeName, row.CodeName);
+        Assert.Equal(enrollment.Patient.HospitalNumber, row.HospitalNumber);
+        Assert.Equal(enrollment.Patient.Address, row.Address);
+        Assert.Equal(enrollment.Patient.ContactNumber, row.ContactNumber);
+        Assert.Equal(program, row.Program);
+        Assert.Equal(status, row.Status);
+        Assert.Equal(enrollment.EnrolledDate, row.EnrolledDate);
+        Assert.Equal(enrollment.StartDate, row.StartDate);
+        Assert.Equal(enrollment.StatusDate, row.StatusDate);
+        Assert.Equal(enrollment.ReceivingHub, row.ReceivingHub);
+        Assert.Equal(enrollment.Medicines, row.Medicines);
+        Assert.Equal(new DateTime(2026, 10, 1), row.DispensedDate);
+        Assert.Equal(new DateTime(2026, 10, 31), row.NextRefillDate);
+        // Unsupported staff columns stay in the protected source, not in core patient fields.
+    }
+
+    [Fact]
+    public void Empty_export_has_supported_headers_for_all_staff_registry_tabs()
+    {
+        var bytes = RedStarRegistryParser.Export([]);
+        foreach (var sheet in new[] { "LIVING", "REACTIVE WHEN TESTED, NONREACTI", "TRANS OUT", "PrEP", "NB PROPHYLAXIS", "PEP", "RHIVDA 2025", "EXPIRED" })
+            Assert.True(Headers(bytes, sheet).Length >= 15);
+    }
+
+    private static RedStarEnrollment SyntheticEnrollment(RedStarProgram program, RedStarStatus status) => new()
+    {
+        Patient = new RedStarPatient { FullName = "Synthetic Layout Patient", PatientCode = "SYN-LAYOUT", CodeName = "Synthetic alias",
+            HospitalNumber = "0000123", Address = "Synthetic address", ContactNumber = "+639171234567", PortalUserId = "NEVER-EXPORT-OWNERSHIP" },
+        Program = program, Status = status, EnrolledDate = new DateTime(2026, 1, 10), StartDate = new DateTime(2026, 1, 12),
+        StatusDate = new DateTime(2026, 10, 2), ReceivingHub = "Synthetic receiving hub", Medicines = "Synthetic Medicine A / Synthetic Medicine B",
+        Dispenses = [new RedStarDispense { DispensedDate = new DateTime(2026, 9, 1) }, new RedStarDispense { DispensedDate = new DateTime(2026, 10, 1) }],
+        Appointments = [new RedStarAppointment { Kind = RedStarAppointmentKind.Refill, State = RedStarAppointmentState.Scheduled, DueDate = new DateTime(2026, 10, 31) }]
+    };
+
+    private static string[] Headers(byte[] bytes, string sheet)
+    {
+        using var zip = new ZipArchive(new MemoryStream(bytes));
+        using var bookStream = zip.GetEntry("xl/workbook.xml")!.Open();
+        var book = XDocument.Load(bookStream);
+        var tab = Assert.Single(book.Descendants(), element => element.Name.LocalName == "sheet" && (string?)element.Attribute("name") == sheet);
+        using var sheetStream = zip.GetEntry("xl/worksheets/sheet" + tab.Attribute("sheetId")!.Value + ".xml")!.Open();
+        return XDocument.Load(sheetStream).Descendants().First(element => element.Name.LocalName == "row")
+            .Descendants().Where(element => element.Name.LocalName == "t").Select(element => element.Value).ToArray();
+    }
+
     private static void SetFormula(XDocument doc, string address)
     {
         var cell = doc.Descendants().Single(x => x.Name.LocalName == "c" && (string?)x.Attribute("r") == address);

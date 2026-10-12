@@ -434,6 +434,8 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
 
     private void ValidateEnrollment(RedStarEnrollmentInput input)
     {
+        if (!string.IsNullOrEmpty(input.WorksheetLayout) && RedStarRegistryLayout.Find(input.WorksheetLayout) is null)
+            ModelState.AddModelError(nameof(input.WorksheetLayout), "Select a supported worksheet layout.");
         if (!Enum.IsDefined(input.Program) || !Enum.IsDefined(input.Status)) ModelState.AddModelError("", "Select a supported program and status.");
         if (input.Status == RedStarStatus.Active && input.Program == RedStarProgram.Unverified) ModelState.AddModelError("", "Verify the program before activating the enrollment.");
         if (input.EnrolledDate.HasValue && !ValidPastDate(input.EnrolledDate) || input.StartDate.HasValue && !ValidPastDate(input.StartDate) ||
