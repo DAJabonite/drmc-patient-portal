@@ -17,6 +17,7 @@ public sealed record RedStarDeliveriesPage(IReadOnlyList<RedStarDeliveryRow> Row
 
 public sealed class RedStarEnrollmentInput
 {
+    [StringLength(31)] public string? WorksheetLayout { get; set; }
     [Required, StringLength(80)] public string PatientCode { get; set; } = "";
     [StringLength(120)] public string? CodeName { get; set; }
     [Required, StringLength(200)] public string FullName { get; set; } = "";

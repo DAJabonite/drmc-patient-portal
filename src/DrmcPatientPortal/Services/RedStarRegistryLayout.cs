@@ -60,11 +60,16 @@ public static class RedStarRegistryLayout
             new("Medicines", "ARV REGIMEN"), new("StatusDate", "DATE EXPIRED"))
     ];
 
-    public static string SheetFor(RedStarEnrollment enrollment)
+    public static RedStarRegistrySheet? Find(string? name) => Sheets.SingleOrDefault(sheet =>
+        string.Equals(sheet.Name, name, StringComparison.OrdinalIgnoreCase));
+
+    public static string SheetFor(RedStarEnrollment enrollment) => SheetFor(enrollment.Program, enrollment.Status);
+
+    public static string SheetFor(RedStarProgram program, RedStarStatus status)
     {
-        if (enrollment.Status == RedStarStatus.TransferredOut) return "TRANS OUT";
-        if (enrollment.Status == RedStarStatus.Deceased) return "EXPIRED";
-        return enrollment.Program switch
+        if (status == RedStarStatus.TransferredOut) return "TRANS OUT";
+        if (status == RedStarStatus.Deceased) return "EXPIRED";
+        return program switch
         {
             RedStarProgram.PrEP => "PrEP", RedStarProgram.PEP => "PEP",
             RedStarProgram.NewbornProphylaxis => "NB PROPHYLAXIS", RedStarProgram.Unverified => "RHIVDA 2025",

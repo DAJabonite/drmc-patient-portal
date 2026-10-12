@@ -27,6 +27,95 @@ public sealed class RedStarStaffTests(PortalFactory factory)
         }
         Assert.Contains("appointments and dispensing", html);
     }
+
+    [Fact]
+    public async Task Enrollment_offers_all_staff_worksheets_and_refill_dates_remain_separate()
+    {
+        var html = await (await Clinic()).GetStringAsync("/Admin/RedStar/Create");
+        Assert.Contains("name=\"WorksheetLayout\"", html);
+        foreach (var sheet in RedStarRegistryLayout.Sheets)
+            Assert.Contains("value=\"" + sheet.Name + "\"", html);
+        Assert.Contains("data-registry-field=\"DispensedDate\"", html);
+        Assert.Contains("data-registry-field=\"NextRefillDate\"", html);
+        Assert.DoesNotContain("name=\"DispensedDate\"", html);
+        Assert.DoesNotContain("name=\"NextRefillDate\"", html);
+        Assert.Contains("/js/redstar-enrollment.js", html);
+    }
+
+    [Fact]
+    public async Task Invalid_submission_retains_selected_worksheet_and_entered_values()
+    {
+        var clinic = await Clinic();
+        var response = await clinic.PostFormAsync("/Admin/RedStar/Create", "/Admin/RedStar/Create", new Dictionary<string, string>
+        {
+            ["WorksheetLayout"] = "PrEP", ["FullName"] = "Synthetic layout input", ["Address"] = "Synthetic entered address",
+            ["PatientCode"] = "", ["Program"] = "ART", ["Status"] = "AwaitingVerification"
+        });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var html = await response.Content.ReadAsStringAsync();
+        Assert.Matches("<option[^>]*value=\"PrEP\"[^>]*selected", html);
+        Assert.Contains("value=\"Synthetic layout input\"", html);
+        Assert.Contains("value=\"Synthetic entered address\"", html);
+        Assert.True(html.IndexOf("name=\"PatientCode\"", StringComparison.Ordinal) < html.IndexOf("name=\"StartDate\"", StringComparison.Ordinal));
+        Assert.True(html.IndexOf("name=\"StartDate\"", StringComparison.Ordinal) < html.IndexOf("name=\"CodeName\"", StringComparison.Ordinal));
+        Assert.Contains("PrEP Start Date @ RED STAR", html);
+    }
+
+    [Theory]
+    [InlineData("PrEP")]
+    [InlineData("RHIVDA 2025")]
+    [InlineData("EXPIRED")]
+    public async Task Worksheet_layout_does_not_change_saved_program_status_or_create_schedules(string worksheet)
+    {
+        var clinic = await Clinic();
+        var code = "LAYOUT-" + Guid.NewGuid().ToString("N");
+        var response = await clinic.PostFormAsync("/Admin/RedStar/Create", "/Admin/RedStar/Create", new Dictionary<string, string>
+        {
+            ["WorksheetLayout"] = worksheet, ["PatientCode"] = code, ["FullName"] = "Synthetic presentation choice",
+            ["Program"] = "ART", ["Status"] = "AwaitingVerification"
+        });
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        var enrollment = await Db(db => db.RedStarEnrollments.AsNoTracking().Include(enrollment => enrollment.Patient)
+            .Include(enrollment => enrollment.Appointments).Include(enrollment => enrollment.Dispenses)
+            .SingleAsync(enrollment => enrollment.Patient.PatientCode == code));
+        Assert.Equal(RedStarProgram.ART, enrollment.Program);
+        Assert.Equal(RedStarStatus.AwaitingVerification, enrollment.Status);
+        Assert.Empty(enrollment.Appointments);
+        Assert.Empty(enrollment.Dispenses);
+    }
+
+    [Theory]
+    [InlineData("RHIVDA 2025")]
+    [InlineData("REACTIVE WHEN TESTED, NONREACTI")]
+    public async Task Worksheet_selection_keeps_unverified_program_activation_blocked(string worksheet)
+    {
+        var clinic = await Clinic();
+        var code = "LAYOUT-BLOCK-" + Guid.NewGuid().ToString("N");
+        var response = await clinic.PostFormAsync("/Admin/RedStar/Create", "/Admin/RedStar/Create", new Dictionary<string, string>
+        {
+            ["WorksheetLayout"] = worksheet, ["PatientCode"] = code, ["FullName"] = "Synthetic unverified layout",
+            ["Program"] = "Unverified", ["Status"] = "Active"
+        });
+        Assert.Contains("Verify the program before activating", await response.Content.ReadAsStringAsync());
+        Assert.False(await Db(db => db.RedStarPatients.AnyAsync(patient => patient.PatientCode == code)));
+    }
+
+    [Fact]
+    public async Task Unknown_worksheet_is_rejected_and_edit_defaults_to_the_saved_program()
+    {
+        var clinic = await Clinic();
+        var response = await clinic.PostFormAsync("/Admin/RedStar/Create", "/Admin/RedStar/Create", new Dictionary<string, string>
+        {
+            ["WorksheetLayout"] = "Unknown worksheet", ["PatientCode"] = "INVALID-LAYOUT", ["FullName"] = "Synthetic invalid layout",
+            ["Program"] = "ART", ["Status"] = "AwaitingVerification"
+        });
+        Assert.Contains("Select a supported worksheet layout", await response.Content.ReadAsStringAsync());
+        Assert.False(await Db(db => db.RedStarPatients.AnyAsync(patient => patient.PatientCode == "INVALID-LAYOUT")));
+        var item = await Seed(RedStarProgram.PrEP);
+        var html = await clinic.GetStringAsync("/Admin/RedStar/Edit/" + item.EnrollmentId);
+        Assert.Matches("<option[^>]*value=\"PrEP\"[^>]*selected", html);
+        Assert.Contains("PrEP Start Date @ RED STAR", html);
+    }
     private async Task<T> Db<T>(Func<ApplicationDbContext, Task<T>> operation)
     {
         await using var scope = factory.Services.CreateAsyncScope();

@@ -1,34 +1,91 @@
 @model RedStarEnrollmentInput
-@{ var existing = ViewData["PatientId"] is int patientId && patientId > 0; }
-<div asp-validation-summary="All" class="text-danger mb-3" role="alert"></div>
-<input asp-for="PatientVersion" type="hidden" />
-<input asp-for="EnrollmentVersion" type="hidden" />
-<p class="small text-muted mb-4">Enter the registry fields in the same order as the LIVING worksheet. Refill dates are recorded in appointments and dispensing after enrollment.</p>
-<fieldset class="mb-4">
-    <legend class="h5">Private patient identity</legend>
-    <div class="row g-3">
-        <div class="col-md-6"><label asp-for="FullName" class="form-label">Full name</label><input asp-for="FullName" class="form-control" readonly="@existing" autocomplete="off" /></div>
-        <div class="col-md-6"><label asp-for="Address" class="form-label">Address (optional)</label><input asp-for="Address" class="form-control" readonly="@existing" autocomplete="off" /></div>
-        <div class="col-md-6"><label asp-for="HospitalNumber" class="form-label">Hospital number / HRN (optional)</label><input asp-for="HospitalNumber" class="form-control" readonly="@existing" /></div>
-        <div class="col-md-6"><label asp-for="PatientCode" class="form-label">Patient code</label><input asp-for="PatientCode" class="form-control" readonly="@existing" /></div>
-        <div class="col-md-6"><label asp-for="CodeName" class="form-label">Code name</label><input asp-for="CodeName" class="form-control" readonly="@existing" /></div>
+@using DrmcPatientPortal.Services
+@using System.Text.Json
+@{
+    var existing = ViewData["PatientId"] is int patientId && patientId > 0;
+    var selectedSheet = RedStarRegistryLayout.Find(Model.WorksheetLayout)
+        ?? RedStarRegistryLayout.Find(RedStarRegistryLayout.SheetFor(Model.Program, Model.Status))!;
+    var optionalFields = new[] { "Address", "HospitalNumber", "CodeName", "EnrolledDate", "StartDate", "ContactNumber", "Medicines" };
+}
+<div data-redstar-enrollment>
+    <div asp-validation-summary="All" class="text-danger mb-3" role="alert"></div>
+    <input asp-for="PatientVersion" type="hidden" />
+    <input asp-for="EnrollmentVersion" type="hidden" />
+    <div class="border rounded-3 bg-light p-3 mb-4">
+        <label for="redstar-worksheet" class="form-label">Worksheet layout</label>
+        <select id="redstar-worksheet" name="WorksheetLayout" class="form-select" data-registry-worksheet aria-describedby="redstar-worksheet-help redstar-worksheet-description">
+            @foreach (var sheet in RedStarRegistryLayout.Sheets)
+            {
+                <option value="@sheet.Name" selected="@(sheet.Name == selectedSheet.Name)" data-columns="@JsonSerializer.Serialize(sheet.Columns)">@sheet.Name</option>
+            }
+        </select>
+        <span asp-validation-for="WorksheetLayout" class="text-danger"></span>
+        <p id="redstar-worksheet-help" class="form-text mb-2">Choose a tab from the staff workbook to match its headings and field order. Your entries are kept when you switch. Verify the program and treatment status separately.</p>
+        <p id="redstar-worksheet-description" class="small mb-0" data-registry-description role="status" aria-live="polite">Following the @selectedSheet.Name worksheet's supported column order.</p>
     </div>
-</fieldset>
-<fieldset class="mb-4">
-    <legend class="h5">Dates, contact and regimen</legend>
-    <div class="row g-3">
-        <div class="col-md-6"><label asp-for="EnrolledDate" class="form-label">Enrolment / baseline date</label><input asp-for="EnrolledDate" type="date" class="form-control" /></div>
-        <div class="col-md-6"><label asp-for="StartDate" class="form-label">ART / program start date at Red Star</label><input asp-for="StartDate" type="date" class="form-control" /></div>
-        <div class="col-md-6"><label asp-for="ContactNumber" class="form-label">Last contact number provided (optional)</label><input asp-for="ContactNumber" class="form-control" readonly="@existing" autocomplete="off" /></div>
-        <div class="col-12"><label asp-for="Medicines" class="form-label">Regimen / staff instructions</label><textarea asp-for="Medicines" rows="3" class="form-control"></textarea><div class="form-text">Use the patient's prescribed treatment information. Refill dates are approved separately from the days of supply.</div></div>
-        <div class="col-md-6"><label asp-for="Status" class="form-label">Treatment status</label><select asp-for="Status" asp-items="Html.GetEnumSelectList<RedStarStatus>()" class="form-select"></select></div>
-    </div>
-</fieldset>
-<fieldset class="mb-4">
-    <legend class="h5">Program and status details</legend>
-    <div class="row g-3">
-        <div class="col-md-6"><label asp-for="Program" class="form-label">Program</label><select asp-for="Program" asp-items="Html.GetEnumSelectList<RedStarProgram>()" class="form-select"></select></div>
-        <div class="col-md-4"><label asp-for="StatusDate" class="form-label">Status change date</label><input asp-for="StatusDate" type="date" class="form-control" /></div>
-        <div class="col-12"><label asp-for="ReceivingHub" class="form-label">Receiving hub (for transfer out)</label><input asp-for="ReceivingHub" class="form-control" /></div>
-    </div>
-</fieldset>
+    <p class="small text-muted mb-4">Refill dates are recorded in appointments and dispensing after enrollment. Other saved portal fields follow the selected worksheet's fields.</p>
+    <fieldset class="mb-4">
+        <legend class="h5">Registry fields</legend>
+        <div class="row g-3" data-registry-fields>
+            @foreach (var column in selectedSheet.Columns)
+            {
+                <div class="@(column.Field == "Medicines" ? "col-12" : "col-md-6")" data-registry-field="@column.Field">
+                    @if (column.Field is "DispensedDate" or "NextRefillDate")
+                    {
+                        <h3 class="h6 mb-2" data-registry-header>@column.Header</h3>
+                        <p class="form-text mb-0">@(column.Field == "DispensedDate" ? "Recorded in dispensing history after enrollment." : "Scheduled in appointments after enrollment.")</p>
+                    }
+                    else
+                    {
+                        <label for="@column.Field" class="form-label"><span data-registry-header>@column.Header</span>@if (optionalFields.Contains(column.Field)) { <span class="small text-muted"> (optional)</span> }</label>
+                        @switch (column.Field)
+                        {
+                            case "FullName":
+                                <input asp-for="FullName" class="form-control" readonly="@existing" autocomplete="off" />
+                                break;
+                            case "Address":
+                                <input asp-for="Address" class="form-control" readonly="@existing" autocomplete="off" />
+                                break;
+                            case "HospitalNumber":
+                                <input asp-for="HospitalNumber" class="form-control" readonly="@existing" />
+                                break;
+                            case "PatientCode":
+                                <input asp-for="PatientCode" class="form-control" readonly="@existing" />
+                                break;
+                            case "CodeName":
+                                <input asp-for="CodeName" class="form-control" readonly="@existing" />
+                                break;
+                            case "EnrolledDate":
+                                <input asp-for="EnrolledDate" type="date" class="form-control" />
+                                break;
+                            case "StartDate":
+                                <input asp-for="StartDate" type="date" class="form-control" />
+                                break;
+                            case "ContactNumber":
+                                <input asp-for="ContactNumber" class="form-control" readonly="@existing" autocomplete="off" />
+                                break;
+                            case "Medicines":
+                                <textarea asp-for="Medicines" rows="3" class="form-control"></textarea>
+                                <div class="form-text">Use the patient's prescribed treatment information. Refill dates are approved separately from the days of supply.</div>
+                                break;
+                            case "Status":
+                                <select asp-for="Status" asp-items="Html.GetEnumSelectList<RedStarStatus>()" class="form-select"></select>
+                                break;
+                            case "Program":
+                                <select asp-for="Program" asp-items="Html.GetEnumSelectList<RedStarProgram>()" class="form-select"></select>
+                                break;
+                            case "StatusDate":
+                                <input asp-for="StatusDate" type="date" class="form-control" />
+                                <div class="form-text">Required for transferred, discontinued, completed or deceased status.</div>
+                                break;
+                            case "ReceivingHub":
+                                <input asp-for="ReceivingHub" class="form-control" />
+                                <div class="form-text">Required for transferred-out status.</div>
+                                break;
+                        }
+                    }
+                </div>
+            }
+        </div>
+    </fieldset>
+</div>
