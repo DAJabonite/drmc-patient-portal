@@ -1,7 +1,78 @@
-@{ ViewData["Title"] = "Staff access required"; }
-<section class="container py-4">
-    <h1 class="h3">Staff access required</h1>
-    <p>This area requires a staff account with permission for this section, a confirmed email and an authenticator sign-in.</p>
-    <p>Select "Forget this browser" under Two-factor authentication, then sign in again with an authenticator code.</p>
-    <a asp-area="Identity" asp-page="/Account/Manage/TwoFactorAuthentication" class="btn btn-primary">Two-factor authentication</a>
+@{
+    ViewData["Title"] = "Staff access required";
+}
+<section class="staff-access container" aria-labelledby="staff-access-title">
+    <div class="staff-access-card">
+        <header class="staff-access-header">
+            <div class="staff-access-icon" aria-hidden="true">
+                <i class="bi bi-shield-lock"></i>
+            </div>
+            <div>
+                <p class="eyebrow mb-2">Staff area</p>
+                <h1 id="staff-access-title">Staff access required</h1>
+                <p class="staff-access-intro">This section is available to authorized DRMC staff. Your current sign-in does not meet all the access requirements.</p>
+            </div>
+        </header>
+
+        <div class="staff-access-body">
+            <section class="staff-access-guide" aria-labelledby="staff-access-guide-title">
+                <h2 id="staff-access-guide-title">How to continue</h2>
+                <p class="staff-access-description">If you have a staff account, complete these steps.</p>
+                <ol class="staff-access-steps">
+                    <li>
+                        <div>
+                            <h3>Check your authentication settings</h3>
+                            <p>Open Two-factor authentication and set up an authenticator app if you haven’t already.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <div>
+                            <h3>Forget this browser, if remembered</h3>
+                            <p>If shown, select <strong>“Forget this browser for 2FA”</strong> so your next sign-in asks for a code.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <div>
+                            <h3>Sign out and sign in again</h3>
+                            <p>Use a code from your authenticator app to verify your staff sign-in.</p>
+                        </div>
+                    </li>
+                </ol>
+            </section>
+
+            <aside class="staff-access-requirements" aria-labelledby="staff-access-requirements-title">
+                <h2 id="staff-access-requirements-title">What you’ll need</h2>
+                <ul>
+                    <li>
+                        <i class="bi bi-person-badge" aria-hidden="true"></i>
+                        <div><h3>Staff permission</h3><p>A staff account authorized for this section.</p></div>
+                    </li>
+                    <li>
+                        <i class="bi bi-envelope-check" aria-hidden="true"></i>
+                        <div><h3>Confirmed email</h3><p>A verified email address on your account.</p></div>
+                    </li>
+                    <li>
+                        <i class="bi bi-phone" aria-hidden="true"></i>
+                        <div><h3>Authenticator sign-in</h3><p>A sign-in verified with an authenticator app code.</p></div>
+                    </li>
+                </ul>
+                <div class="staff-access-help">
+                    <h3>Still unable to access this section?</h3>
+                    <p>Contact your portal administrator to check your staff permissions and email verification.</p>
+                </div>
+            </aside>
+        </div>
+
+        <footer class="staff-access-actions">
+            <a asp-area="Identity" asp-page="/Account/Manage/TwoFactorAuthentication" class="btn btn-primary-drmc">
+                <i class="bi bi-shield-check" aria-hidden="true"></i>
+                Two-factor authentication
+                <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            </a>
+            <a asp-area="" asp-controller="Home" asp-action="Index" class="btn btn-outline-drmc">
+                <i class="bi bi-house-door" aria-hidden="true"></i>
+                Return home
+            </a>
+        </footer>
+    </div>
 </section>
