@@ -1,0 +1,130 @@
+@model WebsiteUsagePage
+@using System.Globalization
+@{ ViewData["Title"] = "Website usage"; var report = Model.Report; }
+<div class="admin-page-header">
+    <div>
+        <p class="admin-eyebrow">Overview</p>
+        <h1 class="admin-title">Website usage</h1>
+        <p class="admin-subtitle">Estimated daily visitors and distinct active patient accounts, in Asia/Manila.</p>
+    </div>
+    @if (report is not null)
+    {
+        <a class="btn btn-outline-primary" asp-action="Export" asp-route-mode="@Model.Filter.Mode"
+           asp-route-day="@(Model.Filter.Day?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))" asp-route-month="@Model.Filter.Month"
+           asp-route-startDate="@(Model.Filter.StartDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))"
+           asp-route-endDate="@(Model.Filter.EndDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))">
+            <i class="bi bi-download me-1" aria-hidden="true"></i>Download CSV
+        </a>
+    }
+</div>
+<section class="admin-card p-3 mb-3" aria-label="Report filters">
+    <form asp-action="Index" method="get" data-usage-filter>
+        <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+        <div class="row g-3 align-items-end">
+            <div class="col-sm-6 col-lg-3">
+                <label asp-for="Filter.Mode" class="form-label">Period</label>
+                <select asp-for="Filter.Mode" class="form-select" data-usage-mode>
+                    <option value="Month">Month</option><option value="Day">Day</option><option value="Range">Custom range</option>
+                </select>
+            </div>
+            <div class="col-sm-6 col-lg-3" data-usage-period="Month">
+                <label asp-for="Filter.Month" class="form-label">Month</label>
+                <input asp-for="Filter.Month" type="month" class="form-control" />
+            </div>
+            <div class="col-sm-6 col-lg-3" data-usage-period="Day">
+                <label asp-for="Filter.Day" class="form-label">Day</label>
+                <input asp-for="Filter.Day" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
+            </div>
+            <div class="col-sm-6 col-lg-3" data-usage-period="Range">
+                <label asp-for="Filter.StartDate" class="form-label">Start date</label>
+                <input asp-for="Filter.StartDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
+            </div>
+            <div class="col-sm-6 col-lg-3" data-usage-period="Range">
+                <label asp-for="Filter.EndDate" class="form-label">End date</label>
+                <input asp-for="Filter.EndDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
+            </div>
+            <div class="col-auto"><button type="submit" class="btn btn-primary">Apply filters</button></div>
+        </div>
+        <p class="small text-muted mt-2 mb-0">Dates use Asia/Manila. Custom ranges can include up to 366 days.</p>
+    </form>
+</section>
+@if (report is not null)
+{
+    <p class="small text-muted">@report.Range.Start.ToString("dd MMM yyyy") – @report.Range.End.ToString("dd MMM yyyy") ·
+        As of <time datetime="@report.GeneratedUtc.ToString("O")">@DrmcPatientPortal.Services.ClinicalClock.WallTime(report.GeneratedUtc).ToString("dd MMM yyyy HH:mm:ss") Asia/Manila</time></p>
+    @if (!report.CollectionEnabled)
+    {
+        <div class="alert alert-info" role="status">Usage collection is disabled. Previously collected daily reports remain available.</div>
+    }
+    @if (!report.HasMeasurements)
+    {
+        <div class="admin-card admin-empty mb-3"><h2>No usage data for this period</h2><p>Unmeasured dates are shown as Not collected. Reporting begins when collection is enabled.</p></div>
+    }
+    <div class="admin-metrics mb-3">
+        <div class="admin-card admin-metric">
+            <span class="admin-metric-label">@(Model.Filter.Mode == WebsiteUsagePeriod.Day ? "Estimated daily visitors" : "Visitor-days")</span>
+            <span class="admin-metric-value">@(report.HasMeasurements ? report.VisitorDays.ToString("N0") : "—")</span>
+            <span class="admin-metric-hint">@(Model.Filter.Mode == WebsiteUsagePeriod.Day ? "Distinct daily browser/network signatures" : "Sum of observed daily visitor estimates")</span>
+        </div>
+        <div class="admin-card admin-metric">
+            <span class="admin-metric-label">@(Model.Filter.Mode == WebsiteUsagePeriod.Day ? "Daily active patients" : "Patient-days")</span>
+            <span class="admin-metric-value">@(report.HasMeasurements ? report.PatientDays.ToString("N0") : "—")</span>
+            <span class="admin-metric-hint">@(Model.Filter.Mode == WebsiteUsagePeriod.Day ? "Distinct signed-in non-staff accounts" : "Sum of observed daily active patients")</span>
+        </div>
+        @if (Model.Filter.Mode != WebsiteUsagePeriod.Day)
+        {
+            <div class="admin-card admin-metric"><span class="admin-metric-label">Average daily visitors</span><span class="admin-metric-value">@(report.AverageVisitors?.ToString("N1") ?? "—")</span><span class="admin-metric-hint">Across @report.CompleteDays complete measured days</span></div>
+            <div class="admin-card admin-metric"><span class="admin-metric-label">Average daily active patients</span><span class="admin-metric-value">@(report.AveragePatients?.ToString("N1") ?? "—")</span><span class="admin-metric-hint">Across @report.CompleteDays complete measured days</span></div>
+        }
+    </div>
+    @if (Model.Filter.Mode != WebsiteUsagePeriod.Day && report.HasMeasurements)
+    {
+        <section class="admin-card p-3 mb-3" aria-labelledby="usage-trend-title">
+            <h2 class="admin-card-title" id="usage-trend-title">Daily activity</h2>
+            <p class="small mb-1"><span class="usage-visitor-legend">Solid: estimated visitors</span> · <span class="usage-patient-legend">Dashed: active patients</span></p>
+            <svg viewBox="0 0 800 245" class="usage-chart" role="img" aria-labelledby="usage-svg-title usage-svg-desc">
+                <title id="usage-svg-title">Daily estimated visitors and active patients</title>
+                <desc id="usage-svg-desc">Daily counts for the selected period. Gaps represent uncollected dates. Exact counts and coverage are provided in the table below.</desc>
+                <line x1="40" y1="210" x2="760" y2="210" class="usage-chart-axis" />
+                <line x1="40" y1="30" x2="40" y2="210" class="usage-chart-axis" />
+                <text x="32" y="34" text-anchor="end" class="usage-chart-label">@report.ChartMaximum.ToString("N0")</text>
+                <text x="32" y="214" text-anchor="end" class="usage-chart-label">0</text>
+                @foreach (var patients in new[] { false, true })
+                {
+                    @foreach (var segment in report.ChartSegments(patients))
+                    {
+                        <polyline points="@segment" class="@(patients ? "usage-patient-line" : "usage-visitor-line")" />
+                        @foreach (var point in segment.Split(' '))
+                        {
+                            var coordinates = point.Split(',');
+                            <circle cx="@coordinates[0]" cy="@coordinates[1]" r="2" class="@(patients ? "usage-patient-dot" : "usage-visitor-dot")" />
+                        }
+                    }
+                }
+                <text x="40" y="235" class="usage-chart-label">@report.Range.Start.ToString("dd MMM")</text>
+                <text x="760" y="235" text-anchor="end" class="usage-chart-label">@report.Range.End.ToString("dd MMM")</text>
+            </svg>
+        </section>
+    }
+    <section class="admin-card mb-3" aria-labelledby="usage-table-title">
+        <div class="admin-card-header"><h2 class="admin-card-title" id="usage-table-title">Daily counts</h2></div>
+        <div class="table-responsive" tabindex="0" role="region" aria-label="Scrollable daily usage table">
+            <table class="table mb-0">
+                <caption class="visually-hidden">Daily website usage in Asia/Manila; unavailable dates are not treated as zero.</caption>
+                <thead><tr><th scope="col">Date</th><th scope="col" class="text-end">Estimated visitors</th><th scope="col" class="text-end">Active patients</th><th scope="col">Coverage</th></tr></thead>
+                <tbody>
+                    @foreach (var row in report.Rows)
+                    {
+                        <tr><th scope="row">@row.Day.ToString("yyyy-MM-dd")</th><td class="text-end tabular">@(row.EstimatedVisitors?.ToString("N0") ?? "—")</td><td class="text-end tabular">@(row.ActivePatients?.ToString("N0") ?? "—")</td><td>@row.CoverageLabel</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+<aside class="admin-card p-3 small text-muted" aria-label="How usage is measured">
+    <p>Visitor estimates and patient accounts overlap; do not add them together. Visitor-days and patient-days are daily sums, not unique people over a month or range.</p>
+    <p>Visitor estimates use temporary daily network/browser signatures. Shared networks can merge visitors, while changing addresses or browsers can split them. Recognized bots, signed-in staff, prefetches, and DNT/GPC privacy opt-outs are excluded; undetected automation and anonymous staff browsing can still affect estimates.</p>
+    <p class="mb-0">Today and known collection gaps are partial. Averages include only complete measured days, including zero-activity days. Daily totals are retained for 13 months; no historical usage is reconstructed.</p>
+</aside>
+@section Scripts { <script src="~/js/website-usage.js" asp-append-version="true"></script> }

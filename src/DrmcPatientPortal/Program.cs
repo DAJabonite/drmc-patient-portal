@@ -27,6 +27,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddOptions<WebsiteUsageOptions>().Bind(builder.Configuration.GetSection(WebsiteUsageOptions.Section));
+builder.Services.AddSingleton<WebsiteUsageHealth>();
+builder.Services.AddScoped<WebsiteUsageStore>();
+builder.Services.AddScoped<WebsiteUsageReports>();
+builder.Services.AddSingleton<WebsiteUsageCollector>();
+builder.Services.AddHostedService<WebsiteUsageWorker>();
 builder.Services.AddOptions<PortalOptions>().Bind(builder.Configuration.GetSection("Portal")).ValidateOnStart();
 builder.Services.AddSingleton<IValidateOptions<PortalOptions>, PortalOptionsValidator>();
 builder.Services.AddSingleton<AccountLinks>();
@@ -293,6 +299,7 @@ app.UseSession();
 app.UseAuthentication();
 app.UseMiddleware<PortalRequestControls>();
 app.UseAuthorization();
+app.UseMiddleware<WebsiteUsageMiddleware>();
 
 app.MapStaticAssets();
 

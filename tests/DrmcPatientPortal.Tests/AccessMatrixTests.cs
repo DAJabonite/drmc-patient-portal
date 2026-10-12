@@ -18,6 +18,7 @@ public sealed class AccessMatrixTests(PortalFactory factory)
     private static readonly (string Family, string[] Paths)[] Families =
     [
         ("Home", ["/Admin"]),
+        ("WebsiteUsage", ["/Admin/WebsiteUsage", "/Admin/WebsiteUsage/Export"]),
         ("Patients", ["/Admin/Patients", "/Admin/Patients/Create"]),
         ("RegistrationCodes", ["/Admin/RegistrationCodes", "/Admin/RegistrationCodes/Create"]),
         ("ClinicalEncounters", ["/Admin/ClinicalEncounters", "/Admin/ClinicalEncounters/Create"]),
@@ -129,7 +130,7 @@ public sealed class AccessMatrixTests(PortalFactory factory)
         var lab = await (await ClientFor("LabStaff")).GetStringAsync("/Admin");
         Assert.Contains("href=\"/Admin/LabResults\"", lab);
         foreach (var hidden in new[] { "href=\"/Admin/Patients\"", "href=\"/Admin/RadiologyStudies\"", "href=\"/Admin/Audit\"", "href=\"/Admin/Imports\"",
-                     "href=\"/Admin/StaffAccess\"", "Recent staff activity", "Recent imports", "Unlinked patient records", "Radiology awaiting release" })
+                     "href=\"/Admin/StaffAccess\"", "href=\"/Admin/WebsiteUsage\"", "Website usage today", "Recent staff activity", "Recent imports", "Unlinked patient records", "Radiology awaiting release" })
             Assert.DoesNotContain(hidden, lab);
 
         var radiology = await (await ClientFor("RadiologyStaff")).GetStringAsync("/Admin/RadiologyStudies");
@@ -138,7 +139,7 @@ public sealed class AccessMatrixTests(PortalFactory factory)
         Assert.DoesNotContain("href=\"/Admin/Patients\"", radiology);
 
         var admin = await (await ClientFor("Admin")).GetStringAsync("/Admin");
-        foreach (var shown in new[] { "href=\"/Admin/Patients\"", "href=\"/Admin/StaffAccess\"", "Recent staff activity", "Radiology awaiting release" })
+        foreach (var shown in new[] { "href=\"/Admin/Patients\"", "href=\"/Admin/StaffAccess\"", "href=\"/Admin/WebsiteUsage\"", "Website usage today", "Recent staff activity", "Radiology awaiting release" })
             Assert.Contains(shown, admin);
     }
 

@@ -15,6 +15,24 @@
     }
 </div>
 
+@if (Model.UsageToday is { } usage)
+{
+    var row = usage.Rows[0];
+    <section class="mb-3" aria-labelledby="usage-today-heading">
+        <div class="admin-section-title"><h2 id="usage-today-heading">Website usage today</h2><a asp-controller="WebsiteUsage" asp-action="Index" class="small">View report</a></div>
+        <div class="admin-metrics">
+            <a asp-controller="WebsiteUsage" asp-action="Index" asp-route-mode="Day" asp-route-day="@row.Day.ToString("yyyy-MM-dd")" class="admin-card admin-metric">
+                <span class="admin-metric-label">Estimated visitors today</span><span class="admin-metric-value">@(row.EstimatedVisitors?.ToString("N0") ?? "—")</span>
+                <span class="admin-metric-hint">@row.CoverageLabel · Asia/Manila</span>
+            </a>
+            <a asp-controller="WebsiteUsage" asp-action="Index" asp-route-mode="Day" asp-route-day="@row.Day.ToString("yyyy-MM-dd")" class="admin-card admin-metric">
+                <span class="admin-metric-label">Active patients today</span><span class="admin-metric-value">@(row.ActivePatients?.ToString("N0") ?? "—")</span>
+                <span class="admin-metric-hint">Distinct signed-in accounts · @(usage.CollectionEnabled ? "Today is incomplete" : "Collection disabled")</span>
+            </a>
+        </div>
+        <p class="small text-muted mb-0">The two audiences overlap. As of @DrmcPatientPortal.Services.ClinicalClock.WallTime(usage.GeneratedUtc).ToString("HH:mm:ss") Asia/Manila.</p>
+    </section>
+}
 <section aria-labelledby="attention-heading">
     <h2 id="attention-heading" class="visually-hidden">Needs attention</h2>
     <div class="admin-metrics">

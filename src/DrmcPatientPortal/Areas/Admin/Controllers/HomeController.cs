@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DrmcPatientPortal.Areas.Admin.Controllers;
 
 [Area("Admin")]
-public sealed class HomeController(ApplicationDbContext db, AdminAccessScope scope, ImportStaging staging) : Controller
+public sealed class HomeController(ApplicationDbContext db, AdminAccessScope scope, ImportStaging staging, WebsiteUsageReports usage) : Controller
 {
     private static readonly ImportStatus[] OpenImportStatuses =
     [
@@ -75,6 +75,7 @@ public sealed class HomeController(ApplicationDbContext db, AdminAccessScope sco
             ? await SqlReadRetry.RunAsync(db, () => db.ImportBatches.AsNoTracking().OrderByDescending(b => b.CreatedAtUtc).Take(5).ToListAsync(cancellationToken), cancellationToken)
             : [];
         ViewData["ImportStatuses"] = await ImportStatusDisplay.LoadAsync(recentImports, staging, cancellationToken);
-        return View(new AdminDashboard(AdminNavigation.For(roles), attention, counts, recentAudit, recentImports));
+        var usageToday = Can("WebsiteUsage") ? await usage.TodayAsync(cancellationToken) : null;
+        return View(new AdminDashboard(AdminNavigation.For(roles), attention, counts, recentAudit, recentImports, usageToday));
     }
 }

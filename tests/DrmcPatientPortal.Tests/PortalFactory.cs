@@ -46,6 +46,7 @@ public sealed class PortalFactory : WebApplicationFactory<Program>, IAsyncLifeti
         builder.UseSetting("AccountEmail:WorkerEnabled", "false");
         builder.UseSetting("RedStar:WorkerEnabled", "false");
         builder.UseSetting("RedStar:RemindersEnabled", "false");
+        builder.UseSetting("WebsiteUsage:Enabled", "false");
         foreach (var setting in new[] { "AuthenticationPerIp", "AuthenticationPerAccount", "EmailPerIp", "EmailPerAccount", "ScansPerIp", "PdfPerUser" })
             builder.UseSetting("RateLimits:" + setting, "100000");
     }

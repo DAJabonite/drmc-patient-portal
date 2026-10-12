@@ -1650,6 +1650,53 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.ToTable("StaffInvitations");
                 });
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.WebsiteUsageDay", b =>
+                {
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<long>("ActivePatients")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("CoverageStartedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long>("EstimatedVisitors")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("HasGap")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("LastHeartbeatUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<byte[]>("ProtectedKey")
+                        .HasColumnType("varbinary(max)");
+
+                    b.HasKey("Day");
+
+                    b.ToTable("WebsiteUsageDays");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.WebsiteUsageMarker", b =>
+                {
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Audience")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Identifier")
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("char(64)")
+                        .IsFixedLength();
+
+                    b.HasKey("Day", "Audience", "Identifier");
+
+                    b.ToTable("WebsiteUsageMarkers");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -2016,6 +2063,15 @@ namespace DrmcPatientPortal.Data.Migrations
                         .WithMany()
                         .HasForeignKey("AcceptedByUserId")
                         .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.WebsiteUsageMarker", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.WebsiteUsageDay", null)
+                        .WithMany()
+                        .HasForeignKey("Day")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
