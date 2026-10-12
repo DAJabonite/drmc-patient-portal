@@ -480,13 +480,30 @@ public static class RedStarRegistryParser
 
     public static byte[] Export(IReadOnlyList<RedStarEnrollment> enrollments)
     {
-        var header = new[] { "NAME", "Patient Code", "Code Name", "HRN", "Contact Number", "Address", "Program", "Status", "Enrolled Date", "Start Date", "Status Date", "Receiving Hub", "Medicines", "Dispensed Date", "Next Refill Date" };
-        var sheets = enrollments.GroupBy(x => x.Program switch { RedStarProgram.PrEP => "PrEP", RedStarProgram.PEP => "PEP", RedStarProgram.NewbornProphylaxis => "NB PROPHYLAXIS", RedStarProgram.Unverified => "RHIVDA 2025", _ => "LIVING" })
-            .Select(group => (group.Key, group.Select(x => new[] { x.Patient.FullName, x.Patient.PatientCode, x.Patient.CodeName, x.Patient.HospitalNumber ?? "", x.Patient.ContactNumber ?? "", x.Patient.Address ?? "", x.Program.ToString(), x.Status.ToString(),
-                FormatDate(x.EnrolledDate), FormatDate(x.StartDate), FormatDate(x.StatusDate), x.ReceivingHub ?? "", x.Medicines,
-                FormatDate(x.Dispenses.OrderByDescending(d => d.DispensedDate).Select(d => (DateTime?)d.DispensedDate).FirstOrDefault()),
-                FormatDate(x.Appointments.Where(a => a.Kind == RedStarAppointmentKind.Refill && a.State == RedStarAppointmentState.Scheduled).OrderBy(a => a.DueDate).Select(a => (DateTime?)a.DueDate).FirstOrDefault()) }).Prepend(header).ToArray())).ToList();
-        if (sheets.Count == 0) sheets.Add(("LIVING", new[] { header }));
+        var groups = enrollments.ToLookup(RedStarRegistryLayout.SheetFor, StringComparer.Ordinal);
+        var sheets = RedStarRegistryLayout.Sheets.Select(sheet =>
+        {
+            var rows = groups[sheet.Name].Select(enrollment =>
+            {
+                var values = new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["FullName"] = enrollment.Patient.FullName, ["Address"] = enrollment.Patient.Address ?? "",
+                    ["HospitalNumber"] = enrollment.Patient.HospitalNumber ?? "", ["PatientCode"] = enrollment.Patient.PatientCode,
+                    ["CodeName"] = enrollment.Patient.CodeName, ["ContactNumber"] = enrollment.Patient.ContactNumber ?? "",
+                    ["Program"] = enrollment.Program.ToString(), ["Status"] = enrollment.Status.ToString(),
+                    ["EnrolledDate"] = FormatDate(enrollment.EnrolledDate), ["StartDate"] = FormatDate(enrollment.StartDate),
+                    ["StatusDate"] = FormatDate(enrollment.StatusDate), ["ReceivingHub"] = enrollment.ReceivingHub ?? "",
+                    ["Medicines"] = enrollment.Medicines,
+                    ["DispensedDate"] = FormatDate(enrollment.Dispenses.OrderByDescending(dispense => dispense.DispensedDate)
+                        .Select(dispense => (DateTime?)dispense.DispensedDate).FirstOrDefault()),
+                    ["NextRefillDate"] = FormatDate(enrollment.Appointments.Where(appointment => appointment.Kind == RedStarAppointmentKind.Refill &&
+                        appointment.State == RedStarAppointmentState.Scheduled).OrderBy(appointment => appointment.DueDate)
+                        .Select(appointment => (DateTime?)appointment.DueDate).FirstOrDefault())
+                };
+                return sheet.Columns.Select(column => values[column.Field]).ToArray();
+            }).Prepend(sheet.Columns.Select(column => column.Header).ToArray()).ToArray();
+            return (sheet.Name, rows);
+        }).ToList();
         return Workbook(sheets);
     }
     private static string FormatDate(DateTime? value) => value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "";

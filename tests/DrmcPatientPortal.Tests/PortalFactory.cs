@@ -43,6 +43,7 @@ public sealed class PortalFactory : WebApplicationFactory<Program>, IAsyncLifeti
         builder.UseSetting("PatientDocuments:RootPath", Path.Combine(_storageRoot, "documents"));
         builder.UseSetting("PatientDocuments:TemporaryPath", Path.Combine(_storageRoot, "uploads"));
         builder.UseSetting("LabReports:RootPath", Path.Combine(_storageRoot, "reports"));
+        builder.UseSetting("Imports:StagingPath", Path.Combine(_storageRoot, "imports"));
         builder.UseSetting("AccountEmail:WorkerEnabled", "false");
         builder.UseSetting("RedStar:WorkerEnabled", "false");
         builder.UseSetting("RedStar:RemindersEnabled", "false");

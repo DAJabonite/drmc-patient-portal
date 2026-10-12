@@ -13,6 +13,20 @@ public sealed class RedStarStaffTests(PortalFactory factory)
 {
     private sealed record Fixture(int PatientId, int EnrollmentId, int AppointmentId, string UserId, string Email, string Code);
     private Task<HttpClient> Clinic() => StaffAccounts.SignInAsync(factory, "redstar.operations@fixtures.test", "RedStarStaff");
+
+    [Fact]
+    public async Task Enrollment_fields_follow_the_supported_living_registry_columns()
+    {
+        var html = await (await Clinic()).GetStringAsync("/Admin/RedStar/Create");
+        var position = -1;
+        foreach (var field in new[] { "FullName", "Address", "HospitalNumber", "PatientCode", "CodeName", "EnrolledDate", "StartDate", "ContactNumber", "Medicines", "Status", "Program", "StatusDate", "ReceivingHub" })
+        {
+            var next = html.IndexOf("name=\"" + field + "\"", StringComparison.Ordinal);
+            Assert.True(next > position, field + " must follow the preceding staff registry field.");
+            position = next;
+        }
+        Assert.Contains("appointments and dispensing", html);
+    }
     private async Task<T> Db<T>(Func<ApplicationDbContext, Task<T>> operation)
     {
         await using var scope = factory.Services.CreateAsyncScope();

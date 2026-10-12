@@ -134,6 +134,83 @@ public sealed class RedStarImportTests
         Assert.Equal("=SYNTHETIC_MEDICINE()", row.Medicines);
     }
 
+    [Theory]
+    [InlineData(RedStarProgram.ART, RedStarStatus.Active, "LIVING", "NAME,Address*,HRN,Patient Code,Code Name,Enrolment/Baseline Date,ART Start Date @ RED STAR,REFILL DATE,Next Refill Date,Last Contact No. Provided,REGIMEN,TREATMENT STATUS")]
+    [InlineData(RedStarProgram.PrEP, RedStarStatus.Active, "PrEP", "Patient Name,Current Address,Patient Code,PrEP Start Date @ RED STAR,PrEP NEXT Refill Date,Last Contact No. Provided,PrEP Regimen,STATUS")]
+    [InlineData(RedStarProgram.PEP, RedStarStatus.Active, "PEP", "Patient Name,Hospital No.,Patient Code,Code Name,ART Start Date,ARV Regimen,STATUS")]
+    [InlineData(RedStarProgram.NewbornProphylaxis, RedStarStatus.Active, "NB PROPHYLAXIS", "Patient Name,Hospital No.,Patient Code,Code Name,ART Start Date,REFILL DATE,NEXT REFILL DATE,ARV Regimen,STATUS")]
+    [InlineData(RedStarProgram.ART, RedStarStatus.TransferredOut, "TRANS OUT", "Patient Name,Current Address,HRN,Patient Code,Code Name,Date Enrolled @ RED STAR,ART Start Date @ RED STAR,ARV Refill Date,Last Contact No. Provided,ARV Regimen,TRANSOUT DATE,Name of Hub*")]
+    [InlineData(RedStarProgram.ART, RedStarStatus.Deceased, "EXPIRED", "Patient Name,Last Address Resided,HRN,Patient Code,Code Name,Date Enrolled to HACT,ART Start Date @ RED STAR,ARV REGIMEN,DATE EXPIRED")]
+    public void Export_supported_headers_follow_staff_worksheet_order(RedStarProgram program, RedStarStatus status, string sheet, string prefix)
+    {
+        var bytes = RedStarRegistryParser.Export([SyntheticEnrollment(program, status)]);
+        var expected = prefix.Split(',');
+        var headers = Headers(bytes, sheet);
+        Assert.Equal(expected, headers.Take(expected.Length));
+        Assert.Equal(15, headers.Length);
+        Assert.DoesNotContain("UIC", headers);
+        Assert.DoesNotContain("Latest CD4", headers);
+    }
+
+    [Theory]
+    [InlineData(RedStarProgram.ART, RedStarStatus.Active)]
+    [InlineData(RedStarProgram.PrEP, RedStarStatus.Active)]
+    [InlineData(RedStarProgram.PEP, RedStarStatus.Active)]
+    [InlineData(RedStarProgram.NewbornProphylaxis, RedStarStatus.Active)]
+    [InlineData(RedStarProgram.Unverified, RedStarStatus.AwaitingVerification)]
+    [InlineData(RedStarProgram.PrEP, RedStarStatus.TransferredOut)]
+    [InlineData(RedStarProgram.PEP, RedStarStatus.Deceased)]
+    public void Staff_ordered_export_round_trips_all_existing_fields(RedStarProgram program, RedStarStatus status)
+    {
+        var enrollment = SyntheticEnrollment(program, status);
+        var row = Assert.Single(RedStarRegistryParser.Parse(RedStarRegistryParser.Export([enrollment])).Rows);
+        Assert.Equal(enrollment.Patient.FullName, row.FullName);
+        Assert.Equal(enrollment.Patient.PatientCode, row.PatientCode);
+        Assert.Equal(enrollment.Patient.CodeName, row.CodeName);
+        Assert.Equal(enrollment.Patient.HospitalNumber, row.HospitalNumber);
+        Assert.Equal(enrollment.Patient.Address, row.Address);
+        Assert.Equal(enrollment.Patient.ContactNumber, row.ContactNumber);
+        Assert.Equal(program, row.Program);
+        Assert.Equal(status, row.Status);
+        Assert.Equal(enrollment.EnrolledDate, row.EnrolledDate);
+        Assert.Equal(enrollment.StartDate, row.StartDate);
+        Assert.Equal(enrollment.StatusDate, row.StatusDate);
+        Assert.Equal(enrollment.ReceivingHub, row.ReceivingHub);
+        Assert.Equal(enrollment.Medicines, row.Medicines);
+        Assert.Equal(new DateTime(2026, 10, 1), row.DispensedDate);
+        Assert.Equal(new DateTime(2026, 10, 31), row.NextRefillDate);
+        Assert.Empty(RedStarRegistryParser.Parse(RedStarRegistryParser.Export([enrollment])).DeferredColumns);
+    }
+
+    [Fact]
+    public void Empty_export_has_supported_headers_for_all_staff_registry_tabs()
+    {
+        var bytes = RedStarRegistryParser.Export([]);
+        foreach (var sheet in new[] { "LIVING", "REACTIVE WHEN TESTED, NONREACTI", "TRANS OUT", "PrEP", "NB PROPHYLAXIS", "PEP", "RHIVDA 2025", "EXPIRED" })
+            Assert.Equal(15, Headers(bytes, sheet).Length);
+    }
+
+    private static RedStarEnrollment SyntheticEnrollment(RedStarProgram program, RedStarStatus status) => new()
+    {
+        Patient = new RedStarPatient { FullName = "Synthetic Layout Patient", PatientCode = "SYN-LAYOUT", CodeName = "Synthetic alias",
+            HospitalNumber = "0000123", Address = "Synthetic address", ContactNumber = "+639171234567", PortalUserId = "NEVER-EXPORT-OWNERSHIP" },
+        Program = program, Status = status, EnrolledDate = new DateTime(2026, 1, 10), StartDate = new DateTime(2026, 1, 12),
+        StatusDate = new DateTime(2026, 10, 2), ReceivingHub = "Synthetic receiving hub", Medicines = "Synthetic Medicine A / Synthetic Medicine B",
+        Dispenses = [new RedStarDispense { DispensedDate = new DateTime(2026, 9, 1) }, new RedStarDispense { DispensedDate = new DateTime(2026, 10, 1) }],
+        Appointments = [new RedStarAppointment { Kind = RedStarAppointmentKind.Refill, State = RedStarAppointmentState.Scheduled, DueDate = new DateTime(2026, 10, 31) }]
+    };
+
+    private static string[] Headers(byte[] bytes, string sheet)
+    {
+        using var zip = new ZipArchive(new MemoryStream(bytes));
+        using var bookStream = zip.GetEntry("xl/workbook.xml")!.Open();
+        var book = XDocument.Load(bookStream);
+        var tab = Assert.Single(book.Descendants(), element => element.Name.LocalName == "sheet" && (string?)element.Attribute("name") == sheet);
+        using var sheetStream = zip.GetEntry("xl/worksheets/sheet" + tab.Attribute("sheetId")!.Value + ".xml")!.Open();
+        return XDocument.Load(sheetStream).Descendants().First(element => element.Name.LocalName == "row")
+            .Descendants().Where(element => element.Name.LocalName == "t").Select(element => element.Value).ToArray();
+    }
+
     private static void SetFormula(XDocument doc, string address)
     {
         var cell = doc.Descendants().Single(x => x.Name.LocalName == "c" && (string?)x.Attribute("r") == address);
