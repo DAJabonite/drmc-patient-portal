@@ -2,13 +2,12 @@
 @{ var clinical = Model.TotalGroups > 0; ViewData["Title"] = clinical ? "Match patients" : "Review setup"; var options = (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewData["Patients"]!; }
 <div class="admin-page-header">
     <div>
-        <p class="admin-eyebrow">Imports · Step 2 of 4</p>
+        <p class="admin-eyebrow">Imports</p>
         <h1 class="admin-title">@ViewData["Title"]</h1>
         <p class="admin-subtitle">@(clinical ? "Match each source patient group to an existing hospital record, or confirm a new one." : "No patient matching required. Validate the batch to review the proposed records before approval.")</p>
     </div>
     <div class="admin-page-actions"><a asp-action="Details" asp-route-id="@Model.Batch.Id" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Batch status</a></div>
 </div>
-<partial name="_Stages" />
 @if (TempData["ImportMessage"] is string message) { <div class="alert alert-warning" role="alert">@message</div> }
 <div class="admin-card">
     @if (clinical)
