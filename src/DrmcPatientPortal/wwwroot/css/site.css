@@ -412,6 +412,10 @@ textarea:focus-visible,
     padding: 1rem 1rem calc(var(--mobile-nav-height) + 1rem + env(safe-area-inset-bottom));
 }
 
+#mobileUtilityMenu .btn-outline-danger {
+    --bs-btn-bg: #fff;
+}
+
 /* The drawer is shared with desktop, which has no fixed tab bar to clear. */
 @media (min-width: 992px) {
     .mobile-utility-sheet .offcanvas-body {
@@ -1265,6 +1269,10 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
     background: var(--drmc-surface-soft);
     border: 1px solid var(--drmc-border);
     border-radius: var(--drmc-radius-md);
+}
+
+#labReportHeading + div .btn-outline-success {
+    --bs-btn-bg: #fff;
 }
 
 .lab-result-actions {
