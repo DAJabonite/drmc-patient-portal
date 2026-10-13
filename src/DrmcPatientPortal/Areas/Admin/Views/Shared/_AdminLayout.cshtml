@@ -27,7 +27,7 @@
             <div class="admin-sidebar-brand">
                 <a asp-area="Admin" asp-controller="Home" asp-action="Index" class="admin-brand-link">
                     <img src="~/images/drmc-seal.png" alt="" width="36" height="36" />
-                    <span><span class="admin-brand-name">DRMC Admin</span><span class="admin-brand-sub">Patient portal console</span></span>
+                    <span class="admin-brand-name">DRMC Admin</span>
                 </a>
                 <button type="button" class="btn-close btn-close-white d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#adminSidebar" aria-label="Close navigation"></button>
             </div>
@@ -63,7 +63,6 @@
                         <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
                         @if (current is { } found && found.Item.Controller != "Home")
                         {
-                            <li class="breadcrumb-item d-none d-sm-inline">@found.Section.Label</li>
                             if (isIndex)
                             {
                                 <li class="breadcrumb-item active" aria-current="page">@found.Item.Label</li>

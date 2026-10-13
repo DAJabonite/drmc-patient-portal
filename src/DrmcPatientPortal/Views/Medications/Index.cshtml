@@ -7,7 +7,6 @@
     <div class="container">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
             <div>
-                <p class="small text-white text-opacity-75 mb-1">@Loc["Rx_Pharmacy"]</p>
                 <h1 class="display-6 fw-bold mb-0">@Loc["Rx_Title"]</h1>
             </div>
 
@@ -32,8 +31,8 @@
                         <i class="bi bi-exclamation-octagon-fill" aria-hidden="true"></i>
                     </div>
                     <div class="min-w-0">
-                        <p class="eyebrow text-danger mb-1">@Loc["Rx_SafetyAlert"]</p>
-                        <h2 class="h6 fw-bold text-dark mb-1" id="medicationSafetyHeading">
+                        <p class="text-danger fw-semibold mb-1">@Loc["Rx_SafetyAlert"]</p>
+                        <h2 class="h5 fw-bold text-dark mb-1" id="medicationSafetyHeading">
                             @(Model.AllergyPagination.Total == 1 ? "1 documented drug allergy" : $"{Model.AllergyPagination.Total} documented drug allergies")
                         </h2>
                         <p class="small text-muted mb-0 text-wrap-pretty">
@@ -62,7 +61,7 @@
 
         <!-- Data-backed daily medication schedule -->
         <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
-            <h2 class="h6 fw-bold text-primary-drmc mb-3">
+            <h2 class="h5 fw-bold text-primary-drmc mb-3">
                 <i class="bi bi-clock-history me-1"></i> @Loc["Rx_DailySchedule"]
             </h2>
             @{ var scheduledDoses = Model.Schedules; }
@@ -77,8 +76,8 @@
                     {
                         <div class="col-sm-6 col-md-3">
                             <div class="p-3 bg-light rounded-3 border h-100">
-                                <strong class="small text-primary-drmc d-block mb-2">@group.Key.ToString("h:mm tt")</strong>
-                                <ul class="list-unstyled small text-dark mb-0">
+                                <strong class="text-primary-drmc d-block mb-2">@group.Key.ToString("h:mm tt")</strong>
+                                <ul class="list-unstyled text-dark mb-0">
                                     @foreach (var dose in group) { <li>&bull; @dose.GenericName @dose.Dosage</li> }
                                 </ul>
                             </div>
@@ -104,7 +103,7 @@
                                 <span class="badge @(rx.Status == PrescriptionStatus.Active ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary") rounded-pill small">
                                     @rx.Status
                                 </span>
-                                <span class="small text-muted" style="font-size: 0.75rem;">
+                                <span class="small text-muted">
                                     @Loc["Rx_Number"]: <strong>@rx.RxNumber</strong>
                                 </span>
                             </div>
@@ -117,14 +116,14 @@
                                 }
                             </h3>
 
-                            <div class="small text-primary-drmc fw-semibold mb-2">
+                            <div class="text-primary-drmc fw-semibold mb-2">
                                 <i class="bi bi-prescription2 me-1"></i> @rx.Dosage &middot; @rx.DosageForm &middot; @rx.Frequency
                             </div>
 
-                            <p class="small text-muted mb-2">@rx.Instructions</p>
-                            <p class="small text-muted mb-2">Route of administration: <strong>@(rx.RouteOfAdministration ?? "Not specified")</strong></p>
+                            <p class="text-muted mb-2">@rx.Instructions</p>
+                            <p class="text-muted mb-2">Route of administration: <strong>@(rx.RouteOfAdministration ?? "Not specified")</strong></p>
 
-                            <div class="small text-muted d-flex flex-wrap gap-3" style="font-size: 0.8rem;">
+                            <div class="small text-muted d-flex flex-wrap gap-3">
                                 <span><i class="bi bi-person-badge me-1"></i> @Loc["Rx_Prescriber"]: @rx.PrescribingDoctor</span>
                                 <span><i class="bi bi-calendar3 me-1"></i> @Loc["Rx_ValidUntil"]: @rx.ValidUntil.ToString("d")</span>
                             </div>

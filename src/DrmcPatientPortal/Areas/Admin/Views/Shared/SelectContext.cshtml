@@ -2,11 +2,9 @@
 @{
     ViewData["Title"] = Model.Title;
     var action = ViewData["ContextAction"]?.ToString() ?? "Create";
-    var nav = AdminNavigation.Find(ViewContext.RouteData.Values["controller"]?.ToString());
 }
 <div class="admin-page-header">
     <div>
-        <p class="admin-eyebrow">@(nav?.Item.Label ?? "Records") · Step 1</p>
         <h1 class="admin-title">@Model.Title</h1>
         <p class="admin-subtitle">Choose the parent record first, so every entry stays attached to the right patient.</p>
     </div>
@@ -22,11 +20,11 @@
     </div>
     @if (Model.Rows.Count > 0)
     {
-        <div class="table-responsive"><table class="table table-hover admin-table"><thead><tr><th scope="col">Record</th><th scope="col">Details</th><th scope="col" class="text-end"><span class="visually-hidden">Select</span></th></tr></thead><tbody>
+        <div class="table-responsive" tabindex="0" role="region" aria-label="Scrollable parent records table"><table class="table table-hover admin-table"><thead><tr><th scope="col">Record</th><th scope="col">Details</th><th scope="col" class="text-end"><span class="visually-hidden">Select</span></th></tr></thead><tbody>
         @foreach (var row in Model.Rows)
         {
             var (lead, chips) = AdminChips.Split(row.Summary);
-            <tr><td class="text-break"><span class="fw-semibold">@row.Label</span><div class="admin-id">#@row.Id</div></td><td class="text-break">@lead <span class="admin-chips">@foreach (var chip in chips) { <span class="@AdminChips.Css(chip)">@chip</span> }</span></td><td class="text-end">
+            <tr><td class="text-break" data-label="Record"><span class="fw-semibold">@row.Label</span><div class="admin-id">#@row.Id</div></td><td class="text-break" data-label="Details">@lead <span class="admin-chips">@foreach (var chip in chips) { <span class="@AdminChips.Css(chip)">@chip</span> }</span></td><td class="text-end" data-label="Select">
                 @if (action == "Index") { <a asp-area="Admin" asp-action="Index" asp-route-contextId="@row.Id" class="btn btn-sm btn-outline-primary" aria-label="Select @row.Label">Select <i class="bi bi-chevron-right" aria-hidden="true"></i></a> }
                 else { <a asp-area="Admin" asp-action="Create" asp-route-id="@row.Id" class="btn btn-sm btn-outline-primary" aria-label="Select @row.Label">Select <i class="bi bi-chevron-right" aria-hidden="true"></i></a> }
             </td></tr>

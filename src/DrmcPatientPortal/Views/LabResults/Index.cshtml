@@ -6,7 +6,6 @@
 <section class="page-header">
     <div class="container">
         <div>
-            <p class="small text-white text-opacity-75 mb-1">Central Diagnostic Laboratory</p>
             <h1 class="display-6 fw-bold mb-0">Laboratory &amp; Diagnostic Results</h1>
         </div>
     </div>
@@ -132,16 +131,16 @@
                             <div class="col-md-7">
                                 <div class="record-metadata d-flex flex-wrap align-items-center gap-2 mb-1">
                                     <span class="badge bg-light text-secondary border rounded-pill small">
-                                        @lab.Category
+                                        @lab.Category.DisplayName()
                                     </span>
-                                    <span class="record-reference small text-muted" style="font-size: 0.75rem;">
+                                    <span class="record-reference small text-muted">
                                         Accession: <strong>@lab.AccessionNumber</strong>
                                     </span>
                                 </div>
 
                                 <h2 class="h5 fw-bold text-primary-drmc mb-1">@lab.TestName</h2>
                                 
-                                <div class="small text-muted d-flex flex-wrap gap-3" style="font-size: 0.8rem;">
+                                <div class="small text-muted d-flex flex-wrap gap-3">
                                     <span><i class="bi bi-calendar3 me-1"></i> Collected: @lab.CollectedAt.ToString("MMM d, yyyy")</span>
                                     @if (lab.ReleasedAt.HasValue)
                                     {

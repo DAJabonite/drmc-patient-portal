@@ -6,7 +6,6 @@
 }
 
 <header class="mb-4">
-    <p class="eyebrow mb-1">@Loc["Ids_Eyebrow"]</p>
     <h2 class="h4 fw-bold text-primary-drmc mb-2">@Loc["Ids_Title"]</h2>
     <p class="text-muted mb-0">@Loc["Ids_Description"]</p>
 </header>
@@ -36,7 +35,7 @@ else
                 <div class="id-wallet-heading">
                     <span class="id-wallet-icon"><i class="bi bi-person-vcard" aria-hidden="true"></i></span>
                     <div class="min-w-0">
-                        <p class="eyebrow mb-1">@document.Issuer</p>
+                        <p class="small text-muted mb-1">@document.Issuer</p>
                         <h3 class="h5 fw-bold mb-0" id="@cardId-title">@document.IdType</h3>
                     </div>
                 </div>
@@ -112,7 +111,7 @@ else
     <div class="id-zoom-shell">
         <header class="id-zoom-header">
             <div>
-                <p class="eyebrow mb-1">@Loc["Ids_SecurePreview"]</p>
+                <p class="small mb-1">@Loc["Ids_SecurePreview"]</p>
                 <h3 class="h5 fw-bold mb-0" id="idZoomTitle">@Loc["Ids_Image"]</h3>
             </div>
             <button type="button" class="btn-close" data-id-zoom-close aria-label="@Loc["Ids_ClosePreview"]"></button>
@@ -124,7 +123,7 @@ else
             <button type="button" class="btn btn-light" data-id-zoom-reset>@Loc["Ids_Reset"]</button>
             <button type="button" class="btn btn-outline-light ms-auto" data-id-zoom-side data-show-back="@Loc["Ids_ShowBack"]" data-show-front="@Loc["Ids_ShowFront"]" hidden><i class="bi bi-arrow-repeat" aria-hidden="true"></i> @Loc["Ids_ShowBack"]</button>
         </div>
-        <div class="id-zoom-viewport">
+        <div class="id-zoom-viewport" tabindex="0" role="region" aria-label="@Loc["Ids_Image"]">
             <img src="" alt="" data-id-zoom-image />
         </div>
         <p class="small text-white-50 text-center mb-0">@Loc["Ids_ZoomInstruction"]</p>

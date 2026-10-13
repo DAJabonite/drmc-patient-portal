@@ -6,9 +6,8 @@
 }
 <div class="admin-page-header">
     <div>
-        <p class="admin-eyebrow">Patient records</p>
         <h1 class="admin-title">Registration codes</h1>
-        <p class="admin-subtitle">Hospital record codes prove a person has a DRMC record and link it to the portal account they create. Issue one only after checking the patient's ID in person.</p>
+        <p class="admin-subtitle">Link hospital records to portal accounts. Verify the patient's ID in person before issuing a code.</p>
     </div>
     <div class="admin-page-actions">
         <a asp-area="Admin" asp-action="Create" class="btn btn-primary"><i class="bi bi-qr-code me-1" aria-hidden="true"></i>Issue code</a>
@@ -38,17 +37,17 @@
                 @foreach (var row in Model.Rows)
                 {
                     <tr>
-                        <td class="text-break">
+                        <td class="text-break" data-label="Patient">
                             <span class="fw-semibold">@row.PatientName</span>
                             <div class="admin-muted small">Hospital number: @(row.HospitalNumber ?? "unassigned")</div>
                         </td>
-                        <td><span class="font-monospace" aria-label="Code ending in @row.Hint">•••••-•••••-@row.Hint</span></td>
-                        <td class="text-break">
+                        <td data-label="Code"><span class="font-monospace" aria-label="Code ending in @row.Hint">•••••-•••••-@row.Hint</span></td>
+                        <td class="text-break" data-label="Issued">
                             @row.IssuingPoint
                             <div class="admin-muted small tabular">@row.IssuedAt.ToString("MMM d, yyyy h:mm tt") · @(row.Status == RegistrationCodeStatus.Redeemed ? "Used " + row.RedeemedAt!.Value.ToString("MMM d, yyyy") : "Expires " + row.ExpiresAt.ToString("MMM d, yyyy h:mm tt"))</div>
                         </td>
-                        <td><span class="@AdminChips.Css(row.Status.ToString())">@row.Status</span></td>
-                        <td class="text-end text-nowrap">
+                        <td data-label="Status"><span class="@AdminChips.Css(row.Status.ToString())">@row.Status</span></td>
+                        <td class="text-end text-nowrap" data-label="Actions">
                             @if (row.Status == RegistrationCodeStatus.Active)
                             {
                                 <form method="post" asp-area="Admin" asp-action="Revoke" asp-route-id="@row.Id" class="d-inline" data-confirm="Revoke this code? The patient will need a new code to sign up.">

@@ -2,7 +2,6 @@
 @{ ViewData["Title"] = "Registration code issued"; }
 <div class="admin-page-header admin-no-print">
     <div>
-        <p class="admin-eyebrow">Registration codes</p>
         <h1 class="admin-title">Code issued</h1>
         <p class="admin-subtitle">Print or show this slip now. For security, the full code is shown only once and cannot be displayed again.</p>
     </div>
@@ -17,7 +16,7 @@
         <div class="registration-slip-grid">
             <div class="registration-slip-qr" role="img" aria-label="QR code that opens portal signup with this code filled in">@Html.Raw(Model.QrSvg)</div>
             <div>
-                <p class="admin-eyebrow mb-1">Davao Regional Medical Center · Patient Portal</p>
+                <p class="text-muted mb-2">Davao Regional Medical Center · Patient Portal</p>
                 <h2 class="h4 fw-bold mb-2" id="slipTitle">Your hospital record code</h2>
                 <p class="registration-slip-code font-monospace" data-registration-code aria-label="Code @string.Join(" ", Model.Code.ToCharArray())">@Model.Code</p>
                 <dl class="admin-dl registration-slip-meta">

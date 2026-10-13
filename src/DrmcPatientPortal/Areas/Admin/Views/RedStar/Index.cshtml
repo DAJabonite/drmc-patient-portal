@@ -26,12 +26,12 @@
         <div class="col-md-2"><button class="btn btn-primary" type="submit">Filter</button> <a asp-action="Index" class="btn btn-link">All</a></div>
     </form>
 </div></div>
-<div class="card"><div class="table-responsive"><table class="table align-middle mb-0">
+<div class="card"><div class="table-responsive" tabindex="0" role="region" aria-label="Scrollable Red Star registry table"><table class="table align-middle mb-0">
     <thead><tr><th scope="col">Patient code</th><th scope="col">Code name</th><th scope="col">Program</th><th scope="col">Status</th><th scope="col">Next refill</th><th scope="col">Follow-up</th><th scope="col">Requests</th></tr></thead>
     <tbody>
     @foreach (var row in Model.Rows)
     {
-        <tr><td><a asp-action="Details" asp-route-id="@row.EnrollmentId" class="fw-semibold">@row.PatientCode</a></td><td>@row.CodeName</td><td>@row.Program</td><td>@AdminChips.Humanize(row.Status)</td><td>@(row.NextRefill?.ToString("dd MMM yyyy") ?? "Not scheduled")</td><td>@(row.FollowUpReview ? "Follow-up / LTFU review" : "—")</td><td>@row.PendingRequests</td></tr>
+        <tr><td data-label="Patient code"><a asp-action="Details" asp-route-id="@row.EnrollmentId" class="fw-semibold">@row.PatientCode</a></td><td data-label="Code name">@row.CodeName</td><td data-label="Program">@row.Program</td><td data-label="Status">@AdminChips.Humanize(row.Status)</td><td data-label="Next refill">@(row.NextRefill?.ToString("dd MMM yyyy") ?? "Not scheduled")</td><td data-label="Follow-up">@(row.FollowUpReview ? "Follow-up / LTFU review" : "—")</td><td data-label="Requests">@row.PendingRequests</td></tr>
     }
     @if (Model.Rows.Count == 0) { <tr><td colspan="7" class="text-muted p-4">No records match these filters.</td></tr> }
     </tbody>

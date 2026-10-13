@@ -6,7 +6,6 @@
 }
 <div class="admin-page-header">
     <div>
-        <p class="admin-eyebrow">Operations</p>
         <h1 class="admin-title">Staff audit history</h1>
         <p class="admin-subtitle">Every staff view and change, newest first. Times are UTC.</p>
     </div>
@@ -27,7 +26,7 @@
         @foreach (var row in Model.Rows)
         {
             <tr>
-                <td class="text-nowrap"><a asp-area="Admin" asp-action="Details" asp-route-id="@row.Id" class="admin-record-link tabular">@row.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss")</a></td>
+                <td class="text-nowrap" data-label="UTC time"><a asp-area="Admin" asp-action="Details" asp-route-id="@row.Id" class="admin-record-link tabular">@row.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss")</a></td>
                 <td class="text-break admin-cell-wide" data-label="Actor">@row.ActorEmail</td>
                 <td data-label="Action"><span class="@AdminChips.Css(row.Action) admin-chip-plain">@row.Action</span></td>
                 <td class="text-break" data-label="Record">@row.Entity @if (row.RecordKey == "Index") { <span class="admin-muted">list</span> } else { <span class="admin-id">#@row.RecordKey</span> }</td>

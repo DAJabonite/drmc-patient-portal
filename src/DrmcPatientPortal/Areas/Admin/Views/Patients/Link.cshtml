@@ -1,7 +1,7 @@
 @model PatientLinkPage
 @{ ViewData["Title"] = "Verified portal link"; }
 <div class="admin-page-header">
-    <div><p class="admin-eyebrow">Patients</p><h1 class="admin-title">Verified portal link</h1><p class="admin-subtitle">Connect this hospital record to a confirmed portal account after checking the patient's identity.</p></div>
+    <div><h1 class="admin-title">Verified portal link</h1><p class="admin-subtitle">Connect this hospital record to a confirmed portal account after checking the patient's identity.</p></div>
     <span class="@(Model.Linked ? "admin-chip admin-chip-success" : "admin-chip")">Portal account: @(Model.Linked ? "Linked" : "Unlinked")</span>
 </div>
 <partial name="_Context" model="Model.Context" />

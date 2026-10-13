@@ -37,7 +37,7 @@
                 </div>
 
                 <div class="text-md-end">
-                    <div class="small text-muted" style="font-size:0.8rem;">
+                    <div class="small text-muted">
                         Prescribed: @Model.PrescribedAt.ToString("MMM d, yyyy")
                     </div>
                 </div>
@@ -47,33 +47,33 @@
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
                     <div class="p-3 bg-light rounded-3 border h-100">
-                        <span class="small text-muted d-block" style="font-size:0.75rem;">Strength &amp; Dosage Form</span>
-                        <strong class="small text-dark">@Model.Dosage &middot; @Model.DosageForm</strong>
+                        <span class="small text-muted d-block">Strength &amp; dosage form</span>
+                        <strong class="text-dark">@Model.Dosage &middot; @Model.DosageForm</strong>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="p-3 bg-light rounded-3 border h-100">
-                        <span class="small text-muted d-block" style="font-size:0.75rem;">Dosing Frequency</span>
-                        <strong class="small text-primary-drmc">@Model.Frequency</strong>
+                        <span class="small text-muted d-block">Dosing frequency</span>
+                        <strong class="text-primary-drmc">@Model.Frequency</strong>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="p-3 bg-light rounded-3 border h-100">
-                        <span class="small text-muted d-block" style="font-size:0.75rem;">Prescribing Physician</span>
-                        <strong class="small text-dark">@Model.PrescribingDoctor</strong>
+                        <span class="small text-muted d-block">Prescribing physician</span>
+                        <strong class="text-dark">@Model.PrescribingDoctor</strong>
                         <div class="small text-muted mt-1">@Model.Department</div>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="p-3 bg-light rounded-3 border h-100">
-                        <span class="small text-muted d-block" style="font-size:0.75rem;">Prescription Validity</span>
-                        <strong class="small text-dark">Valid until @Model.ValidUntil.ToString("MMMM d, yyyy")</strong>
+                        <span class="small text-muted d-block">Prescription validity</span>
+                        <strong class="text-dark">Valid until @Model.ValidUntil.ToString("MMMM d, yyyy")</strong>
                     </div>
                 </div>
             </div>
 
             <!-- Instructions -->
-            <div class="p-4 bg-primary-subtle border border-primary border-opacity-25 rounded-3 mb-4 small text-dark">
+            <div class="p-4 bg-primary-subtle border border-primary border-opacity-25 rounded-3 mb-4 text-dark">
                 <strong class="d-block mb-1 text-primary-drmc fw-bold">
                     <i class="bi bi-info-circle me-1"></i> Patient Usage Instructions:
                 </strong>

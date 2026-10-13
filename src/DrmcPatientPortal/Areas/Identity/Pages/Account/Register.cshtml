@@ -7,12 +7,7 @@
 <div class="auth-page registration-page py-4">
     <div class="container" style="max-width: 860px;">
         <div class="auth-card auth-card-wide shadow-sm rounded-4 p-4 p-md-5 bg-white border-0">
-            <!-- Header Lockup -->
             <div class="text-center mb-4">
-                <a class="d-inline-flex align-items-center gap-2 mb-2 text-decoration-none" asp-controller="Home" asp-action="Index">
-                    <img src="~/images/drmc-seal.png" alt="DRMC Seal" style="height:48px;width:auto;" />
-                    <span class="fw-bold fs-5 text-primary-drmc">Davao Regional Medical Center</span>
-                </a>
                 <h1 class="h3 fw-bold text-primary-drmc mb-1">Create your patient account</h1>
                 @if (Model.RequireHospitalRecordCode)
                 {
@@ -180,7 +175,6 @@
                                 <span class="visually-hidden">Scanning...</span>
                             </div>
                             <h4 class="h6 fw-bold text-dark mb-1">Reading ID Information...</h4>
-                            <p class="small text-muted mb-0">Analyzing structured document fields locally in offline mode.</p>
                         </div>
 
                         <div class="registration-actions pt-3 border-top">

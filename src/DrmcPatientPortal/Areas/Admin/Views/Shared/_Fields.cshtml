@@ -1,7 +1,7 @@
 @model AdminDetails
 @if (Model.Context is not null) { <partial name="_Context" model="Model.Context" /> }
 <div class="admin-card">
-    <div class="admin-card-header"><h2 class="admin-card-title">Record details</h2><span class="admin-id">#@Model.Id</span></div>
+    <div class="admin-card-header"><h2 class="admin-card-title">Record details</h2></div>
     <dl class="admin-dl">
         @foreach (var field in Model.Fields)
         {

@@ -7,7 +7,6 @@
     overflow: hidden;
     background: var(--drmc-surface);
     border: 1px solid var(--drmc-border);
-    border-top: 4px solid var(--drmc-primary);
     border-radius: var(--drmc-radius-lg);
     box-shadow: var(--drmc-shadow);
 }
@@ -107,7 +106,7 @@
     background: var(--drmc-surface-soft);
     border: 1px solid var(--drmc-border);
     border-radius: 50%;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 700;
 }
 
