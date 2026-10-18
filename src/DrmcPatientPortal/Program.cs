@@ -33,9 +33,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddOptions<WebsiteUsageOptions>().Bind(builder.Configuration.GetSection(WebsiteUsageOptions.Section));
+builder.Services.AddOptions<WebsiteUsageOptions>().Bind(builder.Configuration.GetSection(WebsiteUsageOptions.Section))
+    .Validate(x => x.RetentionMonths > 0, "Website usage retention must be a positive number of calendar months.").ValidateOnStart();
 builder.Services.AddSingleton<WebsiteUsageHealth>();
-builder.Services.AddScoped<WebsiteUsageStore>();
+builder.Services.AddSingleton<WebsiteUsageStore>();
 builder.Services.AddScoped<WebsiteUsageReports>();
 builder.Services.AddSingleton<WebsiteUsageCollector>();
 builder.Services.AddHostedService<WebsiteUsageWorker>();

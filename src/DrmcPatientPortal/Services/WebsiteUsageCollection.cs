@@ -35,20 +35,17 @@ public sealed partial class WebsiteUsageMiddleware(RequestDelegate next)
     }
 }
 
-public sealed class WebsiteUsageCollector(IServiceScopeFactory scopes, TimeProvider clock, WebsiteUsageHealth health,
+public sealed class WebsiteUsageCollector(WebsiteUsageStore store, TimeProvider clock, WebsiteUsageHealth health,
     ILogger<WebsiteUsageCollector> logger)
 {
     public async Task CollectAsync(HttpContext context)
     {
         var now = clock.GetUtcNow();
-        using var deadline = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
         try
         {
-            await using var scope = scopes.CreateAsyncScope();
-            var store = scope.ServiceProvider.GetRequiredService<WebsiteUsageStore>();
             var account = context.User.Identity?.IsAuthenticated == true ? context.User.FindFirstValue(ClaimTypes.NameIdentifier) : null;
             await store.RecordAsync(now, context.Connection.RemoteIpAddress!.MapToIPv6().ToString(),
-                context.Request.Headers.UserAgent.ToString(), account, deadline.Token);
+                context.Request.Headers.UserAgent.ToString(), account, CancellationToken.None);
         }
         catch (Exception error)
         {
@@ -59,27 +56,89 @@ public sealed class WebsiteUsageCollector(IServiceScopeFactory scopes, TimeProvi
     }
 }
 
-public sealed class WebsiteUsageWorker(IServiceScopeFactory scopes, TimeProvider clock, IOptions<WebsiteUsageOptions> options,
+public sealed class WebsiteUsageWorker(WebsiteUsageStore store, TimeProvider clock, IOptions<WebsiteUsageOptions> options,
     WebsiteUsageHealth health, ILogger<WebsiteUsageWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
-        do
+        var nextMaintenance = DateTimeOffset.MinValue;
+        var nextCleanup = DateTimeOffset.MinValue;
+        var retry = false;
+        try
         {
-            var now = clock.GetUtcNow();
-            var failure = health.TakeFailure();
-            try
+            while (!stoppingToken.IsCancellationRequested)
             {
-                await using var scope = scopes.CreateAsyncScope();
-                await scope.ServiceProvider.GetRequiredService<WebsiteUsageStore>().MaintainAsync(now, options.Value.Enabled, failure, stoppingToken);
+                var now = clock.GetUtcNow();
+                if (now >= nextMaintenance)
+                {
+                    var failure = health.TakeFailure();
+                    try { await store.MaintainAsync(now, options.Value.Enabled, failure, stoppingToken); }
+                    catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                    {
+                        if (failure.HasValue) health.Failed(failure.Value);
+                        throw;
+                    }
+                    catch (Exception error)
+                    {
+                        health.Failed(failure ?? now);
+                        logger.LogWarning("Website usage maintenance failed ({FailureType}).", error.GetType().Name);
+                    }
+                    nextMaintenance = now.AddMinutes(1);
+                }
+                if (now >= nextCleanup)
+                {
+                    try
+                    {
+                        await store.PruneAsync(now, stoppingToken);
+                        nextCleanup = WebsiteUsageClock.NextCleanup(now);
+                    }
+                    catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { throw; }
+                    catch (Exception error)
+                    {
+                        health.Failed(now);
+                        nextCleanup = now.AddMinutes(1);
+                        logger.LogWarning("Website usage cleanup failed ({FailureType}).", error.GetType().Name);
+                    }
+                }
+                if (!retry) await store.WaitForFlushAsync(stoppingToken);
+                try
+                {
+                    await store.FlushAsync(stoppingToken);
+                    retry = false;
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { throw; }
+                catch (Exception error)
+                {
+                    logger.LogWarning("Website usage flush failed ({FailureType}).", error.GetType().Name);
+                    retry = true;
+                    await Task.Delay(WebsiteUsageStore.FlushInterval, clock, stoppingToken);
+                }
             }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { return; }
-            catch (Exception error)
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
+    }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        store.Complete();
+        try
+        {
+            await base.StopAsync(cancellationToken);
+            while (true)
             {
-                health.Failed(failure ?? now);
-                logger.LogWarning("Website usage maintenance failed ({FailureType}).", error.GetType().Name);
+                try { await store.FlushAsync(cancellationToken); return; }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+                catch (Exception error)
+                {
+                    logger.LogWarning("Website usage shutdown flush failed ({FailureType}).", error.GetType().Name);
+                    await Task.Delay(WebsiteUsageStore.FlushInterval, clock, cancellationToken);
+                }
             }
-        } while (await timer.WaitForNextTickAsync(stoppingToken));
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            health.Failed(clock.GetUtcNow());
+            logger.LogWarning("Website usage shutdown flush did not finish before cancellation.");
+        }
     }
 }
