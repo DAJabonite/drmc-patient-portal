@@ -1,5 +1,8 @@
 namespace DrmcPatientPortal.Models;
 
+// Transient queue payload only; never mapped to a table or included in logs.
+public sealed record WebsiteUsageEvent(DateTimeOffset OccurredUtc, string Address, string UserAgent, string? AccountId);
+
 // Only aggregate counts survive the daily identifier cleanup. Neither table stores account IDs,
 // addresses, user agents, page names, or clinical information.
 public sealed class WebsiteUsageDay

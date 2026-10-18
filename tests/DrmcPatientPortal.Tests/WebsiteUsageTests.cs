@@ -8,6 +8,7 @@ using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Hosting;
@@ -120,6 +121,10 @@ public sealed class WebsiteUsageUnitTests
     {
         public IServiceScope CreateScope() => throw new InvalidOperationException("Sensitive request value must not be logged");
     }
+    private sealed class UnavailableClaims() : ClaimsPrincipal(new ClaimsIdentity([], "synthetic"))
+    {
+        public override Claim? FindFirst(string type) => throw new InvalidOperationException("Sensitive request value must not be logged");
+    }
     internal sealed class CapturingLogger : ILogger<WebsiteUsageCollector>
     {
         public List<string> Messages { get; } = [];
@@ -138,7 +143,10 @@ public sealed class WebsiteUsageUnitTests
         var health = new WebsiteUsageHealth(); var logger = new CapturingLogger();
         var context = Page(); context.Response.Body = new MemoryStream();
         await context.Response.WriteAsync("Existing page response");
-        var collector = new WebsiteUsageCollector(new UnavailableScopes(), TimeProvider.System, health, logger);
+        var store = new WebsiteUsageStore(new UnavailableScopes(), new EphemeralDataProtectionProvider(), TimeProvider.System,
+            Options.Create(new WebsiteUsageOptions()), health);
+        context.User = new UnavailableClaims();
+        var collector = new WebsiteUsageCollector(store, TimeProvider.System, health, logger);
         await collector.CollectAsync(context);
         Assert.Equal(200, context.Response.StatusCode);
         Assert.Equal("Existing page response", Encoding.UTF8.GetString(((MemoryStream)context.Response.Body).ToArray()));
@@ -171,7 +179,9 @@ public sealed class WebsiteUsageIntegrationTests(PortalFactory factory)
     private async Task Record(DateTimeOffset now, string address, string? account = null)
     {
         await using var scope = factory.Services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<WebsiteUsageStore>().RecordAsync(now, address, "Synthetic Browser", account, default);
+        var store = scope.ServiceProvider.GetRequiredService<WebsiteUsageStore>();
+        await store.RecordAsync(now, address, "Synthetic Browser", account, default);
+        await store.FlushAsync();
     }
 
     private async Task<WebsiteUsageDay?> Read(DateOnly day)
@@ -227,11 +237,19 @@ public sealed class WebsiteUsageIntegrationTests(PortalFactory factory)
             Assert.True((await Read(day))!.HasGap);
         }
         await using (var scope = factory.Services.CreateAsyncScope())
-            await scope.ServiceProvider.GetRequiredService<WebsiteUsageStore>().MaintainAsync(midnight.AddDays(1).AddMinutes(4), true, null, default);
+        {
+            var store = scope.ServiceProvider.GetRequiredService<WebsiteUsageStore>();
+            await store.MaintainAsync(midnight.AddDays(1).AddMinutes(4), true, null, default);
+            await store.PruneAsync(midnight.AddDays(1).AddMinutes(4));
+        }
         Assert.Equal(key, (await Read(day))!.ProtectedKey);
         Assert.Equal(0, (await Read(day.AddDays(1)))!.EstimatedVisitors);
         await using (var scope = factory.Services.CreateAsyncScope())
-            await scope.ServiceProvider.GetRequiredService<WebsiteUsageStore>().MaintainAsync(midnight.AddDays(1).AddMinutes(5), false, null, default);
+        {
+            var store = scope.ServiceProvider.GetRequiredService<WebsiteUsageStore>();
+            await store.MaintainAsync(midnight.AddDays(1).AddMinutes(5), false, null, default);
+            await store.PruneAsync(midnight.AddDays(1).AddMinutes(5));
+        }
         Assert.Null((await Read(day))!.ProtectedKey);
         Assert.Equal(1, (await Read(day))!.EstimatedVisitors);
         await using (var scope = factory.Services.CreateAsyncScope())
@@ -262,7 +280,7 @@ public sealed class WebsiteUsageIntegrationTests(PortalFactory factory)
             {
                 services.AddSingleton<IStartupFilter, CompletionFilter>();
                 services.AddSingleton<WebsiteUsageCollector>(sp => new(
-                    sp.GetRequiredService<IServiceScopeFactory>(), new TestClock(now), sp.GetRequiredService<WebsiteUsageHealth>(),
+                    sp.GetRequiredService<WebsiteUsageStore>(), new TestClock(now), sp.GetRequiredService<WebsiteUsageHealth>(),
                     sp.GetRequiredService<ILogger<WebsiteUsageCollector>>()));
             });
         });
@@ -286,6 +304,7 @@ public sealed class WebsiteUsageIntegrationTests(PortalFactory factory)
             // SendAsync can return when the response completes, before middleware's
             // post-response collection. Observe the entire pipeline before reading SQL.
             await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            await host.Services.GetRequiredService<WebsiteUsageStore>().FlushAsync();
         }
         await Send("198.51.100.1");
         await Send("198.51.100.2");
@@ -297,7 +316,7 @@ public sealed class WebsiteUsageIntegrationTests(PortalFactory factory)
     }
 
     [Fact]
-    public async Task Collection_deadline_cancels_a_blocked_SQL_write_without_changing_the_response()
+    public async Task Collection_returns_while_SQL_is_locked_and_flush_persists_after_unlock()
     {
         var day = new DateOnly(2040, 6, 10); var now = WebsiteUsageClock.Start(day).AddMinutes(1);
         await Record(now, "192.0.2.60");
@@ -306,16 +325,20 @@ public sealed class WebsiteUsageIntegrationTests(PortalFactory factory)
         await using var held = await db.Database.BeginTransactionAsync();
         _ = await db.WebsiteUsageDays.FromSqlInterpolated($"SELECT * FROM [WebsiteUsageDays] WITH (UPDLOCK, HOLDLOCK) WHERE [Day] = {day}").SingleAsync();
         var health = new WebsiteUsageHealth(); var logger = new WebsiteUsageUnitTests.CapturingLogger();
-        var collector = new WebsiteUsageCollector(factory.Services.GetRequiredService<IServiceScopeFactory>(), new TestClock(now), health, logger);
+        var store = new WebsiteUsageStore(factory.Services.GetRequiredService<IServiceScopeFactory>(),
+            factory.Services.GetRequiredService<IDataProtectionProvider>(), new TestClock(now), Options.Create(new WebsiteUsageOptions()), health);
+        var collector = new WebsiteUsageCollector(store, new TestClock(now), health, logger);
         var context = WebsiteUsageUnitTests.Page();
         var timer = Stopwatch.StartNew();
         await collector.CollectAsync(context);
         Assert.True(timer.Elapsed < TimeSpan.FromSeconds(4));
         Assert.Equal(200, context.Response.StatusCode);
-        Assert.NotNull(health.TakeFailure());
-        Assert.Single(logger.Messages);
+        Assert.Null(health.TakeFailure());
+        Assert.Empty(logger.Messages);
         await held.RollbackAsync();
         Assert.Equal(1, (await Read(day))!.EstimatedVisitors);
+        await store.FlushAsync();
+        Assert.Equal(2, (await Read(day))!.EstimatedVisitors);
     }
 
     [Fact]
@@ -348,6 +371,7 @@ public sealed class WebsiteUsageIntegrationTests(PortalFactory factory)
         await Record(WebsiteUsageClock.Start(boundary), "192.0.2.71");
         await using var scope = factory.Services.CreateAsyncScope();
         await scope.ServiceProvider.GetRequiredService<WebsiteUsageStore>().MaintainAsync(WebsiteUsageClock.Start(today).AddMinutes(5), false, null, default);
+        await scope.ServiceProvider.GetRequiredService<WebsiteUsageStore>().PruneAsync(WebsiteUsageClock.Start(today).AddMinutes(5));
         Assert.Null(await Read(boundary.AddDays(-1)));
         Assert.Equal(1, (await Read(boundary))!.EstimatedVisitors);
         Assert.Null((await Read(boundary))!.ProtectedKey);
