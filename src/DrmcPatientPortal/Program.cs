@@ -50,6 +50,12 @@ builder.Services.AddOptions<AccountEmailOptions>().Bind(builder.Configuration.Ge
         "Account email retry, expiry, or retention settings are outside the supported bounds.").ValidateOnStart();
 builder.Services.AddSingleton<IAccountEmailQueue, AccountEmailQueue>();
 builder.Services.AddSingleton<AccountEmailDispatcher>();
+builder.Services.AddOptions<OutboundNotificationOptions>().Bind(builder.Configuration.GetSection(OutboundNotificationOptions.Section))
+    .Validate(x => x.MaximumAttempts is >= 1 and <= 10 && x.LifetimeMinutes is >= 1 and <= 1440 && x.RetentionDays is >= 1 and <= 30,
+        "Outbound notification retry, expiry, or retention settings are outside the supported bounds.").ValidateOnStart();
+builder.Services.AddSingleton<IOutboundNotificationQueue, OutboundNotificationQueue>();
+builder.Services.AddSingleton<OutboundNotificationDispatcher>();
+builder.Services.AddHostedService<OutboundNotificationWorker>();
 builder.Services.AddOptions<RedStarOptions>().Bind(builder.Configuration.GetSection("RedStar"))
     .Validate(x => x.MaximumAttempts is >= 1 and <= 10, "Appointment reminder attempts must be 1–10.").ValidateOnStart();
 builder.Services.AddScoped<RedStarPatientService>();

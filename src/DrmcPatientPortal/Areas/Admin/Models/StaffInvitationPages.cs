@@ -22,5 +22,6 @@ public sealed record StaffInvitationList(IReadOnlyList<StaffInvitationRow> Rows,
     public int Pages => Math.Max(1, (Total + 24) / 25);
 }
 
-// The plaintext code exists only in this one response; it is never stored or put in TempData.
-public sealed record StaffInvitationSlip(string Email, string Role, string Code, string SignupUrl, string QrSvg, DateTime ExpiresAt, bool Emailed);
+// The full code is shown only in this response. The invitation stores a hash; its temporary
+// delivery copy is encrypted in the outbox and is never put in TempData.
+public sealed record StaffInvitationSlip(string Email, string Role, string Code, string SignupUrl, string QrSvg, DateTime ExpiresAt, bool EmailQueued);
