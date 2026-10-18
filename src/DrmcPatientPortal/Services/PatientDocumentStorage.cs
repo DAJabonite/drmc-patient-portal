@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
-using Tesseract;
 
 namespace DrmcPatientPortal.Services;
 
@@ -10,7 +9,7 @@ public sealed class PatientDocumentStorageOptions
 {
     public string RootPath { get; set; } = "App_Data/PatientIdDocuments";
     public string TemporaryPath { get; set; } = "App_Data/TempUploads";
-    public int MaximumFileSizeMb { get; set; } = 10;
+    public int MaximumFileSizeMb { get; set; } = 5;
     public int TemporaryFileLifetimeMinutes { get; set; } = 30;
 }
 
@@ -33,13 +32,15 @@ public interface IPatientDocumentStorage
 public sealed class PatientDocumentStorage : IPatientDocumentStorage
 {
     private const int CurrentStorageVersion = 2;
+    private readonly OcrRuntime _ocr;
     private readonly IWebHostEnvironment _environment;
     private readonly PatientDocumentStorageOptions _options;
     private readonly IDataProtector _fileProtector;
     private readonly IDataProtector _tokenProtector;
 
-    public PatientDocumentStorage(IWebHostEnvironment environment, IOptions<PatientDocumentStorageOptions> options, IDataProtectionProvider protectionProvider)
+    public PatientDocumentStorage(IWebHostEnvironment environment, IOptions<PatientDocumentStorageOptions> options, IDataProtectionProvider protectionProvider, OcrRuntime ocr)
     {
+        _ocr = ocr;
         _environment = environment;
         _options = options.Value;
         _fileProtector = protectionProvider.CreateProtector("DRMC.PatientDocuments.File.v2");
@@ -52,10 +53,14 @@ public sealed class PatientDocumentStorage : IPatientDocumentStorage
         var fileName = $"{Guid.NewGuid():N}.idp";
         var directory = ResolveDirectory(_options.TemporaryPath);
         Directory.CreateDirectory(directory);
-        await File.WriteAllBytesAsync(Path.Combine(directory, fileName), _fileProtector.Protect(bytes), cancellationToken);
-
-        var payload = new StagingTokenPayload(sessionId, fileName, contentType, DateTime.UtcNow.AddMinutes(_options.TemporaryFileLifetimeMinutes));
-        return new StagedPatientDocument(_tokenProtector.Protect(JsonSerializer.Serialize(payload)), contentType);
+        var path = Path.Combine(directory, fileName);
+        try
+        {
+            await File.WriteAllBytesAsync(path, _fileProtector.Protect(bytes), cancellationToken);
+            var payload = new StagingTokenPayload(sessionId, fileName, contentType, DateTime.UtcNow.AddMinutes(_options.TemporaryFileLifetimeMinutes));
+            return new StagedPatientDocument(_tokenProtector.Protect(JsonSerializer.Serialize(payload)), contentType);
+        }
+        catch { File.Delete(path); throw; }
     }
 
     public async Task<StoredPatientDocument> CommitAsync(string token, string sessionId, string patientUserId, string side, CancellationToken cancellationToken = default)
@@ -90,7 +95,9 @@ public sealed class PatientDocumentStorage : IPatientDocumentStorage
         var targetName = $"{NormalizeSide(side)}_{Guid.NewGuid():N}.idp";
         var targetDirectory = ResolveDirectory(Path.Combine(_options.RootPath, patientUserId));
         Directory.CreateDirectory(targetDirectory);
-        await File.WriteAllBytesAsync(Path.Combine(targetDirectory, targetName), _fileProtector.Protect(bytes), cancellationToken);
+        var path = Path.Combine(targetDirectory, targetName);
+        try { await File.WriteAllBytesAsync(path, _fileProtector.Protect(bytes), cancellationToken); }
+        catch { File.Delete(path); throw; }
         return new StoredPatientDocument(targetName, contentType, CurrentStorageVersion);
     }
 
@@ -109,7 +116,7 @@ public sealed class PatientDocumentStorage : IPatientDocumentStorage
         if (!IsSafeFileName(fileName)) throw new FileNotFoundException();
         var source = ResolveFile(Path.Combine(_options.RootPath, patientUserId), fileName);
         var bytes = await File.ReadAllBytesAsync(source, cancellationToken);
-        _ = DetectContentType(bytes);
+        // Preserve historical documents unchanged; new-upload checks do not apply on download/migration.
         var targetName = $"{NormalizeSide(side)}_{Guid.NewGuid():N}.idp";
         var target = ResolveFile(Path.Combine(_options.RootPath, patientUserId), targetName);
         await File.WriteAllBytesAsync(target, _fileProtector.Protect(bytes), cancellationToken);
@@ -169,33 +176,11 @@ public sealed class PatientDocumentStorage : IPatientDocumentStorage
 
     private async Task<(byte[] Bytes, string ContentType)> ValidateAndReadAsync(IFormFile file, CancellationToken cancellationToken)
     {
-        var maxBytes = _options.MaximumFileSizeMb * 1024L * 1024L;
-        if (file.Length <= 0 || file.Length > maxBytes) throw new InvalidDataException($"Image must be between 1 byte and {_options.MaximumFileSizeMb} MB.");
-        await using var memory = new MemoryStream((int)file.Length);
-        await file.CopyToAsync(memory, cancellationToken);
-        var bytes = memory.ToArray();
-        var contentType = DetectContentType(bytes);
-        try
-        {
-            using var pix = Pix.LoadFromMemory(bytes);
-            if (pix.Width <= 0 || pix.Height <= 0) throw new InvalidDataException("Image dimensions are invalid.");
-        }
-        catch (Exception ex) when (OcrRuntime.IsDependencyFailure(ex))
-        {
-            throw new OcrDependencyUnavailableException("Image validation is temporarily unavailable. Please try again later.", ex);
-        }
-        catch (Exception ex) when (ex is not InvalidDataException)
-        {
-            throw new InvalidDataException("The uploaded file is not a valid JPEG or PNG image.", ex);
-        }
-        return (bytes, contentType);
-    }
-
-    private static string DetectContentType(byte[] bytes)
-    {
-        if (bytes.Length >= 8 && bytes.AsSpan(0, 8).SequenceEqual(new byte[] { 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a })) return "image/png";
-        if (bytes.Length >= 4 && bytes[0] == 0xff && bytes[1] == 0xd8 && bytes[2] == 0xff && bytes[^2] == 0xff && bytes[^1] == 0xd9) return "image/jpeg";
-        throw new InvalidDataException("Only JPEG and PNG images are accepted.");
+        var maxBytes = (int)Math.Min(IdImageValidation.MaximumBytes, _options.MaximumFileSizeMb * 1024L * 1024L);
+        if (file.Length <= 0 || file.Length > maxBytes) throw new InvalidDataException("Each ID photo must be between 1 byte and 5 MB.");
+        await using var input = file.OpenReadStream();
+        var result = await _ocr.ProcessAsync(input, recognize: false, cancellationToken: cancellationToken, maximumBytes: maxBytes);
+        return (result.ValidatedBytes!, result.ContentType);
     }
 
     private string ResolveDirectory(string configuredPath)

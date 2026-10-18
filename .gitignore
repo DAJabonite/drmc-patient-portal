@@ -10,6 +10,7 @@ app.db
 *.db-shm
 *.db-wal
 src/DrmcPatientPortal/App_Data/TempUploads/
+src/DrmcPatientPortal/App_Data/OcrScratch/
 src/DrmcPatientPortal/App_Data/PatientIdDocuments/
 src/DrmcPatientPortal/App_Data/DataProtectionKeys/
 

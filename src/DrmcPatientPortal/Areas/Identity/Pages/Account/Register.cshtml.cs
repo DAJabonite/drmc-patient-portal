@@ -227,6 +227,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             StagedPatientDocument stagedFront = null;
             StagedPatientDocument stagedBack = null;
             var uploadSessionId = GetUploadSessionId();
+            var retainStaged = false;
             try
             {
                 stagedFront = await _documentStorage.StageAsync(frontPhoto, uploadSessionId, HttpContext.RequestAborted);
@@ -237,9 +238,10 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
 
                 // Execute genuine local OCR extraction
                 await using var scanFrontStream = frontPhoto.OpenReadStream();
-                using var scanBackStream = backPhoto?.OpenReadStream();
-                var result = await _idExtractionService.ExtractFromStreamsAsync(idType, scanFrontStream, scanBackStream);
+                using var scanBackStream = backPhoto is { Length: > 0 } ? backPhoto.OpenReadStream() : null;
+                var result = await _idExtractionService.ExtractFromStreamsAsync(idType, scanFrontStream, scanBackStream, HttpContext.RequestAborted);
 
+                retainStaged = true;
                 return new JsonResult(new
                 {
                     success = result.Success,
@@ -258,25 +260,43 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                     foundSummary = result.FoundFieldsSummary
                 });
             }
+            catch (OcrBusyException ex)
+            {
+                Response.Headers.RetryAfter = "5";
+                return new JsonResult(new { success = false, message = ex.Message }) { StatusCode = 429 };
+            }
+            catch (OcrTimeoutException ex)
+            {
+                return new JsonResult(new { success = false, message = ex.Message }) { StatusCode = 503 };
+            }
+            catch (OperationCanceledException) when (HttpContext.RequestAborted.IsCancellationRequested)
+            {
+                return StatusCode(499);
+            }
             catch (OcrDependencyUnavailableException ex)
             {
-                await _documentStorage.DiscardStagedAsync(stagedFront?.Token, uploadSessionId, HttpContext.RequestAborted);
-                await _documentStorage.DiscardStagedAsync(stagedBack?.Token, uploadSessionId, HttpContext.RequestAborted);
                 _logger.LogError(ex, "ID scanning dependencies unavailable.");
                 return new JsonResult(new { success = false, message = "ID scanning is temporarily unavailable. Please try again later." }) { StatusCode = 503 };
             }
             catch (InvalidDataException ex)
             {
-                await _documentStorage.DiscardStagedAsync(stagedFront?.Token, uploadSessionId, HttpContext.RequestAborted);
-                await _documentStorage.DiscardStagedAsync(stagedBack?.Token, uploadSessionId, HttpContext.RequestAborted);
                 return new JsonResult(new { success = false, message = ex.Message }) { StatusCode = 400 };
             }
             catch (Exception ex)
             {
-                await _documentStorage.DiscardStagedAsync(stagedFront?.Token, uploadSessionId, HttpContext.RequestAborted);
-                await _documentStorage.DiscardStagedAsync(stagedBack?.Token, uploadSessionId, HttpContext.RequestAborted);
                 _logger.LogError(ex, "Error processing ID photo extraction for {IdType}", idType);
                 return new JsonResult(new { success = false, message = "Could not read ID photo. You can proceed with manual entry." });
+            }
+            finally
+            {
+                if (!retainStaged)
+                {
+                    foreach (var token in new[] { stagedFront?.Token, stagedBack?.Token })
+                    {
+                        try { await _documentStorage.DiscardStagedAsync(token, uploadSessionId, CancellationToken.None); }
+                        catch (Exception) { _logger.LogWarning("Could not discard a staged ID photo."); }
+                    }
+                }
             }
         }
 

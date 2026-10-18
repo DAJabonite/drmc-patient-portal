@@ -1,110 +1,54 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using DrmcPatientPortal.Models;
-using Tesseract;
 
 namespace DrmcPatientPortal.Services;
 
 public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
 {
-    private readonly ILogger<TesseractIdDocumentExtractionService> _logger;
     private readonly OcrRuntime _runtime;
 
     public TesseractIdDocumentExtractionService(
         OcrRuntime runtime,
         ILogger<TesseractIdDocumentExtractionService> logger)
     {
-        _logger = logger;
-        
         _runtime = runtime;
     }
 
-    public async Task<IdExtractionResult> ExtractFromBytesAsync(string idType, byte[] frontImageBytes, byte[]? backImageBytes = null)
+    public Task<IdExtractionResult> ExtractFromBytesAsync(string idType, byte[] frontImageBytes, byte[]? backImageBytes = null) =>
+        ExtractFromBytesAsync(idType, frontImageBytes, backImageBytes, CancellationToken.None);
+
+    public async Task<IdExtractionResult> ExtractFromBytesAsync(string idType, byte[] frontImageBytes, byte[]? backImageBytes,
+        CancellationToken cancellationToken)
     {
-        return await Task.Run(() =>
-        {
-            var result = new IdExtractionResult
-            {
-                IdType = idType,
-                Success = false
-            };
-
-            if (frontImageBytes == null || frontImageBytes.Length == 0)
-            {
-                return result;
-            }
-
-            string frontText = string.Empty;
-            float frontConfidence = 0.0f;
-            string backText = string.Empty;
-            float backConfidence = 0.0f;
-
-            try
-            {
-                using var engine = _runtime.CreateEngine();
-                
-                // Process Front Image
-                using (var pixFront = Pix.LoadFromMemory(frontImageBytes))
-                using (var pageFront = engine.Process(pixFront))
-                {
-                    frontText = pageFront.GetText() ?? string.Empty;
-                    frontConfidence = pageFront.GetMeanConfidence();
-                }
-
-                // Process Back Image if provided
-                if (backImageBytes != null && backImageBytes.Length > 0)
-                {
-                    using (var pixBack = Pix.LoadFromMemory(backImageBytes))
-                    using (var pageBack = engine.Process(pixBack))
-                    {
-                        backText = pageBack.GetText() ?? string.Empty;
-                        backConfidence = pageBack.GetMeanConfidence();
-                    }
-                }
-            }
-            catch (Exception ex) when (OcrRuntime.IsDependencyFailure(ex))
-            {
-                throw new OcrDependencyUnavailableException("ID scanning is temporarily unavailable. Please try again later.", ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Tesseract OCR execution error for ID type: {IdType}", idType);
-                return result;
-            }
-
-            result.RawTextFront = frontText;
-            result.RawTextBack = backText;
-            result.MeanConfidence = backImageBytes != null && backImageBytes.Length > 0
-                ? (frontConfidence + backConfidence) / 2.0f
-                : frontConfidence;
-
-            result.Success = !string.IsNullOrWhiteSpace(frontText);
-
-            // Layered structured field parsing per PhilippineIdType reference model
-            ParseStructuredFields(result, idType, frontText, backText);
-
-            return result;
-        });
+        if (frontImageBytes is null || frontImageBytes.Length is 0 or > IdImageValidation.MaximumBytes ||
+            backImageBytes?.Length > IdImageValidation.MaximumBytes)
+            throw new InvalidDataException("Each ID photo must be between 1 byte and 5 MB.");
+        using var front = new MemoryStream(frontImageBytes, writable: false);
+        using var back = backImageBytes is null or { Length: 0 } ? null : new MemoryStream(backImageBytes, writable: false);
+        return await ExtractFromStreamsAsync(idType, front, back, cancellationToken);
     }
 
-    public async Task<IdExtractionResult> ExtractFromStreamsAsync(string idType, Stream frontImageStream, Stream? backImageStream = null)
+    public Task<IdExtractionResult> ExtractFromStreamsAsync(string idType, Stream frontImageStream, Stream? backImageStream = null) =>
+        ExtractFromStreamsAsync(idType, frontImageStream, backImageStream, CancellationToken.None);
+
+    public async Task<IdExtractionResult> ExtractFromStreamsAsync(string idType, Stream frontImageStream, Stream? backImageStream,
+        CancellationToken cancellationToken)
     {
-        using var msFront = new MemoryStream();
-        await frontImageStream.CopyToAsync(msFront);
-        byte[] frontBytes = msFront.ToArray();
-
-        byte[]? backBytes = null;
-        if (backImageStream != null)
+        var job = await _runtime.ProcessAsync(frontImageStream, backImageStream, cancellationToken: cancellationToken, idType: idType);
+        var response = job.Response;
+        var result = new IdExtractionResult
         {
-            using var msBack = new MemoryStream();
-            await backImageStream.CopyToAsync(msBack);
-            backBytes = msBack.ToArray();
-        }
-
-        return await ExtractFromBytesAsync(idType, frontBytes, backBytes);
+            IdType = idType,
+            Success = !string.IsNullOrWhiteSpace(response.FrontText),
+            RawTextFront = response.FrontText,
+            RawTextBack = response.BackText,
+            MeanConfidence = backImageStream is null ? response.FrontConfidence : (response.FrontConfidence + response.BackConfidence) / 2
+        };
+        return response.Extraction ?? result;
     }
 
-    private void ParseStructuredFields(IdExtractionResult result, string idType, string frontText, string backText)
+    internal static void ParseStructuredFields(IdExtractionResult result, string idType, string frontText, string backText)
     {
         var idConfig = PhilippineIdTypes.GetByName(idType);
         if (idConfig == null)
@@ -156,7 +100,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
 
     #region Specific ID Parsers
 
-    private void ParsePassport(IdExtractionResult result, string text)
+    private static void ParsePassport(IdExtractionResult result, string text)
     {
         // 1. Attempt Machine Readable Zone (MRZ) 2-line ICAO 9303 Type P Parsing
         // Line 1: P<PHL<SURNAME<<GIVEN<NAMES<<<<<<<<<<<<
@@ -244,7 +188,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         PopulateFullName(result);
     }
 
-    private void ParseDriversLicense(IdExtractionResult result, string text)
+    private static void ParseDriversLicense(IdExtractionResult result, string text)
     {
         // 1. License Number
         var licMatch = Regex.Match(text, @"(?:License\s*(?:No|Number|\#)?[:\.\s]*|DL\s*No[:\.\s]*|NO\.?[:\.\s]*)([A-Z0-9]{3}[-\s]?\d{2}[-\s]?\d{6}|[A-Z]\d{2}[-\s]?\d{2}[-\s]?\d{6})", RegexOptions.IgnoreCase);
@@ -280,7 +224,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         PopulateFullName(result);
     }
 
-    private void ParsePhilSys(IdExtractionResult result, string frontText, string backText)
+    private static void ParsePhilSys(IdExtractionResult result, string frontText, string backText)
     {
         // Front: PCN/PhilSys Number, Name, DOB, Address
         var pcnMatch = Regex.Match(frontText, @"\b(\d{4}[-\s]\d{4}[-\s]\d{4}[-\s]\d{4})\b");
@@ -333,7 +277,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         PopulateFullName(result);
     }
 
-    private void ParseUmid(IdExtractionResult result, string text)
+    private static void ParseUmid(IdExtractionResult result, string text)
     {
         // CRN: 0000-0000000-0
         var crnMatch = Regex.Match(text, @"(?:CRN|Common\s*Reference\s*Number)?[:\.\s]*\b(\d{4}[-\s]?\d{7}[-\s]?\d{1})\b", RegexOptions.IgnoreCase);
@@ -349,7 +293,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         PopulateFullName(result);
     }
 
-    private void ParsePostalId(IdExtractionResult result, string text)
+    private static void ParsePostalId(IdExtractionResult result, string text)
     {
         // Postal ID Reference Number
         var idMatch = Regex.Match(text, @"(?:Postal\s*ID\s*No|PRN|ID\s*No)[:\.\s]*([A-Z0-9\s\-]{6,20})", RegexOptions.IgnoreCase);
@@ -364,7 +308,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         PopulateFullName(result);
     }
 
-    private void ParsePhilHealth(IdExtractionResult result, string text)
+    private static void ParsePhilHealth(IdExtractionResult result, string text)
     {
         // PhilHealth Identification Number (PIN): 12 digits or 00-000000000-0
         var pinMatch = Regex.Match(text, @"\b(\d{2}[-\s]?\d{9}[-\s]?\d{1})\b");
@@ -385,7 +329,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         PopulateFullName(result);
     }
 
-    private void ParseSssGsis(IdExtractionResult result, string text)
+    private static void ParseSssGsis(IdExtractionResult result, string text)
     {
         // SSS (10 digits: 00-0000000-0) or GSIS (11 digits)
         var sssMatch = Regex.Match(text, @"(?:SS|SSS|GSIS|CRN)?\s*(?:No|Number|\#)?[:\.\s]*\b(\d{2}[-\s]?\d{7}[-\s]?\d{1}|\d{11})\b", RegexOptions.IgnoreCase);
@@ -398,7 +342,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         PopulateFullName(result);
     }
 
-    private void ParsePrcId(IdExtractionResult result, string text)
+    private static void ParsePrcId(IdExtractionResult result, string text)
     {
         // Registration No: 7 digits
         var regMatch = Regex.Match(text, @"(?:Reg(?:istration)?\.?\s*No\.?|Certificate\s*No\.?)[:\.\s]*\b(\d{7})\b", RegexOptions.IgnoreCase);
@@ -411,7 +355,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         PopulateFullName(result);
     }
 
-    private void ParseGenericFields(IdExtractionResult result, string text)
+    private static void ParseGenericFields(IdExtractionResult result, string text)
     {
         ExtractNameByLabels(result, text);
         ExtractDobByLabels(result, text);
@@ -425,7 +369,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
 
     #region Common Field Extraction Helpers
 
-    private void ExtractNameByLabels(IdExtractionResult result, string text)
+    private static void ExtractNameByLabels(IdExtractionResult result, string text)
     {
         // 1. Check for distinct Last / First / Middle Name labels
         var lastMatch = Regex.Match(text, @"(?:Last\s*Name|Surname|Apelyido)[:\.\s]+([A-Za-z\s\-]+?)(?=\n|First|Given|Middle|DOB|Date|$)", RegexOptions.IgnoreCase);
@@ -458,7 +402,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         }
     }
 
-    private void SplitAndAssignFullName(IdExtractionResult result, string rawName)
+    private static void SplitAndAssignFullName(IdExtractionResult result, string rawName)
     {
         if (string.IsNullOrWhiteSpace(rawName)) return;
 
@@ -500,7 +444,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         }
     }
 
-    private void ExtractDobByLabels(IdExtractionResult result, string text)
+    private static void ExtractDobByLabels(IdExtractionResult result, string text)
     {
         var dobMatch = Regex.Match(text, @"(?:Date\s*of\s*Birth|Birth\s*Date|DOB|Birthday|Petsa\s*ng\s*Kapanganakan)[:\.\s]*([A-Za-z0-9\s,\/\-\.]+?)(?=\n|Sex|Gender|Address|Blood|Weight|Height|$)", RegexOptions.IgnoreCase);
         if (dobMatch.Success)
@@ -513,7 +457,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         }
     }
 
-    private void ExtractSexByLabels(IdExtractionResult result, string text)
+    private static void ExtractSexByLabels(IdExtractionResult result, string text)
     {
         var sexMatch = Regex.Match(text, @"(?:Sex|Gender|Kasarian)[:\.\s]*\b(MALE|FEMALE|M|F|LALAKI|BABAE)\b", RegexOptions.IgnoreCase);
         if (sexMatch.Success)
@@ -524,7 +468,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         }
     }
 
-    private void ExtractBloodTypeByLabels(IdExtractionResult result, string text)
+    private static void ExtractBloodTypeByLabels(IdExtractionResult result, string text)
     {
         var bloodMatch = Regex.Match(text, @"(?:Blood\s*Type|Blood|Uri\s*ng\s*Dugo)[:\.\s]*(A\+|A\-|B\+|B\-|AB\+|AB\-|O\+|O\-|A|B|AB|O)(?=\s|$|\n|\r|,|\.)", RegexOptions.IgnoreCase);
         if (bloodMatch.Success)
@@ -533,7 +477,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         }
     }
 
-    private void ExtractAddressByLabels(IdExtractionResult result, string text)
+    private static void ExtractAddressByLabels(IdExtractionResult result, string text)
     {
         var addrMatch = Regex.Match(text, @"(?:Address|Residence|Tirahan)[:\.\s]+([A-Za-z0-9\s,\.\-#/]+?)(?=\n\n|Blood|Sex|Height|Weight|Date|Expiry|Signature|$)", RegexOptions.IgnoreCase);
         if (addrMatch.Success)
@@ -547,7 +491,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         }
     }
 
-    private void ExtractIdNumberByPattern(IdExtractionResult result, string text, string regexPattern)
+    private static void ExtractIdNumberByPattern(IdExtractionResult result, string text, string regexPattern)
     {
         var match = Regex.Match(text, regexPattern, RegexOptions.IgnoreCase);
         if (match.Success)
@@ -556,7 +500,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         }
     }
 
-    private void PopulateFullName(IdExtractionResult result)
+    private static void PopulateFullName(IdExtractionResult result)
     {
         if (result.FirstName.Found || result.LastName.Found)
         {
