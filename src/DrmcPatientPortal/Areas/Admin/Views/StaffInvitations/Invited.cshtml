@@ -1,6 +1,6 @@
 @model StaffInvitationSlip
 @using DrmcPatientPortal.Areas.Admin.Security
-@{ ViewData["Title"] = "Staff invitation sent"; }
+@{ ViewData["Title"] = "Staff invitation created"; }
 <div class="admin-page-header admin-no-print">
     <div>
         <h1 class="admin-title">Invitation created</h1>
@@ -11,13 +11,13 @@
         <button type="button" class="btn btn-primary" data-admin-print><i class="bi bi-printer me-1" aria-hidden="true"></i>Print</button>
     </div>
 </div>
-@if (Model.Emailed)
+@if (Model.EmailQueued)
 {
-    <div class="alert alert-success admin-no-print" role="status">We emailed the signup link to <strong>@Model.Email</strong>. The action was recorded in the audit history.</div>
+    <div class="alert alert-success admin-no-print" role="status">We queued the signup link for delivery to <strong>@Model.Email</strong>. The action was recorded in the audit history.</div>
 }
 else
 {
-    <div class="alert alert-warning admin-no-print" role="status">The email could not be sent. Print this page or show the QR code to <strong>@Model.Email</strong> instead.</div>
+    <div class="alert alert-warning admin-no-print" role="status">The signup link has not been queued for delivery. Print this page or show the QR code to <strong>@Model.Email</strong> instead.</div>
 }
 <section class="admin-card registration-slip" aria-labelledby="slipTitle">
     <div class="admin-card-body">

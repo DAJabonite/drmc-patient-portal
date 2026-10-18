@@ -35,6 +35,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PortalSession> PortalSessions => Set<PortalSession>();
     public DbSet<AuthenticatorConsumption> AuthenticatorConsumptions => Set<AuthenticatorConsumption>();
     public DbSet<AccountEmail> AccountEmails => Set<AccountEmail>();
+    public DbSet<OutboundNotificationMessage> OutboundNotifications => Set<OutboundNotificationMessage>();
     public DbSet<WebsiteUsageDay> WebsiteUsageDays => Set<WebsiteUsageDay>();
     public DbSet<WebsiteUsageMarker> WebsiteUsageMarkers => Set<WebsiteUsageMarker>();
     public DbSet<RedStarPatient> RedStarPatients => Set<RedStarPatient>();
@@ -138,6 +139,19 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => new { x.Status, x.NextAttemptUtc });
             e.HasIndex(x => x.CompletedUtc);
+        });
+
+        builder.Entity<OutboundNotificationMessage>(e =>
+        {
+            e.Property(x => x.Id).ValueGeneratedNever();
+            e.Property(x => x.RowVersion).IsRowVersion();
+            e.Property(x => x.LeaseOwner).HasMaxLength(64);
+            e.Property(x => x.LastError).HasMaxLength(256);
+            e.HasIndex(x => new { x.Status, x.NextAttemptAtUtc });
+            e.HasIndex(x => new { x.Status, x.LeaseExpiresAtUtc });
+            e.HasIndex(x => x.CompletedAtUtc);
+            e.HasIndex(x => x.StaffInvitationId).IsUnique().HasFilter("[StaffInvitationId] IS NOT NULL AND [Channel] = 0");
+            e.HasOne<StaffInvitation>().WithMany().HasForeignKey(x => x.StaffInvitationId).OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<ImportBatch>(e =>

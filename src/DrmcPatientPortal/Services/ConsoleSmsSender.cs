@@ -4,8 +4,9 @@ namespace DrmcPatientPortal.Services;
 // Documented in README.md as an infrastructure boundary.
 public class ConsoleSmsSender(ILogger<ConsoleSmsSender> logger) : ISmsSender
 {
-    public Task SendSmsAsync(string number, string message)
+    public Task SendSmsAsync(string number, string message, CancellationToken token = default)
     {
+        token.ThrowIfCancellationRequested();
         logger.LogInformation(
             "[SMS GATEWAY BOUNDARY] Outgoing SMS to {Recipient}: {MessageText}",
             number,

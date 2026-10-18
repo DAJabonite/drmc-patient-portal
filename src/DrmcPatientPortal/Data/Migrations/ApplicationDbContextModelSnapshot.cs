@@ -696,6 +696,70 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.ToTable("MedicationDoseSchedules");
                 });
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.OutboundNotificationMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Channel")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTimeOffset?>("LeaseExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("LeaseOwner")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset>("NextAttemptAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<byte[]>("PayloadProtected")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int?>("StaffInvitationId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompletedAtUtc");
+
+                    b.HasIndex("StaffInvitationId")
+                        .IsUnique()
+                        .HasFilter("[StaffInvitationId] IS NOT NULL AND [Channel] = 0");
+
+                    b.HasIndex("Status", "LeaseExpiresAtUtc");
+
+                    b.HasIndex("Status", "NextAttemptAtUtc");
+
+                    b.ToTable("OutboundNotifications");
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.PatientAllergy", b =>
                 {
                     b.Property<int>("Id")
@@ -1975,6 +2039,14 @@ namespace DrmcPatientPortal.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Prescription");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.OutboundNotificationMessage", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.StaffInvitation", null)
+                        .WithMany()
+                        .HasForeignKey("StaffInvitationId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("DrmcPatientPortal.Models.PatientAllergy", b =>

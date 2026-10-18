@@ -25,6 +25,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -45,6 +46,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
         private readonly IAuditLogService _auditLog;
         private readonly PatientRegistrationOptions _registrationOptions;
         private readonly FirstAdminSignup _firstAdminSignup;
+        private readonly IServiceScopeFactory _scopes;
 
         // One message for every code failure (unknown, used, revoked, expired, already linked or
         // birth date mismatch), so the form never reveals which part was wrong.
@@ -68,7 +70,8 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             IAuditLogService auditLog,
             IOptions<PatientRegistrationOptions> registrationOptions,
             FirstAdminSignup firstAdminSignup,
-            AccountLinks links)
+            AccountLinks links,
+            IServiceScopeFactory scopes)
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -83,6 +86,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             _registrationOptions = registrationOptions.Value;
             _firstAdminSignup = firstAdminSignup;
             _links = links;
+            _scopes = scopes;
         }
 
         public bool RequireHospitalRecordCode => _registrationOptions.RequireHospitalRecordCode;
@@ -374,95 +378,187 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
 
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
-                var result = await _userManager.CreateAsync(user, Input.Password);
-
-                if (result.Succeeded)
-                {
-                    _logger.LogInformation("User created a new account with password.");
-
-                    if (recordCode is not null && !await RedeemCodeAsync(recordCode, user.Id))
-                    {
-                        // Another signup used or staff revoked the code between the check and now.
-                        await _userManager.DeleteAsync(user);
-                        ModelState.AddModelError("Input.HospitalRecordCode", HospitalRecordCodeError);
-                        return Page();
-                    }
-
-                    if (invitation is not null && !await AcceptInvitationAsync(invitation.Id, user.Id))
-                    {
-                        // Used, revoked or expired between the check and now.
-                        if (recordCode is not null) await ReleaseCodeAsync(recordCode.Id, user.Id);
-                        await _userManager.DeleteAsync(user);
-                        ModelState.AddModelError("Input.StaffInvitationCode", StaffInvitationError);
-                        return Page();
-                    }
-
-                    try
-                    {
-                        await SavePatientIdDocumentAsync(user);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to persist PatientIdDocument for user {UserId}", user.Id);
-                        if (recordCode is not null) await ReleaseCodeAsync(recordCode.Id, user.Id);
-                        if (invitation is not null) await ReleaseInvitationAsync(invitation.Id, user.Id);
-                        await _userManager.DeleteAsync(user);
-                        ModelState.AddModelError(string.Empty, "We could not securely save the identity document. Please upload it again.");
-                        return Page();
-                    }
-
-                    if (recordCode is not null)
-                    {
-                        await _auditLog.LogAsync(user.Id, "LINK_HOSPITAL_RECORD", $"PatientRecord/{recordCode.PatientRecordId}",
-                            $"Hospital record linked at signup with a code issued by {recordCode.IssuingPoint}.",
-                            HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown");
-                    }
-
-                    if (invitation is not null)
-                    {
-                        await _auditLog.LogAsync(user.Id, "ACCEPT_STAFF_INVITATION", $"StaffInvitation/{invitation.Id}",
-                            "Staff account created with an Admin invitation. The role is granted after email confirmation and two-factor authentication.",
-                            HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown");
-                    }
-                    else if (recordCode is null && RequireHospitalRecordCode)
-                    {
-                        _logger.LogWarning("First Admin account created without a hospital record code while AdminBootstrap is enabled.");
-                        await _auditLog.LogAsync(user.Id, "FIRST_ADMIN_SIGNUP", "AdminBootstrap",
-                            "Account created without a hospital record code during first-Admin setup.",
-                            HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown");
-                    }
-
-                    var userId = await _userManager.GetUserIdAsync(user);
-                    var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                    code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-                    var callbackUrl = _links.Page(HttpContext,
-                        "/Account/ConfirmEmail",
-                        new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl });
-
-                    await _emailSender.EnqueueAsync(user.Id, Input.Email, "Confirm your email",
-                        $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.", HttpContext.RequestAborted);
-
-                    if (_userManager.Options.SignIn.RequireConfirmedAccount)
-                    {
-                        return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl = returnUrl });
-                    }
-                    else
-                    {
-                        await _signInManager.SignInAsync(user, isPersistent: false);
-                        return LocalRedirect(returnUrl);
-                    }
-                }
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
+                return await CompleteRegistrationAsync(user, recordCode, invitation, returnUrl);
             }
 
             // If we got this far, something failed, redisplay form
             return Page();
         }
 
-        private async Task SavePatientIdDocumentAsync(ApplicationUser user)
+        private async Task<IActionResult> CompleteRegistrationAsync(ApplicationUser user, PatientRegistrationCode recordCode,
+            StaffInvitation invitation, string returnUrl)
+        {
+            var messageId = Guid.NewGuid();
+            PatientIdDocument document = null;
+            IDbContextTransaction transaction = null;
+            var committed = false;
+            var preserveFiles = false;
+            var acknowledgementLost = false;
+            try
+            {
+                // Identity, claims, document metadata, audit and verification email become visible together.
+                // Registration is never replayed after an uncertain commit.
+                transaction = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, CancellationToken.None);
+                var result = await _userManager.CreateAsync(user, Input.Password);
+                if (!result.Succeeded)
+                {
+                    foreach (var error in result.Errors) ModelState.AddModelError(string.Empty, error.Description);
+                    return Page();
+                }
+
+                if (recordCode is not null && !await RedeemCodeAsync(recordCode, user.Id))
+                {
+                    ModelState.AddModelError("Input.HospitalRecordCode", HospitalRecordCodeError);
+                    return Page();
+                }
+
+                if (invitation is not null && !await AcceptInvitationAsync(invitation.Id, user.Id))
+                {
+                    ModelState.AddModelError("Input.StaffInvitationCode", StaffInvitationError);
+                    return Page();
+                }
+
+                try { document = await SavePatientIdDocumentAsync(user); }
+                catch (OperationCanceledException) when (HttpContext.RequestAborted.IsCancellationRequested) { throw; }
+                catch (Exception error)
+                {
+                    _logger.LogError("Signup identity document could not be saved ({ErrorType}).", error.GetType().Name);
+                    ModelState.AddModelError(string.Empty, "We could not securely save the identity document. Please upload it again.");
+                    return Page();
+                }
+
+                if (recordCode is not null)
+                {
+                    await _auditLog.LogAsync(user.Id, "LINK_HOSPITAL_RECORD", $"PatientRecord/{recordCode.PatientRecordId}",
+                        $"Hospital record linked at signup with a code issued by {recordCode.IssuingPoint}.",
+                        HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown");
+                }
+
+                if (invitation is not null)
+                {
+                    await _auditLog.LogAsync(user.Id, "ACCEPT_STAFF_INVITATION", $"StaffInvitation/{invitation.Id}",
+                        "Staff account created with an Admin invitation. The role is granted after email confirmation and two-factor authentication.",
+                        HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown");
+                }
+                else if (recordCode is null && RequireHospitalRecordCode)
+                {
+                    _logger.LogWarning("First Admin account created without a hospital record code while AdminBootstrap is enabled.");
+                    await _auditLog.LogAsync(user.Id, "FIRST_ADMIN_SIGNUP", "AdminBootstrap",
+                        "Account created without a hospital record code during first-Admin setup.",
+                        HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown");
+                }
+
+                var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+                var callbackUrl = _links.Page(HttpContext, "/Account/ConfirmEmail",
+                    new { area = "Identity", userId = user.Id, code, returnUrl });
+
+                _emailSender.Stage(_db, messageId, user.Id, Input.Email, "Confirm your email",
+                    $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                await _db.SaveChangesAsync(HttpContext.RequestAborted);
+
+                try
+                {
+                    await transaction.CommitAsync(CancellationToken.None);
+                    committed = true;
+                }
+                catch (Exception error)
+                {
+                    // A lost acknowledgement can follow a successful commit. Preserve files until an
+                    // independent SQL read proves whether this exact transaction's message exists.
+                    preserveFiles = true;
+                    acknowledgementLost = true;
+                    _logger.LogWarning("Signup commit acknowledgement unavailable ({ErrorType}).", error.GetType().Name);
+                    await transaction.DisposeAsync();
+                    transaction = null;
+                    var outcome = await VerifyRegistrationCommitAsync(messageId, user.Id);
+                    committed = outcome == true;
+                    preserveFiles = outcome is null;
+                    if (!committed)
+                    {
+                        ModelState.AddModelError(string.Empty, preserveFiles ? UncertainSignupMessage : FailedSignupMessage);
+                        return Page();
+                    }
+                }
+            }
+            catch (OperationCanceledException) when (HttpContext.RequestAborted.IsCancellationRequested) { throw; }
+            catch (Exception error)
+            {
+                _logger.LogError("Signup could not be completed ({ErrorType}).", error.GetType().Name);
+                ModelState.AddModelError(string.Empty, preserveFiles ? UncertainSignupMessage : FailedSignupMessage);
+                return Page();
+            }
+            finally
+            {
+                if (transaction is not null)
+                {
+                    try
+                    {
+                        if (!committed) await transaction.RollbackAsync(CancellationToken.None);
+                    }
+                    catch (Exception error) { _logger.LogWarning("Signup rollback unavailable ({ErrorType}).", error.GetType().Name); }
+                    finally
+                    {
+                        try { await transaction.DisposeAsync(); }
+                        catch (Exception error) { _logger.LogWarning("Signup transaction disposal unavailable ({ErrorType}).", error.GetType().Name); }
+                    }
+                }
+                if (!committed)
+                {
+                    _db.ChangeTracker.Clear();
+                    if (!preserveFiles && document is not null)
+                        await DeleteRegistrationFilesAsync(user.Id, document.FrontPhotoFileName, document.BackPhotoFileName);
+                }
+            }
+
+            _logger.LogInformation("User created a new account with password.");
+            if (_userManager.Options.SignIn.RequireConfirmedAccount)
+                return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl });
+            if (acknowledgementLost) return RedirectToPage("Login", new { returnUrl });
+            await _signInManager.SignInAsync(user, isPersistent: false);
+            return LocalRedirect(returnUrl);
+        }
+
+        private const string FailedSignupMessage = "We could not complete signup. Please try again and upload any identity photos again.";
+        private const string UncertainSignupMessage = "We could not confirm whether signup completed. Try signing in, or use Resend confirmation before trying again.";
+
+        private async Task<bool?> VerifyRegistrationCommitAsync(Guid messageId, string userId)
+        {
+            try
+            {
+                await using var strategyScope = _scopes.CreateAsyncScope();
+                var strategyDb = strategyScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var committed = false;
+                await SqlReadRetry.RunIdempotentAsync(strategyDb, async () =>
+                {
+                    await using var scope = _scopes.CreateAsyncScope();
+                    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    // Lock the stable marker key even when READ_COMMITTED_SNAPSHOT is enabled.
+                    // An unresolved insert must finish before absence can authorize file cleanup.
+                    await using var verification = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+                    var found = await db.AccountEmails.AsNoTracking().AnyAsync(m => m.Id == messageId && m.UserId == userId);
+                    await verification.CommitAsync();
+                    committed = found;
+                });
+                return committed;
+            }
+            catch (Exception error)
+            {
+                _logger.LogWarning("Signup commit could not be verified ({ErrorType}).", error.GetType().Name);
+                return null;
+            }
+        }
+
+        private async Task DeleteRegistrationFilesAsync(string userId, params string[] fileNames)
+        {
+            foreach (var fileName in fileNames.Where(name => !string.IsNullOrEmpty(name)).Distinct())
+            {
+                try { await _documentStorage.DeleteStoredAsync(userId, fileName, CancellationToken.None); }
+                catch (Exception error) { _logger.LogWarning("Signup identity photo cleanup unavailable ({ErrorType}).", error.GetType().Name); }
+            }
+        }
+
+        private async Task<PatientIdDocument> SavePatientIdDocumentAsync(ApplicationUser user)
         {
             string frontFileName = null;
             string backFileName = null;
@@ -527,12 +623,12 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                 };
 
                 _db.PatientIdDocuments.Add(doc);
-                await _db.SaveChangesAsync();
+                await _db.SaveChangesAsync(HttpContext.RequestAborted);
+                return doc;
             }
             catch
             {
-                await _documentStorage.DeleteStoredAsync(user.Id, frontFileName, CancellationToken.None);
-                await _documentStorage.DeleteStoredAsync(user.Id, backFileName, CancellationToken.None);
+                await DeleteRegistrationFilesAsync(user.Id, frontFileName, backFileName);
                 throw;
             }
         }
@@ -551,47 +647,25 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                 .SingleOrDefaultAsync(HttpContext.RequestAborted);
         }
 
-        // Marks the code used and links the record in one serializable transaction. Conditional
+        // Marks the code used and links the record inside the signup transaction. Conditional
         // updates make a concurrent second redemption or a revoke in between fail closed.
         private async Task<bool> RedeemCodeAsync(PatientRegistrationCode code, string userId)
         {
             var now = DateTime.UtcNow;
             try
             {
-                await using var transaction = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, CancellationToken.None);
                 var redeemed = await _db.PatientRegistrationCodes
                     .Where(c => c.Id == code.Id && c.RedeemedAtUtc == null && c.RevokedAtUtc == null && c.ExpiresAtUtc > now)
                     .ExecuteUpdateAsync(s => s.SetProperty(c => c.RedeemedAtUtc, now).SetProperty(c => c.RedeemedByUserId, userId), CancellationToken.None);
                 var linked = redeemed == 1 && await _db.PatientRecords
                     .Where(p => p.Id == code.PatientRecordId && p.PortalUserId == null)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.PortalUserId, userId), CancellationToken.None) == 1;
-                if (!linked)
-                {
-                    await transaction.RollbackAsync(CancellationToken.None);
-                    return false;
-                }
-                await transaction.CommitAsync(CancellationToken.None);
-                return true;
+                return linked;
             }
             catch (Exception ex) when (ex is DbUpdateException or InvalidOperationException or Microsoft.Data.SqlClient.SqlException)
             {
                 _logger.LogError(ex, "Hospital record code {CodeId} could not be redeemed", code.Id);
                 return false;
-            }
-        }
-
-        // Signup failed after redemption: return the code so the patient can try again. Deleting the
-        // account clears the record link through the existing SetNull relationship.
-        private async Task ReleaseCodeAsync(int codeId, string userId)
-        {
-            try
-            {
-                await _db.PatientRegistrationCodes.Where(c => c.Id == codeId && c.RedeemedByUserId == userId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(c => c.RedeemedAtUtc, (DateTime?)null).SetProperty(c => c.RedeemedByUserId, (string)null), CancellationToken.None);
-            }
-            catch (Exception ex) when (ex is DbUpdateException or Microsoft.Data.SqlClient.SqlException)
-            {
-                _logger.LogError(ex, "Hospital record code {CodeId} could not be released", codeId);
             }
         }
 
@@ -622,19 +696,6 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             {
                 _logger.LogError(ex, "Staff invitation {InvitationId} could not be accepted", invitationId);
                 return false;
-            }
-        }
-
-        private async Task ReleaseInvitationAsync(int invitationId, string userId)
-        {
-            try
-            {
-                await _db.StaffInvitations.Where(i => i.Id == invitationId && i.AcceptedByUserId == userId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(i => i.AcceptedAtUtc, (DateTime?)null).SetProperty(i => i.AcceptedByUserId, (string)null), CancellationToken.None);
-            }
-            catch (Exception ex) when (ex is DbUpdateException or Microsoft.Data.SqlClient.SqlException)
-            {
-                _logger.LogError(ex, "Staff invitation {InvitationId} could not be released", invitationId);
             }
         }
 

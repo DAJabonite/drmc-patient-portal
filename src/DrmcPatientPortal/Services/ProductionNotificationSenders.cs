@@ -46,7 +46,7 @@ public sealed class SmtpEmailSender(IOptions<EmailDeliveryOptions> options) : IE
 
 public sealed class HttpSmsSender(HttpClient client, IOptions<SmsDeliveryOptions> options) : ISmsSender
 {
-    public async Task SendSmsAsync(string number, string message)
+    public async Task SendSmsAsync(string number, string message, CancellationToken token = default)
     {
         var settings = options.Value;
         using var request = new HttpRequestMessage(HttpMethod.Post, settings.Endpoint)
@@ -54,7 +54,7 @@ public sealed class HttpSmsSender(HttpClient client, IOptions<SmsDeliveryOptions
             Content = JsonContent.Create(new { to = number, message, senderId = settings.SenderId })
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", settings.ApiKey);
-        using var response = await client.SendAsync(request);
+        using var response = await client.SendAsync(request, token);
         response.EnsureSuccessStatusCode();
     }
 }

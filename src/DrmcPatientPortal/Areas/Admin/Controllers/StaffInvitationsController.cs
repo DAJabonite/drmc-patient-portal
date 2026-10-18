@@ -7,7 +7,6 @@ using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -19,8 +18,8 @@ namespace DrmcPatientPortal.Areas.Admin.Controllers;
 // it never grants Admin. The role is added after the new account confirms its email and enables
 // two-factor authentication.
 [Area("Admin")]
-public sealed class StaffInvitationsController(ApplicationDbContext db, AdminWrites writes, IQrCodeService qr, IEmailSender email,
-    ILookupNormalizer normalizer, IOptions<StaffInvitationOptions> options, ILogger<StaffInvitationsController> logger, AccountLinks links) : Controller
+public sealed class StaffInvitationsController(ApplicationDbContext db, AdminWrites writes, IQrCodeService qr, IOutboundNotificationQueue queue,
+    ILookupNormalizer normalizer, IOptions<StaffInvitationOptions> options, AccountLinks links, TimeProvider clock) : Controller
 {
     private const string Entity = "StaffInvitations";
 
@@ -34,7 +33,7 @@ public sealed class StaffInvitationsController(ApplicationDbContext db, AdminWri
         var total = await SqlReadRetry.RunAsync(db, () => query.CountAsync(cancellationToken), cancellationToken);
         page = Math.Clamp(page, 1, Math.Max(1, (total + 24) / 25));
         var invitations = await SqlReadRetry.RunAsync(db, () => query.OrderByDescending(i => i.Id).Skip((page - 1) * 25).Take(25).ToListAsync(cancellationToken), cancellationToken);
-        var now = DateTime.UtcNow;
+        var now = clock.GetUtcNow().UtcDateTime;
         var rows = invitations.Select(i => new StaffInvitationRow(i.Id, i.Email, i.Role, i.CodeHint, i.InvitedByEmail, Local(i.CreatedAtUtc), Local(i.ExpiresAtUtc),
             i.AcceptedAtUtc is { } a ? Local(a) : null, i.StatusAt(now), Convert.ToBase64String(i.RowVersion))).ToArray();
         return View(new StaffInvitationList(rows, search, page, total));
@@ -62,10 +61,13 @@ public sealed class StaffInvitationsController(ApplicationDbContext db, AdminWri
         }
 
         string? code = null;
+        string? signupUrl = null;
         DateTime expires = default;
+        var registerUrl = links.Page(HttpContext, "/Account/Register", new { area = "Identity" });
+        var messageId = Guid.NewGuid();
         var result = await writes.RunAsync(async database =>
         {
-            var now = DateTime.UtcNow;
+            var now = clock.GetUtcNow().UtcDateTime;
             // One open invitation per email: a new invitation replaces any earlier unused one.
             var open = await database.StaffInvitations.Where(i => i.NormalizedEmail == normalized && i.AcceptedAtUtc == null &&
                 i.RevokedAtUtc == null && i.ExpiresAtUtc > now).ToListAsync(cancellationToken);
@@ -80,13 +82,22 @@ public sealed class StaffInvitationsController(ApplicationDbContext db, AdminWri
             };
             database.StaffInvitations.Add(entity);
             await database.SaveChangesAsync(cancellationToken);
+            await queue.CancelInvitationsAsync(database, open.Select(i => i.Id).ToArray(), cancellationToken);
+            code = HospitalRecordCodes.Format(canonical);
+            expires = entity.ExpiresAtUtc;
+            signupUrl = StaffInvitationCodes.SignupUrl(registerUrl, code);
+            queue.Stage(database, messageId, OutboundNotificationChannel.Email,
+                new OutboundNotificationPayload(input.Email, "Your DRMC Patient Portal staff invitation",
+                    $"You have been invited to create a DRMC Patient Portal staff account ({HtmlEncoder.Default.Encode(StaffRoles.Label(input.Role))}). " +
+                    $"<a href='{HtmlEncoder.Default.Encode(signupUrl)}'>Create your account</a> using this email address. " +
+                    $"Your invitation code is {code}. It works once and expires on {Local(expires).ToString("MMMM d, yyyy h:mm tt", CultureInfo.InvariantCulture)} (Philippine time). " +
+                    "Your staff role is added after you confirm your email and turn on two-factor authentication."),
+                new DateTimeOffset(DateTime.SpecifyKind(expires, DateTimeKind.Utc)), entity.Id);
             foreach (var earlier in open)
                 await AdminAudit.AddAsync(database, User, "Revoke", Entity, earlier.Id.ToString(CultureInfo.InvariantCulture),
                     fields: [nameof(StaffInvitation.RevokedAtUtc)], cancellationToken: cancellationToken);
             await AdminAudit.AddAsync(database, User, "Invite", Entity, entity.Id.ToString(CultureInfo.InvariantCulture),
                 fields: [nameof(StaffInvitation.Email), nameof(StaffInvitation.Role), nameof(StaffInvitation.ExpiresAtUtc)], cancellationToken: cancellationToken);
-            code = HospitalRecordCodes.Format(canonical);
-            expires = entity.ExpiresAtUtc;
             return WriteResult.Success;
         }, cancellationToken);
         if (!result.Succeeded)
@@ -97,24 +108,8 @@ public sealed class StaffInvitationsController(ApplicationDbContext db, AdminWri
             return View(input);
         }
 
-        var registerUrl = links.Page(HttpContext, "/Account/Register", new { area = "Identity" });
-        var signupUrl = StaffInvitationCodes.SignupUrl(registerUrl, code!);
-        var emailed = true;
-        try
-        {
-            await email.SendEmailAsync(input.Email, "Your DRMC Patient Portal staff invitation",
-                $"You have been invited to create a DRMC Patient Portal staff account ({HtmlEncoder.Default.Encode(StaffRoles.Label(input.Role))}). " +
-                $"<a href='{HtmlEncoder.Default.Encode(signupUrl)}'>Create your account</a> using this email address. " +
-                $"Your invitation code is {code}. It works once and expires on {Local(expires).ToString("MMMM d, yyyy h:mm tt", CultureInfo.InvariantCulture)} (Philippine time). " +
-                "Your staff role is added after you confirm your email and turn on two-factor authentication.");
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            emailed = false;
-            logger.LogWarning(ex, "Staff invitation email could not be sent");
-        }
         Response.Headers.CacheControl = "no-store";
-        return View("Invited", new StaffInvitationSlip(input.Email, input.Role, code!, signupUrl, qr.GenerateSvgQrCode(signupUrl), Local(expires), emailed));
+        return View("Invited", new StaffInvitationSlip(input.Email, input.Role, code!, signupUrl!, qr.GenerateSvgQrCode(signupUrl!), Local(expires), EmailQueued: true));
     }
 
     [HttpPost]
@@ -126,11 +121,12 @@ public sealed class StaffInvitationsController(ApplicationDbContext db, AdminWri
             var invitation = await database.StaffInvitations.SingleOrDefaultAsync(i => i.Id == id, cancellationToken);
             if (invitation is null) return WriteResult.Invalid("That invitation no longer exists.");
             if (!version.SequenceEqual(invitation.RowVersion)) return WriteResult.Stale;
-            if (invitation.StatusAt(DateTime.UtcNow) is not (StaffInvitationStatus.Invited or StaffInvitationStatus.AwaitingSetup))
+            if (invitation.StatusAt(clock.GetUtcNow().UtcDateTime) is not (StaffInvitationStatus.Invited or StaffInvitationStatus.AwaitingSetup))
                 return WriteResult.Invalid("Only an unused invitation or one awaiting setup can be revoked.");
             database.Entry(invitation).Property(i => i.RowVersion).OriginalValue = version;
-            invitation.RevokedAtUtc = DateTime.UtcNow;
+            invitation.RevokedAtUtc = clock.GetUtcNow().UtcDateTime;
             await database.SaveChangesAsync(cancellationToken);
+            await queue.CancelInvitationsAsync(database, [id], cancellationToken);
             await AdminAudit.AddAsync(database, User, "Revoke", Entity, id.ToString(CultureInfo.InvariantCulture),
                 fields: [nameof(StaffInvitation.RevokedAtUtc)], cancellationToken: cancellationToken);
             return WriteResult.Success;

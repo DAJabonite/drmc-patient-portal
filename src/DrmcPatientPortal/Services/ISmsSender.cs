@@ -2,5 +2,5 @@ namespace DrmcPatientPortal.Services;
 
 public interface ISmsSender
 {
-    Task SendSmsAsync(string number, string message);
+    Task SendSmsAsync(string number, string message, CancellationToken token = default);
 }

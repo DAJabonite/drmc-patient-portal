@@ -24,9 +24,7 @@ public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataPro
     TimeProvider clock, ILogger<RedStarReminderService> logger)
 {
     private const string ProtectionPurpose = "DRMC.PrivateAppointmentReminder.v1";
-    private readonly string owner = Guid.NewGuid().ToString("N");
     private int MaximumAttempts => Math.Clamp(options.Value.MaximumAttempts, 1, 20);
-    private static readonly TimeSpan[] Backoff = [TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(30)];
     private sealed record Payload(string Recipient, DateTime DueDate);
     private sealed record Candidate(int Id, int Revision, DateTime DueDate, string UserId, bool EmailOptIn);
 
@@ -160,11 +158,18 @@ public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataPro
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var now = clock.GetUtcNow();
         await CancelObsoleteAsync(db, now, token);
-        await db.RedStarReminders.Where(r => r.Channel == RedStarReminderChannel.Email && r.Attempts >= MaximumAttempts &&
+        var interrupted = await db.RedStarReminders.AsNoTracking().Where(r => r.Channel == RedStarReminderChannel.Email && r.Attempts >= MaximumAttempts &&
                 (r.State == RedStarDeliveryState.Pending || r.State == RedStarDeliveryState.Sending && r.LeaseExpiresUtc <= now))
-            .ExecuteUpdateAsync(set => set.SetProperty(r => r.State, RedStarDeliveryState.Failed)
-                .SetProperty(r => r.ProtectedPayload, (byte[]?)null).SetProperty(r => r.CompletedUtc, (DateTimeOffset?)now)
-                .SetProperty(r => r.LeaseOwner, (string?)null).SetProperty(r => r.LeaseExpiresUtc, (DateTimeOffset?)null), token);
+            .Select(r => new { r.Id, r.Attempts }).ToListAsync(token);
+        foreach (var exhausted in interrupted)
+        {
+            var changed = await db.RedStarReminders.Where(r => r.Id == exhausted.Id && r.Attempts >= MaximumAttempts &&
+                    (r.State == RedStarDeliveryState.Pending || r.State == RedStarDeliveryState.Sending && r.LeaseExpiresUtc <= now))
+                .ExecuteUpdateAsync(set => set.SetProperty(r => r.State, RedStarDeliveryState.Failed)
+                    .SetProperty(r => r.ProtectedPayload, (byte[]?)null).SetProperty(r => r.CompletedUtc, (DateTimeOffset?)now)
+                    .SetProperty(r => r.LeaseOwner, (string?)null).SetProperty(r => r.LeaseExpiresUtc, (DateTimeOffset?)null), token);
+            if (changed == 1) LogTerminalFailure(exhausted.Id, exhausted.Attempts, "RetryLimitReached");
+        }
         var ids = await SqlReadRetry.RunAsync(db, () => db.RedStarReminders.AsNoTracking()
             .Where(r => r.Channel == RedStarReminderChannel.Email && r.Attempts < MaximumAttempts &&
                 (r.State == RedStarDeliveryState.Pending && r.NextAttemptUtc <= now ||
@@ -173,6 +178,8 @@ public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataPro
         foreach (var id in ids)
         {
             now = clock.GetUtcNow();
+            // Fence each acquisition, including overlapping attempts from this service instance.
+            var owner = Guid.NewGuid().ToString("N");
             var claimed = await db.RedStarReminders.Where(r => r.Id == id && r.Attempts < MaximumAttempts &&
                     (r.State == RedStarDeliveryState.Pending && r.NextAttemptUtc <= now ||
                      r.State == RedStarDeliveryState.Sending && r.LeaseExpiresUtc <= now))
@@ -198,7 +205,7 @@ public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataPro
                     current.DueDate.Date != payload.DueDate.Date ||
                     LatestStage(current.DueDate, ClinicalClock.WallTime(clock.GetUtcNow()).Date) != reminder.Stage)
                 {
-                    await CompleteAsync(db, id, RedStarDeliveryState.Cancelled, token);
+                    await CompleteAsync(db, id, owner, RedStarDeliveryState.Cancelled, token);
                     continue;
                 }
                 var sender = scope.ServiceProvider.GetRequiredService<IEmailSender>();
@@ -206,39 +213,49 @@ public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataPro
                 {
                     // The shared development transport logs full addresses/bodies. Never hand it private notifications.
                     logger.LogInformation("External appointment reminder delivery is unavailable with the development mail transport.");
-                    await CompleteAsync(db, id, RedStarDeliveryState.Failed, token);
+                    if (await CompleteAsync(db, id, owner, RedStarDeliveryState.Failed, token))
+                        LogTerminalFailure(id, reminder.Attempts, "DevelopmentTransportUnavailable");
                     continue;
                 }
                 var content = EmailContent(payload.DueDate, PortalUrl());
-                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
-                timeout.CancelAfter(TimeSpan.FromSeconds(30));
+                using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(30), clock);
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token, deadline.Token);
                 // A process can stop after SMTP accepted a message but before the lease is completed.
                 // Reclaiming that lease gives at-least-once delivery, not an exactly-once SMTP guarantee.
                 if (sender is SmtpEmailSender smtp)
                     await smtp.SendEmailAsync(payload.Recipient, content.Subject, content.Body, timeout.Token);
                 else
                     await sender.SendEmailAsync(payload.Recipient, content.Subject, content.Body).WaitAsync(timeout.Token);
-                await CompleteAsync(db, id, RedStarDeliveryState.Delivered, token);
+                await CompleteAsync(db, id, owner, RedStarDeliveryState.Delivered, token);
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
             catch (Exception error)
             {
-                // Provider exception text can contain an address or message; log only the exception type.
-                logger.LogWarning("Appointment notification delivery failed ({ErrorType}), attempt {Attempt}.", error.GetType().Name, reminder.Attempts);
                 var failed = reminder.Attempts >= MaximumAttempts;
                 var finished = clock.GetUtcNow();
-                await db.RedStarReminders.Where(r => r.Id == id && r.State == RedStarDeliveryState.Sending &&
+                var changed = await db.RedStarReminders.Where(r => r.Id == id && r.State == RedStarDeliveryState.Sending &&
                         r.LeaseOwner == owner && r.LeaseExpiresUtc > finished)
                     .ExecuteUpdateAsync(set => set.SetProperty(r => r.State, failed ? RedStarDeliveryState.Failed : RedStarDeliveryState.Pending)
-                        .SetProperty(r => r.NextAttemptUtc, finished.Add(Backoff[Math.Min(reminder.Attempts - 1, Backoff.Length - 1)]))
+                        .SetProperty(r => r.NextAttemptUtc, finished.Add(NotificationRetry.Delay(reminder.Attempts)))
                         .SetProperty(r => r.ProtectedPayload, r => failed ? null : r.ProtectedPayload)
                         .SetProperty(r => r.CompletedUtc, failed ? (DateTimeOffset?)finished : null)
                         .SetProperty(r => r.LeaseOwner, (string?)null).SetProperty(r => r.LeaseExpiresUtc, (DateTimeOffset?)null), token);
+                if (changed == 1)
+                {
+                    // Provider text can contain an address or message. Never log it or the exception object.
+                    if (failed) LogTerminalFailure(id, reminder.Attempts, error.GetType().Name);
+                    else logger.LogWarning("Notification {MessageId} channel {Channel} attempt {AttemptCount} failed ({ErrorType}); retry scheduled.",
+                        id, RedStarReminderChannel.Email, reminder.Attempts, error.GetType().Name);
+                }
             }
         }
     }
 
-    private async Task CompleteAsync(ApplicationDbContext db, Guid id, RedStarDeliveryState state, CancellationToken token)
+    private void LogTerminalFailure(Guid id, int attempts, string errorType) =>
+        logger.LogError("Notification {MessageId} channel {Channel} permanently failed after {AttemptCount} attempts ({ErrorType}).",
+            id, RedStarReminderChannel.Email, attempts, errorType);
+
+    private async Task<bool> CompleteAsync(ApplicationDbContext db, Guid id, string owner, RedStarDeliveryState state, CancellationToken token)
     {
         var now = clock.GetUtcNow();
         await using var transaction = await db.Database.BeginTransactionAsync(token);
@@ -256,6 +273,7 @@ public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataPro
                 await db.SaveChangesAsync(token);
             }
             await transaction.CommitAsync(token);
+            return changed == 1;
         }
         finally { db.ChangeTracker.Clear(); }
     }
