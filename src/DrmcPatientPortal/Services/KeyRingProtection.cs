@@ -8,6 +8,9 @@ namespace DrmcPatientPortal.Services;
 
 public static class KeyRingProtection
 {
+    public const string PatientDocumentPurpose = "DRMC.PatientDocuments.File.v2";
+    public const string PatientStagingTokenPurpose = "DRMC.PatientDocuments.StagingToken.v1";
+    public const string LabReportPurpose = "DRMC.LabReports.v1";
     public const string RedStarPhiPurpose = "DrmcPatientPortal.RedStar.PhiProtection.v1";
     public static async Task ConfigureAsync(IDataProtectionBuilder builder, string path, bool protectKeysWithDpapi)
     {

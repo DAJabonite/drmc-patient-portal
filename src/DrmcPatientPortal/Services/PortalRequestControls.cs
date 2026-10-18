@@ -94,22 +94,29 @@ public sealed class PortalRequestControls(RequestDelegate next)
         if (ipLease is { IsAcquired: false }) { await Rejected(context, kind, ipLease); return; }
         var registrationPost = HttpMethods.IsPost(context.Request.Method) &&
             (context.Request.Path.Value ?? "").TrimEnd('/').Equals("/Identity/Account/Register", StringComparison.OrdinalIgnoreCase);
-        using var scanLease = kind == PortalRequestKind.Scan ? limiter.ScanConcurrency.AttemptAcquire() : null;
+        var action = context.GetEndpoint()?.Metadata.GetMetadata<Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor>();
+        var labUpload = HttpMethods.IsPost(context.Request.Method) && action?.ControllerName == "LabResults" &&
+            action.RouteValues.TryGetValue("area", out var area) && area == "Admin" && context.Request.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) == true;
+        var sensitiveMultipart = (registrationPost && context.Request.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) == true) || labUpload;
+        using var scanLease = kind == PortalRequestKind.Scan || sensitiveMultipart ? limiter.ScanConcurrency.AttemptAcquire() : null;
         if (scanLease is { IsAcquired: false }) { await Rejected(context, kind, scanLease); return; }
         var userId = context.User.Identity?.IsAuthenticated == true ? context.User.FindFirstValue(ClaimTypes.NameIdentifier) : null;
         using var scanUserLease = kind == PortalRequestKind.Scan && userId is not null ? limiter.AcquireAccount(PortalRequestKind.Scan, userId, address) : null;
         if (scanUserLease is { IsAcquired: false }) { await Rejected(context, kind, scanUserLease); return; }
-        if (registrationPost)
+        if (registrationPost || labUpload)
         {
-            if (context.Request.ContentLength > IdImageValidation.MaximumRequestBytes)
-            { await Invalid(context, kind, "The upload request must be at most 12 MB.", 413); return; }
+            var maximumRequestBytes = registrationPost ? IdImageValidation.MaximumRequestBytes :
+                LabReportStorage.MaximumBytes + (action!.ActionName == "UploadReport" ? 65536 : 1024 * 1024);
+            if (context.Request.ContentLength > maximumRequestBytes)
+            { await Invalid(context, kind, "The upload request exceeds its size limit.", 413); return; }
             var sizeFeature = context.Features.Get<IHttpMaxRequestBodySizeFeature>();
-            if (sizeFeature is { IsReadOnly: false }) sizeFeature.MaxRequestBodySize = IdImageValidation.MaximumRequestBytes;
-            context.Request.Body = new LimitedUploadStream(context.Request.Body);
+            if (sizeFeature is { IsReadOnly: false }) sizeFeature.MaxRequestBodySize = maximumRequestBytes;
+            context.Request.Body = new LimitedUploadStream(context.Request.Body, maximumRequestBytes);
             context.Features.Set<IFormFeature>(new FormFeature(context.Request, new FormOptions
             {
-                MultipartBodyLengthLimit = IdImageValidation.MaximumBytes,
-                BufferBodyLengthLimit = IdImageValidation.MaximumRequestBytes
+                MultipartBodyLengthLimit = registrationPost ? IdImageValidation.MaximumBytes : maximumRequestBytes,
+                BufferBodyLengthLimit = maximumRequestBytes,
+                MemoryBufferThreshold = checked((int)maximumRequestBytes + 1)
             }));
         }
         IFormCollection? form = null;
@@ -120,11 +127,12 @@ public sealed class PortalRequestControls(RequestDelegate next)
         catch (InvalidDataException)
         {
             if (registrationPost) await Invalid(context, kind, "The upload form is invalid. Use ID photos of at most 5 MB each.");
+            else if (labUpload) await Invalid(context, kind, "Choose a PDF file no larger than 10 MiB.");
             else await Invalid(context, kind);
             return;
         }
         catch (BadHttpRequestException error) when (error.StatusCode is 400 or 413)
-        { await Invalid(context, kind, "The upload request is invalid or too large. Use ID photos of at most 5 MB each.", error.StatusCode); return; }
+        { await Invalid(context, kind, "The upload request is invalid or too large.", error.StatusCode); return; }
         if (context.Request.Query.Any(pair => pair.Value.Any(value => value?.Contains('\0') == true)) ||
             form?.Any(pair => pair.Value.Any(value => value?.Contains('\0') == true)) == true)
         {
@@ -147,8 +155,6 @@ public sealed class PortalRequestControls(RequestDelegate next)
         if (uploadIpLease is { IsAcquired: false }) { await Rejected(context, kind, uploadIpLease); return; }
         using var uploadUserLease = directUpload && userId is not null ? limiter.AcquireAccount(PortalRequestKind.Scan, userId, address) : null;
         if (uploadUserLease is { IsAcquired: false }) { await Rejected(context, kind, uploadUserLease); return; }
-        using var uploadConcurrency = directUpload ? limiter.ScanConcurrency.AttemptAcquire() : null;
-        if (uploadConcurrency is { IsAcquired: false }) { await Rejected(context, kind, uploadConcurrency); return; }
         await next(context);
     }
 
@@ -162,15 +168,15 @@ public sealed class PortalRequestControls(RequestDelegate next)
 
     // The explicit counter also enforces the limit for chunked requests and TestServer,
     // where a server max-body-size feature may not be available.
-    private sealed class LimitedUploadStream(Stream inner) : Stream
+    private sealed class LimitedUploadStream(Stream inner, long maximumBytes) : Stream
     {
         private long read;
-        private int Allowed(int count) => (int)Math.Min(count, IdImageValidation.MaximumRequestBytes - read + 1);
+        private int Allowed(int count) => (int)Math.Min(count, maximumBytes - read + 1);
         private int Count(int count)
         {
             read += count;
-            if (read > IdImageValidation.MaximumRequestBytes)
-                throw new BadHttpRequestException("The upload request exceeds 12 MB.", 413);
+            if (read > maximumBytes)
+                throw new BadHttpRequestException("The upload request exceeds its size limit.", 413);
             return count;
         }
         public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));

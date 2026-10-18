@@ -4,6 +4,9 @@ using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using DrmcPatientPortal.Areas.Admin.Security;
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 
 namespace DrmcPatientPortal.Areas.Admin.Controllers;
@@ -11,7 +14,7 @@ namespace DrmcPatientPortal.Areas.Admin.Controllers;
 [RequestSizeLimit(LabReportStorage.MaximumBytes + 1024 * 1024)]
 [RequestFormLimits(MultipartBodyLengthLimit = LabReportStorage.MaximumBytes + 1024 * 1024)]
 public sealed class LabResultsController(ApplicationDbContext db, AdminWrites writes, ILabReportStorage storage,
-    ILogger<LabResultsController> logger) : AdminCrudController<LabResult, LabInput>(db, writes, new LabEditor())
+    ILogger<LabResultsController> logger, IAuditLogService auditLog) : AdminCrudController<LabResult, LabInput>(db, writes, new LabEditor())
 {
     private string? previousReport;
 
@@ -116,6 +119,7 @@ public sealed class LabResultsController(ApplicationDbContext db, AdminWrites wr
     }
 
     [HttpGet]
+    [Authorize(Policy = AdminPolicies.Lab)]
     public async Task<IActionResult> PreviewReport(int id, bool download, CancellationToken token)
     {
         var lab = await Database.LabResults.AsNoTracking().SingleOrDefaultAsync(l => l.Id == id, token);
@@ -125,9 +129,17 @@ public sealed class LabResultsController(ApplicationDbContext db, AdminWrites wr
         Response.Headers["X-Content-Type-Options"] = "nosniff";
         byte[] bytes;
         try { bytes = await storage.ReadAsync(id, lab.ReportFileName, token); }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
+        catch (FileNotFoundException) { return NotFound(); }
+        catch (DirectoryNotFoundException) { return NotFound(); }
+        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
         { return StatusCode(503); }
-        await AdminAudit.ViewAsync(Database, User, "LabResults", [lab.PatientRecordId], download ? "Download PDF" : "Preview PDF", token);
-        return download ? File(bytes, "application/pdf", $"lab-report-{id}.pdf") : File(bytes, "application/pdf");
+        try
+        {
+            await AdminAudit.ViewAsync(Database, User, "LabResults", [lab.PatientRecordId], download ? "Download PDF" : "Preview PDF", token);
+            await auditLog.LogAsync(User.FindFirstValue(ClaimTypes.NameIdentifier), download ? "DOWNLOAD_LAB_PDF" : "VIEW_LAB_PDF",
+                $"LabResult/{id}", "Staff accessed laboratory report PDF.", HttpContext.Connection.RemoteIpAddress?.ToString() ?? "");
+        }
+        catch (AuditLogPersistenceException) { return StatusCode(503); }
+        return new PrivateFileResult(bytes, "application/pdf", $"lab-report-{id}.pdf", download);
     }
 }
