@@ -29,7 +29,7 @@ public sealed class OcrRuntime : IHostedService, IDisposable
     private readonly ILogger<OcrRuntime> logger;
     private readonly SemaphoreSlim gate;
     private readonly CancellationTokenSource stopping = new();
-    private readonly string tessData, nativePath, scratchRoot;
+    private readonly string tessData, nativePath;
     private int queued;
     private int disposed;
     private readonly object lifecycle = new();
@@ -49,7 +49,6 @@ public sealed class OcrRuntime : IHostedService, IDisposable
                 ? Path.Combine(AppContext.BaseDirectory, "tessdata") : Path.Combine(environment.ContentRootPath, "tessdata");
         tessData = Resolve(data, environment.ContentRootPath);
         nativePath = string.IsNullOrWhiteSpace(options.NativeLibraryPath) ? "" : Resolve(options.NativeLibraryPath, environment.ContentRootPath);
-        scratchRoot = Path.Combine(environment.ContentRootPath, "App_Data", "OcrScratch");
     }
 
     private static string Resolve(string path, string root) => Path.GetFullPath(Path.IsPathRooted(path) ? path : Path.Combine(root, path));
@@ -76,7 +75,6 @@ public sealed class OcrRuntime : IHostedService, IDisposable
     {
         using var caller = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, stopping.Token);
         await EnterAsync(caller.Token);
-        string? directory = null;
         try
         {
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(caller.Token);
@@ -84,25 +82,19 @@ public sealed class OcrRuntime : IHostedService, IDisposable
             var token = deadline.Token;
             try
             {
-                directory = Path.Combine(scratchRoot, Guid.NewGuid().ToString("N"));
-                if (OperatingSystem.IsWindows()) Directory.CreateDirectory(directory);
-                else Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-                var frontFile = await PrepareAsync(front, Path.Combine(directory, "front"), maximumBytes, token);
-                var backFile = back is null ? null : await PrepareAsync(back, Path.Combine(directory, "back"), maximumBytes, token);
+                var frontFile = await PrepareAsync(front, maximumBytes, token);
+                var backFile = back is null ? null : await PrepareAsync(back, maximumBytes, token);
                 var response = await runner.RunAsync(new(tessData, nativePath, recognize, frontFile, backFile, idType), token);
                 token.ThrowIfCancellationRequested();
                 if (response.Status == "invalid") throw new InvalidDataException(IdImageValidation.InvalidImageMessage);
                 if (response.Status != "ok") throw new OcrDependencyUnavailableException("ID scanning is temporarily unavailable. Please try again later.");
-                var bytes = recognize ? null : await File.ReadAllBytesAsync(frontFile.Path, token);
+                var bytes = recognize ? null : frontFile.Bytes;
                 return new(response, frontFile.Info.ContentType, bytes);
             }
             catch (OperationCanceledException) when (!caller.IsCancellationRequested) { throw new OcrTimeoutException(); }
         }
         finally
         {
-            try { if (directory is not null && Directory.Exists(directory)) Directory.Delete(directory, recursive: true); }
-            catch (IOException) { logger.LogWarning("Could not delete an OCR scratch directory."); }
-            catch (UnauthorizedAccessException) { logger.LogWarning("Could not delete an OCR scratch directory."); }
             gate.Release();
         }
     }
@@ -119,12 +111,12 @@ public sealed class OcrRuntime : IHostedService, IDisposable
         finally { Interlocked.Decrement(ref queued); }
     }
 
-    private static async Task<OcrWorkerImage> PrepareAsync(Stream input, string path, int maximumBytes, CancellationToken token)
+    private static async Task<OcrWorkerImage> PrepareAsync(Stream input, int maximumBytes, CancellationToken token)
     {
         var limit = Math.Min(maximumBytes, IdImageValidation.MaximumBytes);
         if (limit <= 0 || (input.CanSeek && (input.Length - input.Position <= 0 || input.Length - input.Position > limit)))
             throw new InvalidDataException("Each ID photo must be between 1 byte and 5 MB.");
-        await using var output = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 8192, FileOptions.Asynchronous);
+        using var output = new MemoryStream();
         var buffer = new byte[8192];
         long total = 0;
         int count;
@@ -137,7 +129,7 @@ public sealed class OcrRuntime : IHostedService, IDisposable
         await output.FlushAsync(token);
         var info = IdImageValidation.Inspect(output, token);
         token.ThrowIfCancellationRequested();
-        return new(path, info);
+        return new(output.ToArray(), info);
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)

@@ -30,10 +30,12 @@ public class PatientDocumentsController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> IdPhoto(int id, string side = "front")
+    public async Task<IActionResult> IdPhoto(int id, string side = "front", bool download = false)
     {
         Response.Headers.CacheControl = "no-store, max-age=0";
         Response.Headers.Pragma = "no-cache";
+        if (!string.Equals(side, "front", StringComparison.OrdinalIgnoreCase) && !string.Equals(side, "back", StringComparison.OrdinalIgnoreCase)) return NotFound();
+        side = side.ToLowerInvariant();
 
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
@@ -41,7 +43,7 @@ public class PatientDocumentsController : Controller
             return Challenge();
         }
 
-        var document = await _db.PatientIdDocuments
+        var document = await _db.PatientIdDocuments.AsNoTracking()
             .FirstOrDefaultAsync(d => d.Id == id && d.PatientUserId == user.Id);
 
         if (document == null)
@@ -58,43 +60,23 @@ public class PatientDocumentsController : Controller
             return NotFound();
         }
 
-        var contentType = side.Equals("back", StringComparison.OrdinalIgnoreCase)
-            ? document.BackPhotoContentType
-            : document.FrontPhotoContentType;
-        contentType ??= fileName.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/jpeg";
-
         try
         {
             var bytes = await _storage.ReadAsync(user.Id, fileName, document.StorageVersion, HttpContext.RequestAborted);
+            var contentType = PatientDocumentStorage.ImageContentType(bytes);
             await _auditLogService.LogAsync(
                 user.Id,
-                "VIEW_ID_PHOTO",
+                download ? "DOWNLOAD_ID_PHOTO" : "VIEW_ID_PHOTO",
                 $"PatientIdDocument/{id}/{side}",
-                $"Viewed government ID photo ({side}).",
+                $"{(download ? "Downloaded" : "Viewed")} government ID photo ({side}).",
                 HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
 
-            if (document.StorageVersion < 2)
-            {
-                var migrated = await _storage.MigrateLegacyAsync(user.Id, fileName, side, contentType, HttpContext.RequestAborted);
-                if (side.Equals("back", StringComparison.OrdinalIgnoreCase))
-                {
-                    document.BackPhotoFileName = migrated.FileName;
-                    document.BackPhotoContentType = migrated.ContentType;
-                }
-                else
-                {
-                    document.FrontPhotoFileName = migrated.FileName;
-                    document.FrontPhotoContentType = migrated.ContentType;
-                }
-                document.StorageVersion = migrated.StorageVersion;
-                await _db.SaveChangesAsync();
-                await _storage.DeleteLegacyAsync(user.Id, fileName, HttpContext.RequestAborted);
-            }
-            return File(bytes, contentType);
+            var extension = contentType switch { "image/png" => "png", "image/webp" => "webp", _ => "jpg" };
+            return new PrivateFileResult(bytes, contentType, $"patient-id-{id}-{side}.{extension}", download);
         }
         catch (FileNotFoundException) { return NotFound(); }
-        catch (InvalidDataException) { return NotFound(); }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
+        catch (DirectoryNotFoundException) { return NotFound(); }
+        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException or AuditLogPersistenceException)
         { return StatusCode(503); }
     }
 }

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Buffers.Binary;
 using System.Text;
 using System.Text.Json;
 using Tesseract;
@@ -6,7 +7,7 @@ using SkiaSharp;
 
 namespace DrmcPatientPortal.Services;
 
-public sealed record OcrWorkerImage(string Path, IdImageValidation.ImageInfo Info);
+public sealed record OcrWorkerImage(byte[] Bytes, IdImageValidation.ImageInfo Info);
 public sealed record OcrWorkerRequest(string TessDataPath, string NativeLibraryPath, bool Recognize, OcrWorkerImage Front, OcrWorkerImage? Back, string IdType = "");
 public sealed record OcrWorkerResponse(string Status, string FrontText = "", float FrontConfidence = 0,
     string BackText = "", float BackConfidence = 0, IdExtractionResult? Extraction = null);
@@ -14,6 +15,61 @@ public sealed record OcrWorkerResponse(string Status, string FrontText = "", flo
 public interface IOcrProcessRunner
 {
     Task<OcrWorkerResponse> RunAsync(OcrWorkerRequest request, CancellationToken cancellationToken);
+}
+
+// Metadata is small JSON; image bodies travel as bounded binary frames, never as paths,
+// command-line arguments, base64 JSON, or plaintext temporary files.
+public static class OcrWorkerProtocol
+{
+    public const int MaximumMetadataBytes = 16 * 1024;
+    private sealed record ImageHeader(int Length, IdImageValidation.ImageInfo Info);
+    private sealed record Header(string TessDataPath, string NativeLibraryPath, bool Recognize,
+        ImageHeader Front, ImageHeader? Back, string IdType);
+
+    private static void ValidateLength(int length)
+    {
+        if (length is <= 0 or > IdImageValidation.MaximumBytes) throw new InvalidDataException("Invalid OCR image length.");
+    }
+
+    public static async Task WriteAsync(Stream output, OcrWorkerRequest request, CancellationToken token)
+    {
+        ValidateLength(request.Front.Bytes.Length);
+        if (request.Back is { } back) ValidateLength(back.Bytes.Length);
+        var metadata = JsonSerializer.SerializeToUtf8Bytes(new Header(request.TessDataPath, request.NativeLibraryPath, request.Recognize,
+            new(request.Front.Bytes.Length, request.Front.Info),
+            request.Back is null ? null : new(request.Back.Bytes.Length, request.Back.Info), request.IdType));
+        if (metadata.Length > MaximumMetadataBytes) throw new InvalidDataException("OCR metadata exceeds its limit.");
+        var prefix = new byte[4];
+        BinaryPrimitives.WriteInt32LittleEndian(prefix, metadata.Length);
+        await output.WriteAsync(prefix, token);
+        await output.WriteAsync(metadata, token);
+        await output.WriteAsync(request.Front.Bytes, token);
+        if (request.Back is not null) await output.WriteAsync(request.Back.Bytes, token);
+        await output.FlushAsync(token);
+    }
+
+    public static async Task<OcrWorkerRequest> ReadAsync(Stream input, CancellationToken token = default)
+    {
+        var prefix = new byte[4];
+        await input.ReadExactlyAsync(prefix, token);
+        var length = BinaryPrimitives.ReadInt32LittleEndian(prefix);
+        if (length is <= 0 or > MaximumMetadataBytes) throw new InvalidDataException("Invalid OCR metadata length.");
+        var metadata = new byte[length];
+        await input.ReadExactlyAsync(metadata, token);
+        var header = JsonSerializer.Deserialize<Header>(metadata) ?? throw new InvalidDataException();
+        if (header.Front?.Info is null || (header.Back is not null && header.Back.Info is null)) throw new InvalidDataException();
+        ValidateLength(header.Front.Length);
+        if (header.Back is not null) ValidateLength(header.Back.Length);
+        async Task<OcrWorkerImage> ReadImage(ImageHeader image)
+        {
+            var bytes = new byte[image.Length];
+            await input.ReadExactlyAsync(bytes, token);
+            return new(bytes, image.Info);
+        }
+        var front = await ReadImage(header.Front);
+        var back = header.Back is null ? null : await ReadImage(header.Back);
+        return new(header.TessDataPath, header.NativeLibraryPath, header.Recognize, front, back, header.IdType);
+    }
 }
 
 public sealed class OcrProcessRunner : IOcrProcessRunner
@@ -56,8 +112,7 @@ public sealed class OcrProcessRunner : IOcrProcessRunner
             _ = errors.ContinueWith(CancelIo, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
             try
             {
-                await process.StandardInput.WriteLineAsync(JsonSerializer.Serialize(request).AsMemory(), io.Token);
-                await process.StandardInput.FlushAsync(io.Token);
+                await OcrWorkerProtocol.WriteAsync(process.StandardInput.BaseStream, request, io.Token);
                 // Keep stdin open: the worker monitors EOF to detect a dead parent.
                 await process.WaitForExitAsync(io.Token);
                 var json = await output;
@@ -111,18 +166,9 @@ public static class OcrWorker
         OcrWorkerResponse response;
         try
         {
-            var buffer = new char[16 * 1024];
-            var count = 0;
-            while (true)
-            {
-                if (count == buffer.Length) throw new InvalidDataException();
-                var read = await Console.In.ReadAsync(buffer.AsMemory(count, 1));
-                if (read == 0) throw new InvalidDataException();
-                if (buffer[count] == '\n') break;
-                count++;
-            }
-            var request = JsonSerializer.Deserialize<OcrWorkerRequest>(buffer.AsSpan(0, count)) ?? throw new InvalidDataException();
-            new Thread(MonitorParent) { IsBackground = true, Name = "OCR parent monitor" }.Start();
+            var input = Console.OpenStandardInput();
+            var request = await OcrWorkerProtocol.ReadAsync(input);
+            new Thread(() => MonitorParent(input)) { IsBackground = true, Name = "OCR parent monitor" }.Start();
             response = Execute(request);
         }
         catch (Exception error) when (OcrRuntime.IsDependencyFailure(error)) { response = new("dependency"); }
@@ -131,9 +177,9 @@ public static class OcrWorker
         return 0;
     }
 
-    private static void MonitorParent()
+    private static void MonitorParent(Stream input)
     {
-        try { _ = Console.In.Read(); }
+        try { _ = input.ReadByte(); }
         finally { Environment.Exit(1); }
     }
 
@@ -147,7 +193,7 @@ public static class OcrWorker
             else if (!string.IsNullOrEmpty(request.NativeLibraryPath)) TesseractEnviornment.CustomSearchPath = request.NativeLibraryPath;
             (string Text, float Confidence) ReadImage(OcrWorkerImage file)
             {
-                using var stream = File.OpenRead(file.Path);
+                using var stream = new MemoryStream(file.Bytes, writable: false);
                 if (IdImageValidation.Inspect(stream) != file.Info) throw new InvalidDataException();
                 using var image = LoadPixels(file);
                 if (image.Width != file.Info.Width || image.Height != file.Info.Height) throw new InvalidDataException();
@@ -176,9 +222,10 @@ public static class OcrWorker
 
     private static Pix LoadPixels(OcrWorkerImage file)
     {
-        if (file.Info.ContentType != "image/webp") return Pix.LoadFromMemory(File.ReadAllBytes(file.Path));
+        if (file.Info.ContentType != "image/webp") return Pix.LoadFromMemory(file.Bytes);
         // The bundled Windows Leptonica lacks WebP. Convert only in the killable worker.
-        using var codec = SKCodec.Create(file.Path) ?? throw new InvalidDataException();
+        using var source = new MemoryStream(file.Bytes, writable: false);
+        using var codec = SKCodec.Create(source) ?? throw new InvalidDataException();
         if (codec.Info.Width != file.Info.Width || codec.Info.Height != file.Info.Height || codec.FrameCount > 1)
             throw new InvalidDataException();
         using var bitmap = new SKBitmap(new SKImageInfo(file.Info.Width, file.Info.Height, SKColorType.Bgra8888, SKAlphaType.Premul));

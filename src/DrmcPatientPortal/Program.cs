@@ -154,7 +154,8 @@ builder.Services.Configure<PatientRegistrationOptions>(builder.Configuration.Get
 builder.Services.Configure<StaffInvitationOptions>(builder.Configuration.GetSection(StaffInvitationOptions.Section));
 builder.Services.AddScoped<StaffInvitationActivator>();
 builder.Services.AddScoped<FirstAdminSignup>();
-builder.Services.AddScoped<IPatientDocumentStorage, PatientDocumentStorage>();
+builder.Services.AddScoped<PatientDocumentStorage>();
+builder.Services.AddScoped<IPatientDocumentStorage>(services => services.GetRequiredService<PatientDocumentStorage>());
 builder.Services.Configure<LabReportStorageOptions>(builder.Configuration.GetSection("LabReports"));
 builder.Services.AddScoped<ILabReportStorage, LabReportStorage>();
 builder.Services.AddHostedService<TemporaryDocumentCleanupService>();
@@ -232,6 +233,9 @@ await using (var protectionScope = app.Services.CreateAsyncScope())
         return;
     }
     await RedStarProtectionUpgrade.VerifyReadyAsync(protectionDb);
+    await PatientDocumentProtectionUpgrade.RunAsync(protectionDb,
+        protectionScope.ServiceProvider.GetRequiredService<PatientDocumentStorage>(), app.Environment);
+    app.Logger.LogInformation("Patient attachment protection verified; startup upgrade complete.");
 }
 if (trustedProxies.Length > 0) app.UseForwardedHeaders();
 if (!protectKeysWithDpapi && !app.Environment.IsDevelopment())

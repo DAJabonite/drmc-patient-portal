@@ -33,7 +33,9 @@ public sealed class PatientDocumentStorage : IPatientDocumentStorage
 {
     private const int CurrentStorageVersion = 2;
     private readonly OcrRuntime _ocr;
-    private readonly IWebHostEnvironment _environment;
+    internal const int HistoricalMaximumBytes = 10 * 1024 * 1024;
+    internal readonly PrivateStorageRoot Root;
+    internal readonly PrivateStorageRoot TemporaryRoot;
     private readonly PatientDocumentStorageOptions _options;
     private readonly IDataProtector _fileProtector;
     private readonly IDataProtector _tokenProtector;
@@ -41,26 +43,25 @@ public sealed class PatientDocumentStorage : IPatientDocumentStorage
     public PatientDocumentStorage(IWebHostEnvironment environment, IOptions<PatientDocumentStorageOptions> options, IDataProtectionProvider protectionProvider, OcrRuntime ocr)
     {
         _ocr = ocr;
-        _environment = environment;
         _options = options.Value;
-        _fileProtector = protectionProvider.CreateProtector("DRMC.PatientDocuments.File.v2");
-        _tokenProtector = protectionProvider.CreateProtector("DRMC.PatientDocuments.StagingToken.v1");
+        Root = new(environment, _options.RootPath);
+        TemporaryRoot = new(environment, _options.TemporaryPath);
+        if (Root.Overlaps(TemporaryRoot)) throw new InvalidOperationException("Permanent and temporary storage must be separate.");
+        _fileProtector = protectionProvider.CreateProtector(KeyRingProtection.PatientDocumentPurpose);
+        _tokenProtector = protectionProvider.CreateProtector(KeyRingProtection.PatientStagingTokenPurpose);
     }
 
     public async Task<StagedPatientDocument> StageAsync(IFormFile file, string sessionId, CancellationToken cancellationToken = default)
     {
         var (bytes, contentType) = await ValidateAndReadAsync(file, cancellationToken);
-        var fileName = $"{Guid.NewGuid():N}.idp";
-        var directory = ResolveDirectory(_options.TemporaryPath);
+        var fileName = Guid.NewGuid().ToString("N");
+        var directory = TemporaryRoot.Resolve();
         Directory.CreateDirectory(directory);
-        var path = Path.Combine(directory, fileName);
-        try
-        {
-            await File.WriteAllBytesAsync(path, _fileProtector.Protect(bytes), cancellationToken);
-            var payload = new StagingTokenPayload(sessionId, fileName, contentType, DateTime.UtcNow.AddMinutes(_options.TemporaryFileLifetimeMinutes));
-            return new StagedPatientDocument(_tokenProtector.Protect(JsonSerializer.Serialize(payload)), contentType);
-        }
-        catch { File.Delete(path); throw; }
+        var path = TemporaryRoot.Resolve(fileName);
+        var payload = new StagingTokenPayload(sessionId, fileName, contentType, DateTime.UtcNow.AddMinutes(_options.TemporaryFileLifetimeMinutes));
+        var protectedToken = _tokenProtector.Protect(JsonSerializer.Serialize(payload));
+        await PrivateStorageIO.WriteNewAsync(path, _fileProtector.Protect(bytes), cancellationToken);
+        return new StagedPatientDocument(protectedToken, contentType);
     }
 
     public async Task<StoredPatientDocument> CommitAsync(string token, string sessionId, string patientUserId, string side, CancellationToken cancellationToken = default)
@@ -79,55 +80,51 @@ public sealed class PatientDocumentStorage : IPatientDocumentStorage
         if (!string.Equals(payload.SessionId, sessionId, StringComparison.Ordinal) || payload.ExpiresAtUtc <= DateTime.UtcNow || !IsSafeFileName(payload.FileName))
             throw new InvalidDataException("The staged upload is invalid or expired.");
 
-        var source = ResolveFile(_options.TemporaryPath, payload.FileName);
+        var source = TemporaryRoot.Resolve(payload.FileName);
         if (!File.Exists(source)) throw new InvalidDataException("The staged upload no longer exists.");
-
-        var targetName = $"{NormalizeSide(side)}_{Guid.NewGuid():N}.idp";
-        var targetDirectory = ResolveDirectory(Path.Combine(_options.RootPath, patientUserId));
+        _ = _fileProtector.Unprotect(await PrivateStorageIO.ReadAsync(source, HistoricalMaximumBytes + 4096, cancellationToken));
+        var targetName = Guid.NewGuid().ToString("N");
+        var targetDirectory = Root.Resolve(patientUserId);
         Directory.CreateDirectory(targetDirectory);
-        File.Move(source, Path.Combine(targetDirectory, targetName));
+        File.Move(TemporaryRoot.Resolve(payload.FileName), Root.Resolve(patientUserId, targetName));
         return await Task.FromResult(new StoredPatientDocument(targetName, payload.ContentType, CurrentStorageVersion));
     }
 
     public async Task<StoredPatientDocument> StoreAsync(IFormFile file, string patientUserId, string side, CancellationToken cancellationToken = default)
     {
         var (bytes, contentType) = await ValidateAndReadAsync(file, cancellationToken);
-        var targetName = $"{NormalizeSide(side)}_{Guid.NewGuid():N}.idp";
-        var targetDirectory = ResolveDirectory(Path.Combine(_options.RootPath, patientUserId));
+        var targetName = Guid.NewGuid().ToString("N");
+        var targetDirectory = Root.Resolve(patientUserId);
         Directory.CreateDirectory(targetDirectory);
-        var path = Path.Combine(targetDirectory, targetName);
-        try { await File.WriteAllBytesAsync(path, _fileProtector.Protect(bytes), cancellationToken); }
-        catch { File.Delete(path); throw; }
+        var path = Root.Resolve(patientUserId, targetName);
+        await PrivateStorageIO.WriteNewAsync(path, _fileProtector.Protect(bytes), cancellationToken);
         return new StoredPatientDocument(targetName, contentType, CurrentStorageVersion);
     }
 
     public async Task<byte[]> ReadAsync(string patientUserId, string fileName, int storageVersion, CancellationToken cancellationToken = default)
     {
         if (!IsSafeFileName(fileName)) throw new FileNotFoundException();
-        var path = ResolveFile(Path.Combine(_options.RootPath, patientUserId), fileName);
-        var bytes = await File.ReadAllBytesAsync(path, cancellationToken);
-        return storageVersion >= CurrentStorageVersion || fileName.EndsWith(".idp", StringComparison.OrdinalIgnoreCase)
-            ? _fileProtector.Unprotect(bytes)
-            : bytes;
+        var path = Root.Resolve(patientUserId, fileName);
+        var bytes = await PrivateStorageIO.ReadAsync(path, HistoricalMaximumBytes + 4096, cancellationToken);
+        return _fileProtector.Unprotect(bytes);
     }
 
     public async Task<StoredPatientDocument> MigrateLegacyAsync(string patientUserId, string fileName, string side, string contentType, CancellationToken cancellationToken = default)
     {
         if (!IsSafeFileName(fileName)) throw new FileNotFoundException();
-        var source = ResolveFile(Path.Combine(_options.RootPath, patientUserId), fileName);
-        var bytes = await File.ReadAllBytesAsync(source, cancellationToken);
-        // Preserve historical documents unchanged; new-upload checks do not apply on download/migration.
-        var targetName = $"{NormalizeSide(side)}_{Guid.NewGuid():N}.idp";
-        var target = ResolveFile(Path.Combine(_options.RootPath, patientUserId), targetName);
-        await File.WriteAllBytesAsync(target, _fileProtector.Protect(bytes), cancellationToken);
-        return new StoredPatientDocument(targetName, contentType, CurrentStorageVersion);
+        var bytes = await ProtectLegacySourceAsync(Root, [patientUserId, fileName], cancellationToken);
+        var actualType = ImageContentType(_fileProtector.Unprotect(bytes));
+        if (PrivateStorageRoot.IsGuid(fileName)) return new(fileName, actualType, CurrentStorageVersion);
+        var targetName = Guid.NewGuid().ToString("N");
+        await PrivateStorageIO.WriteNewAsync(Root.Resolve(patientUserId, targetName), bytes, cancellationToken);
+        return new StoredPatientDocument(targetName, actualType, CurrentStorageVersion);
     }
 
     public Task DeleteLegacyAsync(string patientUserId, string fileName, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (!IsSafeFileName(fileName)) throw new FileNotFoundException();
-        var source = ResolveFile(Path.Combine(_options.RootPath, patientUserId), fileName);
+        var source = Root.Resolve(patientUserId, fileName);
         if (File.Exists(source)) File.Delete(source);
         return Task.CompletedTask;
     }
@@ -141,7 +138,7 @@ public sealed class PatientDocumentStorage : IPatientDocumentStorage
             var payload = JsonSerializer.Deserialize<StagingTokenPayload>(_tokenProtector.Unprotect(token));
             if (payload is not null && string.Equals(payload.SessionId, sessionId, StringComparison.Ordinal) && IsSafeFileName(payload.FileName))
             {
-                var path = ResolveFile(_options.TemporaryPath, payload.FileName);
+                var path = TemporaryRoot.Resolve(payload.FileName);
                 if (File.Exists(path)) File.Delete(path);
             }
         }
@@ -156,20 +153,22 @@ public sealed class PatientDocumentStorage : IPatientDocumentStorage
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (string.IsNullOrWhiteSpace(fileName) || !IsSafeFileName(fileName)) return Task.CompletedTask;
-        var path = ResolveFile(Path.Combine(_options.RootPath, patientUserId), fileName);
+        var path = Root.Resolve(patientUserId, fileName);
         if (File.Exists(path)) File.Delete(path);
         return Task.CompletedTask;
     }
 
     public Task DeleteExpiredTemporaryFilesAsync(CancellationToken cancellationToken = default)
     {
-        var directory = ResolveDirectory(_options.TemporaryPath);
+        var directory = TemporaryRoot.Resolve();
         if (!Directory.Exists(directory)) return Task.CompletedTask;
         var cutoff = DateTime.UtcNow.AddMinutes(-_options.TemporaryFileLifetimeMinutes);
-        foreach (var file in Directory.EnumerateFiles(directory, "*.idp", SearchOption.TopDirectoryOnly))
+        foreach (var file in TemporaryRoot.Entries())
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (File.GetLastWriteTimeUtc(file) < cutoff) File.Delete(file);
+            var name = Path.GetFileName(file);
+            if (!IsSafeFileName(name) || Directory.Exists(file)) throw new InvalidDataException("Unexpected staged document reference.");
+            if (File.GetLastWriteTimeUtc(file) < cutoff) File.Delete(TemporaryRoot.Resolve(name));
         }
         return Task.CompletedTask;
     }
@@ -183,25 +182,50 @@ public sealed class PatientDocumentStorage : IPatientDocumentStorage
         return (result.ValidatedBytes!, result.ContentType);
     }
 
-    private string ResolveDirectory(string configuredPath)
+    // Startup only. Replace plaintext at its original path before changing database references;
+    // a crash or uncertain database commit can therefore leave only encrypted duplicates.
+    internal async Task<byte[]> ProtectLegacySourceAsync(PrivateStorageRoot root, string[] components, CancellationToken token)
     {
-        var root = Path.GetFullPath(_environment.ContentRootPath);
-        var candidate = Path.GetFullPath(Path.IsPathRooted(configuredPath) ? configuredPath : Path.Combine(root, configuredPath));
-        if (!candidate.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) && !Path.IsPathRooted(configuredPath))
-            throw new InvalidOperationException("Document storage path escapes the content root.");
-        return candidate;
+        var name = components[^1];
+        if (!IsSafeFileName(name)) throw new InvalidDataException("Unexpected document reference.");
+        var bytes = await PrivateStorageIO.ReadAsync(root.Resolve(components), HistoricalMaximumBytes + 4096, token);
+        try
+        {
+            _ = ImageContentType(_fileProtector.Unprotect(bytes));
+            return bytes;
+        }
+        catch (CryptographicException) when (!PrivateStorageRoot.IsGuid(name) && !name.EndsWith(".idp", StringComparison.OrdinalIgnoreCase) &&
+            !bytes.AsSpan().StartsWith(new byte[] { 0x09, 0xf0, 0xc9, 0xf0 }))
+        {
+            _ = ImageContentType(bytes); // Recognize historical bytes; do not apply new-upload OCR restrictions.
+            if (bytes.Length > HistoricalMaximumBytes) throw new InvalidDataException("Legacy document exceeds its size limit.");
+            var encrypted = _fileProtector.Protect(bytes);
+            if (!_fileProtector.Unprotect(encrypted).AsSpan().SequenceEqual(bytes)) throw new CryptographicException();
+            var temporaryComponents = components[..^1].Append(Guid.NewGuid().ToString("N")).ToArray();
+            var temporary = root.Resolve(temporaryComponents);
+            await PrivateStorageIO.WriteNewAsync(temporary, encrypted, token);
+            try { File.Move(root.Resolve(temporaryComponents), root.Resolve(components), overwrite: true); }
+            finally { File.Delete(root.Resolve(temporaryComponents)); }
+            return encrypted;
+        }
     }
 
-    private string ResolveFile(string directory, string fileName)
+    public static string ImageContentType(ReadOnlySpan<byte> bytes)
     {
-        var root = ResolveDirectory(directory);
-        var candidate = Path.GetFullPath(Path.Combine(root, fileName));
-        if (!candidate.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)) throw new FileNotFoundException();
-        return candidate;
+        if (bytes.StartsWith(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 })) return "image/png";
+        if (bytes.StartsWith(new byte[] { 255, 216, 255 })) return "image/jpeg";
+        if (bytes.Length >= 12 && bytes[..4].SequenceEqual("RIFF"u8) && bytes.Slice(8, 4).SequenceEqual("WEBP"u8)) return "image/webp";
+        throw new InvalidDataException("The stored ID image is invalid.");
     }
 
-    private static bool IsSafeFileName(string fileName) => !string.IsNullOrWhiteSpace(fileName) && fileName == Path.GetFileName(fileName);
-    private static string NormalizeSide(string side) => string.Equals(side, "back", StringComparison.OrdinalIgnoreCase) ? "back" : "front";
+    internal static bool IsSafeFileName(string? fileName)
+    {
+        if (!PrivateStorageRoot.IsLeaf(fileName)) return false;
+        if (PrivateStorageRoot.IsGuid(fileName)) return true;
+        var stem = Path.GetFileNameWithoutExtension(fileName)!;
+        if (stem.StartsWith("front_", StringComparison.Ordinal) || stem.StartsWith("back_", StringComparison.Ordinal)) stem = stem[(stem.IndexOf('_') + 1)..];
+        return PrivateStorageRoot.IsGuid(stem) && Path.GetExtension(fileName!).ToLowerInvariant() is ".idp" or ".jpg" or ".jpeg" or ".png" or ".webp";
+    }
     private sealed record StagingTokenPayload(string SessionId, string FileName, string ContentType, DateTime ExpiresAtUtc);
 }
 

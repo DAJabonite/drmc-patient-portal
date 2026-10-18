@@ -181,17 +181,19 @@ public class LabResultsController : Controller
             return await PasswordError(id, locked ? "Your account is temporarily locked. Try again after the lockout period." : "The password could not be verified. Please try again.");
         byte[] bytes;
         try { bytes = await _storage.ReadAsync(id, lab!.ReportFileName!, token); }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
+        catch (FileNotFoundException) { return NotFound(); }
+        catch (DirectoryNotFoundException) { return NotFound(); }
+        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
         { return StatusCode(503); }
         var fresh = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.AsNoTracking().SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token), token);
         if (!Eligible(fresh) || fresh!.ReportFileName != lab!.ReportFileName) return NotFound();
-        await _auditLog.LogAsync(user.Id, intent == "view" ? "VIEW_LAB_PDF" : "DOWNLOAD_LAB_PDF", $"LabResult/{id}",
+        try { await _auditLog.LogAsync(user.Id, intent == "view" ? "VIEW_LAB_PDF" : "DOWNLOAD_LAB_PDF", $"LabResult/{id}",
             intent == "view" ? "Viewed laboratory report PDF." : "Downloaded laboratory report PDF.",
-            HttpContext.Connection.RemoteIpAddress?.ToString() ?? "");
+            HttpContext.Connection.RemoteIpAddress?.ToString() ?? ""); }
+        catch (AuditLogPersistenceException) { return StatusCode(503); }
         fresh = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.AsNoTracking().SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token), token);
         if (!Eligible(fresh) || fresh!.ReportFileName != lab.ReportFileName || await _userManager.IsLockedOutAsync(user)) return NotFound();
-        Response.Headers.ContentDisposition = $"{(intent == "view" ? "inline" : "attachment")}; filename=\"lab-report-{id}.pdf\"";
-        return File(bytes, "application/pdf");
+        return new PrivateFileResult(bytes, "application/pdf", $"lab-report-{id}.pdf", intent == "download");
     }
 
     private bool Eligible(LabResult? lab) => lab?.ReportFileName is not null && _resultsOptions.CurrentValue.ShowFullResults
