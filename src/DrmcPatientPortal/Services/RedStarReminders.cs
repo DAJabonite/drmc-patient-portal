@@ -28,8 +28,7 @@ public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataPro
     private int MaximumAttempts => Math.Clamp(options.Value.MaximumAttempts, 1, 20);
     private static readonly TimeSpan[] Backoff = [TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(30)];
     private sealed record Payload(string Recipient, DateTime DueDate);
-    private sealed record Candidate(int Id, int Revision, DateTime DueDate, string UserId, bool EmailOptIn,
-        bool EmailConfirmed, string? Email);
+    private sealed record Candidate(int Id, int Revision, DateTime DueDate, string UserId, bool EmailOptIn);
 
     // Return the latest applicable milestone, including when a worker starts between milestones.
     // AddMonths always uses the original appointment date, so Jan 31 -> Feb 28 -> Mar 31.
@@ -69,27 +68,31 @@ public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataPro
             var candidates = await SqlReadRetry.RunAsync(db, () => Eligible(db, now)
                 .Where(a => a.Id > afterId && a.DueDate <= today.AddDays(7)).OrderBy(a => a.Id).Take(100)
                 .Select(a => new Candidate(a.Id, a.Revision, a.DueDate, a.Enrollment.Patient.PortalUserId!,
-                    a.Enrollment.Patient.EmailRemindersEnabled, a.Enrollment.Patient.PortalUser!.EmailConfirmed,
-                    a.Enrollment.Patient.PortalUser.Email)).ToListAsync(token), token);
+                    a.Enrollment.Patient.EmailRemindersEnabled)).ToListAsync(token), token);
             if (candidates.Count == 0) break;
+            var userIds = candidates.Select(c => c.UserId).Distinct().ToArray();
+            var accounts = await db.Users.AsNoTracking().Where(u => userIds.Contains(u.Id) &&
+                (!u.LockoutEnabled || u.LockoutEnd == null || u.LockoutEnd <= now)).ToDictionaryAsync(u => u.Id, token);
             foreach (var candidate in candidates)
             {
+                if (!accounts.TryGetValue(candidate.UserId, out var account)) continue;
                 var stage = LatestStage(candidate.DueDate, today);
                 if (stage is null) continue;
-                await InsertAsync(db, candidate, stage, RedStarReminderChannel.InApp, now, token);
-                if (candidate.EmailOptIn && candidate.EmailConfirmed && !string.IsNullOrWhiteSpace(candidate.Email))
-                    await InsertAsync(db, candidate, stage, RedStarReminderChannel.Email, now, token);
+                await InsertAsync(db, candidate, stage, RedStarReminderChannel.InApp, now, account.Email, token);
+                if (candidate.EmailOptIn && account.EmailConfirmed && !string.IsNullOrWhiteSpace(account.Email))
+                    await InsertAsync(db, candidate, stage, RedStarReminderChannel.Email, now, account.Email, token);
             }
             lastId = candidates[^1].Id;
         }
     }
 
     private async Task InsertAsync(ApplicationDbContext db, Candidate candidate, string stage,
-        RedStarReminderChannel channel, DateTimeOffset now, CancellationToken token)
+        RedStarReminderChannel channel, DateTimeOffset now, string? email, CancellationToken token)
     {
+        var accountIndex = db.Phi.AccountIndex(candidate.UserId);
         if (await db.RedStarReminders.AnyAsync(r => r.AppointmentId == candidate.Id &&
             r.AppointmentRevision == candidate.Revision && r.Stage == stage && r.Channel == channel &&
-            r.PortalUserId == candidate.UserId, token)) return;
+            r.PortalUserIdBlindIndex == accountIndex, token)) return;
         var reminder = new RedStarReminder
         {
             AppointmentId = candidate.Id, AppointmentRevision = candidate.Revision, Stage = stage,
@@ -97,7 +100,7 @@ public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataPro
             State = channel == RedStarReminderChannel.InApp ? RedStarDeliveryState.Delivered : RedStarDeliveryState.Pending,
             CompletedUtc = channel == RedStarReminderChannel.InApp ? now : null,
             ProtectedPayload = channel == RedStarReminderChannel.Email
-                ? protection.CreateProtector(ProtectionPurpose).Protect(JsonSerializer.SerializeToUtf8Bytes(new Payload(candidate.Email!, candidate.DueDate)))
+                ? protection.CreateProtector(ProtectionPurpose).Protect(JsonSerializer.SerializeToUtf8Bytes(new Payload(email!, candidate.DueDate)))
                 : null
         };
         db.RedStarReminders.Add(reminder);
@@ -115,26 +118,40 @@ public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataPro
         db.RedStarAppointments.AsNoTracking().Where(a => a.Kind == RedStarAppointmentKind.Refill &&
             a.State == RedStarAppointmentState.Scheduled && a.RemindersVerified &&
             a.Enrollment.Status == RedStarStatus.Active && a.Enrollment.Program != RedStarProgram.Unverified &&
-            a.Enrollment.Patient.PortalUserId != null && a.Enrollment.Patient.PortalUser != null &&
-            (!a.Enrollment.Patient.PortalUser.LockoutEnabled || a.Enrollment.Patient.PortalUser.LockoutEnd == null ||
-             a.Enrollment.Patient.PortalUser.LockoutEnd <= now));
+            a.Enrollment.Patient.PortalUserIdBlindIndex != null);
 
-    private static Task<int> CancelObsoleteAsync(ApplicationDbContext db, DateTimeOffset now, CancellationToken token) =>
-        db.RedStarReminders.Where(r =>
+    private static async Task CancelObsoleteAsync(ApplicationDbContext db, DateTimeOffset now, CancellationToken token)
+    {
+        await RedStarAccountAccess.ReconcileOrphansAsync(db, token);
+        await db.RedStarReminders.Where(r =>
             (r.State == RedStarDeliveryState.Pending || r.State == RedStarDeliveryState.Sending ||
              r.Channel == RedStarReminderChannel.InApp && r.State == RedStarDeliveryState.Delivered) &&
-            (r.PortalUserId == null || r.AppointmentRevision != r.Appointment.Revision ||
-             r.PortalUserId != r.Appointment.Enrollment.Patient.PortalUserId ||
+            (r.PortalUserIdBlindIndex == null || r.AppointmentRevision != r.Appointment.Revision ||
+             r.PortalUserIdBlindIndex != r.Appointment.Enrollment.Patient.PortalUserIdBlindIndex ||
              r.Appointment.Kind != RedStarAppointmentKind.Refill || r.Appointment.State != RedStarAppointmentState.Scheduled ||
              !r.Appointment.RemindersVerified || r.Appointment.Enrollment.Status != RedStarStatus.Active ||
              r.Appointment.Enrollment.Program == RedStarProgram.Unverified ||
-             r.Appointment.Enrollment.Patient.PortalUser == null ||
-             r.Appointment.Enrollment.Patient.PortalUser.LockoutEnabled && r.Appointment.Enrollment.Patient.PortalUser.LockoutEnd > now ||
-             r.Channel == RedStarReminderChannel.Email && (!r.Appointment.Enrollment.Patient.EmailRemindersEnabled ||
-                 !r.Appointment.Enrollment.Patient.PortalUser.EmailConfirmed)))
+             r.Channel == RedStarReminderChannel.Email && !r.Appointment.Enrollment.Patient.EmailRemindersEnabled))
         .ExecuteUpdateAsync(set => set.SetProperty(r => r.State, RedStarDeliveryState.Cancelled)
             .SetProperty(r => r.ProtectedPayload, (byte[]?)null).SetProperty(r => r.CompletedUtc, (DateTimeOffset?)now)
             .SetProperty(r => r.LeaseOwner, (string?)null).SetProperty(r => r.LeaseExpiresUtc, (DateTimeOffset?)null), token);
+        var ids = await db.RedStarReminders.Where(r => r.State == RedStarDeliveryState.Pending || r.State == RedStarDeliveryState.Sending ||
+            r.Channel == RedStarReminderChannel.InApp && r.State == RedStarDeliveryState.Delivered).Select(r => r.Id).ToListAsync(token);
+        foreach (var chunk in ids.Chunk(100))
+        {
+            var reminders = await db.RedStarReminders.AsNoTracking().Where(r => chunk.Contains(r.Id))
+                .Select(r => new { r.Id, r.PortalUserId, r.Channel }).ToListAsync(token);
+            var userIds = reminders.Select(r => r.PortalUserId!).Distinct().ToArray();
+            var accounts = await db.Users.AsNoTracking().Where(u => userIds.Contains(u.Id) &&
+                (!u.LockoutEnabled || u.LockoutEnd == null || u.LockoutEnd <= now)).ToDictionaryAsync(u => u.Id, token);
+            var invalid = reminders.Where(r => r.PortalUserId == null || !accounts.TryGetValue(r.PortalUserId, out var account) ||
+                r.Channel == RedStarReminderChannel.Email && !account.EmailConfirmed).Select(r => r.Id).ToArray();
+            await db.RedStarReminders.Where(r => invalid.Contains(r.Id))
+                .ExecuteUpdateAsync(set => set.SetProperty(r => r.State, RedStarDeliveryState.Cancelled)
+                    .SetProperty(r => r.ProtectedPayload, (byte[]?)null).SetProperty(r => r.CompletedUtc, (DateTimeOffset?)now)
+                    .SetProperty(r => r.LeaseOwner, (string?)null).SetProperty(r => r.LeaseExpiresUtc, (DateTimeOffset?)null), token);
+        }
+    }
 
     public async Task DispatchAsync(CancellationToken token = default)
     {
@@ -172,10 +189,12 @@ public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataPro
                     ?? throw new InvalidDataException("Invalid protected payload.");
                 // Fresh read immediately before transport: queued consent, address and ownership are not authority.
                 var current = await Eligible(db, clock.GetUtcNow()).Where(a => a.Id == reminder.AppointmentId &&
-                        a.Revision == reminder.AppointmentRevision && a.Enrollment.Patient.PortalUserId == reminder.PortalUserId &&
-                        a.Enrollment.Patient.EmailRemindersEnabled && a.Enrollment.Patient.PortalUser!.EmailConfirmed)
-                    .Select(a => new { a.DueDate, a.Enrollment.Patient.PortalUser!.Email }).SingleOrDefaultAsync(token);
-                if (current is null || !string.Equals(current.Email, payload.Recipient, StringComparison.OrdinalIgnoreCase) ||
+                        a.Revision == reminder.AppointmentRevision && a.Enrollment.Patient.PortalUserIdBlindIndex == reminder.PortalUserIdBlindIndex &&
+                        a.Enrollment.Patient.EmailRemindersEnabled)
+                    .Select(a => new { a.DueDate }).SingleOrDefaultAsync(token);
+                var account = await RedStarAccountAccess.EligibleAccounts(db, clock.GetUtcNow())
+                    .SingleOrDefaultAsync(u => u.Id == reminder.PortalUserId, token);
+                if (current is null || account is null || !string.Equals(account.Email, payload.Recipient, StringComparison.OrdinalIgnoreCase) ||
                     current.DueDate.Date != payload.DueDate.Date ||
                     LatestStage(current.DueDate, ClinicalClock.WallTime(clock.GetUtcNow()).Date) != reminder.Stage)
                 {

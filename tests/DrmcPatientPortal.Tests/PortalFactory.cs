@@ -1,5 +1,7 @@
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -64,6 +66,8 @@ public sealed class PortalFactory : WebApplicationFactory<Program>, IAsyncLifeti
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(_storageRoot, "keys"))).SetApplicationName("DRMC.PatientPortal");
+        services.AddSingleton(sp => new RedStarPhiProtection(sp.GetRequiredService<IDataProtectionProvider>(), Path.Combine(_storageRoot, "keys")));
         services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(_connectionString));
         // AddDefaultIdentity (used by the app) caps Identity key columns at 128 characters.
         services.AddIdentityCore<ApplicationUser>(options => options.Stores.MaxLengthForKeys = 128).AddRoles<IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>();
@@ -75,7 +79,7 @@ public sealed class PortalFactory : WebApplicationFactory<Program>, IAsyncLifeti
         // Fixtures require an already migrated schema, so migrate before the host starts.
         await using (var provider = DatabaseServices())
         await using (var scope = provider.CreateAsyncScope())
-            await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.MigrateAsync();
+            await RedStarProtectionUpgrade.RunAsync(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>());
         _ = Server;
     }
 

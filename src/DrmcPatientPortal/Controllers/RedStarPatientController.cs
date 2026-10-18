@@ -74,13 +74,13 @@ public sealed class RedStarPatientController(ApplicationDbContext db, RedStarPat
         if (version is null) return BadRequest();
         var result = await writes.RunAsync(async database =>
         {
-            var patient = await database.RedStarPatients.Include(p => p.PortalUser).SingleOrDefaultAsync(p => p.Id == patientId && p.PortalUserId == Actor, token);
-            if (patient?.PortalUser?.EmailConfirmed != true) return WriteResult.Invalid("A confirmed account email is required.");
-            if (patient.PortalUser.LockoutEnabled && patient.PortalUser.LockoutEnd > DateTimeOffset.UtcNow) return WriteResult.Invalid("The appointment is no longer available.");
+            var patient = await RedStarAccountAccess.OwnedPatients(database, Actor).SingleOrDefaultAsync(p => p.Id == patientId, token);
+            if (patient is null) return WriteResult.Invalid("The appointment is no longer available.");
             if (!version.SequenceEqual(patient.RowVersion)) return WriteResult.Stale;
             patient.EmailRemindersEnabled = emailEnabled;
+            var accountIndex = database.Phi.AccountIndex(Actor);
             if (!emailEnabled)
-                await database.RedStarReminders.Where(r => r.PortalUserId == Actor && r.Channel == RedStarReminderChannel.Email &&
+                await database.RedStarReminders.Where(r => r.PortalUserIdBlindIndex == accountIndex && r.Channel == RedStarReminderChannel.Email &&
                     (r.State == RedStarDeliveryState.Pending || r.State == RedStarDeliveryState.Sending))
                     .ExecuteUpdateAsync(set => set.SetProperty(r => r.State, RedStarDeliveryState.Cancelled)
                         .SetProperty(r => r.ProtectedPayload, (byte[]?)null).SetProperty(r => r.LeaseOwner, (string?)null)
@@ -96,7 +96,8 @@ public sealed class RedStarPatientController(ApplicationDbContext db, RedStarPat
     public async Task<IActionResult> Read(Guid id, CancellationToken token)
     {
         var ownedIds = patients.OwnedPatients(Actor).Select(p => p.Id);
-        var reminder = await db.RedStarReminders.SingleOrDefaultAsync(r => r.Id == id && r.PortalUserId == Actor &&
+        var accountIndex = db.Phi.AccountIndex(Actor);
+        var reminder = await db.RedStarReminders.SingleOrDefaultAsync(r => r.Id == id && r.PortalUserIdBlindIndex == accountIndex &&
             ownedIds.Contains(r.Appointment.Enrollment.PatientId) && r.Channel == RedStarReminderChannel.InApp, token);
         if (reminder is null) return NotFound();
         reminder.IsRead = true;
@@ -107,9 +108,8 @@ public sealed class RedStarPatientController(ApplicationDbContext db, RedStarPat
     private IQueryable<RedStarAppointment> OwnedAppointments(int id, ApplicationDbContext? database = null)
     {
         database ??= db;
-        return database.RedStarAppointments.Where(a => a.Id == id && a.Enrollment.Patient.PortalUserId == Actor &&
-            a.Enrollment.Patient.PortalUser != null && a.Enrollment.Patient.PortalUser.EmailConfirmed &&
-            (!a.Enrollment.Patient.PortalUser.LockoutEnabled || a.Enrollment.Patient.PortalUser.LockoutEnd == null || a.Enrollment.Patient.PortalUser.LockoutEnd <= DateTimeOffset.UtcNow) &&
+        var ownedIds = RedStarAccountAccess.OwnedPatients(database, Actor).Select(p => p.Id);
+        return database.RedStarAppointments.Where(a => a.Id == id && ownedIds.Contains(a.Enrollment.PatientId) &&
             a.State == RedStarAppointmentState.Scheduled && a.Enrollment.Status == RedStarStatus.Active);
     }
 

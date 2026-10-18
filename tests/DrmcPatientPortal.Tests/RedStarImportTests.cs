@@ -336,7 +336,7 @@ public sealed class RedStarImportWorkflowTests(PortalFactory factory)
         await Db(async db =>
         {
             var patient = await db.RedStarPatients.Include(x => x.Enrollments).ThenInclude(x => x.Appointments)
-                .Include(x => x.Enrollments).ThenInclude(x => x.Dispenses).SingleAsync(x => x.PatientCode == code);
+                .Include(x => x.Enrollments).ThenInclude(x => x.Dispenses).SingleAsync(x => x.PatientCodeBlindIndex == db.Phi.PatientCodeIndex(code));
             Assert.Null(patient.PortalUserId); Assert.False(patient.EmailRemindersEnabled);
             var enrollment = Assert.Single(patient.Enrollments);
             Assert.False(Assert.Single(enrollment.Appointments).RemindersVerified);
@@ -355,7 +355,7 @@ public sealed class RedStarImportWorkflowTests(PortalFactory factory)
     {
         var code = "IMP-" + Guid.NewGuid().ToString("N"); var first = await Stage(Workbook(code));
         Assert.True((await Reconcile(first)).Succeeded); Assert.True((await Approve(first)).Succeeded);
-        var patientId = await Db(db => db.RedStarPatients.Where(x => x.PatientCode == code).Select(x => x.Id).SingleAsync());
+        var patientId = await Db(db => db.RedStarPatients.Where(x => x.PatientCodeBlindIndex == db.Phi.PatientCodeIndex(code)).Select(x => x.Id).SingleAsync());
         var again = await Stage(Workbook(code, false)); Assert.True((await Reconcile(again)).Succeeded);
         Assert.False((await Approve(again)).Succeeded);
         var update = await Reconcile(again, choice => choice.ExistingPatientId = patientId); Assert.True(update.Succeeded, update.Error);
@@ -377,7 +377,7 @@ public sealed class RedStarImportWorkflowTests(PortalFactory factory)
         Assert.True((await Reconcile(first)).Succeeded); Assert.True((await Approve(first)).Succeeded);
         var patientId = await Db(async db =>
         {
-            var appointment = await db.RedStarAppointments.Include(x => x.Enrollment).ThenInclude(x => x.Patient).SingleAsync(x => x.Enrollment.Patient.PatientCode == code);
+            var appointment = await db.RedStarAppointments.Include(x => x.Enrollment).ThenInclude(x => x.Patient).SingleAsync(x => x.Enrollment.Patient.PatientCodeBlindIndex == db.Phi.PatientCodeIndex(code));
             appointment.RemindersVerified = true; appointment.ConfirmedUtc = DateTimeOffset.UtcNow;
             db.RedStarRescheduleRequests.Add(new RedStarRescheduleRequest { Appointment = appointment, AppointmentRevision = appointment.Revision, RequestedDate = appointment.DueDate.AddDays(1), CreatedUtc = DateTimeOffset.UtcNow });
             db.RedStarReminders.Add(new RedStarReminder { Appointment = appointment, AppointmentRevision = appointment.Revision, Channel = RedStarReminderChannel.InApp, Stage = "before7", State = RedStarDeliveryState.Delivered });
@@ -402,7 +402,7 @@ public sealed class RedStarImportWorkflowTests(PortalFactory factory)
     {
         var code = "IMP-" + Guid.NewGuid().ToString("N"); var first = await Stage(Workbook(code));
         Assert.True((await Reconcile(first)).Succeeded); Assert.True((await Approve(first)).Succeeded);
-        var patientId = await Db(db => db.RedStarPatients.Where(x => x.PatientCode == code).Select(x => x.Id).SingleAsync());
+        var patientId = await Db(db => db.RedStarPatients.Where(x => x.PatientCodeBlindIndex == db.Phi.PatientCodeIndex(code)).Select(x => x.Id).SingleAsync());
         var again = await Stage(Workbook(code)); Assert.True((await Reconcile(again, x => x.ExistingPatientId = patientId)).Succeeded);
         await Db(async db => { var appointment = await db.RedStarAppointments.SingleAsync(x => x.Enrollment.PatientId == patientId); appointment.DueDate = appointment.DueDate.AddDays(1); appointment.Revision++; await db.SaveChangesAsync(); return true; });
         var approved = await Approve(again); Assert.False(approved.Succeeded); Assert.True(approved.Conflict);
@@ -420,7 +420,7 @@ public sealed class RedStarImportWorkflowTests(PortalFactory factory)
             new[] { "Synthetic Atomic Alpha", newCode }, new[] { "Synthetic Atomic Beta", existing } }) });
         var id = await Stage(bytes); Assert.True((await Reconcile(id)).Succeeded);
         Assert.False((await Approve(id)).Succeeded);
-        Assert.False(await Db(db => db.RedStarPatients.AnyAsync(x => x.PatientCode == newCode)));
+        Assert.False(await Db(db => db.RedStarPatients.AnyAsync(x => x.PatientCodeBlindIndex == db.Phi.PatientCodeIndex(newCode))));
         Assert.Null((await Batch(id)).ApprovedUtc);
     }
 
@@ -433,6 +433,6 @@ public sealed class RedStarImportWorkflowTests(PortalFactory factory)
         Assert.True((await Reconcile(id)).Succeeded); Assert.True((await Approve(id)).Succeeded);
         var batch = await Batch(id);
         var code = await Service(imports => Task.FromResult(imports.Read(batch).Choices.Single().PatientCode));
-        Assert.Equal(RedStarStatus.AwaitingVerification, await Db(db => db.RedStarEnrollments.Where(x => x.Patient.PatientCode == code).Select(x => x.Status).SingleAsync()));
+        Assert.Equal(RedStarStatus.AwaitingVerification, await Db(db => db.RedStarEnrollments.Where(x => x.Patient.PatientCodeBlindIndex == db.Phi.PatientCodeIndex(code)).Select(x => x.Status).SingleAsync()));
     }
 }

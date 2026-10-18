@@ -1,12 +1,19 @@
 using DrmcPatientPortal.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using DrmcPatientPortal.Services;
 
 namespace DrmcPatientPortal.Data;
 
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, RedStarPhiProtection? protection = null)
     : IdentityDbContext<ApplicationUser>(options)
 {
+    public object? ProtectionIdentity => protection;
+    public RedStarPhiProtection Phi => protection ?? throw new InvalidOperationException("Private registry protection is not configured.");
+    public DbSet<RedStarProtectionState> RedStarProtectionStates => Set<RedStarProtectionState>();
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
+        optionsBuilder.ReplaceService<IModelCacheKeyFactory, RedStarModelCacheKeyFactory>();
     public DbSet<Doctor> Doctors => Set<Doctor>();
     public DbSet<PatientRecord> PatientRecords => Set<PatientRecord>();
     public DbSet<PublicAdvisory> PublicAdvisories => Set<PublicAdvisory>();
@@ -50,19 +57,50 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         GuardAuditHistory();
-        return base.SaveChanges(acceptAllChangesOnSuccess);
+        var deleted = ChangeTracker.Entries<ApplicationUser>().Where(e => e.State == EntityState.Deleted).Select(e => e.Entity.Id).ToArray();
+        using var transaction = deleted.Length > 0 && Database.CurrentTransaction is null
+            ? Database.BeginTransaction(System.Data.IsolationLevel.Serializable) : null;
+        foreach (var id in deleted) RedStarAccountAccess.Detach(this, id);
+        PreparePrivateWrites();
+        var result = base.SaveChanges(acceptAllChangesOnSuccess);
+        transaction?.Commit();
+        return result;
     }
 
-    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
         GuardAuditHistory();
-        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        var deleted = ChangeTracker.Entries<ApplicationUser>().Where(e => e.State == EntityState.Deleted).Select(e => e.Entity.Id).ToArray();
+        await using var transaction = deleted.Length > 0 && Database.CurrentTransaction is null
+            ? await Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken) : null;
+        foreach (var id in deleted) await RedStarAccountAccess.DetachAsync(this, id, cancellationToken);
+        PreparePrivateWrites();
+        var result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        if (transaction is not null) await transaction.CommitAsync(cancellationToken);
+        return result;
+    }
+
+    private void PreparePrivateWrites()
+    {
+        ChangeTracker.DetectChanges();
+        foreach (var entry in ChangeTracker.Entries().Where(e => e.State is EntityState.Added or EntityState.Modified).ToArray())
+        {
+            if (!RedStarPhiProtection.Tables.Any(t => t.Entity == entry.Metadata.ClrType)) continue;
+            entry.Property("PhiProtectionVersion").CurrentValue = 1;
+            if (entry.Entity is RedStarPatient patient)
+            {
+                patient.PatientCodeBlindIndex = Phi.PatientCodeIndex(patient.PatientCode);
+                patient.HospitalNumberBlindIndex = Phi.HospitalNumberIndex(patient.HospitalNumber);
+                patient.PortalUserIdBlindIndex = Phi.AccountIndex(patient.PortalUserId);
+            }
+            if (entry.Entity is RedStarReminder reminder) reminder.PortalUserIdBlindIndex = Phi.AccountIndex(reminder.PortalUserId);
+        }
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-        RedStarModel.Configure(builder);
+        RedStarModel.Configure(builder, protection);
         builder.UseCollation("Latin1_General_100_BIN2");
 
         builder.Entity<WebsiteUsageDay>(e =>

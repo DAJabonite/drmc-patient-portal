@@ -47,7 +47,7 @@
         }
         else
         {
-            <p class="text-break">@patient.PortalUser?.Email</p>
+            <p class="text-break">@ViewData["LinkedAccountEmail"]</p>
             <p class="small text-muted">Email reminders: @(patient.EmailRemindersEnabled ? "Enabled by patient" : "Off"). Patients choose email reminders in the portal.</p>
             <form asp-action="Unlink" asp-route-id="@patient.Id" method="post">
                 <input name="PatientVersion" value="@patientVersion" type="hidden" />

@@ -14,7 +14,9 @@ public sealed class RedStarPatient
     [StringLength(40)] public string? ContactNumber { get; set; }
     [StringLength(500)] public string? Address { get; set; }
     public string? PortalUserId { get; set; }
-    public ApplicationUser? PortalUser { get; set; }
+    public string? PatientCodeBlindIndex { get; set; }
+    public string? HospitalNumberBlindIndex { get; set; }
+    public string? PortalUserIdBlindIndex { get; set; }
     public bool EmailRemindersEnabled { get; set; }
     [Timestamp] public byte[] RowVersion { get; set; } = [];
     public ICollection<RedStarEnrollment> Enrollments { get; set; } = [];
@@ -96,6 +98,7 @@ public sealed class RedStarReminder
     [StringLength(40)] public string Stage { get; set; } = "";
     public RedStarReminderChannel Channel { get; set; }
     [StringLength(450)] public string? PortalUserId { get; set; }
+    public string? PortalUserIdBlindIndex { get; set; }
     public bool IsRead { get; set; }
     public RedStarDeliveryState State { get; set; }
     public byte[]? ProtectedPayload { get; set; }
@@ -125,4 +128,12 @@ public sealed class RedStarImportBatch
     public byte[] ProtectedSource { get; set; } = [];
     public byte[] ProtectedPreview { get; set; } = [];
     [Timestamp] public byte[] RowVersion { get; set; } = [];
+}
+
+public sealed class RedStarProtectionState
+{
+    public int Id { get; set; }
+    public bool Ready { get; set; }
+    public string ProtectedCanary { get; set; } = "";
+    public string BlindKeyCheck { get; set; } = "";
 }
