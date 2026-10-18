@@ -193,7 +193,8 @@ public sealed class RedStarImports(IDataProtectionProvider protection, AdminWrit
                 if (enrollment is not null) db.Entry(enrollment).Property(x => x.RowVersion).OriginalValue = AdminAudit.Version(choice.ExistingEnrollmentVersion)!;
             }
             else { patient = new RedStarPatient(); db.RedStarPatients.Add(patient); }
-            if (await db.RedStarPatients.AnyAsync(x => x.PatientCode == choice.PatientCode && x.Id != patient.Id, token))
+            var codeIndex = db.Phi.PatientCodeIndex(choice.PatientCode);
+            if (await db.RedStarPatients.AnyAsync(x => x.PatientCodeBlindIndex == codeIndex && x.Id != patient.Id, token))
                 return WriteResult.Invalid("A private code already exists. Select that private record explicitly or exclude the duplicate row.");
             patient.PatientCode = choice.PatientCode; patient.FullName = choice.FullName;
             if (!string.IsNullOrEmpty(choice.CodeName)) patient.CodeName = choice.CodeName;

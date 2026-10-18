@@ -1,17 +1,38 @@
 using DrmcPatientPortal.Models;
 using Microsoft.EntityFrameworkCore;
+using DrmcPatientPortal.Services;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DrmcPatientPortal.Data;
 
 public static class RedStarModel
 {
-    public static void Configure(ModelBuilder builder)
+    public static void Configure(ModelBuilder builder, RedStarPhiProtection? protection = null)
     {
+        foreach (var table in RedStarPhiProtection.Tables)
+        {
+            var entity = builder.Entity(table.Entity);
+            entity.Property<int>("PhiProtectionVersion").HasDefaultValue(0);
+            foreach (var field in table.Fields)
+            {
+                var converter = protection?.Converter(table.Entity.Name, field) ?? new ValueConverter<string, string>(
+                    value => MissingProtection(value), value => MissingProtection(value));
+                var property = entity.Property<string>(field).HasConversion(converter).HasColumnType("nvarchar(max)");
+                property.Metadata.SetMaxLength(null);
+            }
+        }
+        builder.Entity<RedStarProtectionState>(e =>
+        {
+            e.Property(x => x.Id).ValueGeneratedNever();
+            e.Property(x => x.BlindKeyCheck).HasMaxLength(64).IsUnicode(false).IsFixedLength();
+        });
         builder.Entity<RedStarPatient>(e =>
         {
-            e.HasIndex(x => x.PatientCode).IsUnique();
-            e.HasIndex(x => x.PortalUserId).IsUnique().HasFilter("[PortalUserId] IS NOT NULL");
-            e.HasOne(x => x.PortalUser).WithMany().HasForeignKey(x => x.PortalUserId).OnDelete(DeleteBehavior.SetNull);
+            foreach (var field in new[] { "PatientCodeBlindIndex", "HospitalNumberBlindIndex", "PortalUserIdBlindIndex" })
+                e.Property<string>(field).HasMaxLength(64).IsUnicode(false).IsFixedLength();
+            e.HasIndex(x => x.PatientCodeBlindIndex).IsUnique().HasFilter("[PatientCodeBlindIndex] IS NOT NULL");
+            e.HasIndex(x => x.HospitalNumberBlindIndex);
+            e.HasIndex(x => x.PortalUserIdBlindIndex).IsUnique().HasFilter("[PortalUserIdBlindIndex] IS NOT NULL");
         });
         builder.Entity<RedStarEnrollment>(e =>
         {
@@ -43,10 +64,14 @@ public static class RedStarModel
         {
             e.Property(x => x.Id).ValueGeneratedNever();
             e.HasOne(x => x.Appointment).WithMany().HasForeignKey(x => x.AppointmentId).OnDelete(DeleteBehavior.Restrict);
-            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.PortalUserId).OnDelete(DeleteBehavior.SetNull);
-            e.HasIndex(x => new { x.AppointmentId, x.AppointmentRevision, x.Stage, x.Channel, x.PortalUserId }).IsUnique();
+            e.Property(x => x.PortalUserIdBlindIndex).HasMaxLength(64).IsUnicode(false).IsFixedLength();
+            e.HasIndex(x => new { x.AppointmentId, x.AppointmentRevision, x.Stage, x.Channel, x.PortalUserIdBlindIndex })
+                .IsUnique().HasFilter("[PortalUserIdBlindIndex] IS NOT NULL");
+            e.HasIndex(x => x.PortalUserIdBlindIndex);
             e.HasIndex(x => new { x.State, x.NextAttemptUtc });
         });
         builder.Entity<RedStarImportBatch>().Property(x => x.Id).ValueGeneratedNever();
     }
+
+    private static string MissingProtection(string value) => throw new InvalidOperationException("Private registry protection is not configured.");
 }

@@ -50,18 +50,21 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
         };
         if (program.HasValue) query = query.Where(e => e.Program == program);
         if (status.HasValue) query = query.Where(e => e.Status == status);
-        if (!string.IsNullOrEmpty(search)) query = query.Where(e =>
-            EF.Functions.Collate(e.Patient.PatientCode, "Latin1_General_100_CI_AS").Contains(search) ||
-            EF.Functions.Collate(e.Patient.CodeName, "Latin1_General_100_CI_AS").Contains(search));
-        var total = await query.CountAsync(cancellationToken);
-        page = Page(page, total);
-        var rows = await query.OrderBy(e => e.Patient.PatientCode).ThenBy(e => e.Id).Skip((page - 1) * PageSize).Take(PageSize)
+        // Ciphertext cannot be searched or sorted by SQL. Project only the registry
+        // summary, then apply the existing private search/order before pagination.
+        var summaries = await query
             .Select(e => new RedStarRegistryRow(e.Id, e.PatientId, e.Patient.PatientCode, e.Patient.CodeName, e.Program, e.Status,
                 e.Appointments.Where(a => a.Kind == RedStarAppointmentKind.Refill && a.State == RedStarAppointmentState.Scheduled)
                     .OrderBy(a => a.DueDate).Select(a => (DateTime?)a.DueDate).FirstOrDefault(),
                 db.RedStarRescheduleRequests.Count(r => r.Appointment.EnrollmentId == e.Id && r.State == RedStarRequestState.Pending),
                 e.Program == RedStarProgram.ART && e.Status == RedStarStatus.Active && e.Appointments.Any(a => a.Kind == RedStarAppointmentKind.Refill && a.State == RedStarAppointmentState.Scheduled && a.DueDate.AddMonths(1) <= today)))
             .ToListAsync(cancellationToken);
+        var matching = summaries.Where(e => string.IsNullOrEmpty(search) ||
+            RedStarPhiProtection.Contains(e.PatientCode, search) || RedStarPhiProtection.Contains(e.CodeName, search)).ToList();
+        var total = matching.Count;
+        page = Page(page, total);
+        var rows = matching.OrderBy(e => e.PatientCode, RedStarPhiProtection.RegistryOrder).ThenBy(e => e.EnrollmentId)
+            .Skip((page - 1) * PageSize).Take(PageSize).ToList();
         await RedStarAuditTrail.RecordAsync(db, Actor, "View registry", "Registry", cancellationToken);
         return View(new RedStarRegistryPage(rows, search, worklist, program, status, page, total, counts));
     }
@@ -95,7 +98,8 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
             if (patientId == 0)
             {
                 var code = input.PatientCode.Trim();
-                if (await database.RedStarPatients.AnyAsync(p => EF.Functions.Collate(p.PatientCode, "Latin1_General_100_CI_AS") == code, cancellationToken))
+                var codeIndex = database.Phi.PatientCodeIndex(code);
+                if (await database.RedStarPatients.AnyAsync(p => p.PatientCodeBlindIndex == codeIndex, cancellationToken))
                     return WriteResult.Invalid("That patient code already exists. Open its record to add another program.");
                 patient = new RedStarPatient(); ApplyPatient(input, patient);
                 database.RedStarPatients.Add(patient);
@@ -125,9 +129,11 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
     public async Task<IActionResult> Details([FromRoute] int id, int appointmentPage = 1, int historyPage = 1, int requestPage = 1,
         CancellationToken cancellationToken = default)
     {
-        var enrollment = await db.RedStarEnrollments.AsNoTracking().Include(e => e.Patient).ThenInclude(p => p.PortalUser)
+        var enrollment = await db.RedStarEnrollments.AsNoTracking().Include(e => e.Patient)
             .SingleOrDefaultAsync(e => e.Id == id, cancellationToken);
         if (enrollment is null) return NotFound();
+        ViewData["LinkedAccountEmail"] = enrollment.Patient.PortalUserId is null ? null :
+            await db.Users.Where(u => u.Id == enrollment.Patient.PortalUserId).Select(u => u.Email).SingleOrDefaultAsync(cancellationToken);
         var appointments = db.RedStarAppointments.AsNoTracking().Where(a => a.EnrollmentId == id);
         var dispenses = db.RedStarDispenses.AsNoTracking().Where(d => d.EnrollmentId == id);
         var requests = db.RedStarRescheduleRequests.AsNoTracking().Include(r => r.Appointment).Where(r => r.Appointment.EnrollmentId == id);
@@ -176,7 +182,8 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
             var enrollment = await database.RedStarEnrollments.Include(e => e.Patient).SingleOrDefaultAsync(e => e.Id == id, cancellationToken);
             if (enrollment is null || !Matches(enrollment.RowVersion, input.EnrollmentVersion) || !Matches(enrollment.Patient.RowVersion, input.PatientVersion)) return WriteResult.Stale;
             var code = input.PatientCode.Trim();
-            if (await database.RedStarPatients.AnyAsync(p => p.Id != enrollment.PatientId && EF.Functions.Collate(p.PatientCode, "Latin1_General_100_CI_AS") == code, cancellationToken))
+            var codeIndex = database.Phi.PatientCodeIndex(code);
+            if (await database.RedStarPatients.AnyAsync(p => p.Id != enrollment.PatientId && p.PatientCodeBlindIndex == codeIndex, cancellationToken))
                 return WriteResult.Invalid("That patient code is already assigned.");
             if (await database.RedStarEnrollments.AnyAsync(e => e.Id != id && e.PatientId == enrollment.PatientId && e.Program == input.Program, cancellationToken))
                 return WriteResult.Invalid("This patient already has an enrollment in that program. Update its existing record.");
@@ -214,7 +221,8 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
             var accounts = await database.Users.Where(u => u.EmailConfirmed && u.Email != null &&
                 EF.Functions.Collate(u.Email, "Latin1_General_100_CI_AS") == email).Take(2).ToListAsync(cancellationToken);
             if (accounts.Count != 1) return WriteResult.Invalid("Select one existing, email-confirmed portal account.");
-            if (await database.RedStarPatients.AnyAsync(p => p.PortalUserId == accounts[0].Id, cancellationToken))
+            var accountIndex = database.Phi.AccountIndex(accounts[0].Id);
+            if (await database.RedStarPatients.AnyAsync(p => p.PortalUserIdBlindIndex == accountIndex, cancellationToken))
                 return WriteResult.Invalid("That portal account is already linked to a clinic record.");
             await InvalidateAppointments(database, database.RedStarAppointments.Where(a => a.Enrollment.PatientId == id), false, cancellationToken);
             patient.PortalUserId = accounts[0].Id; patient.EmailRemindersEnabled = false;

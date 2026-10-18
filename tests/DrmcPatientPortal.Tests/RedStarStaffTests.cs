@@ -77,7 +77,7 @@ public sealed class RedStarStaffTests(PortalFactory factory)
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         var enrollment = await Db(db => db.RedStarEnrollments.AsNoTracking().Include(enrollment => enrollment.Patient)
             .Include(enrollment => enrollment.Appointments).Include(enrollment => enrollment.Dispenses)
-            .SingleAsync(enrollment => enrollment.Patient.PatientCode == code));
+            .SingleAsync(enrollment => enrollment.Patient.PatientCodeBlindIndex == db.Phi.PatientCodeIndex(code)));
         Assert.Equal(RedStarProgram.ART, enrollment.Program);
         Assert.Equal(RedStarStatus.AwaitingVerification, enrollment.Status);
         Assert.Empty(enrollment.Appointments);
@@ -97,7 +97,7 @@ public sealed class RedStarStaffTests(PortalFactory factory)
             ["Program"] = "Unverified", ["Status"] = "Active"
         });
         Assert.Contains("Verify the program before activating", await response.Content.ReadAsStringAsync());
-        Assert.False(await Db(db => db.RedStarPatients.AnyAsync(patient => patient.PatientCode == code)));
+        Assert.False(await Db(db => db.RedStarPatients.AnyAsync(patient => patient.PatientCodeBlindIndex == db.Phi.PatientCodeIndex(code))));
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public sealed class RedStarStaffTests(PortalFactory factory)
             ["Program"] = "ART", ["Status"] = "AwaitingVerification"
         });
         Assert.Contains("Select a supported worksheet layout", await response.Content.ReadAsStringAsync());
-        Assert.False(await Db(db => db.RedStarPatients.AnyAsync(patient => patient.PatientCode == "INVALID-LAYOUT")));
+        Assert.False(await Db(db => db.RedStarPatients.AnyAsync(patient => patient.PatientCodeBlindIndex == db.Phi.PatientCodeIndex("INVALID-LAYOUT"))));
         var item = await Seed(RedStarProgram.PrEP);
         var html = await clinic.GetStringAsync("/Admin/RedStar/Edit/" + item.EnrollmentId);
         Assert.Matches("<option[^>]*value=\"PrEP\"[^>]*selected", html);
@@ -170,7 +170,7 @@ public sealed class RedStarStaffTests(PortalFactory factory)
             ["Program"] = "ART", ["Status"] = "Active", ["EnrolledDate"] = ClinicalClock.Today.ToString("yyyy-MM-dd"), ["Medicines"] = "Synthetic medicine"
         });
         Assert.Equal(HttpStatusCode.Redirect, created.StatusCode);
-        var enrollment = await Db(db => db.RedStarEnrollments.AsNoTracking().Include(e => e.Patient).SingleAsync(e => e.Patient.PatientCode == code));
+        var enrollment = await Db(db => db.RedStarEnrollments.AsNoTracking().Include(e => e.Patient).SingleAsync(e => e.Patient.PatientCodeBlindIndex == db.Phi.PatientCodeIndex(code)));
         Assert.Equal(RedStarStatus.Active, enrollment.Status);
         Assert.False(await Db(db => db.PatientRecords.AnyAsync(p => p.FullName == enrollment.Patient.FullName)));
         var email = "redstar.link." + suffix + "@fixtures.test";

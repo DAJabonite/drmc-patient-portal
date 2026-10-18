@@ -8,6 +8,7 @@ namespace DrmcPatientPortal.Services;
 
 public static class KeyRingProtection
 {
+    public const string RedStarPhiPurpose = "DrmcPatientPortal.RedStar.PhiProtection.v1";
     public static async Task ConfigureAsync(IDataProtectionBuilder builder, string path, bool protectKeysWithDpapi)
     {
         if (protectKeysWithDpapi)

@@ -64,13 +64,13 @@ public sealed class RedStarImportsController(ApplicationDbContext db, RedStarImp
             page = Math.Clamp(page, 1, Math.Max(1, (preview.Rows.Count + 24) / 25));
             var rows = preview.Rows.Skip((page - 1) * 25).Take(25).ToArray();
             var choices = rows.Select(x => preview.Choices.SingleOrDefault(c => c.Key == x.Key) ?? RedStarImports.DefaultChoice(batch, x)).ToArray();
-            var codes = rows.Select(x => x.PatientCode).Where(x => x.Length != 0).ToArray();
-            var numbers = rows.Select(x => x.HospitalNumber).Where(x => !string.IsNullOrEmpty(x)).ToArray();
-            var matches = await db.RedStarPatients.AsNoTracking().Where(x => codes.Contains(x.PatientCode) || numbers.Contains(x.HospitalNumber))
+            var codes = rows.Select(x => x.PatientCode).Where(x => x.Length != 0).Select(db.Phi.PatientCodeIndex).ToArray();
+            var numbers = rows.Select(x => x.HospitalNumber).Where(x => !string.IsNullOrEmpty(x)).Select(db.Phi.HospitalNumberIndex).ToArray();
+            var matches = await db.RedStarPatients.AsNoTracking().Where(x => codes.Contains(x.PatientCodeBlindIndex) || numbers.Contains(x.HospitalNumberBlindIndex))
                 .Select(x => new { x.Id, x.PatientCode, x.CodeName, x.HospitalNumber, x.RowVersion }).Take(250).ToListAsync(cancellationToken);
             var candidates = rows.ToDictionary(x => x.Key, x => (IReadOnlyList<RedStarImportCandidate>)matches
-                .Where(m => (!string.IsNullOrEmpty(x.PatientCode) && string.Equals(x.PatientCode, m.PatientCode, StringComparison.OrdinalIgnoreCase)) ||
-                    (!string.IsNullOrEmpty(x.HospitalNumber) && string.Equals(x.HospitalNumber, m.HospitalNumber, StringComparison.OrdinalIgnoreCase)))
+                .Where(m => (!string.IsNullOrEmpty(x.PatientCode) && RedStarPhiProtection.NormalizeCode(x.PatientCode) == RedStarPhiProtection.NormalizeCode(m.PatientCode)) ||
+                    (!string.IsNullOrEmpty(x.HospitalNumber) && m.HospitalNumber != null && RedStarPhiProtection.NormalizeCode(x.HospitalNumber) == RedStarPhiProtection.NormalizeCode(m.HospitalNumber)))
                 .Select(m => new RedStarImportCandidate(m.Id, m.PatientCode, m.CodeName, Convert.ToBase64String(m.RowVersion))).ToArray());
             return View(new RedStarImportReview(batch, preview, rows, choices, candidates, page));
         }
@@ -125,8 +125,9 @@ public sealed class RedStarImportsController(ApplicationDbContext db, RedStarImp
         var total = await db.RedStarEnrollments.CountAsync(cancellationToken);
         if (total > RedStarRegistryParser.MaxRows)
         { TempData["RedStarImportMessage"] = "The registry exceeds the 5,000-record export limit. Contact the system maintainer for a protected bulk export."; return RedirectToAction(nameof(Index)); }
-        var rows = await db.RedStarEnrollments.AsNoTracking().Include(x => x.Patient).Include(x => x.Dispenses).Include(x => x.Appointments)
-            .OrderBy(x => x.Patient.PatientCode).ThenBy(x => x.Program).ToListAsync(cancellationToken);
+        var records = await db.RedStarEnrollments.AsNoTracking().Include(x => x.Patient).Include(x => x.Dispenses).Include(x => x.Appointments)
+            .ToListAsync(cancellationToken);
+        var rows = records.OrderBy(x => x.Patient.PatientCode, RedStarPhiProtection.RegistryOrder).ThenBy(x => x.Program).ToList();
         await RedStarAuditTrail.RecordAsync(db, Actor, "RegistryExport", "PrivateRegistry", cancellationToken);
         return File(RedStarRegistryParser.Export(rows), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Registry-core.xlsx");
     }

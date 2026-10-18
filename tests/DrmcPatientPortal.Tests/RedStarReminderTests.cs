@@ -207,15 +207,16 @@ public sealed class RedStarReminderIntegrationTests(PortalFactory factory)
         await Db(async db =>
         {
             var appointment = await db.RedStarAppointments.Include(a => a.Enrollment).ThenInclude(e => e.Patient)
-                .ThenInclude(p => p.PortalUser).SingleAsync(a => a.Id == item.AppointmentId);
+                .SingleAsync(a => a.Id == item.AppointmentId);
             var patient = appointment.Enrollment.Patient;
+            var account = await db.Users.SingleAsync(u => u.Id == patient.PortalUserId);
             switch (change)
             {
                 case "consent": patient.EmailRemindersEnabled = false; break;
-                case "address": patient.PortalUser!.Email = "new.synthetic@fixtures.test"; break;
-                case "unconfirmed": patient.PortalUser!.EmailConfirmed = false; break;
-                case "locked": patient.PortalUser!.LockoutEnabled = true; patient.PortalUser.LockoutEnd = clock.Now.AddDays(1); break;
-                case "unlink": patient.PortalUserId = null; patient.PortalUser = null; break;
+                case "address": account.Email = "new.synthetic@fixtures.test"; break;
+                case "unconfirmed": account.EmailConfirmed = false; break;
+                case "locked": account.LockoutEnabled = true; account.LockoutEnd = clock.Now.AddDays(1); break;
+                case "unlink": patient.PortalUserId = null; break;
                 case "revision": appointment.Revision++; appointment.DueDate = appointment.DueDate.AddDays(2); break;
                 case "pickup": appointment.State = RedStarAppointmentState.PickedUp; break;
                 case "completed": appointment.Enrollment.Status = RedStarStatus.Completed; break;

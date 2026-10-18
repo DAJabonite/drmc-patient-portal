@@ -155,6 +155,7 @@ var keyRingPath = builder.Configuration["DataProtection:KeyRingPath"] ?? Path.Co
 if (!Path.IsPathRooted(keyRingPath)) keyRingPath = Path.Combine(builder.Environment.ContentRootPath, keyRingPath);
 var protectKeysWithDpapi = builder.Configuration.GetValue<bool>("DataProtection:ProtectKeysWithDpapi");
 await KeyRingProtection.ConfigureAsync(builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keyRingPath)).SetApplicationName("DRMC.PatientPortal"), keyRingPath, protectKeysWithDpapi);
+builder.Services.AddSingleton(sp => new RedStarPhiProtection(sp.GetRequiredService<IDataProtectionProvider>(), keyRingPath));
 
 // Offline local OCR ID extraction service
 builder.Services.AddSingleton<IIdDocumentExtractionService, TesseractIdDocumentExtractionService>();
@@ -213,6 +214,17 @@ builder.Services.AddRazorPages(options =>
 });
 
 var app = builder.Build();
+await using (var protectionScope = app.Services.CreateAsyncScope())
+{
+    var protectionDb = protectionScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    if (args.SequenceEqual(new[] { "redstar-protection", "upgrade" }))
+    {
+        await RedStarProtectionUpgrade.RunAsync(protectionDb);
+        app.Logger.LogInformation("Private registry protection upgrade verified and complete.");
+        return;
+    }
+    await RedStarProtectionUpgrade.VerifyReadyAsync(protectionDb);
+}
 if (trustedProxies.Length > 0) app.UseForwardedHeaders();
 if (!protectKeysWithDpapi && !app.Environment.IsDevelopment())
     app.Logger.LogWarning("Data Protection keys are unprotected at rest. See the README Key Protection and Recovery section to choose and configure key protection before deployment.");

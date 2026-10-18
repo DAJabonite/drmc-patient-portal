@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -151,6 +152,22 @@ public sealed class WebsiteUsageUnitTests
 [Collection(PortalCollection.Name)]
 public sealed class WebsiteUsageIntegrationTests(PortalFactory factory)
 {
+    private sealed class CompletionFilter : IStartupFilter
+    {
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
+        {
+            app.Use(async (context, following) =>
+            {
+                try { await following(); }
+                finally
+                {
+                    if (context.Items.TryGetValue(typeof(CompletionFilter), out var completion))
+                        ((TaskCompletionSource)completion!).TrySetResult();
+                }
+            });
+            next(app);
+        };
+    }
     private async Task Record(DateTimeOffset now, string address, string? account = null)
     {
         await using var scope = factory.Services.CreateAsyncScope();
@@ -241,17 +258,23 @@ public sealed class WebsiteUsageIntegrationTests(PortalFactory factory)
         using var host = factory.WithWebHostBuilder(builder =>
         {
             if (trusted) builder.UseSetting("Proxy:KnownProxies:0", "192.0.2.51");
-            builder.ConfigureTestServices(services => services.AddSingleton<WebsiteUsageCollector>(sp => new(
-                sp.GetRequiredService<IServiceScopeFactory>(), new TestClock(now), sp.GetRequiredService<WebsiteUsageHealth>(),
-                sp.GetRequiredService<ILogger<WebsiteUsageCollector>>())));
+            builder.ConfigureTestServices(services =>
+            {
+                services.AddSingleton<IStartupFilter, CompletionFilter>();
+                services.AddSingleton<WebsiteUsageCollector>(sp => new(
+                    sp.GetRequiredService<IServiceScopeFactory>(), new TestClock(now), sp.GetRequiredService<WebsiteUsageHealth>(),
+                    sp.GetRequiredService<ILogger<WebsiteUsageCollector>>()));
+            });
         });
         _ = host.Server;
         var settings = host.Services.GetRequiredService<IOptions<WebsiteUsageOptions>>().Value;
         settings.Enabled = true;
         async Task Send(string forwarded, bool optout = false)
         {
+            var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var result = await host.Server.SendAsync(context =>
             {
+                context.Items[typeof(CompletionFilter)] = completion;
                 context.Request.Method = "GET"; context.Request.Path = "/";
                 context.Request.Scheme = "https"; context.Request.Host = new("localhost");
                 context.Connection.RemoteIpAddress = IPAddress.Parse("192.0.2.51");
@@ -260,6 +283,9 @@ public sealed class WebsiteUsageIntegrationTests(PortalFactory factory)
                 if (optout) context.Request.Headers["Sec-GPC"] = "1";
             });
             Assert.Equal(200, result.Response.StatusCode);
+            // SendAsync can return when the response completes, before middleware's
+            // post-response collection. Observe the entire pipeline before reading SQL.
+            await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
         }
         await Send("198.51.100.1");
         await Send("198.51.100.2");

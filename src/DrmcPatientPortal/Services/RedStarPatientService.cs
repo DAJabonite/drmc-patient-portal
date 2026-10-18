@@ -15,9 +15,7 @@ public sealed record RedStarPatientPage(RedStarPatient Patient, IReadOnlyList<Re
 public sealed class RedStarPatientService(ApplicationDbContext db, IHttpContextAccessor http)
 {
     private Task<RedStarPortalState>? portalState;
-    public IQueryable<RedStarPatient> OwnedPatients(string userId) => db.RedStarPatients.Where(p =>
-        p.PortalUserId == userId && p.PortalUser != null && p.PortalUser.EmailConfirmed &&
-        (!p.PortalUser.LockoutEnabled || p.PortalUser.LockoutEnd == null || p.PortalUser.LockoutEnd <= DateTimeOffset.UtcNow));
+    public IQueryable<RedStarPatient> OwnedPatients(string userId) => RedStarAccountAccess.OwnedPatients(db, userId);
 
     public Task<RedStarPortalState> PortalStateAsync() => portalState ??= LoadStateAsync();
     private async Task<RedStarPortalState> LoadStateAsync()
@@ -27,10 +25,11 @@ public sealed class RedStarPatientService(ApplicationDbContext db, IHttpContextA
         var userId = context?.User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId is null) return new(false, 0);
         var owned = OwnedPatients(userId);
+        var accountIndex = db.Phi.AccountIndex(userId);
         var patientId = await SqlReadRetry.RunAsync(db, () => owned.Select(p => (int?)p.Id).SingleOrDefaultAsync());
         if (patientId is null) return new(false, 0);
         context!.Response.Headers.CacheControl = "no-store";
-        var unread = await SqlReadRetry.RunAsync(db, () => db.RedStarReminders.CountAsync(r => r.PortalUserId == userId &&
+        var unread = await SqlReadRetry.RunAsync(db, () => db.RedStarReminders.CountAsync(r => r.PortalUserIdBlindIndex == accountIndex &&
             r.Channel == RedStarReminderChannel.InApp && r.State == RedStarDeliveryState.Delivered && !r.IsRead &&
             owned.Select(p => p.Id).Contains(r.Appointment.Enrollment.PatientId) &&
             r.Appointment.Revision == r.AppointmentRevision && r.Appointment.State == RedStarAppointmentState.Scheduled &&
@@ -55,6 +54,7 @@ public sealed class RedStarPatientService(ApplicationDbContext db, IHttpContextA
 
     public async Task<RedStarPatientPage?> PageAsync(string userId, int page, CancellationToken token)
     {
+        var accountIndex = db.Phi.AccountIndex(userId);
         var patient = await SqlReadRetry.RunAsync(db, () => OwnedPatients(userId).AsNoTracking().Include(p => p.Enrollments).SingleOrDefaultAsync(token), token);
         if (patient is null) return null;
         var ownedIds = OwnedPatients(userId).Select(p => p.Id);
@@ -68,7 +68,7 @@ public sealed class RedStarPatientService(ApplicationDbContext db, IHttpContextA
         var requests = await db.RedStarRescheduleRequests.AsNoTracking().Where(r => r.Appointment.Enrollment.PatientId == patient.Id && ownedIds.Contains(r.Appointment.Enrollment.PatientId))
             .OrderByDescending(r => r.CreatedUtc).Take(25).ToListAsync(token);
         var notifications = await db.RedStarReminders.AsNoTracking().Include(r => r.Appointment)
-            .Where(r => r.PortalUserId == userId && r.Appointment.Enrollment.PatientId == patient.Id && ownedIds.Contains(r.Appointment.Enrollment.PatientId) && r.Channel == RedStarReminderChannel.InApp &&
+            .Where(r => r.PortalUserIdBlindIndex == accountIndex && r.Appointment.Enrollment.PatientId == patient.Id && ownedIds.Contains(r.Appointment.Enrollment.PatientId) && r.Channel == RedStarReminderChannel.InApp &&
                 r.State == RedStarDeliveryState.Delivered && r.Appointment.Revision == r.AppointmentRevision &&
                 r.Appointment.State == RedStarAppointmentState.Scheduled && r.Appointment.Enrollment.Status == RedStarStatus.Active)
             .OrderByDescending(r => r.CreatedUtc).Take(25).ToListAsync(token);
