@@ -1,3 +1,4 @@
+using DrmcPatientPortal.Areas.Admin.Services;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
@@ -106,5 +107,6 @@ public class AdvisoriesIndexViewModel
 public class AdvisoryDetailViewModel
 {
     public PublicAdvisory Advisory { get; set; } = null!;
+    public string SanitizedContentHtml => AdvisoryHtml.Clean(Advisory.ContentHtml);
     public IReadOnlyList<PublicAdvisory> RelatedAdvisories { get; set; } = Array.Empty<PublicAdvisory>();
 }
