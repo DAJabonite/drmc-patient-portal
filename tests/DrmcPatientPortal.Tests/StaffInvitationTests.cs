@@ -110,7 +110,7 @@ public sealed partial class StaffInvitationTests(PortalFactory factory)
     }
 
     [Fact]
-    public async Task Admin_invites_staff_with_a_one_time_link_emailed_and_only_a_hash_stored()
+    public async Task Admin_invites_staff_with_a_one_time_link_queued_for_email_delivery()
     {
         var sender = new RecordingEmailSender();
         using var host = factory.WithWebHostBuilder(b => b.ConfigureTestServices(s => { s.RemoveAll<IEmailSender>(); s.AddSingleton<IEmailSender>(sender); }));
@@ -124,9 +124,8 @@ public sealed partial class StaffInvitationTests(PortalFactory factory)
         var code = IssuedCode().Match(html).Groups[1].Value;
         Assert.Matches("^[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}$", code);
         Assert.Contains("<svg", html);
-        Assert.Contains("We emailed the signup link", html);
-        var message = Assert.Single(sender.Messages, m => m.Email == email);
-        Assert.Contains("/Identity/Account/Register#invite=" + code, message.Body);
+        Assert.Contains("We queued the signup link", html);
+        Assert.Empty(sender.Messages);
 
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -136,6 +135,19 @@ public sealed partial class StaffInvitationTests(PortalFactory factory)
         Assert.Equal("RadiologyStaff", stored.Role);
         Assert.True(await db.AdminAuditLogs.AnyAsync(a => a.Entity == "StaffInvitations" && a.Action == "Invite" && a.RecordKey == stored.Id.ToString()));
         Assert.DoesNotContain(code, await (await admin.GetAsync("/Admin/StaffInvitations")).Content.ReadAsStringAsync());
+
+        var queued = await db.OutboundNotifications.AsNoTracking().SingleAsync(m => m.StaffInvitationId == stored.Id);
+        Assert.Equal(OutboundNotificationStatus.Pending, queued.Status);
+        Assert.Equal(0, queued.AttemptCount);
+        Assert.NotNull(queued.PayloadProtected);
+
+        await host.Services.GetRequiredService<OutboundNotificationDispatcher>().DispatchOnceAsync();
+        var message = Assert.Single(sender.Messages, m => m.Email == email);
+        Assert.Contains("/Identity/Account/Register#invite=" + code, message.Body);
+        var delivered = await db.OutboundNotifications.AsNoTracking().SingleAsync(m => m.Id == queued.Id);
+        Assert.Equal(OutboundNotificationStatus.Delivered, delivered.Status);
+        Assert.Equal(1, delivered.AttemptCount);
+        Assert.Null(delivered.PayloadProtected);
     }
 
     [Fact]
