@@ -126,14 +126,14 @@
                                         <div class="p-3 rounded-circle bg-white shadow-xs d-inline-flex text-primary-drmc mb-2">
                                             <i class="bi bi-camera-fill fs-2"></i>
                                         </div>
-                                        <p class="small text-muted mb-0">Take photo or browse</p>
+                                        <p class="small text-muted mb-0">JPEG, PNG or static WebP; up to 5 MB, 4096 pixels per side and 16 megapixels.</p>
                                     </div>
 
                                     <div class="mt-auto pt-2">
                                         <label for="frontPhotoInput" class="btn btn-outline-drmc rounded-pill px-3 fw-semibold w-100" id="frontInputLabel" role="button" tabindex="0" aria-controls="frontPhotoInput">
                                             <i class="bi bi-camera me-1"></i> Snap / Select Front
                                         </label>
-                                        <input type="file" id="frontPhotoInput" asp-for="Input.FrontPhoto" accept="image/*" capture="environment" class="visually-hidden" tabindex="-1" />
+                                        <input type="file" id="frontPhotoInput" asp-for="Input.FrontPhoto" accept="image/jpeg,image/png,image/webp" capture="environment" class="visually-hidden" tabindex="-1" />
                                     </div>
                                 </div>
                             </div>
@@ -163,7 +163,7 @@
                                         <label for="backPhotoInput" class="btn btn-outline-drmc rounded-pill px-3 fw-semibold w-100" id="backInputLabel" role="button" tabindex="0" aria-controls="backPhotoInput">
                                             <i class="bi bi-camera me-1"></i> Snap / Select Back
                                         </label>
-                                        <input type="file" id="backPhotoInput" asp-for="Input.BackPhoto" accept="image/*" capture="environment" class="visually-hidden" tabindex="-1" />
+                                        <input type="file" id="backPhotoInput" asp-for="Input.BackPhoto" accept="image/jpeg,image/png,image/webp" capture="environment" class="visually-hidden" tabindex="-1" />
                                     </div>
                                 </div>
                             </div>

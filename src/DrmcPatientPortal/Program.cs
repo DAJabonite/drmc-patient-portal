@@ -18,6 +18,12 @@ using Microsoft.Extensions.Options;
 using Microsoft.Data.SqlClient;
 using System.Net;
 
+if (args is ["--ocr-worker"])
+{
+    Environment.ExitCode = await OcrWorker.RunAsync();
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -52,11 +58,13 @@ builder.Services.AddSingleton<RedStarReminderService>();
 builder.Services.AddHostedService<RedStarReminderWorker>();
 builder.Services.AddOptions<PortalRateLimitOptions>().Bind(builder.Configuration.GetSection("RateLimits"))
     .Validate(x => x.AuthenticationPerIp > 0 && x.AuthenticationPerAccount > 0 && x.EmailPerIp > 0 && x.EmailPerAccount > 0 &&
-        x.ScansPerIp > 0 && x.ConcurrentScans > 0 && x.PdfPerUser > 0, "All rate limits must be positive.").ValidateOnStart();
+        x.ScansPerIp > 0 && x.ScansPerUser > 0 && x.ConcurrentScans > 0 && x.PdfPerUser > 0, "All rate limits must be positive.").ValidateOnStart();
 builder.Services.AddSingleton<PortalRequestLimiter>();
 builder.Services.AddSingleton<PortalSessionStore>();
 builder.Services.AddScoped<PortalCookieEvents>();
-builder.Services.Configure<OcrOptions>(builder.Configuration.GetSection("Ocr"));
+builder.Services.AddOptions<OcrOptions>().Bind(builder.Configuration.GetSection("Ocr"))
+    .Validate(x => x.IsValid(), "OCR limits require 1–4 workers, 0–8 queued jobs, at most 5 seconds queue wait and 10 seconds execution.").ValidateOnStart();
+builder.Services.AddSingleton<IOcrProcessRunner, OcrProcessRunner>();
 builder.Services.AddSingleton<OcrRuntime>();
 builder.Services.AddHostedService(services => services.GetRequiredService<OcrRuntime>());
 builder.Services.AddHostedService<AccountEmailWorker>();

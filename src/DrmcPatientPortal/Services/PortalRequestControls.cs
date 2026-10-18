@@ -6,6 +6,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Http.Features;
 
 namespace DrmcPatientPortal.Services;
 
@@ -16,6 +17,7 @@ public sealed class PortalRateLimitOptions
     public int EmailPerIp { get; set; } = 20;
     public int EmailPerAccount { get; set; } = 3;
     public int ScansPerIp { get; set; } = 5;
+    public int ScansPerUser { get; set; } = 5;
     public int ConcurrentScans { get; set; } = 2;
     public int PdfPerUser { get; set; } = 10;
 }
@@ -45,7 +47,7 @@ public sealed class PortalRequestLimiter : IDisposable
                 {
                     PortalRequestKind.Authentication => perAccount ? options.AuthenticationPerAccount : options.AuthenticationPerIp,
                     PortalRequestKind.Email => perAccount ? options.EmailPerAccount : options.EmailPerIp,
-                    PortalRequestKind.Scan => options.ScansPerIp,
+                    PortalRequestKind.Scan => perAccount ? options.ScansPerUser : options.ScansPerIp,
                     PortalRequestKind.Pdf => options.PdfPerUser,
                     _ => throw new InvalidOperationException("A rate limit category is required.")
                 },
@@ -55,7 +57,7 @@ public sealed class PortalRequestLimiter : IDisposable
     public RateLimitLease AcquireIp(PortalRequestKind kind, string address) => ip.AttemptAcquire((kind, address));
     public RateLimitLease AcquireAccount(PortalRequestKind kind, string identity, string address) =>
         account.AttemptAcquire((kind, Convert.ToHexString(HMACSHA256.HashData(key,
-            Encoding.UTF8.GetBytes(identity.Trim().ToUpperInvariant() + "\n" + (kind == PortalRequestKind.Pdf ? "" : address))))));
+            Encoding.UTF8.GetBytes(identity.Trim().ToUpperInvariant() + "\n" + (kind is PortalRequestKind.Pdf or PortalRequestKind.Scan ? "" : address))))));
     public void Dispose() { ip.Dispose(); account.Dispose(); ScanConcurrency.Dispose(); }
 }
 
@@ -90,12 +92,39 @@ public sealed class PortalRequestControls(RequestDelegate next)
         var address = context.Connection.RemoteIpAddress?.MapToIPv6().ToString() ?? "unknown";
         using var ipLease = kind is PortalRequestKind.None or PortalRequestKind.Pdf ? null : limiter.AcquireIp(kind, address);
         if (ipLease is { IsAcquired: false }) { await Rejected(context, kind, ipLease); return; }
+        var registrationPost = HttpMethods.IsPost(context.Request.Method) &&
+            (context.Request.Path.Value ?? "").TrimEnd('/').Equals("/Identity/Account/Register", StringComparison.OrdinalIgnoreCase);
+        using var scanLease = kind == PortalRequestKind.Scan ? limiter.ScanConcurrency.AttemptAcquire() : null;
+        if (scanLease is { IsAcquired: false }) { await Rejected(context, kind, scanLease); return; }
+        var userId = context.User.Identity?.IsAuthenticated == true ? context.User.FindFirstValue(ClaimTypes.NameIdentifier) : null;
+        using var scanUserLease = kind == PortalRequestKind.Scan && userId is not null ? limiter.AcquireAccount(PortalRequestKind.Scan, userId, address) : null;
+        if (scanUserLease is { IsAcquired: false }) { await Rejected(context, kind, scanUserLease); return; }
+        if (registrationPost)
+        {
+            if (context.Request.ContentLength > IdImageValidation.MaximumRequestBytes)
+            { await Invalid(context, kind, "The upload request must be at most 12 MB.", 413); return; }
+            var sizeFeature = context.Features.Get<IHttpMaxRequestBodySizeFeature>();
+            if (sizeFeature is { IsReadOnly: false }) sizeFeature.MaxRequestBodySize = IdImageValidation.MaximumRequestBytes;
+            context.Request.Body = new LimitedUploadStream(context.Request.Body);
+            context.Features.Set<IFormFeature>(new FormFeature(context.Request, new FormOptions
+            {
+                MultipartBodyLengthLimit = IdImageValidation.MaximumBytes,
+                BufferBodyLengthLimit = IdImageValidation.MaximumRequestBytes
+            }));
+        }
         IFormCollection? form = null;
         try
         {
             if (context.Request.HasFormContentType) form = await context.Request.ReadFormAsync(context.RequestAborted);
         }
-        catch (InvalidDataException) { await Invalid(context, kind); return; }
+        catch (InvalidDataException)
+        {
+            if (registrationPost) await Invalid(context, kind, "The upload form is invalid. Use ID photos of at most 5 MB each.");
+            else await Invalid(context, kind);
+            return;
+        }
+        catch (BadHttpRequestException error) when (error.StatusCode is 400 or 413)
+        { await Invalid(context, kind, "The upload request is invalid or too large. Use ID photos of at most 5 MB each.", error.StatusCode); return; }
         if (context.Request.Query.Any(pair => pair.Value.Any(value => value?.Contains('\0') == true)) ||
             form?.Any(pair => pair.Value.Any(value => value?.Contains('\0') == true)) == true)
         {
@@ -113,17 +142,52 @@ public sealed class PortalRequestControls(RequestDelegate next)
         using var accountLease = kind is PortalRequestKind.Authentication or PortalRequestKind.Email or PortalRequestKind.Pdf
             ? limiter.AcquireAccount(kind, accountKey, address) : null;
         if (accountLease is { IsAcquired: false }) { await Rejected(context, kind, accountLease); return; }
-        using var scanLease = kind == PortalRequestKind.Scan ? limiter.ScanConcurrency.AttemptAcquire() : null;
-        if (scanLease is { IsAcquired: false }) { await Rejected(context, kind, scanLease); return; }
+        var directUpload = registrationPost && kind != PortalRequestKind.Scan && form?.Files.Any(f => f.Length > 0) == true;
+        using var uploadIpLease = directUpload ? limiter.AcquireIp(PortalRequestKind.Scan, address) : null;
+        if (uploadIpLease is { IsAcquired: false }) { await Rejected(context, kind, uploadIpLease); return; }
+        using var uploadUserLease = directUpload && userId is not null ? limiter.AcquireAccount(PortalRequestKind.Scan, userId, address) : null;
+        if (uploadUserLease is { IsAcquired: false }) { await Rejected(context, kind, uploadUserLease); return; }
+        using var uploadConcurrency = directUpload ? limiter.ScanConcurrency.AttemptAcquire() : null;
+        if (uploadConcurrency is { IsAcquired: false }) { await Rejected(context, kind, uploadConcurrency); return; }
         await next(context);
     }
 
-    private static async Task Invalid(HttpContext context, PortalRequestKind kind)
+    private static async Task Invalid(HttpContext context, PortalRequestKind kind,
+        string message = "The form contains invalid text. Remove null characters and submit it again.", int statusCode = 400)
     {
-        context.Response.StatusCode = StatusCodes.Status400BadRequest;
-        const string message = "The form contains invalid text. Remove null characters and submit it again.";
+        context.Response.StatusCode = statusCode;
         if (kind == PortalRequestKind.Scan) await context.Response.WriteAsJsonAsync(new { success = false, message });
         else await context.Response.WriteAsync(message);
+    }
+
+    // The explicit counter also enforces the limit for chunked requests and TestServer,
+    // where a server max-body-size feature may not be available.
+    private sealed class LimitedUploadStream(Stream inner) : Stream
+    {
+        private long read;
+        private int Allowed(int count) => (int)Math.Min(count, IdImageValidation.MaximumRequestBytes - read + 1);
+        private int Count(int count)
+        {
+            read += count;
+            if (read > IdImageValidation.MaximumRequestBytes)
+                throw new BadHttpRequestException("The upload request exceeds 12 MB.", 413);
+            return count;
+        }
+        public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+        public override int Read(Span<byte> buffer) => Count(inner.Read(buffer[..Allowed(buffer.Length)]));
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+            Count(await inner.ReadAsync(buffer[..Allowed(buffer.Length)], cancellationToken));
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override void Flush() => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
     private static async Task Rejected(HttpContext context, PortalRequestKind kind, RateLimitLease lease)
     {

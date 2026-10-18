@@ -7,64 +7,183 @@ public sealed class OcrOptions
 {
     public string NativeLibraryPath { get; set; } = string.Empty;
     public string TessDataPath { get; set; } = string.Empty;
+    public int MaxConcurrency { get; set; } = 2;
+    public int MaxQueuedJobs { get; set; } = 2;
+    public TimeSpan QueueWaitTimeout { get; set; } = TimeSpan.FromSeconds(5);
+    public TimeSpan ExtractionTimeout { get; set; } = TimeSpan.FromSeconds(10);
+    public bool IsValid() => MaxConcurrency is >= 1 and <= 4 && MaxQueuedJobs is >= 0 and <= 8 &&
+        QueueWaitTimeout > TimeSpan.Zero && QueueWaitTimeout <= TimeSpan.FromSeconds(5) &&
+        ExtractionTimeout > TimeSpan.Zero && ExtractionTimeout <= TimeSpan.FromSeconds(10);
 }
 
 public sealed class OcrDependencyUnavailableException(string message, Exception? inner = null) : Exception(message, inner);
+public sealed class OcrBusyException() : Exception("ID scanning is busy. Wait a few seconds and try again.");
+public sealed class OcrTimeoutException() : Exception("ID scanning took too long. Try a clearer photo or enter your details manually.");
+public sealed record OcrJobResult(OcrWorkerResponse Response, string ContentType, byte[]? ValidatedBytes);
 
-public sealed class OcrRuntime : IHostedService
+/// <summary>One process-wide budget for all untrusted native image work, including storage validation.</summary>
+public sealed class OcrRuntime : IHostedService, IDisposable
 {
-    private readonly string tessData;
+    private readonly OcrOptions options;
+    private readonly IOcrProcessRunner runner;
     private readonly ILogger<OcrRuntime> logger;
+    private readonly SemaphoreSlim gate;
+    private readonly CancellationTokenSource stopping = new();
+    private readonly string tessData, nativePath, scratchRoot;
+    private int queued;
+    private int disposed;
+    private readonly object lifecycle = new();
+    private Task? shutdown;
 
-    public OcrRuntime(IOptions<OcrOptions> options, IWebHostEnvironment environment, ILogger<OcrRuntime> logger)
+    public OcrRuntime(IOptions<OcrOptions> settings, IWebHostEnvironment environment, ILogger<OcrRuntime> logger,
+        IOcrProcessRunner? runner = null)
     {
+        options = settings.Value;
+        if (!options.IsValid()) throw new ArgumentException("OCR execution limits are outside their supported bounds.", nameof(settings));
+        this.runner = runner ?? new OcrProcessRunner();
         this.logger = logger;
-        var dataPath = options.Value.TessDataPath;
-        if (string.IsNullOrWhiteSpace(dataPath))
-            dataPath = Directory.Exists(Path.Combine(AppContext.BaseDirectory, "tessdata"))
+        gate = new(options.MaxConcurrency, options.MaxConcurrency);
+        var data = options.TessDataPath;
+        if (string.IsNullOrWhiteSpace(data))
+            data = Directory.Exists(Path.Combine(AppContext.BaseDirectory, "tessdata"))
                 ? Path.Combine(AppContext.BaseDirectory, "tessdata") : Path.Combine(environment.ContentRootPath, "tessdata");
-        tessData = Path.GetFullPath(Path.IsPathRooted(dataPath) ? dataPath : Path.Combine(environment.ContentRootPath, dataPath));
-        if (!string.IsNullOrWhiteSpace(options.Value.NativeLibraryPath))
-            TesseractEnviornment.CustomSearchPath = Path.GetFullPath(Path.IsPathRooted(options.Value.NativeLibraryPath)
-                ? options.Value.NativeLibraryPath : Path.Combine(environment.ContentRootPath, options.Value.NativeLibraryPath));
+        tessData = Resolve(data, environment.ContentRootPath);
+        nativePath = string.IsNullOrWhiteSpace(options.NativeLibraryPath) ? "" : Resolve(options.NativeLibraryPath, environment.ContentRootPath);
+        scratchRoot = Path.Combine(environment.ContentRootPath, "App_Data", "OcrScratch");
     }
 
-    public TesseractEngine CreateEngine()
+    private static string Resolve(string path, string root) => Path.GetFullPath(Path.IsPathRooted(path) ? path : Path.Combine(root, path));
+
+    // Retain the engine factory API; production request paths use ProcessAsync instead.
+    public TesseractEngine CreateEngine() => CreateEngine(tessData, nativePath);
+
+    internal static TesseractEngine CreateEngine(string dataPath, string libraryPath)
     {
         try
         {
-            if (!File.Exists(Path.Combine(tessData, "eng.traineddata"))) throw new FileNotFoundException("English OCR language data is missing.");
-            return new TesseractEngine(tessData, "eng", EngineMode.Default);
+            if (!File.Exists(Path.Combine(dataPath, "eng.traineddata"))) throw new FileNotFoundException("English OCR language data is missing.");
+            if (!string.IsNullOrEmpty(libraryPath)) TesseractEnviornment.CustomSearchPath = libraryPath;
+            return new TesseractEngine(dataPath, "eng", EngineMode.Default);
         }
-        catch (Exception error) when (error is not OcrDependencyUnavailableException)
+        catch (Exception error)
         {
-            throw new OcrDependencyUnavailableException(
-                $"OCR is unavailable. Install compatible Tesseract and Leptonica libraries and configure Ocr:NativeLibraryPath and Ocr:TessDataPath. English language data is expected in '{tessData}'. See README Linux OCR setup.", error);
+            throw new OcrDependencyUnavailableException("OCR engine initialization failed. Check Ocr:NativeLibraryPath and Ocr:TessDataPath.", error);
         }
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    public async Task<OcrJobResult> ProcessAsync(Stream front, Stream? back = null, bool recognize = true,
+        CancellationToken cancellationToken = default, int maximumBytes = IdImageValidation.MaximumBytes, string idType = "")
+    {
+        using var caller = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, stopping.Token);
+        await EnterAsync(caller.Token);
+        string? directory = null;
+        try
+        {
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(caller.Token);
+            deadline.CancelAfter(options.ExtractionTimeout);
+            var token = deadline.Token;
+            try
+            {
+                directory = Path.Combine(scratchRoot, Guid.NewGuid().ToString("N"));
+                if (OperatingSystem.IsWindows()) Directory.CreateDirectory(directory);
+                else Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+                var frontFile = await PrepareAsync(front, Path.Combine(directory, "front"), maximumBytes, token);
+                var backFile = back is null ? null : await PrepareAsync(back, Path.Combine(directory, "back"), maximumBytes, token);
+                var response = await runner.RunAsync(new(tessData, nativePath, recognize, frontFile, backFile, idType), token);
+                token.ThrowIfCancellationRequested();
+                if (response.Status == "invalid") throw new InvalidDataException(IdImageValidation.InvalidImageMessage);
+                if (response.Status != "ok") throw new OcrDependencyUnavailableException("ID scanning is temporarily unavailable. Please try again later.");
+                var bytes = recognize ? null : await File.ReadAllBytesAsync(frontFile.Path, token);
+                return new(response, frontFile.Info.ContentType, bytes);
+            }
+            catch (OperationCanceledException) when (!caller.IsCancellationRequested) { throw new OcrTimeoutException(); }
+        }
+        finally
+        {
+            try { if (directory is not null && Directory.Exists(directory)) Directory.Delete(directory, recursive: true); }
+            catch (IOException) { logger.LogWarning("Could not delete an OCR scratch directory."); }
+            catch (UnauthorizedAccessException) { logger.LogWarning("Could not delete an OCR scratch directory."); }
+            gate.Release();
+        }
+    }
+
+    private async Task EnterAsync(CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        if (gate.Wait(0)) return;
+        var waiting = Interlocked.Increment(ref queued);
+        try
+        {
+            if (waiting > options.MaxQueuedJobs || !await gate.WaitAsync(options.QueueWaitTimeout, token)) throw new OcrBusyException();
+        }
+        finally { Interlocked.Decrement(ref queued); }
+    }
+
+    private static async Task<OcrWorkerImage> PrepareAsync(Stream input, string path, int maximumBytes, CancellationToken token)
+    {
+        var limit = Math.Min(maximumBytes, IdImageValidation.MaximumBytes);
+        if (limit <= 0 || (input.CanSeek && (input.Length - input.Position <= 0 || input.Length - input.Position > limit)))
+            throw new InvalidDataException("Each ID photo must be between 1 byte and 5 MB.");
+        await using var output = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 8192, FileOptions.Asynchronous);
+        var buffer = new byte[8192];
+        long total = 0;
+        int count;
+        while ((count = await input.ReadAsync(buffer.AsMemory(0, (int)Math.Min(buffer.Length, limit - total + 1)), token)) != 0)
+        {
+            total += count;
+            if (total > limit) throw new InvalidDataException("Each ID photo must be between 1 byte and 5 MB.");
+            await output.WriteAsync(buffer.AsMemory(0, count), token);
+        }
+        await output.FlushAsync(token);
+        var info = IdImageValidation.Inspect(output, token);
+        token.ThrowIfCancellationRequested();
+        return new(path, info);
+    }
+
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
         try
         {
-            using var engine = CreateEngine();
-            foreach (var extension in new[] { "png", "jpg" })
+            foreach (var extension in new[] { "png", "jpg", "webp" })
             {
                 using var stream = typeof(OcrRuntime).Assembly.GetManifestResourceStream($"DrmcPatientPortal.Services.OcrFixtures.probe.{extension}")
                     ?? throw new InvalidOperationException("The OCR startup image probe is missing.");
-                using var memory = new MemoryStream();
-                stream.CopyTo(memory);
-                using var image = Pix.LoadFromMemory(memory.ToArray());
-                using var page = engine.Process(image);
-                _ = page.GetText();
+                await ProcessAsync(stream, cancellationToken: cancellationToken);
             }
-            logger.LogInformation("OCR startup check passed for JPEG, PNG and English language data.");
-            return Task.CompletedTask;
+            logger.LogInformation("OCR worker startup check passed for JPEG, PNG, WebP and English language data.");
         }
-        catch (OcrDependencyUnavailableException) { throw; }
-        catch (Exception error) { throw new OcrDependencyUnavailableException("OCR startup image decoding failed. Check the native libraries using the README Linux OCR setup.", error); }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            throw new OcrDependencyUnavailableException("OCR startup failed. Check Ocr:NativeLibraryPath, Ocr:TessDataPath and the README OCR setup.", error);
+        }
     }
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        lock (lifecycle)
+        {
+            if (disposed != 0) return Task.CompletedTask;
+            shutdown ??= StopCoreAsync();
+            return shutdown.WaitAsync(cancellationToken);
+        }
+    }
+
+    private async Task StopCoreAsync()
+    {
+        await stopping.CancelAsync();
+        for (var i = 0; i < options.MaxConcurrency; i++) await gate.WaitAsync();
+        gate.Release(options.MaxConcurrency);
+    }
+    public void Dispose()
+    {
+        lock (lifecycle)
+        {
+            if (disposed != 0) return;
+            disposed = 1;
+            stopping.Cancel();
+            stopping.Dispose();
+        }
+    }
 
     public static bool IsDependencyFailure(Exception error)
     {
