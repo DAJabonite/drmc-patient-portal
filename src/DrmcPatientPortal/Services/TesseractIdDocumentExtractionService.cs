@@ -96,6 +96,12 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
                 ParseGenericFields(result, frontText);
                 break;
         }
+        // Capabilities describe what is normally printed, not a prohibition on reading an
+        // additional labelled field on a newer card version. Keep document-number rules strict.
+        if (!result.DateOfBirth.Found) ExtractDobByLabels(result, frontText);
+        if (!result.Sex.Found) ExtractSexByLabels(result, frontText);
+        if (!result.BloodType.Found) ExtractBloodTypeByLabels(result, frontText);
+        if (!result.Address.Found) ExtractAddressByLabels(result, frontText);
         result.Success = result.FoundFieldsSummary.Count > 0;
     }
 
@@ -103,12 +109,16 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
 
     private static void ParsePassport(IdExtractionResult result, string text)
     {
+        ExtractNameByLabels(result, text);
+        ExtractIdNumberByPattern(result, text, @"(?:Passport\s*(?:No|Number|\#)?[:\.\s]*)([A-Z0-9]{8,10})\b");
+        ExtractDobByLabels(result, text);
+        ExtractSexByLabels(result, text);
         // 1. Attempt Machine Readable Zone (MRZ) 2-line ICAO 9303 Type P Parsing
         // Line 1: P<PHL<SURNAME<<GIVEN<NAMES<<<<<<<<<<<<
         // Line 2: PASSPORT_NO<PHLYYMMDD<SEX<YYMMDD<...
         var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                         .Select(l => Regex.Replace(l.Trim().ToUpperInvariant(), @"\s+", ""))
-                        .Where(l => l.Length >= 30)
+                        .Where(l => l.Length == 44 && Regex.IsMatch(l, @"^[A-Z0-9<]+$"))
                         .ToList();
 
         for (int i = 0; i < lines.Count; i++)
@@ -123,7 +133,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
                 if (nameParts.Length >= 1)
                 {
                     string surname = CleanMrzString(nameParts[0]);
-                    if (!string.IsNullOrWhiteSpace(surname))
+                    if (!result.LastName.Found && IsName(surname))
                     {
                         result.LastName = ExtractedField<string>.From(surname);
                     }
@@ -131,16 +141,8 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
                 if (nameParts.Length >= 2)
                 {
                     string givenPortion = CleanMrzString(nameParts[1]).Replace('<', ' ').Trim();
-                    var givenWords = givenPortion.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    if (givenWords.Length > 1)
-                    {
-                        result.FirstName = ExtractedField<string>.From(givenWords[0]);
-                        result.MiddleName = ExtractedField<string>.From(string.Join(" ", givenWords.Skip(1)));
-                    }
-                    else if (givenWords.Length == 1)
-                    {
-                        result.FirstName = ExtractedField<string>.From(givenWords[0]);
-                    }
+                    if (!result.FirstName.Found && IsName(givenPortion))
+                        result.FirstName = ExtractedField<string>.From(givenPortion);
                 }
 
                 // Check subsequent line for MRZ Line 2
@@ -151,7 +153,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
                     {
                         // Passport Number: First ~9 chars
                         string rawDocNum = mrzLine2.Substring(0, Math.Min(9, mrzLine2.Length)).Replace("<", "").Trim();
-                        if (rawDocNum.Length >= 6)
+                        if (!result.IdNumber.Found && rawDocNum.Length >= 6 && CheckMrzDigit(mrzLine2[..9], mrzLine2[9]))
                         {
                             result.IdNumber = ExtractedField<string>.From(rawDocNum);
                         }
@@ -160,9 +162,10 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
                         if (mrzLine2.Length >= 20)
                         {
                             string rawDob = mrzLine2.Substring(13, 6);
-                            if (Regex.IsMatch(rawDob, @"^\d{6}$"))
+                            if (!result.DateOfBirth.Found && Regex.IsMatch(rawDob, @"^\d{6}$") &&
+                                CheckMrzDigit(rawDob, mrzLine2[19]))
                             {
-                                if (TryParseMrzDate(rawDob, isDob: true, out DateTime dob))
+                                if (TryParseMrzDate(rawDob, isDob: true, out DateTime dob) && dob.Date <= DateTime.UtcNow.Date)
                                 {
                                     result.DateOfBirth = ExtractedField<DateTime>.From(dob);
                                 }
@@ -274,11 +277,9 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
     private static void ParsePostalId(IdExtractionResult result, string text)
     {
         // Postal ID Reference Number
-        var idMatch = Regex.Match(text, @"(?:Postal\s*ID\s*No|PRN|ID\s*No)[:\.\s]*([A-Z0-9 \t\-]{6,20})", RegexOptions.IgnoreCase);
-        if (idMatch.Success)
-        {
-            result.IdNumber = ExtractedField<string>.From(idMatch.Groups[1].Value.Trim());
-        }
+        if (IdDocumentLabels.Read(text).TryGetValue("IdNumber", out var postalNumber) &&
+            Regex.IsMatch(postalNumber, @"^[A-Z0-9][A-Z0-9-]{5,29}$", RegexOptions.IgnoreCase) && postalNumber.Any(char.IsDigit))
+            result.IdNumber = ExtractedField<string>.From(postalNumber);
 
         ExtractNameByLabels(result, text);
         ExtractDobByLabels(result, text);
@@ -335,6 +336,10 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
 
     private static void ParseGenericFields(IdExtractionResult result, string text)
     {
+        if (IdDocumentLabels.Read(text).TryGetValue("IdNumber", out var number) &&
+            Regex.IsMatch(number, @"^[A-Z0-9][A-Z0-9\- /]{2,39}$", RegexOptions.IgnoreCase) &&
+            Regex.IsMatch(number, @"\d") && !Regex.IsMatch(number, @"^\d{4}[-/]\d{2}[-/]\d{2}$"))
+            result.IdNumber = ExtractedField<string>.From(number.Trim());
         ExtractNameByLabels(result, text);
         ExtractDobByLabels(result, text);
         ExtractSexByLabels(result, text);
@@ -358,40 +363,38 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
 
         ExtractedField<string> ReadName(string field)
         {
-            if (!fields.TryGetValue(field, out var raw) || !Regex.IsMatch(raw, @"^[\p{L}\p{M}\s.'’\-]+$"))
+            if (!fields.TryGetValue(field, out var raw) ||
+                (!IsName(raw) && !(field == "MiddleName" && Regex.IsMatch(raw, @"^\p{L}\.?$"))))
                 return ExtractedField<string>.Empty();
             var name = CleanNameString(raw);
             return string.IsNullOrWhiteSpace(name) ? ExtractedField<string>.Empty() : ExtractedField<string>.From(name);
         }
     }
 
+    internal static bool IsName(string raw) => raw.Length is >= 2 and <= 100 && raw.Count(char.IsLetter) >= 2 &&
+        Regex.IsMatch(raw, @"^[\p{L}\p{M}]+(?:[\p{L}\p{M}\s.'’\-]*[\p{L}\p{M}.])?$") &&
+        !Regex.IsMatch(raw, @"^(?:PHL|UNKNOWN|SINGLE|MALE|FEMALE|NAME|MIDDLE|LAST|FIRST)$", RegexOptions.IgnoreCase);
+
     private static void SplitAndAssignFullName(IdExtractionResult result, string rawName)
     {
         if (string.IsNullOrWhiteSpace(rawName)) return;
 
-        // Check if format is "LASTNAME, FIRSTNAME MIDDLENAME"
+        // A comma explicitly separates surname and given names. Do not invent a middle name.
         if (rawName.Contains(','))
         {
-            var parts = rawName.Split(new[] { ',' }, 2);
-            result.LastName = ExtractedField<string>.From(parts[0].Trim());
-            var firstAndMiddle = parts[1].Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            if (firstAndMiddle.Length > 1)
-            {
-                result.FirstName = ExtractedField<string>.From(firstAndMiddle[0]);
-                result.MiddleName = ExtractedField<string>.From(string.Join(" ", firstAndMiddle.Skip(1)));
-            }
-            else if (firstAndMiddle.Length == 1)
-            {
-                result.FirstName = ExtractedField<string>.From(firstAndMiddle[0]);
-            }
+            var parts = rawName.Split(',', StringSplitOptions.TrimEntries);
+            if (IsName(parts[0])) result.LastName = ExtractedField<string>.From(parts[0]);
+            if (IsName(parts[1].Trim())) result.FirstName = ExtractedField<string>.From(parts[1].Trim());
+            if (parts.Length == 3 && IsName(parts[2])) result.MiddleName = ExtractedField<string>.From(parts[2]);
         }
         else
         {
+            if (!IsName(rawName)) return;
             // Standard "FIRST [MIDDLE] LAST"
             var parts = rawName.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length == 1)
             {
-                result.FirstName = ExtractedField<string>.From(parts[0]);
+                result.FullName = ExtractedField<string>.From(parts[0]);
             }
             else if (parts.Length == 2)
             {
@@ -400,8 +403,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
             }
             else if (parts.Length >= 3)
             {
-                result.FirstName = ExtractedField<string>.From(parts[0]);
-                result.MiddleName = ExtractedField<string>.From(string.Join(" ", parts.Skip(1).Take(parts.Length - 2)));
+                result.FirstName = ExtractedField<string>.From(string.Join(" ", parts.Take(parts.Length - 1)));
                 result.LastName = ExtractedField<string>.From(parts.Last());
             }
         }
@@ -410,7 +412,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
     private static void ExtractDobByLabels(IdExtractionResult result, string text)
     {
         if (IdDocumentLabels.Read(text).TryGetValue("DateOfBirth", out var rawDate) &&
-            TryParseFlexibleDate(rawDate, out var date) && date != default && date.Date <= DateTime.UtcNow.Date)
+            TryParseFlexibleDate(rawDate, out var date) && date.Year >= 1900 && date.Date <= DateTime.UtcNow.Date)
             result.DateOfBirth = ExtractedField<DateTime>.From(date);
     }
 
@@ -427,7 +429,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
     private static void ExtractBloodTypeByLabels(IdExtractionResult result, string text)
     {
         if (IdDocumentLabels.Read(text).TryGetValue("BloodType", out var value) &&
-            Regex.IsMatch(value, @"^(?:AB|A|B|O)[+-]?$", RegexOptions.IgnoreCase))
+            Regex.IsMatch(value, @"^(?:AB|A|B|O)[+-]$", RegexOptions.IgnoreCase))
             result.BloodType = ExtractedField<string>.From(value.ToUpperInvariant());
     }
 
@@ -507,19 +509,37 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         return false;
     }
 
+    private static bool CheckMrzDigit(string value, char check)
+    {
+        if (!char.IsAsciiDigit(check)) return false;
+        int[] weights = [7, 3, 1];
+        var total = 0;
+        for (var i = 0; i < value.Length; i++)
+        {
+            var c = value[i];
+            var number = c is >= '0' and <= '9' ? c - '0' : c is >= 'A' and <= 'Z' ? c - 'A' + 10 : 0;
+            total += number * weights[i % weights.Length];
+        }
+        return total % 10 == check - '0';
+    }
+
     private static bool TryParseFlexibleDate(string raw, out DateTime date)
     {
         date = default;
         if (string.IsNullOrWhiteSpace(raw)) return false;
 
-        string clean = Regex.Replace(raw, @"[^\w\s/\-\.]", "").Trim();
+        // Reject damaged years and incomplete dates rather than letting culture parsing guess.
+        if (!Regex.IsMatch(raw, @"^(?:\d{8}|[\p{L}\d\s/,.-]+)$")) return false;
+        string clean = Regex.Replace(raw.Replace(",", " "), @"\s+", " ").Trim();
         string[] formats = new[]
         {
             "yyyy/MM/dd", "yyyy-MM-dd", "yyyy.MM.dd",
             "MM/dd/yyyy", "MM-dd-yyyy", "MM.dd.yyyy",
             "dd/MM/yyyy", "dd-MM-yyyy", "dd.MM.yyyy",
+            "M/d/yyyy", "d/M/yyyy",
             "dd MMM yyyy", "dd MMMM yyyy",
-            "MMM dd, yyyy", "MMMM dd, yyyy",
+            "d MMM yyyy", "d MMMM yyyy",
+            "MMM dd yyyy", "MMMM dd yyyy", "MMM d yyyy", "MMMM d yyyy",
             "yyyy MMM dd", "yyyy MMMM dd",
             "yyyyMMdd"
         };
@@ -529,7 +549,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
             return true;
         }
 
-        return DateTime.TryParse(clean, CultureInfo.InvariantCulture, DateTimeStyles.None, out date);
+        return false;
     }
 
     #endregion
