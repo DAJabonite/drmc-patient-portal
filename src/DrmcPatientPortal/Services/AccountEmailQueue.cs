@@ -154,11 +154,6 @@ public sealed class AccountEmailDispatcher(IServiceScopeFactory scopes, IDataPro
         var cutoff = now.AddDays(-options.Value.RetentionDays);
         await db.AccountEmails.Where(m => m.CompletedUtc < cutoff)
             .OrderBy(m => m.CompletedUtc).ThenBy(m => m.Id).Take(100).ExecuteDeleteAsync(token);
-        await db.PortalSessions.Where(s => s.ExpiresUtc <= now)
-            .OrderBy(s => s.ExpiresUtc).ThenBy(s => s.Id).Take(100).ExecuteDeleteAsync(token);
-        await db.AuthenticatorConsumptions.Where(c => c.ExpiresUtc <= now)
-            .OrderBy(c => c.ExpiresUtc).ThenBy(c => c.UserId).ThenBy(c => c.KeyFingerprint).ThenBy(c => c.TimeStep)
-            .Take(100).ExecuteDeleteAsync(token);
     }
 }
 

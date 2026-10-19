@@ -55,6 +55,7 @@ jobs:
         run: dotnet test DrmcPatientPortal.slnx -c Release --no-build --logger "trx;LogFileName=results.trx"
         env:
           DRMC_TEST_SQLSERVER: Server=localhost,1433;User Id=sa;Password=${{ env.SA_PASSWORD }};Encrypt=True;TrustServerCertificate=True
+          SecurityState__CleanupWorkerEnabled: "false"
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
