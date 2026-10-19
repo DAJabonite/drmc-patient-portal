@@ -9,7 +9,7 @@ services:
       MSSQL_PID: Developer
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD before starting SQL Server}
     ports:
-      - "127.0.0.1:1433:1433"
+      - "127.0.0.1:${DRMC_SQL_PORT:-1433}:1433"
     volumes:
       - drmc-sqlserver:/var/opt/mssql
     healthcheck:
@@ -18,5 +18,48 @@ services:
       timeout: 5s
       retries: 12
 
+  portal:
+    profiles: [portal]
+    build:
+      context: .
+    platform: linux/amd64
+    user: "1654:1654"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    env_file:
+      - path: ${DRMC_PORTAL_ENV_FILE:-.env.portal}
+        required: false
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      DataProtection__KeyRingPath: /var/lib/drmc/keys
+      DataProtection__CertificatePath: /run/secrets/keyring_certificate
+      DataProtection__CertificatePasswordFile: /run/secrets/keyring_password
+      DataProtection__ProtectKeysWithDpapi: "false"
+      PatientDocuments__RootPath: /var/lib/drmc/storage/patient-documents
+      PatientDocuments__TemporaryPath: /var/lib/drmc/storage/temporary-uploads
+      LabReports__RootPath: /var/lib/drmc/storage/lab-reports
+      Imports__StagingPath: /var/lib/drmc/storage/imports
+    ports:
+      # Allocate a loopback port per replica; put the production HTTPS proxy in front.
+      - "127.0.0.1::8080"
+    volumes:
+      - drmc-keyring:/var/lib/drmc/keys
+      - drmc-private-storage:/var/lib/drmc/storage
+    secrets:
+      - keyring_certificate
+      - keyring_password
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+
+secrets:
+  keyring_certificate:
+    file: ${DRMC_KEYRING_CERTIFICATE_FILE:-./secrets/keyring.pfx}
+  keyring_password:
+    file: ${DRMC_KEYRING_PASSWORD_FILE:-./secrets/keyring.password}
+
 volumes:
   drmc-sqlserver:
+  drmc-keyring:
+  drmc-private-storage:

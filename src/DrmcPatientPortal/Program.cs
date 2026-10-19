@@ -68,6 +68,9 @@ builder.Services.AddOptions<PortalRateLimitOptions>().Bind(builder.Configuration
         x.ScansPerIp > 0 && x.ScansPerUser > 0 && x.ConcurrentScans > 0 && x.PdfPerUser > 0, "All rate limits must be positive.").ValidateOnStart();
 builder.Services.AddSingleton<PortalRequestLimiter>();
 builder.Services.AddSingleton<PortalSessionStore>();
+builder.Services.AddSingleton<PortalSecurityCleanup>();
+if (builder.Configuration.GetValue("SecurityState:CleanupWorkerEnabled", true))
+    builder.Services.AddHostedService<PortalSecurityCleanupWorker>();
 builder.Services.AddScoped<PortalCookieEvents>();
 builder.Services.AddOptions<OcrOptions>().Bind(builder.Configuration.GetSection("Ocr"))
     .Validate(x => x.IsValid(), "OCR limits require 1–4 workers, 0–8 queued jobs, at most 5 seconds queue wait and 10 seconds execution.").ValidateOnStart();
@@ -167,10 +170,17 @@ builder.Services.Configure<LabReportStorageOptions>(builder.Configuration.GetSec
 builder.Services.AddScoped<ILabReportStorage, LabReportStorage>();
 builder.Services.AddHostedService<TemporaryDocumentCleanupService>();
 
+// Validate the public origin before evaluating production key protection or touching storage.
+var portalValidation = new PortalOptionsValidator(builder.Environment, builder.Configuration)
+    .Validate(Options.DefaultName, builder.Configuration.GetSection("Portal").Get<PortalOptions>() ?? new());
+if (portalValidation.Failed)
+    throw new OptionsValidationException(Options.DefaultName, typeof(PortalOptions), portalValidation.Failures);
+
 var keyRingPath = builder.Configuration["DataProtection:KeyRingPath"] ?? Path.Combine(builder.Environment.ContentRootPath, "App_Data", "DataProtectionKeys");
 if (!Path.IsPathRooted(keyRingPath)) keyRingPath = Path.Combine(builder.Environment.ContentRootPath, keyRingPath);
-var protectKeysWithDpapi = builder.Configuration.GetValue<bool>("DataProtection:ProtectKeysWithDpapi");
-await KeyRingProtection.ConfigureAsync(builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keyRingPath)).SetApplicationName("DRMC.PatientPortal"), keyRingPath, protectKeysWithDpapi);
+var keyProtection = builder.Configuration.GetSection("DataProtection").Get<KeyRingProtectionOptions>() ?? new();
+await KeyRingProtection.ConfigureAsync(builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keyRingPath)).SetApplicationName("DRMC.PatientPortal"),
+    keyRingPath, keyProtection, !builder.Environment.IsDevelopment(), builder.Environment.ContentRootPath);
 builder.Services.AddSingleton(sp => new RedStarPhiProtection(sp.GetRequiredService<IDataProtectionProvider>(), keyRingPath));
 
 // Offline local OCR ID extraction service
@@ -230,6 +240,7 @@ builder.Services.AddRazorPages(options =>
 });
 
 var app = builder.Build();
+KeyRingProtection.Verify(app.Services);
 await using (var protectionScope = app.Services.CreateAsyncScope())
 {
     var protectionDb = protectionScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -245,8 +256,6 @@ await using (var protectionScope = app.Services.CreateAsyncScope())
     app.Logger.LogInformation("Patient attachment protection verified; startup upgrade complete.");
 }
 if (trustedProxies.Length > 0) app.UseForwardedHeaders();
-if (!protectKeysWithDpapi && !app.Environment.IsDevelopment())
-    app.Logger.LogWarning("Data Protection keys are unprotected at rest. See the README Key Protection and Recovery section to choose and configure key protection before deployment.");
 await AdminBootstrap.InitializeAsync(app.Services, app.Configuration);
 
 // Fixtures require explicit opt-in and an already migrated, empty business schema.
