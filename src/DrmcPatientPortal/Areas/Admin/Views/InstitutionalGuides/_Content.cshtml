@@ -1,0 +1,97 @@
+@model GuideContentFields
+@using DrmcPatientPortal.Services
+@{ var p = Model.Prefix; var content = Model.Content; var defaults = InstitutionalGuideDefaults.Get(Model.Key); }
+<div class="row g-3 mb-4">
+    @foreach (var (property, label, value, original) in new[] {
+        ("PageTitle", "Browser page title", content.PageTitle, defaults.PageTitle),
+        ("Heading", "Page heading", content.Heading, defaults.Heading),
+        ("Kicker", "Introductory line", content.Kicker, defaults.Kicker),
+        ("Badge", "Heading badge", content.Badge, defaults.Badge),
+        ("Breadcrumb", "Breadcrumb label", content.Breadcrumb, defaults.Breadcrumb),
+        ("BackLabel", "Back link label", content.BackLabel, defaults.BackLabel),
+        ("ParentLabel", "Parent navigation label", content.ParentLabel, defaults.ParentLabel),
+        ("SectionTitle", "Section heading", content.SectionTitle, defaults.SectionTitle) })
+    {
+        if (!string.IsNullOrEmpty(original))
+        {
+            <div class="col-md-6"><label for="@Html.Id(p + "." + property)" class="form-label">@label</label>@Html.TextBox(p + "." + property, value, new { @class = "form-control" })</div>
+        }
+    }
+</div>
+@if (defaults.Tiles.Count > 0)
+{
+    <h5>Service links</h5>
+    @for (var i = 0; i < content.Tiles.Count; i++)
+    {
+        var tp = p + ".Tiles[" + i + "]";
+        <div class="border rounded p-3 mb-3">
+            <input type="hidden" name="@(p + ".Tiles.Index")" value="@i" />
+            <input type="hidden" name="@(tp + ".Key")" value="@content.Tiles[i].Key" />
+            <p class="small text-muted">Service: @content.Tiles[i].Key</p>
+            <div class="mb-2"><label for="@Html.Id(tp + ".Title")" class="form-label">Title</label>@Html.TextBox(tp + ".Title", content.Tiles[i].Title, new { @class = "form-control" })</div>
+            <div><label for="@Html.Id(tp + ".ActionLabel")" class="form-label">Action label</label>@Html.TextBox(tp + ".ActionLabel", content.Tiles[i].ActionLabel, new { @class = "form-control" })</div>
+        </div>
+    }
+}
+@if (Model.Key is not "opd" and not "radiology-preparation" and not "malasakit")
+{
+    <p class="small text-muted">Card instructions and section paragraphs allow p, ul, ol, li, strong, em, b, i, h2–h4, blockquote, br and safe links. Other fields are plain text. Unsafe HTML is removed when saved.</p>
+    @for (var i = 0; i < content.Sections.Count; i++)
+    {
+        var kind = Model.Key == "maifip" && i == 1 ? "paragraphs" : Model.Key == "maifip" && i == 2 ? "destinations" : "documents";
+        <details class="border rounded p-3 mb-3" open>
+            <summary class="fw-bold mb-3">Section @(i + 1): @content.Sections[i].Title</summary>
+            <input type="hidden" name="@(p + ".Sections.Index")" value="@i" />
+            <partial name="_Section" model="@(new GuideSectionFields(p + ".Sections[" + i + "]", content.Sections[i], kind, Model.Key is "philhealth" or "maifip", Model.Key == "maifip"))" />
+        </details>
+    }
+}
+@if (content.Opd is { } opd)
+{
+    <div class="mb-3"><label for="@Html.Id(p + ".Opd.ReminderTitle")" class="form-label">Reminder title</label>@Html.TextBox(p + ".Opd.ReminderTitle", opd.ReminderTitle, new { @class = "form-control" })</div>
+    <div class="mb-4"><label for="@Html.Id(p + ".Opd.ReminderBody")" class="form-label">Reminder text</label>@Html.TextArea(p + ".Opd.ReminderBody", opd.ReminderBody, new { @class = "form-control", rows = 3 })</div>
+    @for (var i = 0; i < opd.Facilities.Count; i++)
+    {
+        var facility = opd.Facilities[i]; var fp = p + ".Opd.Facilities[" + i + "]";
+        <details class="border rounded p-3 mb-3" open>
+            <summary class="h5">@facility.Name</summary>
+            <input type="hidden" name="@(p + ".Opd.Facilities.Index")" value="@i" />
+            <input type="hidden" name="@(fp + ".Key")" value="@facility.Key" />
+            <div class="row g-3 mb-3">
+                <div class="col-md-6"><label for="@Html.Id(fp + ".Name")" class="form-label">Facility name</label>@Html.TextBox(fp + ".Name", facility.Name, new { @class = "form-control" })</div>
+                <div class="col-md-6"><label for="@Html.Id(fp + ".ShortName")" class="form-label">Short name</label>@Html.TextBox(fp + ".ShortName", facility.ShortName, new { @class = "form-control" })</div>
+                <div class="col-12"><label for="@Html.Id(fp + ".VerificationNote")" class="form-label">Verification note</label>@Html.TextArea(fp + ".VerificationNote", facility.VerificationNote, new { @class = "form-control", rows = 2 })</div>
+            </div>
+            @if (facility.PreRegistration is { } pre)
+            {
+                <div class="border rounded p-3 mb-3"><h6>Pre-registration</h6><partial name="_Step" model="@(new GuideStepFields(fp + ".PreRegistration", pre))" /></div>
+            }
+            <partial name="_Steps" model="@(new GuideStepListFields(fp + ".Steps", facility.Steps))" />
+        </details>
+    }
+}
+@if (content.Radiology is { } radiology)
+{
+    <div class="mb-3"><label for="@Html.Id(p + ".Radiology.IntroText")" class="form-label">Introduction</label>@Html.TextArea(p + ".Radiology.IntroText", radiology.IntroText, new { @class = "form-control", rows = 3 })</div>
+    <div class="row g-3 mb-3">
+        <div class="col-md-6"><label for="@Html.Id(p + ".Radiology.ContactPrefix")" class="form-label">Text before Radiology contact</label>@Html.TextBox(p + ".Radiology.ContactPrefix", radiology.ContactPrefix, new { @class = "form-control" })</div>
+        <div class="col-md-6"><label for="@Html.Id(p + ".Radiology.ContactSuffix")" class="form-label">Text after Radiology contact</label>@Html.TextBox(p + ".Radiology.ContactSuffix", radiology.ContactSuffix, new { @class = "form-control" })</div>
+    </div>
+    <p class="form-text">The contact number comes from the department record.</p>
+    <div class="mb-3"><label for="@Html.Id(p + ".Radiology.GeneralHeading")" class="form-label">General preparation heading</label>@Html.TextBox(p + ".Radiology.GeneralHeading", radiology.GeneralHeading, new { @class = "form-control" })</div>
+    <partial name="_Strings" model="@(new GuideStringFields(p + ".Radiology.GeneralItems", "General preparation", radiology.GeneralItems, "__general__"))" />
+    <div class="mb-3"><label for="@Html.Id(p + ".Radiology.SafetyHeading")" class="form-label">Safety heading</label>@Html.TextBox(p + ".Radiology.SafetyHeading", radiology.SafetyHeading, new { @class = "form-control" })</div>
+    <partial name="_Strings" model="@(new GuideStringFields(p + ".Radiology.SafetyNotices", "Safety notices", radiology.SafetyNotices, "__safety__"))" />
+    <div class="mb-3"><label for="@Html.Id(p + ".Radiology.ModalityHeading")" class="form-label">Study preparation heading</label>@Html.TextBox(p + ".Radiology.ModalityHeading", radiology.ModalityHeading, new { @class = "form-control" })</div>
+    @for (var i = 0; i < radiology.Guides.Count; i++)
+    {
+        var guide = radiology.Guides[i]; var gp = p + ".Radiology.Guides[" + i + "]";
+        <div class="border rounded p-3 mb-3">
+            <input type="hidden" name="@(p + ".Radiology.Guides.Index")" value="@i" />
+            <input type="hidden" name="@(gp + ".Key")" value="@guide.Key" />
+            <p class="small text-muted">Study type: @guide.Key</p>
+            <div class="mb-3"><label for="@Html.Id(gp + ".Title")" class="form-label">Title</label>@Html.TextBox(gp + ".Title", guide.Title, new { @class = "form-control" })</div>
+            <partial name="_Strings" model="@(new GuideStringFields(gp + ".Items", "Preparation instructions", guide.Items, "__preparation__"))" />
+        </div>
+    }
+}

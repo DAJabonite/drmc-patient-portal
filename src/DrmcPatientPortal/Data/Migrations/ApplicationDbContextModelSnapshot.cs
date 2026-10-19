@@ -540,6 +540,118 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.ToTable("ImportBatches");
                 });
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.InstitutionalGuideHead", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("LatestRevisionNumber")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("InstitutionalGuideHeads");
+
+                    b.HasData(
+                        new
+                        {
+                            Key = "malasakit",
+                            LatestRevisionNumber = 0
+                        },
+                        new
+                        {
+                            Key = "dswd",
+                            LatestRevisionNumber = 0
+                        },
+                        new
+                        {
+                            Key = "drmc-malasakit",
+                            LatestRevisionNumber = 0
+                        },
+                        new
+                        {
+                            Key = "maifip",
+                            LatestRevisionNumber = 0
+                        },
+                        new
+                        {
+                            Key = "philhealth",
+                            LatestRevisionNumber = 0
+                        },
+                        new
+                        {
+                            Key = "opd",
+                            LatestRevisionNumber = 0
+                        },
+                        new
+                        {
+                            Key = "radiology-preparation",
+                            LatestRevisionNumber = 0
+                        });
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.InstitutionalGuideRevision", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("CebuanoJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateOnly>("EffectiveOn")
+                        .HasColumnType("date");
+
+                    b.Property<string>("EnglishJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FilipinoJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GuideKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime>("LastReviewedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RevisionNumber")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SchemaVersion")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SourceRevisionNumber")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuideKey", "RevisionNumber")
+                        .IsUnique();
+
+                    b.HasIndex("GuideKey", "EffectiveOn", "RevisionNumber");
+
+                    b.ToTable("InstitutionalGuideRevisions");
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.LabResult", b =>
                 {
                     b.Property<int>("Id")
@@ -2000,6 +2112,15 @@ namespace DrmcPatientPortal.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.InstitutionalGuideRevision", b =>
+                {
+                    b.HasOne("DrmcPatientPortal.Models.InstitutionalGuideHead", null)
+                        .WithMany()
+                        .HasForeignKey("GuideKey")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DrmcPatientPortal.Models.LabResult", b =>

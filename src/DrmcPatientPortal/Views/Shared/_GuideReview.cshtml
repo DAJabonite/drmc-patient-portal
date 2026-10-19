@@ -1,0 +1,8 @@
+@model ResolvedInstitutionalGuide
+@if (Model.IsOverride)
+{
+    <p class="small text-muted mt-3" data-testid="guide-review">
+        @Loc["Guide_EffectiveOn"] <time datetime="@Model.EffectiveOn?.ToString("yyyy-MM-dd")">@Model.EffectiveOn?.ToString("d", System.Globalization.CultureInfo.CurrentCulture)</time>
+        · @Loc["Guide_LastReviewed"] <time datetime="@Model.LastReviewedAtUtc?.ToString("O")">@DrmcPatientPortal.Services.ClinicalClock.WallTime(new DateTimeOffset(DateTime.SpecifyKind(Model.LastReviewedAtUtc!.Value, DateTimeKind.Utc))).ToString("d", System.Globalization.CultureInfo.CurrentCulture)</time>
+    </p>
+}

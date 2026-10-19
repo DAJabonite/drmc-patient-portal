@@ -1,0 +1,11 @@
+@model GuideDocumentFields
+@{ var p = Model.Prefix; }
+@if (Model.ShowTitle)
+{
+    <div class="mb-2"><label for="@Html.Id(p + ".Title")" class="form-label">Document title</label>@Html.TextBox(p + ".Title", Model.Item.Title, new { @class = "form-control" })</div>
+}
+<div class="mb-2"><label for="@Html.Id(p + ".BodyHtml")" class="form-label">Instructions (allowed HTML)</label>@Html.TextArea(p + ".BodyHtml", Model.Item.BodyHtml, new { @class = "form-control", rows = 3 })</div>
+@if (Model.Supplemental)
+{
+<div class="mb-2"><label for="@Html.Id(p + ".SupplementalHtml")" class="form-label">Additional instructions (allowed HTML)</label>@Html.TextArea(p + ".SupplementalHtml", Model.Item.SupplementalHtml, new { @class = "form-control", rows = 2 })</div>
+}

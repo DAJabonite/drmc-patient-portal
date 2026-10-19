@@ -17,6 +17,7 @@ public sealed class RadiologyListItem
 
 public sealed class RadiologyIndexViewModel
 {
+    public required ResolvedInstitutionalGuide PreparationGuide { get; init; }
     public RadiologyModality? SelectedModality { get; init; }
     public string? SearchTerm { get; init; }
     public string? SelectedDateRange { get; init; }

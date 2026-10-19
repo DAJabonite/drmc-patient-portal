@@ -1,0 +1,21 @@
+@model InstitutionalGuideList
+@{ ViewData["Title"] = "Institutional guides"; }
+<div class="admin-page-header">
+    <div><h1 class="admin-title">Institutional guides</h1><p class="admin-subtitle">Edit patient instructions in English, Filipino and Cebuano. Effective dates use the Philippines calendar.</p></div>
+</div>
+<div class="admin-card">
+    <div class="table-responsive"><table class="table align-middle mb-0">
+        <thead><tr><th>Guide</th><th>Active content</th><th>Scheduled changes</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+        <tbody>
+        @foreach (var row in Model.Rows)
+        {
+            <tr>
+                <th scope="row">@row.Title</th>
+                <td>@if (row.Active is { } active) { <span>Revision @active.RevisionNumber · @active.EffectiveOn.ToString("yyyy-MM-dd")</span> } else { <span class="text-muted">Bundled defaults</span> }</td>
+                <td>@if (row.Scheduled.Count == 0) { <span class="text-muted">None</span> } else { foreach (var revision in row.Scheduled) { <div>Revision @revision.RevisionNumber · @revision.EffectiveOn.ToString("yyyy-MM-dd")</div> } }</td>
+                <td class="text-end text-nowrap"><a asp-action="Edit" asp-route-id="@row.Key" class="btn btn-sm btn-outline-primary">Edit</a> <a asp-action="History" asp-route-id="@row.Key" class="btn btn-sm btn-outline-secondary">History</a></td>
+            </tr>
+        }
+        </tbody>
+    </table></div>
+</div>

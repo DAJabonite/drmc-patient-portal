@@ -1,0 +1,59 @@
+@model GuideSectionFields
+@{ var p = Model.Prefix; var section = Model.Section; }
+<div class="mb-3"><label for="@Html.Id(p + ".Title")" class="form-label">Section title</label>@Html.TextBox(p + ".Title", section.Title, new { @class = "form-control" })</div>
+@if (Model.Kind == "documents")
+{
+<div class="border rounded p-3 mb-3" data-guide-repeater data-guide-token="__document__">
+    <h6>Document cards / checklist</h6>
+    <div data-guide-items>
+        @for (var i = 0; i < section.Items.Count; i++)
+        {
+            <div class="border rounded p-3 mb-3" data-guide-row>
+                <input type="hidden" name="@(p + ".Items.Index")" value="@i" />
+                <partial name="_Document" model="@(new GuideDocumentFields(p + ".Items[" + i + "]", section.Items[i], Model.DocumentTitles, Model.Supplemental))" />
+                <partial name="_RowActions" />
+            </div>
+        }
+    </div>
+    <template><div class="border rounded p-3 mb-3" data-guide-row>
+        <input type="hidden" name="@(p + ".Items.Index")" value="__document__" />
+        <partial name="_Document" model="@(new GuideDocumentFields(p + ".Items[__document__]", new GuideDocumentItem(), Model.DocumentTitles, Model.Supplemental))" />
+        <partial name="_RowActions" />
+    </div></template>
+    <button type="button" class="btn btn-sm btn-outline-primary" data-guide-add>Add document / checklist card</button>
+</div>
+}
+@if (Model.Kind == "paragraphs")
+{
+<partial name="_Strings" model="@(new GuideStringFields(p + ".Paragraphs", "Paragraphs", section.Paragraphs, "__paragraph__"))" />
+}
+@if (Model.Kind == "destinations")
+{
+<div class="row g-3 mb-3">
+    <div class="col-md-4"><label for="@Html.Id(p + ".FirstColumnHeading")" class="form-label">First table column heading</label>@Html.TextBox(p + ".FirstColumnHeading", section.FirstColumnHeading, new { @class = "form-control" })</div>
+    <div class="col-md-4"><label for="@Html.Id(p + ".SecondColumnHeading")" class="form-label">Second table column heading</label>@Html.TextBox(p + ".SecondColumnHeading", section.SecondColumnHeading, new { @class = "form-control" })</div>
+    <div class="col-md-4"><label for="@Html.Id(p + ".RegionLabel")" class="form-label">Table accessibility label</label>@Html.TextBox(p + ".RegionLabel", section.RegionLabel, new { @class = "form-control" })</div>
+</div>
+<div class="border rounded p-3 mb-3" data-guide-repeater data-guide-token="__destination__">
+    <h6>Destination table rows</h6>
+    <div data-guide-items>
+        @for (var i = 0; i < section.Rows.Count; i++)
+        {
+            var rowPrefix = p + ".Rows[" + i + "]";
+            <div class="border rounded p-3 mb-2" data-guide-row>
+                <input type="hidden" name="@(p + ".Rows.Index")" value="@i" />
+                <div class="mb-2"><label for="@Html.Id(rowPrefix + ".Hospital")" class="form-label">Hospital / destination</label>@Html.TextBox(rowPrefix + ".Hospital", section.Rows[i].Hospital, new { @class = "form-control" })</div>
+                <div class="mb-2"><label for="@Html.Id(rowPrefix + ".NextStep")" class="form-label">Next step</label>@Html.TextArea(rowPrefix + ".NextStep", section.Rows[i].NextStep, new { @class = "form-control", rows = 2 })</div>
+                <partial name="_RowActions" />
+            </div>
+        }
+    </div>
+    <template><div class="border rounded p-3 mb-2" data-guide-row>
+        <input type="hidden" name="@(p + ".Rows.Index")" value="__destination__" />
+        <div class="mb-2"><label for="@Html.Id(p + ".Rows[__destination__].Hospital")" class="form-label">Hospital / destination</label><input name="@(p + ".Rows[__destination__].Hospital")" id="@Html.Id(p + ".Rows[__destination__].Hospital")" class="form-control" /></div>
+        <div class="mb-2"><label for="@Html.Id(p + ".Rows[__destination__].NextStep")" class="form-label">Next step</label><textarea name="@(p + ".Rows[__destination__].NextStep")" id="@Html.Id(p + ".Rows[__destination__].NextStep")" rows="2" class="form-control"></textarea></div>
+        <partial name="_RowActions" />
+    </div></template>
+    <button type="button" class="btn btn-sm btn-outline-primary" data-guide-add>Add destination row</button>
+</div>
+}

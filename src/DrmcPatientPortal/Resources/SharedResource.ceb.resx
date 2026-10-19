@@ -145,8 +145,6 @@
   <data name="Ids_ZoomIn" xml:space="preserve"><value>Padak-a</value></data>
   <data name="Ids_Reset" xml:space="preserve"><value>I-reset</value></data>
   <data name="Ids_ZoomInstruction" xml:space="preserve"><value>Gamita ang mga control o mouse wheel para mag-zoom. Pindota ang Escape aron mosira.</value></data>
-  <data name="OpdGuide_ReminderTitle" xml:space="preserve"><value>Sa Wala Pa Kamu Mogawas</value></data>
-  <data name="OpdGuide_ReminderBody" xml:space="preserve"><value>Pahinumdom: Kung mogawas ka, molayas, o dili nimo makompleto ang proseso sa OPD triage, kinahanglan nimo sugdan pag-usab ang tibuok nga sequence gikan sa sinugdanan.</value></data>
   <data name="OpdGuide_SelectFacility" xml:space="preserve"><value>Pilia ang Imong OPD Facility</value></data>
   <data name="OpdGuide_StepCount" xml:space="preserve"><value>{0} ka lakang</value></data>
   <data name="OpdGuide_StepCountAfterPre" xml:space="preserve"><value>{0} ka lakang human sa pre-registration</value></data>
@@ -263,4 +261,6 @@
   <data name="RS_LocationHours" xml:space="preserve"><value>Ikaduhang andana, Outpatient Department (OPD). Lunes–Biyernes, 8 AM–5 PM, sumala sa DRMC. Kumpirmaha sa klinika ang oras sa serbisyo.</value></data>
   <data name="RS_OfficialInfo" xml:space="preserve"><value>Opisyal nga impormasyon sa klinika</value></data>
   <data name="RS_Notifications" xml:space="preserve"><value>Mga abiso sa appointment sa DRMC</value></data>
+  <data name="Guide_EffectiveOn" xml:space="preserve"><value>Epektibo sukad:</value></data>
+  <data name="Guide_LastReviewed" xml:space="preserve"><value>Kataposang gisusi:</value></data>
 </root>

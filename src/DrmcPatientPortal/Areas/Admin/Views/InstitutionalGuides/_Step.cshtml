@@ -1,0 +1,11 @@
+@model GuideStepFields
+@{ var p = Model.Prefix; var step = Model.Step; }
+<div class="row g-3 mb-3">
+    <div class="col-md-6"><label for="@Html.Id(p + ".Title")" class="form-label">Step title</label>@Html.TextBox(p + ".Title", step.Title, new { @class = "form-control" })</div>
+    <div class="col-md-6"><label for="@Html.Id(p + ".Location")" class="form-label">Location</label>@Html.TextBox(p + ".Location", step.Location, new { @class = "form-control" })</div>
+    <div class="col-12"><label for="@Html.Id(p + ".RequirementNote")" class="form-label">Requirement note</label>@Html.TextArea(p + ".RequirementNote", step.RequirementNote, new { @class = "form-control", rows = 2 })</div>
+    <div class="col-12"><label for="@Html.Id(p + ".Detail")" class="form-label">Instructions</label>@Html.TextArea(p + ".Detail", step.Detail, new { @class = "form-control", rows = 3 })</div>
+    <div class="col-12 form-check ms-3">@Html.CheckBox(p + ".IsConditional", step.IsConditional, new { @class = "form-check-input" })<label for="@Html.Id(p + ".IsConditional")" class="form-check-label">Conditional step</label></div>
+</div>
+<partial name="_Strings" model="@(new GuideStringFields(p + ".Branches", "Branches / alternative instructions", step.Branches, "__branch__"))" />
+<partial name="_Strings" model="@(new GuideStringFields(p + ".Destinations", "Possible next destinations", step.Destinations, "__stepdestination__"))" />

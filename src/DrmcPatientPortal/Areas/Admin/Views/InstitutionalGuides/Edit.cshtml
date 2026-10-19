@@ -1,0 +1,50 @@
+@model InstitutionalGuideEditPage
+@{ ViewData["Title"] = "Edit " + Model.Title; }
+<div class="admin-page-header">
+    <div><h1 class="admin-title">Edit @Model.Title</h1><p class="admin-subtitle">Save a new revision. Earlier revisions remain available in history.</p></div>
+    <a asp-action="History" asp-route-id="@Model.Key" class="btn btn-outline-secondary">Revision history</a>
+</div>
+@if (Model.Input.SourceRevisionNumber.HasValue)
+{
+    <p class="alert alert-info">Starting from revision @Model.Input.SourceRevisionNumber. @(Model.ActiveRevisionNumber == Model.Input.SourceRevisionNumber ? "This is the active revision." : "This is a copied revision; review it before saving.")</p>
+}
+@if (Model.Scheduled.Count > 0)
+{
+    <div class="alert alert-warning"><strong>Scheduled revisions remain in place.</strong> Saving for a scheduled date replaces the selection for that date.
+        @foreach (var revision in Model.Scheduled) { <span class="d-block">Revision @revision.RevisionNumber · @revision.EffectiveOn.ToString("yyyy-MM-dd")</span> }
+    </div>
+}
+<form asp-action="Edit" asp-route-id="@Model.Key" method="post" class="admin-form" data-guide-editor>
+    <input asp-for="Input.RowVersion" type="hidden" />
+    <input asp-for="Input.SourceRevisionNumber" type="hidden" />
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    <div class="admin-card mb-4"><div class="admin-card-body">
+        <label asp-for="Input.EffectiveOn" class="form-label"></label>
+        <input asp-for="Input.EffectiveOn" type="date" min="@Model.Today.ToString("yyyy-MM-dd")" class="form-control" aria-describedby="guide-effective-help" />
+        <p id="guide-effective-help" class="form-text mb-0">Today is @Model.Today.ToString("yyyy-MM-dd") in the Philippines. A future revision becomes active at midnight on its effective date.</p>
+    </div></div>
+    @foreach (var (culture, property, title) in new[] { ("en", "English", "English"), ("fil", "Filipino", "Filipino"), ("ceb", "Cebuano", "Cebuano") })
+    {
+        var locale = Model.Input.Locale(culture);
+        var enabled = "Input." + property + ".Enabled";
+        <fieldset class="admin-card mb-4" data-guide-locale>
+            <legend class="h5 px-4 pt-3">@title</legend>
+            <div class="admin-card-body">
+                <div class="form-check mb-2">
+                    @Html.CheckBox(enabled, locale.Enabled, new { @class = "form-check-input", data_guide_override = "" })
+                    <label for="@Html.Id(enabled)" class="form-check-label">Use custom @title content</label>
+                </div>
+                <p class="small text-muted">When unchecked, patients see the complete bundled @title default. Other languages are never substituted.</p>
+                <div data-guide-locale-fields>
+                    <partial name="_Content" model="@(new GuideContentFields("Input." + property + ".Content", Model.Key, locale.Content))" />
+                </div>
+            </div>
+        </fieldset>
+    }
+    <div class="admin-form-actions">
+        <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+        <button class="btn btn-primary" type="submit">Save new revision</button>
+    </div>
+    <p class="form-text">Saving with all three overrides unchecked creates a revision that restores bundled defaults.</p>
+</form>
+@section Scripts { <script src="~/js/institutional-guides.js" asp-append-version="true"></script> }

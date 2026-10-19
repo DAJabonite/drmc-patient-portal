@@ -145,8 +145,6 @@
   <data name="Ids_ZoomIn" xml:space="preserve"><value>Palakihin</value></data>
   <data name="Ids_Reset" xml:space="preserve"><value>I-reset</value></data>
   <data name="Ids_ZoomInstruction" xml:space="preserve"><value>Gamitin ang mga control o mouse wheel para mag-zoom. Pindutin ang Escape para isara.</value></data>
-  <data name="OpdGuide_ReminderTitle" xml:space="preserve"><value>Bago Kayo Lumabas</value></data>
-  <data name="OpdGuide_ReminderBody" xml:space="preserve"><value>Paalala: Kung aalis kayo, lalabas, o hindi ninyo makukumpleto ang proseso ng OPD triage, kailangan ninyong simulan muli ang buong sequence mula sa simula.</value></data>
   <data name="OpdGuide_SelectFacility" xml:space="preserve"><value>Piliin ang Inyong OPD Facility</value></data>
   <data name="OpdGuide_StepCount" xml:space="preserve"><value>{0} na hakbang</value></data>
   <data name="OpdGuide_StepCountAfterPre" xml:space="preserve"><value>{0} na hakbang pagkatapos ng pre-registration</value></data>
@@ -263,4 +261,6 @@
   <data name="RS_LocationHours" xml:space="preserve"><value>Ikalawang palapag, Outpatient Department (OPD). Lunes–Biyernes, 8 AM–5 PM, ayon sa DRMC. Kumpirmahin sa klinika ang oras ng serbisyo.</value></data>
   <data name="RS_OfficialInfo" xml:space="preserve"><value>Opisyal na impormasyon ng klinika</value></data>
   <data name="RS_Notifications" xml:space="preserve"><value>Mga abiso sa appointment sa DRMC</value></data>
+  <data name="Guide_EffectiveOn" xml:space="preserve"><value>May bisa mula:</value></data>
+  <data name="Guide_LastReviewed" xml:space="preserve"><value>Huling sinuri:</value></data>
 </root>
