@@ -1,17 +1,19 @@
+@model ResolvedInstitutionalGuide
 @{
-    ViewData["Title"] = "DOH - MAIFIP Requirements";
+    ViewData["Title"] = Model.Content.PageTitle;
+    var content = Model.Content;
 }
 
 <section class="page-header">
     <div class="container">
         <div class="d-flex align-items-center gap-2 mb-2">
             <a asp-action="Index" class="text-white text-opacity-75 text-decoration-none small">
-                <i class="bi bi-arrow-left"></i> Malasakit Center
+                <i class="bi bi-arrow-left"></i> @content.ParentLabel
             </a>
             <span class="text-white text-opacity-50">/</span>
-            <span class="small text-white text-opacity-75">Requirements Guide</span>
+            <span class="small text-white text-opacity-75">@content.Breadcrumb</span>
         </div>
-        <h1 class="display-6 fw-bold mb-1">DOH-MAIFIP requirements</h1>
+        <h1 class="display-6 fw-bold mb-1">@content.Heading</h1>
     </div>
 </section>
 
@@ -20,60 +22,42 @@
         <details class="requirement-disclosure card border-0 shadow-sm rounded-4 bg-white mb-4">
             <summary class="requirement-disclosure-summary p-4 p-md-5">
                 <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">1</span>
-                <span class="h4 fw-bold text-primary-drmc mb-0 flex-grow-1">Required Documents</span>
+                <span class="h4 fw-bold text-primary-drmc mb-0 flex-grow-1">@content.Sections[0].Title</span>
                 <i class="bi bi-chevron-down requirement-disclosure-chevron" aria-hidden="true"></i>
             </summary>
 
             <div class="d-flex flex-column gap-3 px-4 px-md-5 pb-4 pb-md-5">
-                <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
-                    <i class="bi bi-prescription2 fs-5 text-primary-drmc"></i>
-                    <div>
-                        <h3 class="h6 fw-bold text-dark mb-1">DRMC prescription or request for an unavailable item</h3>
-                        <p class="small text-muted mb-0">Have the prescription or request stamped <strong>NOT AVAILABLE</strong> at the DRMC Pharmacy.</p>
-                    </div>
-                </div>
-
-                <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
-                    <i class="bi bi-file-earmark-medical fs-5 text-primary-drmc"></i>
-                    <div>
-                        <h3 class="h6 fw-bold text-dark mb-1">Medical Certificate or Medical Abstract</h3>
-                        <p class="small text-muted mb-2">Submit the original document or a Certified True Copy.</p>
-                        <div class="text-dark ps-3">
-                            <strong>If you do not have one yet, request it from:</strong><br />
-                            Medical Certificate — OPD Window 1<br />
-                            Medical Abstract — Nurse Station
+                @for (var itemIndex = 0; itemIndex < content.Sections[0].Items.Count; itemIndex++)
+                {
+                    var item = content.Sections[0].Items[itemIndex];
+                    var icon = itemIndex switch { 0 => "bi-prescription2", 1 => "bi-file-earmark-medical", 2 => "bi-person-vcard", 3 => "bi-receipt", _ => "bi-file-earmark-check" };
+                    <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
+                        <i class="bi @icon fs-5 text-primary-drmc"></i>
+                        <div>
+                            <h3 class="h6 fw-bold text-dark mb-1">@item.Title</h3>
+                            <p class="small text-muted @(string.IsNullOrEmpty(item.SupplementalHtml) ? "mb-0" : "mb-2")">@Html.Raw(item.BodyHtml)</p>
+                            @if (!string.IsNullOrEmpty(item.SupplementalHtml))
+                            {
+                                <div class="text-dark ps-3">@Html.Raw(item.SupplementalHtml)</div>
+                            }
                         </div>
                     </div>
-                </div>
-
-                <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
-                    <i class="bi bi-person-vcard fs-5 text-primary-drmc"></i>
-                    <div>
-                        <h3 class="h6 fw-bold text-dark mb-1">Valid IDs of the patient and watcher</h3>
-                        <p class="small text-muted mb-0">Bring one photocopy of the patient's valid ID and one photocopy of the watcher's valid ID.</p>
-                    </div>
-                </div>
-
-                <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
-                    <i class="bi bi-receipt fs-5 text-primary-drmc"></i>
-                    <div>
-                        <h3 class="h6 fw-bold text-dark mb-1">Printed price quotation from a private hospital</h3>
-                        <p class="small text-muted mb-0">Request a printed price quotation from the private hospital's pharmacy.</p>
-                    </div>
-                </div>
+                }
             </div>
         </details>
 
         <details class="requirement-disclosure card border-0 shadow-sm rounded-4 bg-white mb-4">
             <summary class="requirement-disclosure-summary p-4 p-md-5">
                 <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">2</span>
-                <span class="h4 fw-bold text-primary-drmc mb-0 flex-grow-1">How to Request a Price Quotation</span>
+                <span class="h4 fw-bold text-primary-drmc mb-0 flex-grow-1">@content.Sections[1].Title</span>
                 <i class="bi bi-chevron-down requirement-disclosure-chevron" aria-hidden="true"></i>
             </summary>
             <div class="px-4 px-md-5 pb-4 pb-md-5">
                 <div class="p-3 rounded-3 bg-primary-subtle border border-primary-subtle">
-                    <p class="small text-dark mb-2">Go to the <strong>private hospital's pharmacy</strong> and bring the prescription stamped <strong>NOT AVAILABLE</strong> so the medicines can be priced.</p>
-                    <p class="small text-dark mb-0">Tell the pharmacy staff: <strong>“I would like to request a printed price quotation.”</strong></p>
+                    @for (var paragraphIndex = 0; paragraphIndex < content.Sections[1].Paragraphs.Count; paragraphIndex++)
+                    {
+                        <p class="small text-dark @(paragraphIndex == content.Sections[1].Paragraphs.Count - 1 ? "mb-0" : "mb-2")">@Html.Raw(content.Sections[1].Paragraphs[paragraphIndex])</p>
+                    }
                 </div>
             </div>
         </details>
@@ -81,26 +65,22 @@
         <details class="requirement-disclosure card border-0 shadow-sm rounded-4 bg-white">
             <summary class="requirement-disclosure-summary p-4 p-md-5">
                 <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">3</span>
-                <span class="h4 fw-bold text-primary-drmc mb-0 flex-grow-1">Private Hospitals and Where to Go Next</span>
+                <span class="h4 fw-bold text-primary-drmc mb-0 flex-grow-1">@content.Sections[2].Title</span>
                 <i class="bi bi-chevron-down requirement-disclosure-chevron" aria-hidden="true"></i>
             </summary>
-            <div class="table-responsive mx-4 mx-md-5 mb-4 mb-md-5" role="region" aria-label="Private hospital destinations" tabindex="0">
+            <div class="table-responsive mx-4 mx-md-5 mb-4 mb-md-5" role="region" aria-label="@content.Sections[2].RegionLabel" tabindex="0">
                 <table class="table table-sm align-middle mb-0">
                     <thead>
                         <tr>
-                            <th scope="col">Private Hospital</th>
-                            <th scope="col">Next Step</th>
+                            <th scope="col">@content.Sections[2].FirstColumnHeading</th>
+                            <th scope="col">@content.Sections[2].SecondColumnHeading</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td>Medical Mission Group Hospital</td><td>Return to the Malasakit Center for the UIS</td></tr>
-                        <tr><td>Tagum Medical City</td><td>Return to the Malasakit Center for the UIS</td></tr>
-                        <tr><td>Tagum Global Medical Center</td><td>Proceed directly to the social worker at Global for the UIS</td></tr>
-                        <tr><td>Tagum Doctor's Hospital</td><td>Proceed directly to the social worker at Tagum Doc for the UIS</td></tr>
-                        <tr><td>Good Shepherd of Panabo</td><td>Proceed directly to the social worker at Good Shepherd for the UIS</td></tr>
-                        <tr><td>Rivera Medical Center, Inc.</td><td>Proceed directly to the social worker at Rivera for the UIS</td></tr>
-                        <tr><td>J.A. Alegre Hospital</td><td>Proceed directly to the social worker at Rivera for the UIS</td></tr>
-                        <tr><td>Aquino Medical Specialists Hospital</td><td>No UIS destination was included in the provided instructions</td></tr>
+                        @foreach (var row in content.Sections[2].Rows)
+                        {
+                            <tr><td>@row.Hospital</td><td>@row.NextStep</td></tr>
+                        }
                     </tbody>
                 </table>
             </div>
@@ -108,8 +88,9 @@
 
         <div class="text-center mt-4">
             <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
-                <i class="bi bi-arrow-left me-1"></i> Back to Malasakit Center
+                <i class="bi bi-arrow-left me-1"></i> @content.BackLabel
             </a>
         </div>
+        <partial name="_GuideReview" model="Model" />
     </div>
 </section>

@@ -1,17 +1,19 @@
+@model ResolvedInstitutionalGuide
 @{
-    ViewData["Title"] = "PhilHealth Requirements";
+    ViewData["Title"] = Model.Content.PageTitle;
+    var content = Model.Content;
 }
 
 <section class="page-header">
     <div class="container">
         <div class="d-flex align-items-center gap-2 mb-2">
             <a asp-action="Index" class="text-white text-opacity-75 text-decoration-none small">
-                <i class="bi bi-arrow-left"></i> Malasakit Center
+                <i class="bi bi-arrow-left"></i> @content.ParentLabel
             </a>
             <span class="text-white text-opacity-50">/</span>
-            <span class="small text-white text-opacity-75">Requirements Guide</span>
+            <span class="small text-white text-opacity-75">@content.Breadcrumb</span>
         </div>
-        <h1 class="display-6 fw-bold mb-1">PhilHealth requirements</h1>
+        <h1 class="display-6 fw-bold mb-1">@content.Heading</h1>
     </div>
 </section>
 
@@ -20,48 +22,30 @@
         <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
             <div class="d-flex align-items-center gap-2 mb-4">
                 <span class="badge bg-primary-drmc text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">1</span>
-                <h2 class="h4 fw-bold text-primary-drmc mb-0">Required Documents</h2>
+                <h2 class="h4 fw-bold text-primary-drmc mb-0">@content.Sections[0].Title</h2>
             </div>
 
             <div class="d-flex flex-column gap-3">
-                <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
-                    <i class="bi bi-file-earmark-person fs-5 text-primary-drmc"></i>
-                    <div>
-                        <h3 class="h6 fw-bold text-dark mb-1">Birth Certificate</h3>
-                        <p class="small text-muted mb-0">Required for the baby.</p>
+                @for (var itemIndex = 0; itemIndex < content.Sections[0].Items.Count; itemIndex++)
+                {
+                    var item = content.Sections[0].Items[itemIndex];
+                    var icon = itemIndex switch { 0 => "bi-file-earmark-person", 1 => "bi-person-vcard", 2 => "bi-person-check", 3 => "bi-heart", _ => "bi-file-earmark-check" };
+                    <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
+                        <i class="bi @icon fs-5 text-primary-drmc"></i>
+                        <div>
+                            <h3 class="h6 fw-bold text-dark mb-1">@item.Title</h3>
+                            <p class="small text-muted mb-0">@Html.Raw(item.BodyHtml)</p>
+                        </div>
                     </div>
-                </div>
-
-                <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
-                    <i class="bi bi-person-vcard fs-5 text-primary-drmc"></i>
-                    <div>
-                        <h3 class="h6 fw-bold text-dark mb-1">Valid ID of the PhilHealth member</h3>
-                        <p class="small text-muted mb-0">Bring a valid identification card belonging to the PhilHealth member.</p>
-                    </div>
-                </div>
-
-                <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
-                    <i class="bi bi-person-check fs-5 text-primary-drmc"></i>
-                    <div>
-                        <h3 class="h6 fw-bold text-dark mb-1">Valid ID of the authorized representative</h3>
-                        <p class="small text-muted mb-0">Bring a valid identification card belonging to the person processing the request.</p>
-                    </div>
-                </div>
-
-                <div class="p-3 rounded-3 bg-light border d-flex gap-3 align-items-start">
-                    <i class="bi bi-heart fs-5 text-primary-drmc"></i>
-                    <div>
-                        <h3 class="h6 fw-bold text-dark mb-1">Marriage Contract</h3>
-                        <p class="small text-muted mb-0">Required if married.</p>
-                    </div>
-                </div>
+                }
             </div>
 
             <div class="d-flex justify-content-between align-items-center pt-4 mt-4 border-top">
                 <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
-                    <i class="bi bi-arrow-left me-1"></i> Back to Malasakit Center
+                    <i class="bi bi-arrow-left me-1"></i> @content.BackLabel
                 </a>
             </div>
         </div>
+        <partial name="_GuideReview" model="Model" />
     </div>
 </section>

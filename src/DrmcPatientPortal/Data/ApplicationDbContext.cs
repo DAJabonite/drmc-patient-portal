@@ -17,6 +17,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Doctor> Doctors => Set<Doctor>();
     public DbSet<PatientRecord> PatientRecords => Set<PatientRecord>();
     public DbSet<PublicAdvisory> PublicAdvisories => Set<PublicAdvisory>();
+    public DbSet<InstitutionalGuideHead> InstitutionalGuideHeads => Set<InstitutionalGuideHead>();
+    public DbSet<InstitutionalGuideRevision> InstitutionalGuideRevisions => Set<InstitutionalGuideRevision>();
     
     // Patient clinical records
     public DbSet<LabResult> LabResults => Set<LabResult>();
@@ -50,7 +52,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     private void GuardAuditHistory()
     {
         ChangeTracker.DetectChanges();
-        if (ChangeTracker.Entries().Any(e => (e.Entity is AuditLog or AdminAuditLog or RedStarAudit) &&
+        if (ChangeTracker.Entries().Any(e => (e.Entity is AuditLog or AdminAuditLog or RedStarAudit or InstitutionalGuideRevision) &&
             e.State is EntityState.Modified or EntityState.Deleted))
             throw new InvalidOperationException("Audit history is append-only.");
     }
@@ -103,6 +105,21 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         base.OnModelCreating(builder);
         RedStarModel.Configure(builder, protection);
         builder.UseCollation("Latin1_General_100_BIN2");
+        builder.Entity<InstitutionalGuideHead>(e =>
+        {
+            e.HasKey(x => x.Key);
+            e.Property(x => x.Key).HasMaxLength(64);
+            e.Property(x => x.RowVersion).IsRowVersion();
+            e.HasData(InstitutionalGuideCatalog.All.Keys.Select(key => new { Key = key, LatestRevisionNumber = 0 }));
+        });
+        builder.Entity<InstitutionalGuideRevision>(e =>
+        {
+            e.Property(x => x.GuideKey).HasMaxLength(64);
+            e.Property(x => x.CreatedByUserId).HasMaxLength(450);
+            e.HasIndex(x => new { x.GuideKey, x.RevisionNumber }).IsUnique();
+            e.HasIndex(x => new { x.GuideKey, x.EffectiveOn, x.RevisionNumber });
+            e.HasOne<InstitutionalGuideHead>().WithMany().HasForeignKey(x => x.GuideKey).OnDelete(DeleteBehavior.Restrict);
+        });
 
         builder.Entity<WebsiteUsageDay>(e =>
         {

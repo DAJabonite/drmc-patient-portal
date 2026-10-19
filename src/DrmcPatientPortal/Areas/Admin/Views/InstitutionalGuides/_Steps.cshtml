@@ -1,0 +1,20 @@
+@model GuideStepListFields
+<div class="border rounded p-3 mb-3" data-guide-repeater data-guide-token="__step__">
+    <h6>Steps (numbered in the order shown)</h6>
+    <div data-guide-items>
+        @for (var i = 0; i < Model.Steps.Count; i++)
+        {
+            <div class="border rounded p-3 mb-3" data-guide-row>
+                <input type="hidden" name="@(Model.Prefix + ".Index")" value="@i" />
+                <partial name="_Step" model="@(new GuideStepFields(Model.Prefix + "[" + i + "]", Model.Steps[i]))" />
+                <partial name="_RowActions" />
+            </div>
+        }
+    </div>
+    <template><div class="border rounded p-3 mb-3" data-guide-row>
+        <input type="hidden" name="@(Model.Prefix + ".Index")" value="__step__" />
+        <partial name="_Step" model="@(new GuideStepFields(Model.Prefix + "[__step__]", new OpdStepContent()))" />
+        <partial name="_RowActions" />
+    </div></template>
+    <button type="button" class="btn btn-sm btn-outline-primary" data-guide-add>Add step</button>
+</div>

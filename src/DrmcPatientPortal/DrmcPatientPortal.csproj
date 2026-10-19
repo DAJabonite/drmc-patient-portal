@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Content/InstitutionalGuides/v1/*.json" />
     <EmbeddedResource Include="Services/OcrFixtures/probe.png" />
     <EmbeddedResource Include="Services/OcrFixtures/probe.jpg" />
     <EmbeddedResource Include="Services/OcrFixtures/*.webp" />

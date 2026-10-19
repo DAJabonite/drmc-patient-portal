@@ -1,0 +1,46 @@
+@model InstitutionalGuideContent
+<p class="small text-muted">Page title: @Model.PageTitle</p>
+<h2 class="h4">@Model.Heading</h2>
+@foreach (var text in new[] { Model.Kicker, Model.Badge, Model.Breadcrumb, Model.BackLabel, Model.ParentLabel, Model.SectionTitle }.Where(s => !string.IsNullOrEmpty(s)))
+{ <p>@text</p> }
+@foreach (var tile in Model.Tiles)
+{ <p><strong>@tile.Title</strong> · @tile.ActionLabel</p> }
+@foreach (var guideSection in Model.Sections)
+{
+    <h3 class="h5 mt-4">@guideSection.Title</h3>
+    @foreach (var item in guideSection.Items)
+    {
+        <div class="border rounded p-3 mb-2"><h4 class="h6">@item.Title</h4>@Html.Raw(item.BodyHtml)@Html.Raw(item.SupplementalHtml)</div>
+    }
+    @foreach (var paragraph in guideSection.Paragraphs) { <div>@Html.Raw(paragraph)</div> }
+    @if (guideSection.Rows.Count > 0)
+    {
+        <div class="table-responsive"><table class="table"><thead><tr><th>@guideSection.FirstColumnHeading</th><th>@guideSection.SecondColumnHeading</th></tr></thead><tbody>
+        @foreach (var row in guideSection.Rows) { <tr><td>@row.Hospital</td><td>@row.NextStep</td></tr> }
+        </tbody></table></div>
+    }
+}
+@if (Model.Opd is { } opd)
+{
+    <h3 class="h5">@opd.ReminderTitle</h3><p>@opd.ReminderBody</p>
+    @foreach (var facility in opd.Facilities)
+    {
+        <h3 class="h5 mt-4">@facility.Name (@facility.ShortName)</h3><p>@facility.VerificationNote</p>
+        @foreach (var step in (facility.PreRegistration is { } pre ? new[] { pre } : Array.Empty<OpdStepContent>()).Concat(facility.Steps))
+        {
+            <div class="border rounded p-3 mb-2"><h4 class="h6">@step.Title</h4><p>@step.Location</p><p>@step.RequirementNote</p><p>@step.Detail</p>
+                @if (step.IsConditional) { <p class="small text-muted">Conditional step</p> }
+                @if (step.Branches.Count > 0) { <ul>@foreach (var branch in step.Branches) { <li>@branch</li> }</ul> }
+                @if (step.Destinations.Count > 0) { <ul>@foreach (var destination in step.Destinations) { <li>@destination</li> }</ul> }
+            </div>
+        }
+    }
+}
+@if (Model.Radiology is { } radiology)
+{
+    <p>@radiology.IntroText</p><p>@radiology.ContactPrefix [department contact] @radiology.ContactSuffix</p>
+    <h3 class="h5">@radiology.GeneralHeading</h3><ul>@foreach (var item in radiology.GeneralItems) { <li>@item</li> }</ul>
+    <h3 class="h5">@radiology.SafetyHeading</h3><ul>@foreach (var item in radiology.SafetyNotices) { <li>@item</li> }</ul>
+    <h3 class="h5">@radiology.ModalityHeading</h3>
+    @foreach (var guide in radiology.Guides) { <h4 class="h6">@guide.Title</h4><ul>@foreach (var item in guide.Items) { <li>@item</li> }</ul> }
+}

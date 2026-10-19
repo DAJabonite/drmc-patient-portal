@@ -1,0 +1,15 @@
+@model InstitutionalGuideRevisionPage
+@{ ViewData["Title"] = Model.Title + " revision " + Model.Revision.RevisionNumber; }
+<div class="admin-page-header">
+    <div><h1 class="admin-title">@Model.Title · revision @Model.Revision.RevisionNumber</h1><p class="admin-subtitle">Read-only revision. Effective @Model.Revision.EffectiveOn.ToString("yyyy-MM-dd"). Reviewed @Model.Revision.LastReviewedAtUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC.</p></div>
+    <a asp-action="Edit" asp-route-id="@Model.Key" asp-route-sourceRevision="@Model.Revision.RevisionNumber" class="btn btn-primary">Copy to new revision</a>
+</div>
+<p><a asp-action="History" asp-route-id="@Model.Key">Back to revision history</a></p>
+<p class="small text-muted">Author: @Model.Revision.CreatedByUserId · Created @Model.Revision.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC · Source: @(Model.Revision.SourceRevisionNumber?.ToString() ?? "Bundled defaults")</p>
+@foreach (var (culture, title) in new[] { ("en", "English"), ("fil", "Filipino"), ("ceb", "Cebuano") })
+{
+    <details class="admin-card mb-3" open>
+        <summary class="h5 p-3 mb-0">@title · @(Model.Revision.ContentFor(culture) is null ? "Bundled defaults" : "Custom content")</summary>
+        <div class="admin-card-body" lang="@culture"><partial name="_ReadContent" model="Model.Content[culture]" /></div>
+    </details>
+}

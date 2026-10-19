@@ -1,0 +1,23 @@
+@model GuideStringFields
+<div class="border rounded p-3 mb-3" data-guide-repeater data-guide-token="@Model.Token">
+    <h6>@Model.Label</h6>
+    <div data-guide-items>
+        @for (var i = 0; i < Model.Items.Count; i++)
+        {
+            var name = Model.Prefix + "[" + i + "]";
+            <div class="d-flex gap-2 align-items-start mb-2" data-guide-row>
+                <input type="hidden" name="@(Model.Prefix + ".Index")" value="@i" />
+                @Html.TextArea(name, Model.Items[i], new { @class = "form-control", rows = 2, aria_label = Model.Label + " item" })
+                <partial name="_RowActions" />
+            </div>
+        }
+    </div>
+    <template>
+        <div class="d-flex gap-2 align-items-start mb-2" data-guide-row>
+            <input type="hidden" name="@(Model.Prefix + ".Index")" value="@Model.Token" />
+            <textarea name="@(Model.Prefix + "[" + Model.Token + "]")" rows="2" class="form-control" aria-label="@(Model.Label + " item")"></textarea>
+            <partial name="_RowActions" />
+        </div>
+    </template>
+    <button type="button" class="btn btn-sm btn-outline-primary" data-guide-add>Add item</button>
+</div>

@@ -145,8 +145,6 @@
   <data name="Ids_ZoomIn" xml:space="preserve"><value>Zoom in</value></data>
   <data name="Ids_Reset" xml:space="preserve"><value>Reset</value></data>
   <data name="Ids_ZoomInstruction" xml:space="preserve"><value>Use the controls or mouse wheel to zoom. Press Escape to close.</value></data>
-  <data name="OpdGuide_ReminderTitle" xml:space="preserve"><value>Before You Step Out</value></data>
-  <data name="OpdGuide_ReminderBody" xml:space="preserve"><value>Reminder: If you leave, step out, or do not complete the OPD triage process, you must start the entire sequence over from the beginning.</value></data>
   <data name="OpdGuide_SelectFacility" xml:space="preserve"><value>Select Your OPD Facility</value></data>
   <data name="OpdGuide_StepCount" xml:space="preserve"><value>{0} steps</value></data>
   <data name="OpdGuide_StepCountAfterPre" xml:space="preserve"><value>{0} steps after pre-registration</value></data>
@@ -263,4 +261,6 @@
   <data name="RS_LocationHours" xml:space="preserve"><value>Second floor, Outpatient Department (OPD). Monday–Friday, 8 AM–5 PM, as published by DRMC. Contact the clinic to confirm availability.</value></data>
   <data name="RS_OfficialInfo" xml:space="preserve"><value>Official clinic information</value></data>
   <data name="RS_Notifications" xml:space="preserve"><value>DRMC appointment notifications</value></data>
+  <data name="Guide_EffectiveOn" xml:space="preserve"><value>Effective:</value></data>
+  <data name="Guide_LastReviewed" xml:space="preserve"><value>Last reviewed:</value></data>
 </root>

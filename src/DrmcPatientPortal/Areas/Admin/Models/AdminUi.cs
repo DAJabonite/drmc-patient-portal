@@ -27,6 +27,7 @@ public static class AdminNavigation
         [
             new("Doctors", "Doctors", "bi-person-badge", "Public doctor and clinic directory."),
             new("PublicAdvisories", "Advisories", "bi-megaphone", "Sanitized public bulletins."),
+            new("InstitutionalGuides", "Hospital policy guides", "bi-list-check", "Localized requirements, OPD steps and imaging preparation."),
         ]),
         new("Operations",
         [

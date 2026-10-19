@@ -21,17 +21,20 @@ public class RadiologyController : Controller
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IAuditLogService _auditLog;
     private readonly IOptionsMonitor<PatientResultsOptions> _resultsOptions;
+    private readonly InstitutionalGuideService _guides;
 
     public RadiologyController(
         ApplicationDbContext db,
         UserManager<ApplicationUser> userManager,
         IAuditLogService auditLog,
-        IOptionsMonitor<PatientResultsOptions> resultsOptions)
+        IOptionsMonitor<PatientResultsOptions> resultsOptions,
+        InstitutionalGuideService guides)
     {
         _db = db;
         _userManager = userManager;
         _auditLog = auditLog;
         _resultsOptions = resultsOptions;
+        _guides = guides;
     }
 
     // GET /Patient/Radiology
@@ -145,6 +148,7 @@ public class RadiologyController : Controller
 
         return View(new RadiologyIndexViewModel
         {
+            PreparationGuide = await _guides.GetAsync("radiology-preparation", cancellationToken: HttpContext.RequestAborted),
             SelectedModality = modality,
             SearchTerm = search,
             SelectedDateRange = dateRange,

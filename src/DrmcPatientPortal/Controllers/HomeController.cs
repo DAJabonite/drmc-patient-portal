@@ -1,11 +1,12 @@
 using System.Diagnostics;
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DrmcPatientPortal.Controllers;
 
-public class HomeController : Controller
+public class HomeController(InstitutionalGuideService guides) : Controller
 {
     public IActionResult Index()
     {
@@ -21,11 +22,13 @@ public class HomeController : Controller
     [HttpGet]
     [Route("OpdGuide")]
     [Route("Home/OpdGuide")]
-    public IActionResult OpdGuide()
+    public async Task<IActionResult> OpdGuide(CancellationToken cancellationToken)
     {
+        var guide = await guides.GetAsync("opd", cancellationToken: cancellationToken);
         return View(new OpdGuideViewModel
         {
-            Facilities = OpdGuideFlows.All
+            Guide = guide,
+            Facilities = guide.Content.Opd!.Facilities.Select(facility => facility.ToFlow()).ToArray()
         });
     }
 
@@ -98,5 +101,6 @@ public class LandingViewModel
 
 public class OpdGuideViewModel
 {
+    public required ResolvedInstitutionalGuide Guide { get; set; }
     public IReadOnlyList<OpdFacilityFlow> Facilities { get; set; } = Array.Empty<OpdFacilityFlow>();
 }

@@ -16,7 +16,7 @@
         <div class="admin-dl-wide"><dt>Changed fields</dt><dd>@Model.ChangedFields</dd></div>
     </dl>
 </div>
-@if (Model.Entity is "Doctors" or "PublicAdvisories")
+@if (Model.Entity is "Doctors" or "PublicAdvisories" or "InstitutionalGuides")
 {
     <div class="row g-3 mt-1">
         <div class="col-lg-6"><div class="admin-card h-100"><div class="admin-card-header"><h2 class="admin-card-title">Previous public values</h2></div><div class="admin-card-body"><pre class="admin-pre">@Model.OldValues</pre></div></div></div>

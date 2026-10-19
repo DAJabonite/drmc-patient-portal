@@ -79,7 +79,7 @@ public static class AdminAudit
         var email = account.Email;
         var changed = fields ?? (before ?? after ?? []).Keys.Where(k => before is null || after is null ||
             !Equals(before.GetValueOrDefault(k), after.GetValueOrDefault(k)));
-        var publicContent = entity is "Doctors" or "PublicAdvisories";
+        var publicContent = entity is "Doctors" or "PublicAdvisories" or "InstitutionalGuides";
         db.AdminAuditLogs.Add(new AdminAuditLog
         {
             ActorId = actorId, ActorEmail = email ?? string.Empty, TimestampUtc = DateTime.UtcNow,

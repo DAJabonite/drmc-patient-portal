@@ -1,19 +1,21 @@
+@model ResolvedInstitutionalGuide
 @{
-    ViewData["Title"] = "DRMC Malasakit Services";
+    ViewData["Title"] = Model.Content.PageTitle;
+    var content = Model.Content;
 }
 
 <section class="page-header">
     <div class="container">
         <div class="d-flex align-items-center gap-2 mb-2">
             <a asp-action="Index" class="text-white text-opacity-75 text-decoration-none small">
-                <i class="bi bi-arrow-left" aria-hidden="true"></i> Malasakit Center
+                <i class="bi bi-arrow-left" aria-hidden="true"></i> @content.ParentLabel
             </a>
             <span class="text-white text-opacity-50" aria-hidden="true">/</span>
-            <span class="small text-white text-opacity-75">DRMC Malasakit Services</span>
+            <span class="small text-white text-opacity-75">@content.Breadcrumb</span>
         </div>
         <div>
-            <span class="badge bg-primary-subtle text-primary-drmc rounded-pill mb-2">DRMC Malasakit Center</span>
-            <h1 class="display-6 fw-bold mb-2">DRMC Malasakit Services</h1>
+            <span class="badge bg-primary-subtle text-primary-drmc rounded-pill mb-2">@content.Badge</span>
+            <h1 class="display-6 fw-bold mb-2">@content.Heading</h1>
         </div>
     </div>
 </section>
@@ -26,21 +28,23 @@
                     <i class="bi bi-file-earmark-check" aria-hidden="true"></i>
                 </span>
                 <div>
-                    <h2 class="h4 fw-bold text-primary-drmc mb-0">Documents to Prepare</h2>
+                    <h2 class="h4 fw-bold text-primary-drmc mb-0">@content.Sections[0].Title</h2>
                 </div>
             </div>
 
             <ul class="requirement-list requirement-list-spacious mb-0">
-                <li>Photocopy of the request or prescription, such as laboratory, X-ray, prescription, ultrasound, or other medical requests</li>
-                <li>Valid ID of the patient; if the patient is a child, provide the child's birth certificate</li>
-                <li>Valid ID of the person who will process the request/client</li>
+                @foreach (var item in content.Sections[0].Items)
+                {
+                    <li>@Html.Raw(item.BodyHtml)</li>
+                }
             </ul>
         </article>
 
         <div class="mt-4 pt-4 border-top">
             <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
-                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Back to Malasakit Hub
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> @content.BackLabel
             </a>
         </div>
+        <partial name="_GuideReview" model="Model" />
     </div>
 </section>

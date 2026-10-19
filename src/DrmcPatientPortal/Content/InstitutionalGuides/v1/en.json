@@ -1,0 +1,616 @@
+{
+  "malasakit": {
+    "pageTitle": "Medical Social Services & Malasakit Center",
+    "heading": "Malasakit Center & Social Services",
+    "kicker": "Republic Act No. 11463 · Malasakit Centers Act",
+    "sectionTitle": "Government Service Guides",
+    "tiles": [
+      {
+        "key": "dswd",
+        "title": "DSWD Services",
+        "actionLabel": "View requirements"
+      },
+      {
+        "key": "drmc-malasakit",
+        "title": "DRMC Malasakit Services",
+        "actionLabel": "View checklist"
+      },
+      {
+        "key": "maifip",
+        "title": "DOH-MAIFIP Requirements",
+        "actionLabel": "View requirements"
+      },
+      {
+        "key": "philhealth",
+        "title": "PhilHealth Requirements",
+        "actionLabel": "View requirements"
+      }
+    ]
+  },
+  "dswd": {
+    "pageTitle": "DSWD Services & Requirements",
+    "heading": "DSWD Services & Requirements",
+    "breadcrumb": "DSWD Services",
+    "badge": "Assistance to Individuals in Crisis Situation",
+    "backLabel": "Back to Malasakit Hub",
+    "sections": [
+      {
+        "title": "Medicine Requirements",
+        "items": [
+          {
+            "bodyHtml": "Updated Medical Certificate or Medical Abstract <strong>(1 original copy and 1 photocopy)</strong>"
+          },
+          {
+            "bodyHtml": "Medicine prescription <strong>(1 original copy and 2 photocopies)</strong>"
+          },
+          {
+            "bodyHtml": "Authorization letter, if a person who is not an immediate family member will process the medicines <strong>(2 copies)</strong>"
+          },
+          {
+            "bodyHtml": "One valid ID of the patient with three signatures <strong>(2 copies)</strong>"
+          },
+          {
+            "bodyHtml": "One valid ID of the person who will process the request/client with three signatures <strong>(2 copies)</strong>"
+          }
+        ]
+      },
+      {
+        "title": "Laboratory Test Requirements",
+        "items": [
+          {
+            "bodyHtml": "Updated Medical Certificate or Medical Abstract <strong>(1 original copy and 1 photocopy)</strong>"
+          },
+          {
+            "bodyHtml": "Laboratory Request from the Doctor <strong>(2 copies)</strong>"
+          },
+          {
+            "bodyHtml": "Price Quotation <strong>(1 original copy and 1 photocopy)</strong>"
+          },
+          {
+            "bodyHtml": "Authorization letter, if a person who is not an immediate family member will process the laboratory test, with a valid ID bearing three signatures <strong>(2 copies)</strong>"
+          },
+          {
+            "bodyHtml": "One valid ID of the patient with three signatures <strong>(2 copies)</strong>"
+          }
+        ]
+      },
+      {
+        "title": "Hospital Bill Requirements",
+        "items": [
+          {
+            "bodyHtml": "Updated Medical Certificate or Medical Abstract <strong>(1 original copy and 1 photocopy)</strong>"
+          },
+          {
+            "bodyHtml": "Final Hospital Bill or Statement of Account <strong>(1 original copy and 1 photocopy)</strong>"
+          },
+          {
+            "bodyHtml": "Promissory Note, if the patient has already left the hospital without paying the bill completely <strong>(1 original copy and 1 photocopy)</strong>"
+          },
+          {
+            "bodyHtml": "Authorization letter, if a person who is not an immediate family member will process the hospital bill requirements <strong>(2 copies)</strong>"
+          },
+          {
+            "bodyHtml": "One valid ID of the patient with three signatures <strong>(2 copies)</strong>"
+          },
+          {
+            "bodyHtml": "One valid ID of the person who will process the request/client with three signatures <strong>(2 copies)</strong>"
+          }
+        ]
+      },
+      {
+        "title": "Burial Requirements",
+        "items": [
+          {
+            "bodyHtml": "<strong>Death Certificate</strong> (2 copies)"
+          },
+          {
+            "bodyHtml": "<strong>Service Contract or Funeral Bill</strong> (1 original copy and 1 photocopy)"
+          },
+          {
+            "bodyHtml": "<strong>Authorization letter</strong>, if a person who is not an immediate family member will process the burial requirements, with a valid ID bearing three signatures (2 copies)"
+          },
+          {
+            "bodyHtml": "<strong>One valid ID</strong> of the <strong>patient</strong> with three signatures (2 copies)"
+          },
+          {
+            "bodyHtml": "<strong>One valid ID</strong> of the <strong>person</strong> who will <strong>process</strong> the <strong>request/client</strong> with three signatures (2 copies)"
+          }
+        ]
+      }
+    ],
+    "parentLabel": "Malasakit Center"
+  },
+  "drmc-malasakit": {
+    "pageTitle": "DRMC Malasakit Services",
+    "heading": "DRMC Malasakit Services",
+    "breadcrumb": "DRMC Malasakit Services",
+    "badge": "DRMC Malasakit Center",
+    "backLabel": "Back to Malasakit Hub",
+    "sections": [
+      {
+        "title": "Documents to Prepare",
+        "items": [
+          {
+            "bodyHtml": "Photocopy of the request or prescription, such as laboratory, X-ray, prescription, ultrasound, or other medical requests"
+          },
+          {
+            "bodyHtml": "Valid ID of the patient; if the patient is a child, provide the child's birth certificate"
+          },
+          {
+            "bodyHtml": "Valid ID of the person who will process the request/client"
+          }
+        ]
+      }
+    ],
+    "parentLabel": "Malasakit Center"
+  },
+  "maifip": {
+    "pageTitle": "DOH - MAIFIP Requirements",
+    "heading": "DOH-MAIFIP requirements",
+    "breadcrumb": "Requirements Guide",
+    "backLabel": "Back to Malasakit Center",
+    "sections": [
+      {
+        "title": "Required Documents",
+        "items": [
+          {
+            "title": "DRMC prescription or request for an unavailable item",
+            "bodyHtml": "Have the prescription or request stamped <strong>NOT AVAILABLE</strong> at the DRMC Pharmacy."
+          },
+          {
+            "title": "Medical Certificate or Medical Abstract",
+            "bodyHtml": "Submit the original document or a Certified True Copy.",
+            "supplementalHtml": "<strong>If you do not have one yet, request it from:</strong><br />\n                            Medical Certificate — OPD Window 1<br />\n                            Medical Abstract — Nurse Station"
+          },
+          {
+            "title": "Valid IDs of the patient and watcher",
+            "bodyHtml": "Bring one photocopy of the patient's valid ID and one photocopy of the watcher's valid ID."
+          },
+          {
+            "title": "Printed price quotation from a private hospital",
+            "bodyHtml": "Request a printed price quotation from the private hospital's pharmacy."
+          }
+        ]
+      },
+      {
+        "title": "How to Request a Price Quotation",
+        "paragraphs": [
+          "Go to the <strong>private hospital's pharmacy</strong> and bring the prescription stamped <strong>NOT AVAILABLE</strong> so the medicines can be priced.",
+          "Tell the pharmacy staff: <strong>“I would like to request a printed price quotation.”</strong>"
+        ]
+      },
+      {
+        "title": "Private Hospitals and Where to Go Next",
+        "firstColumnHeading": "Private Hospital",
+        "secondColumnHeading": "Next Step",
+        "regionLabel": "Private hospital destinations",
+        "rows": [
+          {
+            "hospital": "Medical Mission Group Hospital",
+            "nextStep": "Return to the Malasakit Center for the UIS"
+          },
+          {
+            "hospital": "Tagum Medical City",
+            "nextStep": "Return to the Malasakit Center for the UIS"
+          },
+          {
+            "hospital": "Tagum Global Medical Center",
+            "nextStep": "Proceed directly to the social worker at Global for the UIS"
+          },
+          {
+            "hospital": "Tagum Doctor's Hospital",
+            "nextStep": "Proceed directly to the social worker at Tagum Doc for the UIS"
+          },
+          {
+            "hospital": "Good Shepherd of Panabo",
+            "nextStep": "Proceed directly to the social worker at Good Shepherd for the UIS"
+          },
+          {
+            "hospital": "Rivera Medical Center, Inc.",
+            "nextStep": "Proceed directly to the social worker at Rivera for the UIS"
+          },
+          {
+            "hospital": "J.A. Alegre Hospital",
+            "nextStep": "Proceed directly to the social worker at Rivera for the UIS"
+          },
+          {
+            "hospital": "Aquino Medical Specialists Hospital",
+            "nextStep": "No UIS destination was included in the provided instructions"
+          }
+        ]
+      }
+    ],
+    "parentLabel": "Malasakit Center"
+  },
+  "philhealth": {
+    "pageTitle": "PhilHealth Requirements",
+    "heading": "PhilHealth requirements",
+    "breadcrumb": "Requirements Guide",
+    "backLabel": "Back to Malasakit Center",
+    "sections": [
+      {
+        "title": "Required Documents",
+        "items": [
+          {
+            "title": "Birth Certificate",
+            "bodyHtml": "Required for the baby."
+          },
+          {
+            "title": "Valid ID of the PhilHealth member",
+            "bodyHtml": "Bring a valid identification card belonging to the PhilHealth member."
+          },
+          {
+            "title": "Valid ID of the authorized representative",
+            "bodyHtml": "Bring a valid identification card belonging to the person processing the request."
+          },
+          {
+            "title": "Marriage Contract",
+            "bodyHtml": "Required if married."
+          }
+        ]
+      }
+    ],
+    "parentLabel": "Malasakit Center"
+  },
+  "opd": {
+    "pageTitle": "Outpatient Department (OPD) Guide",
+    "heading": "Outpatient Department (OPD) Guide",
+    "opd": {
+      "facilities": [
+        {
+          "key": "main",
+          "name": "Main OPD",
+          "shortName": "Main OPD",
+          "preRegistration": {
+            "title": "Pre-registration — PACD (Public Assistance and Complaints Desk)",
+            "location": "Main Entrance",
+            "requirementNote": null,
+            "detail": "Ask for information and get the form to fill up. Staff check whether you have an appointment.",
+            "branches": [
+              "With an appointment — you are sent directly to the specified clinic.",
+              "Without an appointment — you are given a number to start triage."
+            ],
+            "isConditional": false,
+            "destinations": []
+          },
+          "steps": [
+            {
+              "title": "Triage Nurse",
+              "location": null,
+              "requirementNote": null,
+              "detail": "Present your queue number and answer the nurse's initial screening questions.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Vital Signs",
+              "location": null,
+              "requirementNote": null,
+              "detail": "Staff record your basic vital signs before screening.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Screening / Verification",
+              "location": null,
+              "requirementNote": "Have your PhilHealth Member Data Record (MDR) ready, if available",
+              "detail": "Staff check for an existing record, follow-up status, and PhilHealth.",
+              "branches": [
+                "With PhilHealth — proceed to the PCU for member verification.",
+                "Without PhilHealth — you are directed to the Social Worker for registration."
+              ],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Registration",
+              "location": null,
+              "requirementNote": "Government-issued ID; for infants or children, a photocopy of the birth certificate",
+              "detail": "New patients are registered; existing patients have their records pulled.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Cashier",
+              "location": null,
+              "requirementNote": "Present a qualifying ID at the cashier if you are eligible for the ₱0 rate",
+              "detail": "Newly registered patients with no existing record pay ₱150. Senior citizens, PWDs, and other eligible patients pay ₱0 upon presentation of a qualifying ID.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Clinic",
+              "location": null,
+              "requirementNote": null,
+              "detail": "You are directed to your intended clinic.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            }
+          ],
+          "verificationNote": null
+        },
+        {
+          "key": "bucas",
+          "name": "BUCAS OPD",
+          "shortName": "BUCAS OPD",
+          "preRegistration": null,
+          "steps": [
+            {
+              "title": "Queue Number",
+              "location": null,
+              "requirementNote": null,
+              "detail": "On arrival, get a queueing number from the guard.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Vital Signs",
+              "location": "VS (Vital Signs) Area",
+              "requirementNote": null,
+              "detail": "Wait at the VS area for the initial assessment.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "PhilHealth Verification",
+              "location": null,
+              "requirementNote": "Have your PhilHealth Member Data Record (MDR) ready, if available",
+              "detail": "Proceed to PhilHealth verification.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Registration",
+              "location": null,
+              "requirementNote": null,
+              "detail": "After verification, proceed to patient registration.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Nurse Triage",
+              "location": null,
+              "requirementNote": null,
+              "detail": "The triage nurse evaluates your condition and determines the appropriate consultation process.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Wait for Consultation",
+              "location": null,
+              "requirementNote": null,
+              "detail": "Monitor the queueing screen for your queue number to be called.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Doctor's Consultation",
+              "location": null,
+              "requirementNote": null,
+              "detail": "Once called, proceed to the designated OPD consultation cubicle.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Post-Consultation Instructions",
+              "location": null,
+              "requirementNote": null,
+              "detail": "You are told where to go next based on the doctor's orders.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": [
+                "Pharmacy",
+                "Laboratory",
+                "X-ray Department",
+                "Other required diagnostic or treatment services"
+              ]
+            },
+            {
+              "title": "Follow-Up",
+              "location": null,
+              "requirementNote": null,
+              "detail": "If a follow-up consultation is required, first complete the requested laboratory tests, X-rays, or other examinations, then return for follow-up per staff instructions.",
+              "branches": [],
+              "isConditional": true,
+              "destinations": []
+            }
+          ],
+          "verificationNote": null
+        },
+        {
+          "key": "ccm",
+          "name": "Cancer Center for Mindanao OPD (CCM OPD)",
+          "shortName": "CCM OPD",
+          "preRegistration": null,
+          "steps": [
+            {
+              "title": "Queue",
+              "location": null,
+              "requirementNote": null,
+              "detail": "Follow staff instructions to obtain or wait for your queue number.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Registration",
+              "location": null,
+              "requirementNote": null,
+              "detail": "Provide the information requested so staff can create or retrieve your patient record.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Vital Signs",
+              "location": null,
+              "requirementNote": null,
+              "detail": "Staff record your basic vital signs before triage.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Triage",
+              "location": null,
+              "requirementNote": null,
+              "detail": "Briefly explain your concern so staff can direct you to the appropriate clinic.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Clinic",
+              "location": null,
+              "requirementNote": null,
+              "detail": "Wait for your name or queue number, then proceed when called.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            }
+          ],
+          "verificationNote": "For verification: this sequence is provisional and pending confirmation from DRMC."
+        },
+        {
+          "key": "acc",
+          "name": "Ambulatory Care Center OPD (ACC OPD)",
+          "shortName": "ACC OPD",
+          "preRegistration": null,
+          "steps": [
+            {
+              "title": "Queue by Service",
+              "location": null,
+              "requirementNote": null,
+              "detail": "Queue is organized by service.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": [
+                "Day Surgery",
+                "Digestive Endoscopy",
+                "Ultrasound & 2D Echo",
+                "Consultation"
+              ]
+            },
+            {
+              "title": "Registration",
+              "location": null,
+              "requirementNote": null,
+              "detail": "Provide the information requested so staff can create or retrieve your patient record.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Vital Signs",
+              "location": null,
+              "requirementNote": null,
+              "detail": "Staff record your basic vital signs before the nurse-station check.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Nurse Station",
+              "location": null,
+              "requirementNote": null,
+              "detail": "Service type is verified.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            },
+            {
+              "title": "Clinic",
+              "location": null,
+              "requirementNote": null,
+              "detail": "Wait for your name or queue number, then proceed when called.",
+              "branches": [],
+              "isConditional": false,
+              "destinations": []
+            }
+          ],
+          "verificationNote": null
+        }
+      ],
+      "reminderTitle": "Before You Step Out",
+      "reminderBody": "Reminder: If you leave, step out, or do not complete the OPD triage process, you must start the entire sequence over from the beginning."
+    }
+  },
+  "radiology-preparation": {
+    "pageTitle": "Preparing for your imaging study",
+    "heading": "Preparing for your imaging study",
+    "radiology": {
+      "introText": "This is general guidance. Your doctor's request has the exact instructions for your study.",
+      "contactPrefix": "If you are unsure, call Radiology at",
+      "contactSuffix": ".",
+      "generalHeading": "For every study",
+      "safetyHeading": "Tell the staff first",
+      "modalityHeading": "By type of study",
+      "generalItems": [
+        "Bring your doctor's request form and a valid ID.",
+        "Bring previous films, CDs or reports of earlier imaging, if you have them, so they can be compared.",
+        "Arrive early so there is time to register before your study.",
+        "Wear loose, comfortable clothing. You may be asked to change into a hospital gown.",
+        "Remove metal objects, jewellery and hairpins before the study."
+      ],
+      "safetyNotices": [
+        "Tell the staff before your study if you are pregnant or might be pregnant.",
+        "Before an MRI, tell the staff if you have a pacemaker, an implant, surgical clips or any metal in your body.",
+        "If your study uses contrast, tell the staff if you have a contrast allergy, kidney disease, or take medicine for diabetes."
+      ],
+      "guides": [
+        {
+          "key": "xray",
+          "title": "X-ray and fluoroscopy",
+          "items": [
+            "Most plain X-rays need no special preparation.",
+            "Some fluoroscopy studies need preparation before the day. Follow the instructions on your doctor's request."
+          ]
+        },
+        {
+          "key": "ultrasound",
+          "title": "Ultrasound",
+          "items": [
+            "Some ultrasound studies need preparation, such as not eating beforehand or coming with a full bladder.",
+            "Which preparation applies depends on the body part being scanned. Check your doctor's request or ask Radiology."
+          ]
+        },
+        {
+          "key": "ct",
+          "title": "CT scan",
+          "items": [
+            "Some CT scans use contrast. Your doctor's request or Radiology will tell you if yours does and how to prepare.",
+            "Tell the staff about allergies, kidney disease and diabetes medicine before a contrast study."
+          ]
+        },
+        {
+          "key": "mri",
+          "title": "MRI",
+          "items": [
+            "Tell the staff about pacemakers, implants, surgical clips or metal fragments before you enter the scanner room.",
+            "Remove all metal objects. Tell the staff if you are uncomfortable in enclosed spaces."
+          ]
+        },
+        {
+          "key": "mammography",
+          "title": "Mammography",
+          "items": [
+            "Tell the staff if you are pregnant, might be pregnant, or are breastfeeding.",
+            "Bring previous mammograms if you have them, so they can be compared."
+          ]
+        }
+      ]
+    }
+  }
+}

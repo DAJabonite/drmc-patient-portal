@@ -1,0 +1,33 @@
+@model InstitutionalGuideHistory
+@{
+    ViewData["Title"] = Model.Title + " history";
+    var scheduled = Model.Revisions.Where(r => r.EffectiveOn > Model.Today).GroupBy(r => r.EffectiveOn)
+        .Select(g => g.Max(r => r.RevisionNumber)).ToHashSet();
+}
+<div class="admin-page-header">
+    <div><h1 class="admin-title">@Model.Title history</h1><p class="admin-subtitle">Revisions are permanent. Copying one opens a new revision for review.</p></div>
+    <a asp-action="Edit" asp-route-id="@Model.Key" class="btn btn-primary">Edit active content</a>
+</div>
+<p><a asp-action="Index">Back to institutional guides</a></p>
+@if (Model.Revisions.Count == 0)
+{
+    <div class="admin-card"><div class="admin-card-body">No revisions yet. Patients see bundled defaults in all languages.</div></div>
+}
+else
+{
+    <div class="admin-card"><div class="table-responsive"><table class="table align-middle mb-0">
+        <thead><tr><th>Revision</th><th>Effective date</th><th>Last reviewed (UTC)</th><th>Author</th><th>Custom languages</th><th>Source</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+        <tbody>
+        @foreach (var revision in Model.Revisions)
+        {
+            <tr>
+                <th scope="row">@revision.RevisionNumber @if (revision.RevisionNumber == Model.ActiveRevisionNumber) { <span class="badge text-bg-success">Active</span> } else if (scheduled.Contains(revision.RevisionNumber)) { <span class="badge text-bg-info">Scheduled</span> } else { <span class="text-muted small">Superseded</span> }</th>
+                <td>@revision.EffectiveOn.ToString("yyyy-MM-dd")</td><td>@revision.LastReviewedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td><td class="text-break">@revision.CreatedByUserId</td>
+                <td>@{ var cultures = InstitutionalGuideCatalog.Cultures.Where(c => revision.ContentFor(c) is not null).ToArray(); }@(cultures.Length == 0 ? "Bundled defaults" : string.Join(", ", cultures))</td>
+                <td>@(revision.SourceRevisionNumber?.ToString() ?? "Bundled defaults")</td>
+                <td class="text-nowrap"><a asp-action="Revision" asp-route-id="@Model.Key" asp-route-revision="@revision.RevisionNumber" class="btn btn-sm btn-outline-secondary">View</a> <a asp-action="Edit" asp-route-id="@Model.Key" asp-route-sourceRevision="@revision.RevisionNumber" class="btn btn-sm btn-outline-primary">Copy to new revision</a></td>
+            </tr>
+        }
+        </tbody>
+    </table></div></div>
+}

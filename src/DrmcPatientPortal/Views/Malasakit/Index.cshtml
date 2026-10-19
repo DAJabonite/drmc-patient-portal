@@ -1,13 +1,15 @@
+@model ResolvedInstitutionalGuide
 @{
-    ViewData["Title"] = "Medical Social Services & Malasakit Center";
+    ViewData["Title"] = Model.Content.PageTitle;
+    var content = Model.Content;
 }
 
 <!-- Hero Section -->
 <section class="page-header">
     <div class="container">
         <div>
-            <p class="small text-white text-opacity-75 mb-2">Republic Act No. 11463 · Malasakit Centers Act</p>
-            <h1 class="display-6 fw-bold mb-0">Malasakit Center &amp; Social Services</h1>
+            <p class="small text-white text-opacity-75 mb-2">@content.Kicker</p>
+            <h1 class="display-6 fw-bold mb-0">@content.Heading</h1>
         </div>
     </div>
 </section>
@@ -17,64 +19,37 @@
     <div class="container">
         <div>
             <div class="mb-4">
-                <h2 class="h4 fw-bold text-primary-drmc mb-0">Government Service Guides</h2>
+                <h2 class="h4 fw-bold text-primary-drmc mb-0">@content.SectionTitle</h2>
             </div>
 
             <div class="row g-4">
-                <div class="col-md-6 col-lg-3">
-                    <a asp-action="DSWDServices" class="dswd-service-tile card border-0 shadow-sm rounded-4 h-100 p-4 bg-white text-decoration-none">
-                        <div class="d-flex align-items-start gap-3">
-                            <span class="dswd-service-icon" aria-hidden="true">
-                                <img src="~/images/dswd-logo.png" alt="DSWD logo" />
-                            </span>
-                            <span class="flex-grow-1">
-                                <span class="h5 fw-bold text-dark d-block mb-2">DSWD Services</span>
-                                <span class="small text-primary-drmc fw-semibold">View requirements <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i></span>
-                            </span>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-md-6 col-lg-3">
-                    <a asp-action="DRMCMalasakitServices" class="dswd-service-tile card border-0 shadow-sm rounded-4 h-100 p-4 bg-white text-decoration-none">
-                        <div class="d-flex align-items-start gap-3">
-                            <span class="dswd-service-icon" aria-hidden="true">
-                                <img src="~/images/drmc-malasakit-logo.png" alt="DRMC logo" />
-                            </span>
-                            <span class="flex-grow-1">
-                                <span class="h5 fw-bold text-dark d-block mb-2">DRMC Malasakit Services</span>
-                                <span class="small text-primary-drmc fw-semibold">View checklist <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i></span>
-                            </span>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-md-6 col-lg-3">
-                    <a asp-action="MaifipRequirements" class="dswd-service-tile card border-0 shadow-sm rounded-4 h-100 p-4 bg-white text-decoration-none">
-                        <div class="d-flex align-items-start gap-3">
-                            <span class="dswd-service-icon" aria-hidden="true">
-                                <img src="~/images/doh-maifip-logo.png" alt="Department of Health logo" />
-                            </span>
-                            <span class="flex-grow-1">
-                                <span class="h5 fw-bold text-dark d-block mb-2">DOH-MAIFIP Requirements</span>
-                                <span class="small text-primary-drmc fw-semibold">View requirements <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i></span>
-                            </span>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-md-6 col-lg-3">
-                    <a asp-action="Philhealth" class="dswd-service-tile card border-0 shadow-sm rounded-4 h-100 p-4 bg-white text-decoration-none">
-                        <div class="d-flex align-items-start gap-3">
-                            <span class="dswd-service-icon" aria-hidden="true">
-                                <img src="~/images/philhealth-logo.png" alt="PhilHealth logo" />
-                            </span>
-                            <span class="flex-grow-1">
-                                <span class="h5 fw-bold text-dark d-block mb-2">PhilHealth Requirements</span>
-                                <span class="small text-primary-drmc fw-semibold">View requirements <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i></span>
-                            </span>
-                        </div>
-                    </a>
-                </div>
+                @foreach (var tile in content.Tiles)
+                {
+                    var (action, image, alternative) = tile.Key switch
+                    {
+                        "dswd" => ("DSWDServices", "dswd-logo.png", "DSWD logo"),
+                        "drmc-malasakit" => ("DRMCMalasakitServices", "drmc-malasakit-logo.png", "DRMC logo"),
+                        "maifip" => ("MaifipRequirements", "doh-maifip-logo.png", "Department of Health logo"),
+                        "philhealth" => ("Philhealth", "philhealth-logo.png", "PhilHealth logo"),
+                        _ => throw new InvalidOperationException("Unknown institutional guide tile.")
+                    };
+                    <div class="col-md-6 col-lg-3">
+                        <a asp-action="@action" class="dswd-service-tile card border-0 shadow-sm rounded-4 h-100 p-4 bg-white text-decoration-none">
+                            <div class="d-flex align-items-start gap-3">
+                                <span class="dswd-service-icon" aria-hidden="true">
+                                    <img src="~/images/@image" alt="@alternative" />
+                                </span>
+                                <span class="flex-grow-1">
+                                    <span class="h5 fw-bold text-dark d-block mb-2">@tile.Title</span>
+                                    <span class="small text-primary-drmc fw-semibold">@tile.ActionLabel <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i></span>
+                                </span>
+                            </div>
+                        </a>
+                    </div>
+                }
             </div>
         </div>
 
+        <partial name="_GuideReview" model="Model" />
     </div>
 </section>
