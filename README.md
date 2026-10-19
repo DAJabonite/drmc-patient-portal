@@ -377,7 +377,7 @@ The tests cover public pages, the sign-in requirement, patient record isolation,
 
 The shared test host disables background security cleanup so tests that advance a simulated clock cannot remove another test's sessions. Dedicated cleanup tests drive that worker explicitly; normal application startup keeps the worker enabled.
 
-Synthetic OCR cards use the bundled OFL-licensed Arimo font so their text is rendered consistently on Windows and Linux. They do not depend on host font discovery. CI checks these image fixtures before running the remaining integration tests, then verifies container persistence.
+Synthetic OCR cards use the bundled OFL-licensed Arimo font and the pinned `Tesseract.Data.English` model so their pixels and language data remain consistent on Windows and Linux. They do not depend on host font discovery or the distro's model variant. Application startup tests separately exercise the configured native OCR runtime and language data. CI checks these image fixtures before running the remaining integration tests, then verifies container persistence.
 
 Views must not use inline `<script>` blocks or `on*` attributes, because the Content Security Policy only allows `script-src 'self'`. Put scripts in `wwwroot/js`; use `data-auto-submit` on a form control or `data-confirm="..."` on a form for the common cases.
 

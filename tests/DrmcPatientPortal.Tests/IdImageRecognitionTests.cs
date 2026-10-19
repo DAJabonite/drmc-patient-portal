@@ -139,8 +139,9 @@ public class IdImageRecognitionTests(ITestOutputHelper output)
         SKTypeface.FromFile(Path.Combine(AppContext.BaseDirectory, "OcrFixtures", "Arimo.ttf"))
         ?? throw new InvalidOperationException("The bundled OCR fixture font could not be loaded.");
 
-    private static string DataPath => Environment.GetEnvironmentVariable("Ocr__TessDataPath") is { Length: > 0 } path
-        ? path : Path.Combine(AppContext.BaseDirectory, "tessdata");
+    // Keep the language model fixed as well as the pixels. Host OCR startup tests
+    // separately exercise the configured distro model and native dependencies.
+    private static string DataPath => Path.Combine(AppContext.BaseDirectory, "tessdata");
     private static string NativePath => Environment.GetEnvironmentVariable("Ocr__NativeLibraryPath") ?? "";
 
     private static async Task<OcrWorkerResponse> Recognize(byte[] bytes, string type = PhilippineIdTypes.PhilSys)
