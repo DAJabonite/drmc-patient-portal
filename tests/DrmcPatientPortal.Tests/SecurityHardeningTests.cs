@@ -22,6 +22,8 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace DrmcPatientPortal.Tests;
 
@@ -237,6 +239,143 @@ public sealed class SecurityHardeningTests(PortalFactory factory)
         clock.Now = clock.Now.AddSeconds(30); Assert.True((await Verify(null)).Valid);
         var replaced = await Verify(null, true); Assert.True(replaced.Valid); Assert.NotEqual(key, replaced.Key);
         Assert.False((await Verify(code)).Valid);
+    }
+
+    private static async Task<bool> VerifyTotp(IServiceProvider services, string userId, string code)
+    {
+        using var scope = services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        return await users.VerifyTwoFactorTokenAsync((await users.FindByIdAsync(userId))!, SingleUseAuthenticatorProvider.ProviderName, code);
+    }
+
+    [Fact]
+    public async Task Totp_replay_is_rejected_after_cache_eviction_host_replacement_and_a_cross_host_race()
+    {
+        var isolated = new PortalFactory();
+        try
+        {
+            await isolated.InitializeAsync();
+            var email = $"isolated.totp.{Guid.NewGuid():N}@fixtures.test";
+            await StaffAccounts.EnsureAccountAsync(isolated.Services, email, true);
+            string userId;
+            using (var scope = isolated.Services.CreateScope())
+                userId = (await scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>().FindByEmailAsync(email))!.Id;
+            async Task<T> ReadIsolated<T>(Func<ApplicationDbContext, Task<T>> query)
+            {
+                using var scope = isolated.Services.CreateScope();
+                return await query(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>());
+            }
+            var clock = new TestClock(DateTimeOffset.FromUnixTimeSeconds(1800000000));
+            string key;
+            using (var scope = isolated.Services.CreateScope())
+            {
+                var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+                key = (await users.GetAuthenticatorKeyAsync((await users.FindByIdAsync(userId))!))!;
+            }
+            WebApplicationFactory<Program> Host() => isolated.WithWebHostBuilder(b => b.ConfigureTestServices(s =>
+            {
+                s.RemoveAll<TimeProvider>(); s.AddSingleton<TimeProvider>(clock);
+                s.RemoveAll<IMemoryCache>(); s.AddSingleton<IMemoryCache>(_ => new MemoryCache(new MemoryCacheOptions()));
+            }));
+            var step = clock.Now.ToUnixTimeSeconds() / 30;
+            var code = SingleUseAuthenticatorProvider.Code(key, step);
+            using (var first = Host())
+            using (var second = Host())
+            {
+                Assert.True(await VerifyTotp(first.Services, userId, code));
+                Assert.NotSame(first.Services.GetRequiredService<IMemoryCache>(), second.Services.GetRequiredService<IMemoryCache>());
+                ((MemoryCache)first.Services.GetRequiredService<IMemoryCache>()).Compact(1);
+                ((MemoryCache)second.Services.GetRequiredService<IMemoryCache>()).Compact(1);
+                Assert.False(await VerifyTotp(second.Services, userId, code));
+            }
+            using var replacement = Host();
+            Assert.False(await VerifyTotp(replacement.Services, userId, code));
+            Assert.Equal(1, await ReadIsolated(db => db.AuthenticatorConsumptions.CountAsync(c => c.UserId == userId && c.TimeStep == step)));
+            clock.Now = clock.Now.AddSeconds(30);
+            using var competitor = Host();
+            var next = SingleUseAuthenticatorProvider.Code(key, step + 1);
+            var result = await Task.WhenAll(VerifyTotp(replacement.Services, userId, next), VerifyTotp(competitor.Services, userId, next));
+            Assert.Single(result, valid => valid);
+            Assert.Equal(1, await ReadIsolated(db => db.AuthenticatorConsumptions.CountAsync(c => c.UserId == userId && c.TimeStep == step + 1)));
+            var cleanup = new PortalSecurityCleanup(replacement.Services.GetRequiredService<IServiceScopeFactory>(), clock);
+            clock.Now = DateTimeOffset.FromUnixTimeSeconds((step + 3) * 30 - 1);
+            await cleanup.CleanupAsync();
+            Assert.False(await VerifyTotp(replacement.Services, userId, code));
+            Assert.Equal(1, await ReadIsolated(db => db.AuthenticatorConsumptions.CountAsync(c => c.UserId == userId && c.TimeStep == step)));
+            clock.Now = clock.Now.AddSeconds(1);
+            await cleanup.CleanupAsync();
+            Assert.False(await VerifyTotp(replacement.Services, userId, code));
+            Assert.False(await ReadIsolated(db => db.AuthenticatorConsumptions.AnyAsync(c => c.UserId == userId && c.TimeStep == step)));
+        }
+        finally { await ((IAsyncLifetime)isolated).DisposeAsync(); }
+    }
+
+
+    [Theory]
+    [InlineData("logout")]
+    [InlineData("password-reset")]
+    [InlineData("security-stamp")]
+    public async Task Cookies_survive_host_replacement_and_revocation_is_immediate_on_other_hosts(string action)
+    {
+        var account = await Account();
+        string cookie;
+        using (var first = factory.WithWebHostBuilder(_ => { }))
+        using (var browser = first.CreateClient(new() { BaseAddress = new("https://localhost"), AllowAutoRedirect = false }))
+            cookie = Cookie(await browser.SignInAsync(account.Email, PortalFactory.Password));
+        using var second = factory.WithWebHostBuilder(_ => { });
+        using var replacement = factory.WithWebHostBuilder(_ => { });
+        HttpClient Client(WebApplicationFactory<Program> host, bool handleCookies = false)
+        {
+            var client = host.CreateClient(new() { BaseAddress = new("https://localhost"), AllowAutoRedirect = false, HandleCookies = handleCookies });
+            client.DefaultRequestHeaders.Add("Cookie", cookie);
+            return client;
+        }
+        using var copied = Client(replacement);
+        Assert.Equal(HttpStatusCode.OK, (await copied.GetAsync("/Patient/Home")).StatusCode);
+        if (action == "logout")
+        {
+            using var browser = Client(second, true);
+            Assert.Equal(HttpStatusCode.Redirect, (await browser.PostFormAsync("/Patient/Home", "/Identity/Account/Logout", new Dictionary<string, string>())).StatusCode);
+        }
+        else
+        {
+            using var scope = second.Services.CreateScope();
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = (await users.FindByIdAsync(account.Id))!;
+            var result = action == "password-reset"
+                ? await users.ResetPasswordAsync(user, await users.GeneratePasswordResetTokenAsync(user), "Reset#AcrossHosts2026")
+                : await users.UpdateSecurityStampAsync(user);
+            Assert.True(result.Succeeded);
+        }
+        Assert.Equal(HttpStatusCode.Redirect, (await copied.GetAsync("/Patient/Home")).StatusCode);
+    }
+
+    private sealed class RejectConsumptionInsert : SaveChangesInterceptor
+    {
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData,
+            InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            if (eventData.Context!.ChangeTracker.Entries<AuthenticatorConsumption>().Any(e => e.State == EntityState.Added))
+                throw new TimeoutException("Synthetic unavailable replay store.");
+            return ValueTask.FromResult(result);
+        }
+    }
+
+    [Fact]
+    public async Task An_unavailable_replay_store_cannot_accept_a_token_or_fall_back_to_memory()
+    {
+        var account = await Account(true);
+        string code;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var key = (await users.GetAuthenticatorKeyAsync((await users.FindByIdAsync(account.Id))!))!;
+            code = SingleUseAuthenticatorProvider.Code(key, DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 30);
+        }
+        using var host = factory.WithWebHostBuilder(b => b.ConfigureTestServices(s =>
+            s.AddDbContext<ApplicationDbContext>(o => o.AddInterceptors(new RejectConsumptionInsert()))));
+        await Assert.ThrowsAsync<TimeoutException>(() => VerifyTotp(host.Services, account.Id, code));
+        Assert.False(await Read(db => db.AuthenticatorConsumptions.AnyAsync(c => c.UserId == account.Id)));
     }
 
     [Theory]

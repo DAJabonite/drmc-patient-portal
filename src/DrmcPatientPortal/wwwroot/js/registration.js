@@ -398,11 +398,13 @@ $(function () {
             const summary = data.foundSummary || {};
             const filled = [];
             const missing = [];
+            const expected = new Set((selectIdType.selectedOptions[0]?.dataset.expectedFields || '').split(','));
             // Replace every scanned field, including empty values, so a rescan cannot mix IDs.
             for (const [property, id, label] of extractedFields) {
                 const input = document.getElementById(id);
                 input.value = data[property] || '';
-                (summary[label] && input.value ? filled : missing).push(label);
+                if (summary[label] && input.value) filled.push(label);
+                else if (expected.has(property)) missing.push(label);
                 validator.element(input);
             }
             document.getElementById('stepFeedback3').classList.add('d-none');

@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Identity;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -31,11 +33,16 @@ public sealed class EmailVerificationTests(PortalFactory factory)
         }
     }
 
-    private WebApplicationFactory<Program> WithSender(RecordingEmailSender sender) =>
+    private WebApplicationFactory<Program> WithSender(RecordingEmailSender sender, TimeProvider? clock = null) =>
         factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<IEmailSender>();
             services.AddSingleton<IEmailSender>(sender);
+            if (clock is not null)
+            {
+                services.RemoveAll<TimeProvider>();
+                services.AddSingleton(clock);
+            }
         }));
 
     private static HttpClient Client(WebApplicationFactory<Program> host) => host.CreateClient(new()
@@ -237,6 +244,99 @@ public sealed class EmailVerificationTests(PortalFactory factory)
         var html = WebUtility.HtmlDecode(await client.GetStringAsync(response.Headers.Location!));
         Assert.Contains("If this email address belongs to an account that needs confirmation", html);
         Assert.DoesNotContain("Synthetic delivery failure", html);
+    }
+
+    private async Task<AccountEmail> QueuedEmailAsync(string userId)
+    {
+        using var scope = factory.Services.CreateScope();
+        return await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().AccountEmails.AsNoTracking()
+            .SingleAsync(m => m.UserId == userId);
+    }
+
+    private async Task DispatchEmailAsync(WebApplicationFactory<Program> host, string userId, int expectedAttempts)
+    {
+        for (var pass = 0; pass < 20; pass++)
+        {
+            await host.Services.GetRequiredService<AccountEmailDispatcher>().DispatchOnceAsync();
+            if ((await QueuedEmailAsync(userId)).Attempts >= expectedAttempts) return;
+        }
+        Assert.Fail("The queued verification email was not dispatched within the bounded batch count.");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Verification_email_survives_host_restart_and_recovers_an_abandoned_lease(bool abandonedLease)
+    {
+        var account = await NewAccountAsync();
+        var clock = new TestClock(DateTimeOffset.UtcNow);
+        Guid messageId;
+        using (var original = WithSender(new RecordingEmailSender(), clock))
+        {
+            var response = await ResendAsync(Client(original), account.Email);
+            Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+            var queued = await QueuedEmailAsync(account.Id);
+            messageId = queued.Id;
+            Assert.Equal(AccountEmailStatus.Pending, queued.Status);
+            Assert.NotNull(queued.ProtectedPayload);
+            if (abandonedLease)
+            {
+                using var scope = original.Services.CreateScope();
+                await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().AccountEmails
+                    .Where(m => m.Id == messageId).ExecuteUpdateAsync(set => set
+                        .SetProperty(m => m.Status, AccountEmailStatus.Sending)
+                        .SetProperty(m => m.Attempts, 1)
+                        .SetProperty(m => m.LeaseOwner, "crashed-verification-host")
+                        .SetProperty(m => m.LeaseExpiresUtc, (DateTimeOffset?)clock.Now.AddMinutes(2)));
+            }
+        }
+
+        var sender = new RecordingEmailSender();
+        using var restarted = WithSender(sender, clock);
+        if (abandonedLease)
+        {
+            await restarted.Services.GetRequiredService<AccountEmailDispatcher>().DispatchOnceAsync();
+            Assert.DoesNotContain(sender.Messages, m => m.Email == account.Email);
+            clock.Now = clock.Now.AddMinutes(3);
+        }
+        await DispatchEmailAsync(restarted, account.Id, abandonedLease ? 2 : 1);
+        var delivered = await QueuedEmailAsync(account.Id);
+        Assert.Equal(messageId, delivered.Id);
+        Assert.Equal(AccountEmailStatus.Delivered, delivered.Status);
+        Assert.Equal(abandonedLease ? 2 : 1, delivered.Attempts);
+        Assert.Null(delivered.ProtectedPayload);
+        Assert.Null(delivered.LeaseOwner);
+        Assert.Single(sender.Messages, m => m.Email == account.Email);
+    }
+
+    [Fact]
+    public async Task Transient_verification_failure_retains_the_message_and_retries_after_host_restart()
+    {
+        var account = await NewAccountAsync();
+        var clock = new TestClock(DateTimeOffset.UtcNow);
+        AccountEmail failed;
+        using (var original = WithSender(new RecordingEmailSender(fail: true), clock))
+        {
+            Assert.Equal(HttpStatusCode.Redirect, (await ResendAsync(Client(original), account.Email)).StatusCode);
+            await DispatchEmailAsync(original, account.Id, 1);
+            failed = await QueuedEmailAsync(account.Id);
+            Assert.Equal(AccountEmailStatus.Pending, failed.Status);
+            Assert.NotNull(failed.ProtectedPayload);
+            Assert.True(failed.NextAttemptUtc > clock.Now);
+        }
+
+        var sender = new RecordingEmailSender();
+        using var restarted = WithSender(sender, clock);
+        await restarted.Services.GetRequiredService<AccountEmailDispatcher>().DispatchOnceAsync();
+        Assert.DoesNotContain(sender.Messages, m => m.Email == account.Email);
+        clock.Now = failed.NextAttemptUtc.AddSeconds(1);
+        await DispatchEmailAsync(restarted, account.Id, 2);
+        var delivered = await QueuedEmailAsync(account.Id);
+        Assert.Equal(failed.Id, delivered.Id);
+        Assert.Equal(AccountEmailStatus.Delivered, delivered.Status);
+        Assert.Equal(2, delivered.Attempts);
+        Assert.Null(delivered.ProtectedPayload);
+        Assert.Single(sender.Messages, m => m.Email == account.Email);
     }
 
     [Theory]

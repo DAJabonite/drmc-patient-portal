@@ -191,31 +191,46 @@ public static class OcrWorker
             if (request.Recognize)
                 engine = OcrRuntime.CreateEngine(request.TessDataPath, request.NativeLibraryPath);
             else if (!string.IsNullOrEmpty(request.NativeLibraryPath)) TesseractEnviornment.CustomSearchPath = request.NativeLibraryPath;
-            (string Text, float Confidence) ReadImage(OcrWorkerImage file)
+            var elapsed = Stopwatch.StartNew();
+            var recognition = engine is null ? null : new IdImageRecognition(engine, request.IdType, elapsed);
+            IdImageRecognition.Result ReadImage(OcrWorkerImage file, bool back)
             {
                 using var stream = new MemoryStream(file.Bytes, writable: false);
                 if (IdImageValidation.Inspect(stream) != file.Info) throw new InvalidDataException();
                 using var image = LoadPixels(file);
                 if (image.Width != file.Info.Width || image.Height != file.Info.Height) throw new InvalidDataException();
-                if (engine is null) return ("", 0);
-                using var page = engine.Process(image);
-                return (page.GetText() ?? "", page.GetMeanConfidence());
+                if (recognition is null) return new("", 0, new());
+                return recognition.Read(image, back);
             }
-            var front = ReadImage(request.Front);
-            var back = request.Back is null ? (Text: "", Confidence: 0f) : ReadImage(request.Back);
+            var front = ReadImage(request.Front, false);
+            var back = request.Back is null ? null : ReadImage(request.Back, true);
             IdExtractionResult? extraction = null;
             if (request.Recognize)
             {
                 extraction = new()
                 {
                     IdType = request.IdType,
-                    RawTextFront = front.Text, RawTextBack = back.Text,
-                    MeanConfidence = request.Back is null ? front.Confidence : (front.Confidence + back.Confidence) / 2
+                    RawTextFront = front.OriginalText, RawTextBack = back?.OriginalText ?? "",
+                    MeanConfidence = back is null ? front.Confidence : (front.Confidence + back.Confidence) / 2
                 };
-                // Parsing also stays inside the execution deadline, including regex work.
-                TesseractIdDocumentExtractionService.ParseStructuredFields(extraction, request.IdType, front.Text, back.Text);
+                // Preserve per-field confidence when joining the two sides of this document.
+                Copy(front.Fields);
+                if (back is not null) Copy(back.Fields);
+                void Copy(IdExtractionResult fields)
+                {
+                    if (fields.FirstName.Found) extraction.FirstName = fields.FirstName;
+                    if (fields.MiddleName.Found) extraction.MiddleName = fields.MiddleName;
+                    if (fields.LastName.Found) extraction.LastName = fields.LastName;
+                    if (fields.IdNumber.Found) extraction.IdNumber = fields.IdNumber;
+                    if (fields.DateOfBirth.Found) extraction.DateOfBirth = fields.DateOfBirth;
+                    if (fields.Address.Found) extraction.Address = fields.Address;
+                    if (fields.Sex.Found) extraction.Sex = fields.Sex;
+                    if (fields.BloodType.Found) extraction.BloodType = fields.BloodType;
+                    if (fields.FullName.Found) extraction.FullName = fields.FullName;
+                    extraction.Success = extraction.FoundFieldsSummary.Count > 0;
+                }
             }
-            return new("ok", front.Text, front.Confidence, back.Text, back.Confidence, extraction);
+            return new("ok", front.OriginalText, front.Confidence, back?.OriginalText ?? "", back?.Confidence ?? 0, extraction);
         }
         finally { engine?.Dispose(); }
     }

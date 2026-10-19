@@ -52,7 +52,11 @@
                                 <option value="">Choose your ID type...</option>
                                 @foreach (var id in DrmcPatientPortal.Models.PhilippineIdTypes.All)
                                 {
-                                    <option value="@id.Name" data-back="@id.NeedsBackPhoto.ToString().ToLowerInvariant()">@id.Name</option>
+                                    var expected = new List<string> { "firstName", "lastName", "idNumber" };
+                                    if (id.SupportsDob) expected.Add("dateOfBirth");
+                                    if (id.SupportsAddress) expected.Add("address");
+                                    if (id.SupportsSex) expected.Add("sex");
+                                    <option value="@id.Name" data-back="@id.NeedsBackPhoto.ToString().ToLowerInvariant()" data-expected-fields="@string.Join(",", expected)">@id.Name</option>
                                 }
                             </select>
                             <span asp-validation-for="Input.IdType" class="field-validation-error"></span>
@@ -117,7 +121,7 @@
                                     <div id="frontPreviewContainer" class="d-none mb-3">
                                         <img id="frontPreviewImg" src="" alt="Front ID preview" class="img-fluid rounded-3 border shadow-xs" style="max-height: 180px; object-fit: contain;" />
                                         <div class="mt-2 small text-success fw-semibold">
-                                            <i class="bi bi-check-circle-fill me-1"></i> Photo ready
+                                            <i class="bi bi-check-circle-fill me-1"></i> Photo selected
                                         </div>
                                     </div>
 
@@ -147,7 +151,7 @@
                                     <div id="backPreviewContainer" class="d-none mb-3">
                                         <img id="backPreviewImg" src="" alt="Back ID preview" class="img-fluid rounded-3 border shadow-xs" style="max-height: 180px; object-fit: contain;" />
                                         <div class="mt-2 small text-success fw-semibold">
-                                            <i class="bi bi-check-circle-fill me-1"></i> Photo ready
+                                            <i class="bi bi-check-circle-fill me-1"></i> Photo selected
                                         </div>
                                     </div>
 
@@ -212,17 +216,17 @@
                             <!-- Names -->
                             <div class="col-md-4">
                                 <label asp-for="Input.FirstName" for="txtFirstName" class="form-label fw-semibold">First name</label>
-                                <input asp-for="Input.FirstName" id="txtFirstName" class="form-control" autocomplete="given-name" placeholder="Juan" />
+                                <input asp-for="Input.FirstName" id="txtFirstName" class="form-control" autocomplete="given-name" placeholder="Given names as printed on your ID" />
                                 <span asp-validation-for="Input.FirstName" class="field-validation-error"></span>
                             </div>
                             <div class="col-md-4">
                                 <label asp-for="Input.MiddleName" for="txtMiddleName" class="form-label fw-semibold">Middle name <span class="registration-optional">(Optional)</span></label>
-                                <input asp-for="Input.MiddleName" id="txtMiddleName" class="form-control" autocomplete="additional-name" placeholder="Santos" />
+                                <input asp-for="Input.MiddleName" id="txtMiddleName" class="form-control" autocomplete="additional-name" placeholder="Middle name, if printed" />
                                 <span asp-validation-for="Input.MiddleName" class="field-validation-error"></span>
                             </div>
                             <div class="col-md-4">
                                 <label asp-for="Input.LastName" for="txtLastName" class="form-label fw-semibold">Last name</label>
-                                <input asp-for="Input.LastName" id="txtLastName" class="form-control" autocomplete="family-name" placeholder="Dela Cruz" />
+                                <input asp-for="Input.LastName" id="txtLastName" class="form-control" autocomplete="family-name" placeholder="Last name as printed on your ID" />
                                 <span asp-validation-for="Input.LastName" class="field-validation-error"></span>
                             </div>
 

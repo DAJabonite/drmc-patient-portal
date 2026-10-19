@@ -8,7 +8,7 @@ Start with [Local Setup](#local-setup), then [First Admin](#first-admin), [Staff
 
 ## Red Star clinic
 
-Apply `AddPrivateRedStarRegistry` before running this build. The clinic's registry is under `/Admin/RedStar`; imports and exports are under `/Admin/RedStarImports`. Admin can invite and grant **Red Star staff**, but Admin alone cannot open either module. All clinic staff must confirm email, enable MFA and sign in with MFA. Registry reads/writes and source downloads have their own append-only access history.
+Apply the full migration chain and run `redstar-protection upgrade` with the same database and key-ring settings before starting this build, including on an empty database (see [Local Setup](#local-setup)). The clinic's registry is under `/Admin/RedStar`; imports and exports are under `/Admin/RedStarImports`. Admin can invite and grant **Red Star staff**, but Admin alone cannot open either module. All clinic staff must confirm email, enable MFA and sign in with MFA. Registry reads/writes and source downloads have their own append-only access history.
 
 1. Add a private clinic patient and program enrollment, with clinic code, medicines and verified status. A general hospital patient link never grants private clinic access.
 2. Verify identity and ownership of an existing confirmed portal email before linking it from the clinic record. New links start with email reminders off. General registration codes use a neutral clinic-desk label.
@@ -137,6 +137,7 @@ $localStorage = Join-Path $env:LOCALAPPDATA "DRMC\PatientPortal\$databaseName"
 $env:DataProtection__KeyRingPath = Join-Path $localStorage 'DataProtectionKeys'
 $env:PatientDocuments__RootPath = Join-Path $localStorage 'PatientIdDocuments'
 $env:PatientDocuments__TemporaryPath = Join-Path $localStorage 'TempUploads'
+$env:LabReports__RootPath = Join-Path $localStorage 'LabReports'
 $env:Imports__StagingPath = Join-Path $localStorage 'ImportStaging'
 
 $target = [System.Data.SqlClient.SqlConnectionStringBuilder]::new($env:ConnectionStrings__DefaultConnection)
@@ -146,23 +147,31 @@ if ($target.DataSource -ne 'localhost\SQLEXPRESS' -or $target.InitialCatalog -ne
 }
 
 dotnet ef database update --project src/DrmcPatientPortal -- --environment Development
+if ($LASTEXITCODE -ne 0) { throw 'Database migration failed; do not start the portal.' }
+
+# Required even for an empty database. Stop every portal process first.
+dotnet run --project src/DrmcPatientPortal --launch-profile http -- redstar-protection upgrade
+if ($LASTEXITCODE -ne 0) { throw 'Private registry initialization failed; do not start the portal.' }
 ```
 
 The explicit connection overrides Development user-secrets and tracked settings for this process. All clones under the same Windows user share the project's `UserSecretsId`; use per-terminal settings for independent installations. Environment variables use double underscores for nested settings. Store credentials outside Git; the connection above uses your Windows identity and needs no SQL password.
 
 EF applies the committed migrations and creates the application tables. It can create a missing database itself when permitted, but the SSMS step lets you create and inspect it manually. Do not create another Initial migration or invent the portal tables. The initial migration does not transfer old SQLite data.
 
-When EF reports `Done.`, refresh **Tables** in SSMS and verify:
+The second command initializes the registry's lookup key and encrypted verification record, then exits. It also verifies/applies the migration chain. Ordinary startup requires that initialized state; running only `dotnet ef database update` leaves a fresh database unable to start, with **Private registry protection is incomplete**. Use the same key directory for initialization and all subsequent runs. Existing installations must stop all replicas and preserve their original keys before this offline upgrade.
+
+When EF reports `Done.` and the initialization command reports **Private registry protection upgrade verified and complete**, refresh **Tables** in SSMS and verify:
 
 ```sql
 USE [DrmcPatientPortal_Dev]; -- Use your chosen database name.
 
 SELECT MigrationId FROM dbo.__EFMigrationsHistory ORDER BY MigrationId;
+SELECT Ready FROM dbo.RedStarProtectionStates WHERE Id = 1;
 SELECT COUNT(*) AS AccountCount FROM dbo.AspNetUsers;
 SELECT COUNT(*) AS PatientRecordCount FROM dbo.PatientRecords;
 ```
 
-This version has **13 migrations**, ending in `20261011132407_AddWebsiteUsageReporting`. A fresh installation has zero accounts and hospital patient records. Starting the app does not automatically apply migrations or seed demo data when fixtures are disabled.
+This version has **15 migrations**, ending in `20261018121716_AddOutboundNotificationOutbox`, and the protection state above must have `Ready = 1`. A fresh installation has zero accounts and hospital patient records. Starting the app does not automatically apply migrations or seed demo data when fixtures are disabled.
 
 ### 5. Start the portal
 
@@ -172,11 +181,13 @@ Keep the same terminal open:
 dotnet run --project src/DrmcPatientPortal --launch-profile http
 ```
 
-Open [http://localhost:5095](http://localhost:5095). Empty directory and clinical pages are expected until staff add records. Stop the running app with **Ctrl+C** before changing environment variables; an already-running process does not pick up those changes.
+Open [http://localhost:5095](http://localhost:5095). The home page, `/Identity/Account/Login`, `/Identity/Account/Register`, `/Directory` and `/Advisories` should load. Empty directory and clinical pages are expected until staff add records. Stop the running app with **Ctrl+C** before changing environment variables; an already-running process does not pick up those changes.
 
 `--project src/DrmcPatientPortal` selects the application from the repository root. `--launch-profile http` selects the Development/HTTP settings in `src/DrmcPatientPortal/Properties/launchSettings.json`. If your current folder is already `src/DrmcPatientPortal`, `dotnet run` uses that project and its default applicable launch profile. `.\run.ps1` is another launcher; it does not create the schema.
 
 For local HTTPS, run `dotnet dev-certs https --trust`, then use `--launch-profile https` and open `https://localhost:7104`. A phone's `localhost` points to the phone, so QR rehearsal on another device needs a reachable test HTTPS host and correct link origin.
+
+If startup reports **address already in use**, check for a portal still running from another terminal or worktree and stop it. For an independent rehearsal, keep the database/storage environment above and run `dotnet run --project src/DrmcPatientPortal --no-launch-profile --urls http://localhost:5096`, then open that port. Verify the new process actually starts before using browser responses as evidence of a successful setup.
 
 Continue with [First Admin](#first-admin), then [Staff Invitations](#staff-invitations) and [Admin Management Walkthrough](#admin-management-walkthrough).
 
@@ -194,11 +205,47 @@ export AdminBootstrap__Enabled=false
 export DevelopmentFixtures__Enabled=false
 export Logging__LogLevel__Microsoft=Warning
 export ConnectionStrings__DefaultConnection="Server=localhost,1433;Database=DrmcPatientPortal_Dev;User Id=sa;Password=$MSSQL_SA_PASSWORD;Encrypt=True;TrustServerCertificate=True"
-dotnet ef database update --project src/DrmcPatientPortal -- --environment Development
+# Keep private storage and keys outside the checkout.
+export DRMC_LOCAL_STORAGE="$HOME/.local/share/drmc/DrmcPatientPortal_Dev"
+export DataProtection__KeyRingPath="$DRMC_LOCAL_STORAGE/DataProtectionKeys"
+export PatientDocuments__RootPath="$DRMC_LOCAL_STORAGE/PatientIdDocuments"
+export PatientDocuments__TemporaryPath="$DRMC_LOCAL_STORAGE/TempUploads"
+export LabReports__RootPath="$DRMC_LOCAL_STORAGE/LabReports"
+export Imports__StagingPath="$DRMC_LOCAL_STORAGE/ImportStaging"
+
+# Required collation; run once for a fresh database.
+docker compose exec -T sqlserver bash -lc '/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -b -Q "CREATE DATABASE [DrmcPatientPortal_Dev] COLLATE Latin1_General_100_BIN2;"' || exit 1
+dotnet ef database update --project src/DrmcPatientPortal -- --environment Development || exit 1
+dotnet run --project src/DrmcPatientPortal --launch-profile http -- redstar-protection upgrade || exit 1
 dotnet run --project src/DrmcPatientPortal --launch-profile http
 ```
 
 The container binds to `127.0.0.1` only and keeps data in the `drmc-sqlserver` volume; `docker compose down -v` deletes it. Use this password for local development only.
+
+These commands run the application on the host and SQL Server in Docker. Linux hosts must complete [Linux OCR setup](#linux-ocr-setup) before running the initialization command or the app. The documented native OCR runtime is Ubuntu 24.04 x64; macOS native application execution is not verified. For the Linux application image, see [Container deployment](#container-deployment).
+
+### Reset a disposable local installation
+
+A fresh clone alone does not reset SQL Server or this project's shared user-secrets. To repeat Local Setup with no previous portal state:
+
+1. Stop every portal process that uses the development database, including processes launched from other clones/worktrees. Confirm the server and database in your connection settings.
+2. In SSMS, connect to `localhost\SQLEXPRESS`, select `master`, and delete only the disposable portal database. For the default development database:
+
+   ```sql
+   USE [master];
+   IF DB_ID(N'DrmcPatientPortal_Dev') IS NOT NULL
+   BEGIN
+       ALTER DATABASE [DrmcPatientPortal_Dev] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+       DROP DATABASE [DrmcPatientPortal_Dev];
+   END;
+   ```
+
+3. Remove that installation's private storage: `%LOCALAPPDATA%\DRMC\PatientPortal\DrmcPatientPortal_Dev` when using the setup above, or the exact paths configured for keys, ID documents, temporary uploads, lab reports and imports. Older installations may use `src/DrmcPatientPortal/App_Data` and `%LOCALAPPDATA%\DRMC\ImportStaging`. Inspect saved configuration before deleting it. Delete any disposable portal backups separately if they should also be erased; they are not removed by dropping SQL or deleting a checkout. Never delete a key ring while retaining data that still needs it.
+4. From the old repository root, run `dotnet user-secrets clear --project src/DrmcPatientPortal` to remove this application's local overrides. All clones with the same `UserSecretsId` share them. Also remove old portal environment variables from the launching terminal, or open a fresh terminal; changing user-secrets does not clear environment variables.
+5. Delete the old checkout after retaining any source changes you intend to keep, then clone into an empty destination. If it is the main checkout of linked Git worktrees, archive/remove those worktrees first; deleting its `.git` directory breaks their shared Git metadata. Clear the portal's browser site data so an old login/session is not reused.
+6. Repeat Local Setup, including creating the database with the required collation, applying migrations and running the protection initialization command. Verify `Ready = 1` and zero accounts/patient records before creating the first Admin.
+
+SQL Server Express, SSMS, .NET, the EF tool and the NuGet package cache can remain installed for this exercise. They do not contain the portal's application records. For Docker, `docker compose down -v` also destroys the configured SQL/key/private-storage volumes; use it only for a disposable Compose project.
 
 ### Configuration
 
@@ -207,9 +254,12 @@ The container binds to `127.0.0.1` only and keeps data in the `drmc-sqlserver` v
 | `ConnectionStrings__DefaultConnection` | SQL Server connection |
 | `DataProtection__KeyRingPath` | Persistent key directory; default `App_Data/DataProtectionKeys` |
 | `DataProtection__ProtectKeysWithDpapi` | Opt-in Windows current-user protection; default `false` |
+| `DataProtection__CertificatePath` | Portable RSA private certificate (PFX) for key encryption; required outside Development unless using Windows DPAPI |
+| `DataProtection__CertificatePasswordFile` | Optional password-secret file; trailing line endings are removed; omit for a passwordless PFX |
+| `DataProtection__DecryptionCertificates__0__Path` / `__PasswordFile` | Historical private certificates retained during rotation; increase the numeric index for additional certificates |
 | `PatientDocuments__RootPath` | Encrypted patient ID document directory |
 | `PatientDocuments__TemporaryPath` | Temporary encrypted registration uploads |
-| `PatientDocuments__MaximumFileSizeMb` | Document upload limit; default 10 MB |
+| `PatientDocuments__MaximumFileSizeMb` | ID photo upload limit; default and hard ceiling 5 MB per photo; configuration can lower it |
 | `PatientDocuments__TemporaryFileLifetimeMinutes` | Temporary upload lifetime; default 30 minutes |
 | `Imports__StagingPath` | Encrypted import staging; default the current user's local application-data DRMC/ImportStaging directory |
 | `Notifications__Email__*` | SMTP host, port, TLS, credentials and sender |
@@ -230,6 +280,10 @@ The container binds to `127.0.0.1` only and keeps data in the `drmc-sqlserver` v
 | `AccountEmail__LifetimeMinutes` | Queued message expiry, default 60 (1–1440) |
 | `AccountEmail__RetentionDays` | Completed delivery metadata retention, default 7 (1–30) |
 | `AccountEmail__WorkerEnabled` | Default `true`; disable only in tests or when another new-build process runs the worker |
+| `Notifications__Outbox__WorkerEnabled` | Default `true`; independently dispatches staff invitations and queued email/SMS |
+| `Notifications__Outbox__MaximumAttempts` | Delivery attempts, default 5 (1–10) |
+| `Notifications__Outbox__LifetimeMinutes` | Generic message expiry, default 60 (1–1440); staff messages expire with their invitation |
+| `Notifications__Outbox__RetentionDays` | Completed delivery metadata retention, default 7 (1–30) |
 | `RedStar__WorkerEnabled` / `RedStar__RemindersEnabled` | Both default `false`; enable after clinic verification and delivery rehearsal. The worker creates private in-app reminders and sends opted-in email |
 | `RedStar__MaximumAttempts` | Email delivery attempts, default 5 (1–10); failures are visible only to Red Star staff |
 | `RateLimits__AuthenticationPerIp` / `AuthenticationPerAccount` | Sign-in/verification limits per minute; defaults 60/IP and 10/account-plus-IP |
@@ -255,6 +309,8 @@ Back up the database before applying or reversing migrations. New migrations are
 10. `20261011093226_AddPortalSecurityState`: adds revocable authentication sessions, unique authenticator-code consumption records and an encrypted account-email queue. Repairs orphan invitation acceptance references, then adds an accepting-account foreign key with `ON DELETE SET NULL`; invitation history and acceptance timestamps remain intact.
 11. `20261011120435_AddPrivateRedStarRegistry`: adds private clinic patients, enrollments, care/refill appointments, dispensing history, reschedule requests, reminder deliveries, encrypted import archives and append-only audit records. Shared hospital links confer no clinic access. Account deletion detaches private account bindings while preserving registry history. Downgrade is blocked while registry/import/audit records exist.
 12. `20261011132407_AddWebsiteUsageReporting`: adds daily aggregate traffic/adoption counts and temporary deduplication markers. Analytics collection defaults off; cleanup removes expired daily identifiers/keys and retains aggregates for 13 months. Downgrade removes usage reporting history.
+13. `20261018065159_EncryptPrivateRedStarRegistry`: adds protected registry fields, keyed lookup indexes and the protection-state record. After schema migration, stop all portal processes and run `redstar-protection upgrade` with the original key ring to initialize or convert and verify the registry before startup.
+14. `20261018121716_AddOutboundNotificationOutbox`: adds encrypted staff/general email and SMS deliveries, lease/schedule indexes, SQL row versions and one email per staff invitation. Existing account and clinical queues remain intact. Apply before starting this build; reversing it deletes queued messages and delivery metadata.
 
 The initial SQL Server migration is `20260929123803_InitialSqlServer`. During upgrade, drain and stop older builds, apply migrations, then run only the new build. Older workers cannot respect the lease protocol.
 
@@ -273,11 +329,21 @@ export LD_LIBRARY_PATH=/opt/drmc/ocr/x64
 
 For systemd, place those three values in the service's environment file. The script installs distro-managed Tesseract/Leptonica and English language data and creates app-local wrapper-compatible names under `x64`; see the [wrapper's native library loader](https://github.com/charlesw/tesseract/blob/master/src/Tesseract/Internal/InteropDotNet/LibraryLoader.cs). Do not overwrite system libraries. The application initializes the engine and processes synthetic JPEG and PNG probes before accepting requests. Missing libraries or language data stop startup with actionable diagnostics. Runtime dependency failures return 503; malformed images return 400. A valid image with unreadable text still permits manual entry.
 
+Registration ID scanning runs locally in the bounded OCR worker. Selecting a photo confirms only that a file is selected. Scanning first reads the original image, then retries missing details using resized grayscale images, adaptive thresholds, text columns and field regions. Classic PhilSys regions require matching printed-label positions; other layouts use detected labels and word coordinates. Retries share the existing ten-second execution limit for both photos. Startup probes perform a single recognition pass.
+
+The review form lists recovered details and expected fields that still need entry, using the selected ID's capability metadata. All entries remain editable. Unknown blood type stays blank, and dates or names that cannot be read reliably require manual entry. Every rescan replaces the previous scan's fields, including empty values. OCR assists review and does not establish document authenticity. Automated image fixtures contain synthetic identities only; personal ID images must not be committed as fixtures or written to diagnostic logs.
+
 ### Authentication and request controls
 
 Authentication cookies contain an opaque session identifier. Every authenticated request performs an indexed SQL session/user-stamp check. Sign-out commits revocation of that browser's session before success, including copied-cookie replay; other browsers remain signed in. Password changes rotate the initiating browser's session and invalidate other sessions on their next request. Password resets invalidate all older sessions. Sliding renewal updates an existing active session and cannot recreate a revoked session. Existing cookies from older builds require a fresh sign-in. Verified MFA survives principal refresh; authenticator sign-in codes are consumed atomically, including Identity's two adjacent time steps in each direction. Enrollment verification remains separate.
 
 Unknown, incorrect-password, locked and unconfirmed sign-ins show the same failure message and perform password-hash work. Failed sign-ins, reset requests and confirmation resends wait at least the configured duration. Account emails are encrypted with the persistent Data Protection key ring and queued in SQL, so public requests do not wait for SMTP. Workers claim atomic two-minute leases, use a 30-second transport deadline and bounded backoff, and recover abandoned leases. SMTP delivery is at least once: an interrupted acknowledgement can cause a duplicate email. Delivered, failed and expired messages have their encrypted payload cleared; metadata is retained for seven days by default. Failure logs exclude message bodies and tokens. Preserve the shared key ring for overlapping workers and restarts.
+
+Registration commits its account, record/invitation claims, document metadata, security audit and verification email in one transaction. A confirmed rollback cleans newly stored ID photos; an uncertain commit is checked by the stable message ID before files are removed. If verification is unavailable, signup is not replayed and photos are retained for recovery.
+
+Staff invitations commit their protected delivery copy with the invitation and audit, then show a queued receipt. Their independent outbox worker polls at startup and every two seconds. Replaced, revoked, accepted and expired invitations cannot be sent when detected before transport. Account, staff/SMS and clinical delivery retry after 30 seconds, two minutes, eight minutes and then 30 minutes, capped by their attempt limits and expiry. Exhausted generic messages become `DeadLetter`; protected payloads and leases are cleared on terminal outcomes. Terminal metadata is retained for seven days by default and cleanup runs every five minutes. Provider error text is never persisted or logged. SMS has a durable queue API but no automatic patient-message producers. Console email/SMS remain Development transports; private clinical email retains its console suppression.
+
+For application containers, mount `DataProtection__KeyRingPath` on persistent storage shared by overlapping replicas and retain the SQL database across replacement. Losing the key directory makes encrypted pending messages unreadable even when the database survives. The optional Compose `portal` profile mounts persistent key and private-storage volumes; see [Container deployment](#container-deployment).
 
 Limits return HTTP 429 and `Retry-After` immediately with no rejected-request queue. Anonymous account keys use the normalized submitted email without testing account existence. Limit counters and scan concurrency are process-local: overlapping recycling temporarily increases aggregate capacity. Configure limits appropriately for the deployment and monitor 429 rates. Forged forwarding headers cannot change client identity unless sent by a configured proxy. Form text containing a decoded NUL is rejected with HTTP 400; uploaded file bytes are not inspected for NULs. PDF password checks use a separate user throttle and neither increase nor reset Identity's sign-in failure counter.
 
@@ -287,7 +353,7 @@ Patient visits, laboratory results, radiology, prescriptions, ID wallet, directo
 
 Before deployment, choose the real public domain, set `Portal__PublicOrigin` to its HTTPS origin, and set `AllowedHosts` to explicit hostnames including that name. Production startup rejects missing origins, HTTP origins and wildcard host configuration. IIS HTTPS bindings must use the same hostname and certificate; remove broad default bindings that route unrelated hosts to this app. For out-of-process IIS hosting, explicitly configure the immediate ANCM loopback address (`127.0.0.1` or `::1`, as used by that host) in `Proxy__KnownProxies`. With an additional reverse proxy, configure only its immediate IP addresses, prevent direct public access to the upstream, and preserve the configured host. Without configured proxies, forwarded headers are ignored even when a host enables forwarding globally. See [Microsoft host filtering guidance](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/host-filtering?view=aspnetcore-10.0).
 
-Drain older builds, back up SQL, encrypted uploads/PDFs and the key ring, apply the full migration chain, configure the origin/hosts and OCR runtime, and start only the new build. Require existing users to sign in again. Verify reset, confirmation, email-change and invitation links from the actual host. Monitor authentication-query latency, rate-limit rejections, pending/failed email deliveries and retry exhaustion. This workstation cannot run Ubuntu locally; the Ubuntu 24.04 CI job installs OCR dependencies, boots the app against SQL Server and runs the regression suite. Passing Windows tests alone does not establish Linux readiness.
+Drain older builds, back up SQL, encrypted uploads/PDFs and the key ring, configure the origin/hosts, key protection and OCR runtime, apply the full migration chain and run `redstar-protection upgrade` offline, then start only the new build. Require existing users to sign in again. Verify reset, confirmation, email-change and invitation links from the actual host. Monitor authentication-query latency, rate-limit rejections, pending/failed email deliveries and retry exhaustion. The Ubuntu 24.04 CI job installs OCR dependencies, boots the app against SQL Server and runs the regression suite. Passing Windows tests alone does not establish Linux readiness.
 
 ## Testing
 
@@ -308,6 +374,8 @@ dotnet test DrmcPatientPortal.slnx
 ```
 
 The tests cover public pages, the sign-in requirement, patient record isolation, the not-found page, the Content Security Policy, email confirmation, readable lab categories, the Admin access matrix for Admin, LabStaff, RadiologyStaff and PatientServicesStaff, hospital record codes (format, issuing, single use, concurrency, expiry, revocation, birth-date match and required mode), staff invitations (email-bound single use, expiry, revocation, never granting Admin, role granted only after email confirmation and 2FA), first-Admin setup (only the bootstrap email, only until an Admin exists), staff role grants, radiology Admin CRUD, the patient Radiology page and navigation, and the `PatientResults:ShowFullResults` switch in both positions. GitHub Actions (`.github/workflows/ci.yml`) runs the build with warnings as errors, a pending-migration check and these tests on every pull request against a SQL Server service container.
+
+The shared test host disables background security cleanup so tests that advance a simulated clock cannot remove another test's sessions. Dedicated cleanup tests drive that worker explicitly; normal application startup keeps the worker enabled.
 
 Views must not use inline `<script>` blocks or `on*` attributes, because the Content Security Policy only allows `script-src 'self'`. Put scripts in `wwwroot/js`; use `data-auto-submit` on a form control or `data-confirm="..."` on a form for the common cases.
 
@@ -605,21 +673,29 @@ Staff-entered clinical dates/times are Manila wall time stored as `datetime2` wi
 
 ## Key Protection and Recovery
 
-`DataProtection:ProtectKeysWithDpapi` defaults to `false`, pending the client's key-protection decision. With the setting off, existing plaintext keys are not converted and new keys remain unprotected at rest, as in the previous release. Non-Development startup warns that keys are unprotected and points here. Directory permissions and protected backups are essential. A protected key ring cannot be used with the setting off: startup rejects it rather than generating a mixture of protected and plaintext keys.
+Outside Development, startup requires key encryption: configure `DataProtection__CertificatePath` and optionally `DataProtection__CertificatePasswordFile`, or use Windows current-user DPAPI. The certificate must be a PFX containing a usable RSA private key. Relative certificate/password paths resolve against the application content root. A password file contains only the password (an optional final newline is accepted). Store these secrets outside Git, the image, the web root and the key-ring volume; grant only the application identity read access. Development can use plaintext keys only when the ring contains no protected keys. Conflicting protection settings, inaccessible storage, malformed keys, or unreadable historical keys fail startup before database upgrades or requests; there is no plaintext or ephemeral fallback.
 
-To explicitly opt in on Windows, set `DataProtection__ProtectKeysWithDpapi=true`. Startup converts existing plaintext key secrets atomically, verifies conversion, preserves key IDs and creates no plaintext backup; new keys also use current-user DPAPI. Conversion errors and unsupported platforms fail startup. Turning this on ties the keys to that Windows account and machine. Keep it enabled afterward; switching the flag off does not decrypt or revert keys. Do not run older builds or processes using different settings during conversion.
+Before enabling encryption on an existing installation, stop/drain **all** older replicas and back up the database, complete key directory and private storage using protected backups. Start one upgraded process with the chosen protection settings. Under a cross-process file lock, startup preflights existing envelopes, encrypts plaintext secrets, verifies each round-trip, and atomically replaces each converted key file. Key IDs and key material remain the same; no plaintext backup is created. An interrupted conversion is safe to resume with the same settings. Verify existing document/import reads and account sign-in before starting additional upgraded replicas. Never remove old key XML to make startup succeed.
 
-The same key ring encrypts patient ID documents and temporary document uploads as well as import staging and commands, cookies and tokens. Losing historical keys can make existing documents and unfinished imports unreadable. Copying current-user DPAPI key XML to another machine or account is not a usable recovery method; retain the original recovery identity/profile until a compatible recovery plan is established. Do not reset unreadable import jobs to bypass decryption failures.
+Windows installations may retain `DataProtection__ProtectKeysWithDpapi=true` under the original account and machine. To migrate a DPAPI ring to containers, stop all portal processes, keep the original Windows identity/profile, configure the private certificate and set `ProtectKeysWithDpapi=false`, then run the upgraded process once under that original identity to convert the ring. Verify reads before copying the full directory to the container volume. Linux rejects DPAPI envelopes; it cannot recover them. Setting both DPAPI and certificate protection is an error.
 
-The client must choose and approve a protection and backup strategy:
+For certificate rotation, distribute the new certificate **and all historical decryption certificates** to every replica before any replica writes keys with the new certificate. Configure the new `CertificatePath`/`CertificatePasswordFile` and add each previous certificate under `DataProtection__DecryptionCertificates__0__Path` and `__PasswordFile` (then index 1, 2, ...). Historical certificates can also be configured on replicas still writing with the old certificate during the transition. For Compose, mount historical certificate/password files read-only through a deployment override and configure their container paths. Retain all historical private certificates and key XML for as long as encrypted data/backups need them. Key expiry or certificate rotation does not make old documents expendable.
 
-| Option | Operational decision |
-| --- | --- |
-| Certificate-based protection | Securely back up the private key, grant approved app identities access, retain historical keys and test document/import recovery on the destination machine. Requires a separate implementation. |
-| DPAPI-NG with an AD group | Use a supported domain setup and approved group descriptor; review membership, domain recovery and access controls. Requires a separate implementation. |
-| Accept the risk | Explicitly accept plaintext keys protected only by storage controls, or opt into machine/account-bound DPAPI and accept its recovery limitations. Document the choice and recovery responsibilities. |
+Back up SQL, the entire key directory (including the private-registry blind-index key), patient documents, laboratory reports and import staging as one recoverable deployment. Back up private certificates/passwords separately with restricted access. Rehearse restoration to an isolated deployment with the same `DRMC.PatientPortal` application name, shared original keys and certificate set; verify old documents, queued payloads and the registry canary before directing traffic there. Losing historical keys or their private certificates can make those records permanently unreadable. Do not reset unreadable jobs to bypass decryption failures. Encryption does not protect against a compromised application identity or database/storage administrator.
 
-No portable recovery option is implemented. Any future change must preserve decryption of existing patient documents and queued imports before retiring the old identity. Encryption does not protect against a compromised application identity or database/storage administrator.
+TOTP consumption and cookie session validity are SQL-backed. A unique `(UserId, KeyFingerprint, TimeStep)` insert enforces single use across replicas and token purposes. Database failures never authenticate through a local cache. Cookie revocation, expiry and security-stamp changes are checked against SQL on every request. An independent worker runs security cleanup immediately and every five minutes, deleting expired records in batches of 100 even when email delivery is disabled or failing. TOTP records remain until the end of the accepted ±2-step window. Keep all replica clocks synchronized to UTC.
+
+### Container deployment
+
+The default `docker compose up -d` still starts only the development SQL Server. The optional `portal` profile builds an Ubuntu 24.04 AMD64 image with .NET 10 and the existing native OCR dependencies. SQL Server Developer edition in this manifest is for development/testing; production requires the approved SQL edition and credentials.
+
+1. Provision a dedicated RSA private certificate as `secrets/keyring.pfx` and its password as `secrets/keyring.password` (an empty file for a passwordless PFX). These paths are ignored by Git and excluded from the build context. Override their locations with `DRMC_KEYRING_CERTIFICATE_FILE` and `DRMC_KEYRING_PASSWORD_FILE`. Local Compose file secrets retain host ownership: on Linux, grant container UID/GID `1654:1654` read access, for example `sudo chown 1654:1654 secrets/keyring.pfx secrets/keyring.password` and `sudo chmod 0400 secrets/keyring.pfx secrets/keyring.password`. Use restrictive host directory permissions and equivalent ACLs on Windows.
+2. Create ignored `.env.portal` with `ConnectionStrings__DefaultConnection` (SQL host `sqlserver` for this Compose database), `Portal__PublicOrigin`, explicit `AllowedHosts`, and the existing `Notifications__Email__*` and `Notifications__Sms__*` production settings. Use a dedicated database/runtime identity for production. `DRMC_PORTAL_ENV_FILE` can select another deployment-managed file. Keep development fixtures/bootstrap disabled unless performing the documented initial provisioning.
+3. Set `MSSQL_SA_PASSWORD`, run `docker compose --profile portal build`, then `docker compose up -d --wait sqlserver`. With all existing replicas stopped and the migration identity configured, run `docker compose --profile portal run --rm portal redstar-protection upgrade`. This applies the existing migration chain and initializes/verifies registry protection; ordinary replicas do not run migrations.
+4. Start with `docker compose --profile portal up -d --scale portal=2 portal`. Each replica runs as non-root UID 1654 with a dynamically assigned loopback HTTP port (`docker compose port --index 1 portal 8080`). Put the approved HTTPS reverse proxy in front and configure its trusted IPs through `Proxy__KnownProxies`. The certificate and password are mounted read-only. Fresh named-volume directories inherit the image's restricted ownership; repair existing ownership offline rather than starting the application as root.
+5. Preserve `drmc-sqlserver`, `drmc-keyring` and `drmc-private-storage` across replacement. The key ring is `/var/lib/drmc/keys`; private storage has distinct patient-document, temporary-upload, lab-report and import directories under `/var/lib/drmc/storage`. **`docker compose down -v` deletes these volumes.** On separate Docker hosts, provision a common read/write filesystem and mount the same key and private-storage directories through a deployment override/shared volume driver; ordinary local named volumes are scoped to one Docker host. The filesystem must support exclusive file locks and atomic same-directory replacement. Replicas also require the same SQL database, certificate set and application name. Registration upload binding currently uses process-local ASP.NET Session; configure routing affinity or a shared session provider for that workflow when distributing registration requests across replicas.
+
+Rehearse container recreation and storage recovery in a disposable deployment before using this configuration for persistent data. Docker/Linux execution is separate from the Windows local-setup check.
 
 ## Server Hosting and Handover
 
@@ -633,7 +709,7 @@ dotnet publish src/DrmcPatientPortal -c Release -o ./output/publish
 
 Configure the hosted app's environment and secrets through the app pool/deployment system, not a developer's temporary PowerShell window. Set Production, the real connection, `Notifications__Email__*` SMTP settings, `Notifications__Sms__*` HTTPS delivery settings, and absolute paths for the key ring, patient documents, temporary uploads and import staging. Grant the app identity the required filesystem access. An integrated SQL connection uses that runtime identity, not the interactive developer's account. Keep fixtures disabled and full-results disclosure at the approved setting.
 
-Stop/drain old builds, have the designated migration operator apply the committed schema with the correct target and schema permissions, then start the new build. Create the first Admin with the same temporary bootstrap, confirmation and 2FA sequence; remove bootstrap from the hosted configuration after promotion. Console confirmation links are a Development aid; verify real email delivery on the server. Generate patient/staff slips through the real HTTPS portal origin so phones can reach them; validate host/scheme handling if an additional reverse proxy is used.
+Stop/drain old builds, have the designated migration operator apply the committed schema with the correct target and schema permissions, then run the published application once with `redstar-protection upgrade` using the deployment's database, original persistent key ring and key-protection settings. For a framework-dependent publish, change to the publish directory and run `dotnet DrmcPatientPortal.dll redstar-protection upgrade` with the deployment environment configured. Start the new build only after the command succeeds. Create the first Admin with the same temporary bootstrap, confirmation and 2FA sequence; remove bootstrap from the hosted configuration after promotion. Console confirmation links are a Development aid; verify real email delivery on the server. Generate patient/staff slips through the real HTTPS portal origin so phones can reach them; validate host/scheme handling if an additional reverse proxy is used.
 
 The deployment must keep the import worker running; configure IIS process lifetime/idle behavior for that requirement. Back up the SQL database, historical encryption keys and encrypted documents together and test recovery with the deployment identity. Replacing published code must preserve those data directories. Review [Key Protection and Recovery](#key-protection-and-recovery), the import limits, and client inputs below before handover.
 

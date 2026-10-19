@@ -17,6 +17,7 @@ public sealed class PortalSessionStore(IServiceScopeFactory scopes, TimeProvider
 {
     public async Task<bool> IsActiveAsync(SessionIdentity session, CancellationToken token)
     {
+        // Read shared state on every request so revocation and stamp changes apply to every replica.
         await using var scope = scopes.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var now = clock.GetUtcNow();
