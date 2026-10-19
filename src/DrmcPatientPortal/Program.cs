@@ -69,8 +69,7 @@ builder.Services.AddOptions<PortalRateLimitOptions>().Bind(builder.Configuration
 builder.Services.AddSingleton<PortalRequestLimiter>();
 builder.Services.AddSingleton<PortalSessionStore>();
 builder.Services.AddSingleton<PortalSecurityCleanup>();
-if (builder.Configuration.GetValue("SecurityState:CleanupWorkerEnabled", true))
-    builder.Services.AddHostedService<PortalSecurityCleanupWorker>();
+builder.Services.AddHostedService<PortalSecurityCleanupWorker>();
 builder.Services.AddScoped<PortalCookieEvents>();
 builder.Services.AddOptions<OcrOptions>().Bind(builder.Configuration.GetSection("Ocr"))
     .Validate(x => x.IsValid(), "OCR limits require 1–4 workers, 0–8 queued jobs, at most 5 seconds queue wait and 10 seconds execution.").ValidateOnStart();

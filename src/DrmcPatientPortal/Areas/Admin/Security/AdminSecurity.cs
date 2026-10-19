@@ -1,4 +1,7 @@
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Data;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Identity;
@@ -208,8 +211,7 @@ public static class AdminBootstrap
                 .LogWarning("Admin bootstrap is enabled. Remove AdminBootstrap configuration after initial setup.");
         var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         foreach (var role in StaffRoles.All)
-            if (!await roles.RoleExistsAsync(role) && !(await roles.CreateAsync(new IdentityRole(role))).Succeeded)
-                throw new InvalidOperationException($"{role} role initialization failed.");
+            await EnsureRoleAsync(roles, scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(), role);
         if (!enabled) return;
         var email = configuration["AdminBootstrap:Email"];
         if (string.IsNullOrWhiteSpace(email)) return;
@@ -227,5 +229,23 @@ public static class AdminBootstrap
             throw new InvalidOperationException("Admin bootstrap requires an existing email-confirmed, 2FA-enabled account that is not locked out.");
         if (!await users.IsInRoleAsync(user, "Admin") && !(await users.AddToRoleAsync(user, "Admin")).Succeeded)
             throw new InvalidOperationException("Admin bootstrap promotion failed.");
+    }
+
+    private static async Task EnsureRoleAsync(RoleManager<IdentityRole> roles, ApplicationDbContext db, string name)
+    {
+        if (await roles.RoleExistsAsync(name)) return;
+        var role = new IdentityRole(name);
+        IdentityResult result;
+        try { result = await roles.CreateAsync(role); }
+        catch (DbUpdateException error) when (error.InnerException is SqlException { Number: 2601 or 2627 })
+        {
+            // Another replica may have created the role after our existence check.
+            // Remove the failed insert so subsequent role/user writes cannot retry it.
+            db.Entry(role).State = EntityState.Detached;
+            if (!await roles.RoleExistsAsync(name)) throw;
+            return;
+        }
+        if (!result.Succeeded && !(result.Errors.All(e => e.Code == "DuplicateRoleName") && await roles.RoleExistsAsync(name)))
+            throw new InvalidOperationException($"{name} role initialization failed.");
     }
 }

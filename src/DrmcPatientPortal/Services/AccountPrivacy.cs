@@ -20,7 +20,13 @@ public sealed class AccountPrivacy(IOptions<AccountPrivacyOptions> options, Time
 
     public async Task FinishAsync(long started, CancellationToken token)
     {
-        var remaining = TimeSpan.FromMilliseconds(options.Value.MinimumResponseMilliseconds) - Stopwatch.GetElapsedTime(started);
-        if (remaining > TimeSpan.Zero) await Task.Delay(remaining, clock, token);
+        var minimum = TimeSpan.FromMilliseconds(options.Value.MinimumResponseMilliseconds);
+        while (true)
+        {
+            var remaining = minimum - Stopwatch.GetElapsedTime(started);
+            if (remaining <= TimeSpan.Zero) return;
+            // Timer resolution can wake a delay early; enforce the elapsed-time floor.
+            await Task.Delay(TimeSpan.FromMilliseconds(Math.Ceiling(remaining.TotalMilliseconds)), clock, token);
+        }
     }
 }

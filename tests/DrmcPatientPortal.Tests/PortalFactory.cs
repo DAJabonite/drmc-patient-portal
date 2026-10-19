@@ -7,6 +7,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Hosting;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 namespace DrmcPatientPortal.Tests;
 
@@ -21,6 +25,7 @@ public sealed class PortalFactory : WebApplicationFactory<Program>, IAsyncLifeti
 
     private readonly string _connectionString;
     private readonly string _storageRoot = Path.Combine(Path.GetTempPath(), "drmc-tests-" + Guid.NewGuid().ToString("N"));
+    private readonly KeyRingProtectionOptions _protection;
 
     public PortalFactory()
     {
@@ -30,6 +35,7 @@ public sealed class PortalFactory : WebApplicationFactory<Program>, IAsyncLifeti
                 $"Set {ConnectionVariable} to a SQL Server connection string without a database name, " +
                 "for example: Server=localhost,1433;User Id=sa;Password=...;Encrypt=True;TrustServerCertificate=True");
         _connectionString = $"{server.TrimEnd(';')};Database=DrmcPortalTests_{Guid.NewGuid():N}";
+        _protection = TestCertificates.Create(_storageRoot, "portal");
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -42,6 +48,16 @@ public sealed class PortalFactory : WebApplicationFactory<Program>, IAsyncLifeti
         builder.UseSetting("DevelopmentFixtures:Empty:Email", EmptyEmail);
         builder.UseSetting("DevelopmentFixtures:Empty:Password", Password);
         builder.UseSetting("DataProtection:KeyRingPath", Path.Combine(_storageRoot, "keys"));
+        builder.UseSetting("DataProtection:CertificatePath", _protection.CertificatePath);
+        builder.UseSetting("DataProtection:CertificatePasswordFile", _protection.CertificatePasswordFile);
+        builder.UseSetting("DataProtection:ProtectKeysWithDpapi", "false");
+        builder.ConfigureTestServices(services =>
+        {
+            // Fixed-clock tests drive maintenance explicitly; background cleanup would otherwise
+            // delete another host's fixtures when a test advances its clock into the future.
+            foreach (var descriptor in services.Where(d => d.ServiceType == typeof(IHostedService) &&
+                d.ImplementationType == typeof(PortalSecurityCleanupWorker)).ToArray()) services.Remove(descriptor);
+        });
         builder.UseSetting("PatientDocuments:RootPath", Path.Combine(_storageRoot, "documents"));
         builder.UseSetting("PatientDocuments:TemporaryPath", Path.Combine(_storageRoot, "uploads"));
         builder.UseSetting("LabReports:RootPath", Path.Combine(_storageRoot, "reports"));
@@ -63,22 +79,25 @@ public sealed class PortalFactory : WebApplicationFactory<Program>, IAsyncLifeti
 
     // Identity store options shape the EF model, so resolve the context with the same Identity
     // configuration the app uses; a bare `new ApplicationDbContext(...)` builds a different model.
-    private ServiceProvider DatabaseServices()
+    private async Task<ServiceProvider> DatabaseServicesAsync()
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(_storageRoot, "keys"))).SetApplicationName("DRMC.PatientPortal");
+        await KeyRingProtection.ConfigureAsync(services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(_storageRoot, "keys"))).SetApplicationName("DRMC.PatientPortal"),
+            Path.Combine(_storageRoot, "keys"), _protection, true);
         services.AddSingleton(sp => new RedStarPhiProtection(sp.GetRequiredService<IDataProtectionProvider>(), Path.Combine(_storageRoot, "keys")));
         services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(_connectionString));
         // AddDefaultIdentity (used by the app) caps Identity key columns at 128 characters.
         services.AddIdentityCore<ApplicationUser>(options => options.Stores.MaxLengthForKeys = 128).AddRoles<IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>();
-        return services.BuildServiceProvider();
+        var provider = services.BuildServiceProvider();
+        KeyRingProtection.Verify(provider);
+        return provider;
     }
 
     public async Task InitializeAsync()
     {
         // Fixtures require an already migrated schema, so migrate before the host starts.
-        await using (var provider = DatabaseServices())
+        await using (var provider = await DatabaseServicesAsync())
         await using (var scope = provider.CreateAsyncScope())
             await RedStarProtectionUpgrade.RunAsync(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>());
         _ = Server;
@@ -87,10 +106,27 @@ public sealed class PortalFactory : WebApplicationFactory<Program>, IAsyncLifeti
     async Task IAsyncLifetime.DisposeAsync()
     {
         await base.DisposeAsync();
-        await using (var provider = DatabaseServices())
+        await using (var provider = await DatabaseServicesAsync())
         await using (var scope = provider.CreateAsyncScope())
             await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.EnsureDeletedAsync();
         if (Directory.Exists(_storageRoot)) Directory.Delete(_storageRoot, recursive: true);
+    }
+}
+
+internal static class TestCertificates
+{
+    public static KeyRingProtectionOptions Create(string directory, string name)
+    {
+        Directory.CreateDirectory(directory);
+        using var rsa = RSA.Create(2048);
+        var request = new CertificateRequest("CN=DRMC synthetic " + name, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        using var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(30));
+        var password = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        var path = Path.Combine(directory, name + ".pfx");
+        var passwordFile = Path.Combine(directory, name + ".password");
+        File.WriteAllBytes(path, certificate.Export(X509ContentType.Pfx, password));
+        File.WriteAllText(passwordFile, password + "\n");
+        return new() { CertificatePath = path, CertificatePasswordFile = passwordFile };
     }
 }
 

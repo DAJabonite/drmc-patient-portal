@@ -51,14 +51,17 @@ jobs:
           dotnet ef migrations has-pending-model-changes --project src/DrmcPatientPortal --configuration Release --no-build
         env:
           ConnectionStrings__DefaultConnection: Server=localhost,1433;Database=ModelCheck;User Id=sa;Password=${{ env.SA_PASSWORD }};Encrypt=True;TrustServerCertificate=True
+      - name: Test portable OCR fixtures
+        run: dotnet test DrmcPatientPortal.slnx -c Release --no-build --filter "FullyQualifiedName~IdImageRecognitionTests" --logger "trx;LogFileName=ocr-results.trx"
       - name: Test
-        run: dotnet test DrmcPatientPortal.slnx -c Release --no-build --logger "trx;LogFileName=results.trx"
+        run: dotnet test DrmcPatientPortal.slnx -c Release --no-build --filter "FullyQualifiedName!~IdImageRecognitionTests" --logger "trx;LogFileName=results.trx"
         env:
           DRMC_TEST_SQLSERVER: Server=localhost,1433;User Id=sa;Password=${{ env.SA_PASSWORD }};Encrypt=True;TrustServerCertificate=True
-          SecurityState__CleanupWorkerEnabled: "false"
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: "**/TestResults/*.trx"
+      - name: Verify container storage, replica sharing and recreation
+        run: bash scripts/smoke-container-persistence.sh

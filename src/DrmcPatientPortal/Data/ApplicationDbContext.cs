@@ -125,6 +125,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         });
         builder.Entity<AuthenticatorConsumption>(e =>
         {
+            // One consumption across every provider purpose; the fingerprint permits key replacement.
             e.HasKey(x => new { x.UserId, x.KeyFingerprint, x.TimeStep }).IsClustered(false);
             e.Property(x => x.UserId).HasMaxLength(450);
             e.Property(x => x.KeyFingerprint).HasMaxLength(64);

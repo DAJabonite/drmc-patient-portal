@@ -3,6 +3,8 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Net;
 using System.Security.Cryptography;
+using System.Xml.Linq;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using System.Security.Claims;
 using System.Text;
 using DrmcPatientPortal.Areas.Admin.Services;
@@ -75,6 +77,9 @@ public sealed class ReliabilityHardeningTests(PortalFactory factory)
             start.Environment["DOTNET_ENVIRONMENT"] = "Development";
             start.Environment["ConnectionStrings__DefaultConnection"] = config["ConnectionStrings:DefaultConnection"]!;
             start.Environment["DataProtection__KeyRingPath"] = config["DataProtection:KeyRingPath"]!;
+            start.Environment["DataProtection__CertificatePath"] = config["DataProtection:CertificatePath"]!;
+            start.Environment["DataProtection__CertificatePasswordFile"] = config["DataProtection:CertificatePasswordFile"]!;
+            start.Environment["DataProtection__ProtectKeysWithDpapi"] = "false";
             start.Environment["AccountEmail__WorkerEnabled"] = "true";
             start.Environment["DevelopmentFixtures__Enabled"] = "false";
             start.Environment["AdminBootstrap__Enabled"] = "false";
@@ -154,6 +159,49 @@ public sealed class ReliabilityHardeningTests(PortalFactory factory)
         clock.Now = clock.Now.AddHours(2); await dispatcher.CleanupAsync();
         var expired = await Db(db => db.AccountEmails.SingleAsync(m => m.UserId == account.Id && m.Status == AccountEmailStatus.Expired));
         Assert.Null(expired.ProtectedPayload); Assert.NotNull(expired.CompletedUtc);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Security_cleanup_drains_batches_independently_of_disabled_or_failing_email(bool deliveryFails)
+    {
+        var account = await Account();
+        var clock = new TestClock(DateTimeOffset.UtcNow);
+        using var host = factory.WithWebHostBuilder(b => b.ConfigureTestServices(s =>
+        { s.RemoveAll<IEmailSender>(); s.AddSingleton<IEmailSender>(new MailSender { Fail = true }); }));
+        if (deliveryFails)
+        {
+            await host.Services.GetRequiredService<IAccountEmailQueue>().EnqueueAsync(account.Id, account.Email, "Failure", "Synthetic failed delivery");
+            await host.Services.GetRequiredService<AccountEmailDispatcher>().DispatchOnceAsync();
+            Assert.Equal(1, await Db(db => db.AccountEmails.Where(m => m.UserId == account.Id).Select(m => m.Attempts).SingleAsync()));
+        }
+        await Db(async db =>
+        {
+            for (var i = 0; i < 253; i++)
+            {
+                var expiry = i < 251 ? clock.Now : clock.Now.AddSeconds(i == 251 ? 30 : 150);
+                db.PortalSessions.Add(new() { Id = Guid.NewGuid().ToString("N") + i.ToString("X32"), UserId = account.Id, ExpiresUtc = expiry });
+                db.AuthenticatorConsumptions.Add(new() { UserId = account.Id, KeyFingerprint = new string('A', 64), TimeStep = i, ExpiresUtc = expiry });
+            }
+            return await db.SaveChangesAsync();
+        });
+        var cleanup = new PortalSecurityCleanup(host.Services.GetRequiredService<IServiceScopeFactory>(), clock);
+        using var worker = new PortalSecurityCleanupWorker(cleanup, clock, NullLogger<PortalSecurityCleanupWorker>.Instance);
+        await worker.StartAsync(default);
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            while (await Db(db => db.AuthenticatorConsumptions.CountAsync(c => c.UserId == account.Id)) != 2)
+                await Task.Delay(25, timeout.Token);
+            Assert.Equal(2, await Db(db => db.PortalSessions.CountAsync(s => s.UserId == account.Id)));
+            Assert.NotNull(host.Services.GetRequiredService<PortalSecurityCleanup>());
+        }
+        finally { await worker.StopAsync(default); }
+        clock.Now = clock.Now.AddSeconds(30);
+        await Task.WhenAll(cleanup.CleanupAsync(), new PortalSecurityCleanup(host.Services.GetRequiredService<IServiceScopeFactory>(), clock).CleanupAsync());
+        Assert.Equal(1, await Db(db => db.PortalSessions.CountAsync(s => s.UserId == account.Id)));
+        Assert.Equal(252, await Db(db => db.AuthenticatorConsumptions.Where(c => c.UserId == account.Id).Select(c => c.TimeStep).SingleAsync()));
     }
 
     private sealed class ReadTimeouts(int failures) : DbCommandInterceptor
@@ -506,5 +554,159 @@ public sealed class InitialMigrationRollbackTests
             Assert.Contains("20261011120435_AddPrivateRedStarRegistry", await db.Database.GetAppliedMigrationsAsync());
         }
         finally { await db.Database.EnsureDeletedAsync(); }
+    }
+}
+
+public sealed class KeyRingReliabilityTests : IDisposable
+{
+    private readonly string root = Path.Combine(Path.GetTempPath(), "drmc-keyring-tests-" + Guid.NewGuid().ToString("N"));
+    private string Ring => Path.Combine(root, "keys");
+    private static readonly XNamespace Ns = "http://schemas.asp.net/2015/03/dataProtection";
+
+    private async Task<ServiceProvider> Services(KeyRingProtectionOptions options, bool required = true)
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        await KeyRingProtection.ConfigureAsync(services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(Ring)).SetApplicationName("DRMC.PatientPortal"),
+            Ring, options, required);
+        var provider = services.BuildServiceProvider();
+        try { KeyRingProtection.Verify(provider); return provider; }
+        catch { await provider.DisposeAsync(); throw; }
+    }
+
+    private Dictionary<string, string> Files() => Directory.GetFiles(Ring, "key-*.xml").ToDictionary(file => Path.GetFileName(file)!, File.ReadAllText);
+    private void Unchanged(Dictionary<string, string> before)
+    {
+        var after = Files();
+        Assert.Equal(before.Count, after.Count);
+        foreach (var (name, xml) in before) Assert.Equal(xml, after[name]);
+    }
+
+    [Fact]
+    public async Task Certificate_keys_survive_restart_rotation_and_retain_historical_payloads()
+    {
+        var original = TestCertificates.Create(root, "original");
+        byte[] payload;
+        using (var services = await Services(original))
+            payload = services.GetRequiredService<IDataProtectionProvider>().CreateProtector("fixture").Protect("historical payload"u8.ToArray());
+        var originalFiles = Files();
+        Assert.All(originalFiles.Values, xml => Assert.Single(XDocument.Parse(xml).Descendants(Ns + "encryptedSecret")));
+        using (var restarted = await Services(original))
+            Assert.Equal("historical payload"u8.ToArray(), restarted.GetRequiredService<IDataProtectionProvider>().CreateProtector("fixture").Unprotect(payload));
+        var rotated = TestCertificates.Create(root, "rotated");
+        rotated.DecryptionCertificates = [new() { Path = original.CertificatePath!, PasswordFile = original.CertificatePasswordFile }];
+        byte[] newer;
+        using (var services = await Services(rotated))
+        {
+            services.GetRequiredService<IKeyManager>().CreateNewKey(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(90));
+            newer = services.GetRequiredService<IDataProtectionProvider>().CreateProtector("fixture").Protect("new payload"u8.ToArray());
+        }
+        using (var services = await Services(rotated))
+        {
+            var protector = services.GetRequiredService<IDataProtectionProvider>().CreateProtector("fixture");
+            Assert.Equal("historical payload"u8.ToArray(), protector.Unprotect(payload));
+            Assert.Equal("new payload"u8.ToArray(), protector.Unprotect(newer));
+        }
+        Assert.Equal(2, Files().Count);
+        rotated.DecryptionCertificates = [];
+        var before = Files();
+        Assert.NotNull(await Record.ExceptionAsync(async () => { using var ignored = await Services(rotated); }));
+        Unchanged(before);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Plaintext_and_windows_dpapi_conversion_preserve_key_ids_and_existing_ciphertext(bool dpapi)
+    {
+        if (dpapi && !OperatingSystem.IsWindows()) return;
+        byte[] payload;
+        Guid[] ids;
+        using (var old = await Services(new() { ProtectKeysWithDpapi = dpapi }, false))
+        {
+            payload = old.GetRequiredService<IDataProtectionProvider>().CreateProtector(KeyRingProtection.PatientDocumentPurpose).Protect("existing document"u8.ToArray());
+            ids = old.GetRequiredService<IKeyManager>().GetAllKeys().Select(k => k.KeyId).ToArray();
+        }
+        var options = TestCertificates.Create(root, "portable");
+        await Task.WhenAll(Convert(), Convert());
+        async Task Convert() { using var ignored = await Services(options); }
+        using var converted = await Services(options);
+        Assert.Equal(ids, converted.GetRequiredService<IKeyManager>().GetAllKeys().Select(k => k.KeyId));
+        Assert.Equal("existing document"u8.ToArray(), converted.GetRequiredService<IDataProtectionProvider>().CreateProtector(KeyRingProtection.PatientDocumentPurpose).Unprotect(payload));
+        Assert.All(Files().Values, xml =>
+        {
+            Assert.Single(XDocument.Parse(xml).Descendants(Ns + "encryptedSecret"));
+            Assert.Empty(XDocument.Parse(xml).Descendants("masterKey"));
+            Assert.DoesNotContain("DpapiXmlDecryptor", xml);
+        });
+        Assert.Empty(Directory.GetFiles(Ring, "*.protected-*"));
+        Assert.Empty(Directory.GetFiles(Ring, ".write-*"));
+    }
+
+    [Fact]
+    public async Task Missing_or_conflicting_protection_is_rejected_before_key_creation()
+    {
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => Services(new()));
+        Assert.Contains("outside Development", error.Message);
+        var options = TestCertificates.Create(root, "conflict");
+        options.ProtectKeysWithDpapi = true;
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Services(options));
+        Assert.False(Directory.Exists(Ring));
+    }
+
+    [Fact]
+    public async Task Wrong_missing_or_public_only_certificate_and_plaintext_downgrade_preserve_the_ring()
+    {
+        var options = TestCertificates.Create(root, "good");
+        using (var services = await Services(options))
+            services.GetRequiredService<IDataProtectionProvider>().CreateProtector("fixture").Protect("payload");
+        var before = Files();
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Services(new(), false));
+        var wrong = TestCertificates.Create(root, "wrong");
+        Assert.NotNull(await Record.ExceptionAsync(async () => { using var ignored = await Services(wrong); }));
+        var missing = new KeyRingProtectionOptions { CertificatePath = Path.Combine(root, "missing.pfx") };
+        Assert.NotNull(await Record.ExceptionAsync(async () => { using var ignored = await Services(missing); }));
+        var password = File.ReadAllText(options.CertificatePasswordFile!).Trim();
+        using var certificate = System.Security.Cryptography.X509Certificates.X509CertificateLoader.LoadPkcs12FromFile(options.CertificatePath!, password);
+        var publicOnly = Path.Combine(root, "public.pfx");
+        using (var publicCertificate = System.Security.Cryptography.X509Certificates.X509CertificateLoader.LoadCertificate(certificate.RawData))
+            File.WriteAllBytes(publicOnly, publicCertificate.Export(System.Security.Cryptography.X509Certificates.X509ContentType.Pfx));
+        Assert.NotNull(await Record.ExceptionAsync(async () => { using var ignored = await Services(new() { CertificatePath = publicOnly }); }));
+        Unchanged(before);
+    }
+
+    [Fact]
+    public async Task Unreadable_or_malformed_historical_keys_fail_without_replacing_or_generating_keys()
+    {
+        var options = TestCertificates.Create(root, "good");
+        using (var services = await Services(options))
+            services.GetRequiredService<IDataProtectionProvider>().CreateProtector("fixture").Protect("payload");
+        var file = Directory.GetFiles(Ring, "key-*.xml").Single();
+        var xml = XDocument.Load(file);
+        xml.Descendants(XName.Get("CipherValue", "http://www.w3.org/2001/04/xmlenc#")).First().Value = "AAAA";
+        xml.Save(file);
+        var corrupt = Files();
+        Assert.NotNull(await Record.ExceptionAsync(async () => { using var ignored = await Services(options); }));
+        Unchanged(corrupt);
+        File.WriteAllText(file, "<!DOCTYPE key [<!ENTITY external SYSTEM 'file:///not-read'>]><key>&external;</key>");
+        var malformed = Files();
+        await Assert.ThrowsAsync<System.Xml.XmlException>(() => Services(options));
+        Unchanged(malformed);
+    }
+
+    [Fact]
+    public async Task Unwritable_key_storage_is_rejected_even_before_the_first_key()
+    {
+        Directory.CreateDirectory(root);
+        File.WriteAllText(Ring, "A file cannot be a writable key directory.");
+        await Assert.ThrowsAsync<IOException>(() => Services(TestCertificates.Create(root, "good")));
+    }
+
+    public void Dispose()
+    {
+        var resolved = Path.GetFullPath(root);
+        var temporary = Path.GetFullPath(Path.GetTempPath());
+        if (!resolved.StartsWith(temporary, StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("Invalid test storage root.");
+        if (Directory.Exists(resolved)) Directory.Delete(resolved, true);
     }
 }

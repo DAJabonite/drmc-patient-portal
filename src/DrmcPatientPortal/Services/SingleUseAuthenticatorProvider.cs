@@ -30,6 +30,8 @@ public sealed class SingleUseAuthenticatorProvider(IServiceScopeFactory scopes, 
                 UserId = user.Id, KeyFingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key))),
                 TimeStep = candidate, ExpiresUtc = DateTimeOffset.FromUnixTimeSeconds((candidate + 3) * 30)
             });
+            // The database key arbitrates across replicas and purposes. Never use a cache check
+            // or turn an uncertain database write into a successful authentication.
             try { await db.SaveChangesAsync(); return true; }
             catch (DbUpdateException error) when (error.InnerException is SqlException { Number: 2601 or 2627 }) { return false; }
         }

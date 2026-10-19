@@ -96,6 +96,30 @@ public sealed class RedStarReminderIntegrationTests(PortalFactory factory)
         }
     }
 
+    private sealed class HeldSender(string recipient) : IEmailSender
+    {
+        public TaskCompletionSource FirstStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource SecondStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ReleaseFirst { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ReleaseSecond { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int attempts;
+
+        public async Task SendEmailAsync(string to, string subject, string body)
+        {
+            if (to != recipient) return;
+            if (Interlocked.Increment(ref attempts) == 1)
+            {
+                FirstStarted.TrySetResult();
+                await ReleaseFirst.Task;
+            }
+            else
+            {
+                SecondStarted.TrySetResult();
+                await ReleaseSecond.Task;
+            }
+        }
+    }
+
     private sealed record Fixture(int AppointmentId, int PatientId, int EnrollmentId, string UserId, string Email);
 
     private async Task<T> Db<T>(Func<ApplicationDbContext, Task<T>> query)
@@ -290,6 +314,111 @@ public sealed class RedStarReminderIntegrationTests(PortalFactory factory)
         Assert.Equal(2, failed.Attempts);
         Assert.Equal(RedStarDeliveryState.Failed, failed.State);
         Assert.Null(failed.ProtectedPayload);
+    }
+
+    [Fact]
+    public async Task Transient_failure_survives_a_fresh_host_and_retries_only_when_due_with_the_same_message_id()
+    {
+        var clock = new TestClock(new DateTimeOffset(2026, 9, 2, 0, 0, 0, TimeSpan.Zero));
+        var item = await Create(new DateTime(2026, 9, 2));
+        var failingSender = new Sender { Fail = true };
+        Guid messageId;
+        DateTimeOffset retryAt;
+        using (var firstHost = factory.WithWebHostBuilder(b => b.ConfigureTestServices(s =>
+        { s.RemoveAll<IEmailSender>(); s.AddSingleton<IEmailSender>(failingSender); })))
+        {
+            var first = Service(firstHost.Services, clock);
+            await first.GenerateAsync();
+            await DispatchTargetAsync(first, item.AppointmentId, clock);
+            var pending = await Db(db => db.RedStarReminders.AsNoTracking().SingleAsync(r =>
+                r.AppointmentId == item.AppointmentId && r.Channel == RedStarReminderChannel.Email));
+            Assert.Equal(RedStarDeliveryState.Pending, pending.State);
+            Assert.Equal(1, pending.Attempts);
+            Assert.NotNull(pending.ProtectedPayload);
+            Assert.Null(pending.LeaseOwner);
+            messageId = pending.Id;
+            retryAt = pending.NextAttemptUtc;
+        }
+
+        var recoveredSender = new Sender();
+        using var restartedHost = factory.WithWebHostBuilder(b => b.ConfigureTestServices(s =>
+        { s.RemoveAll<IEmailSender>(); s.AddSingleton<IEmailSender>(recoveredSender); }));
+        var restarted = Service(restartedHost.Services, clock);
+        await restarted.DispatchAsync();
+        Assert.DoesNotContain(recoveredSender.Sent, m => m.Recipient == item.Email);
+        clock.Now = retryAt;
+        await DispatchTargetAsync(restarted, item.AppointmentId, clock);
+
+        Assert.Single(recoveredSender.Sent, m => m.Recipient == item.Email);
+        var delivered = await Db(db => db.RedStarReminders.AsNoTracking().SingleAsync(r => r.Id == messageId));
+        Assert.Equal(RedStarDeliveryState.Delivered, delivered.State);
+        Assert.Equal(2, delivered.Attempts);
+        Assert.Null(delivered.ProtectedPayload);
+        Assert.Null(delivered.LeaseOwner);
+    }
+
+    [Fact]
+    public async Task Transient_failures_use_the_shared_capped_exponential_retry_schedule()
+    {
+        var clock = new TestClock(new DateTimeOffset(2026, 9, 3, 0, 0, 0, TimeSpan.Zero));
+        var item = await Create(new DateTime(2026, 9, 3));
+        var sender = new Sender { Fail = true };
+        using var host = factory.WithWebHostBuilder(b => b.ConfigureTestServices(s =>
+        { s.RemoveAll<IEmailSender>(); s.AddSingleton<IEmailSender>(sender); }));
+        var service = Service(host.Services, clock);
+        await service.GenerateAsync();
+        var delays = new[] { TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(8), TimeSpan.FromMinutes(30) };
+        for (var attempt = 1; attempt <= delays.Length; attempt++)
+        {
+            await DispatchTargetAsync(service, item.AppointmentId, clock);
+            var pending = await Db(db => db.RedStarReminders.AsNoTracking().SingleAsync(r =>
+                r.AppointmentId == item.AppointmentId && r.Channel == RedStarReminderChannel.Email));
+            Assert.Equal(RedStarDeliveryState.Pending, pending.State);
+            Assert.Equal(attempt, pending.Attempts);
+            Assert.Equal(clock.Now.Add(delays[attempt - 1]), pending.NextAttemptUtc);
+            clock.Now = pending.NextAttemptUtc;
+        }
+    }
+
+    [Fact]
+    public async Task An_old_attempt_cannot_complete_a_new_lease_acquired_by_the_same_service_instance()
+    {
+        var clock = new TestClock(new DateTimeOffset(2026, 9, 4, 0, 0, 0, TimeSpan.Zero));
+        var item = await Create(new DateTime(2026, 9, 4));
+        var sender = new HeldSender(item.Email);
+        using var host = factory.WithWebHostBuilder(b => b.ConfigureTestServices(s =>
+        { s.RemoveAll<IEmailSender>(); s.AddSingleton<IEmailSender>(sender); }));
+        var service = Service(host.Services, clock);
+        await service.GenerateAsync();
+        var first = DispatchTargetAsync(service, item.AppointmentId, clock);
+        Task? second = null;
+        try
+        {
+            await sender.FirstStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            var firstOwner = await Db(db => db.RedStarReminders.Where(r =>
+                r.AppointmentId == item.AppointmentId && r.Channel == RedStarReminderChannel.Email).Select(r => r.LeaseOwner).SingleAsync());
+            clock.Now = clock.Now.AddMinutes(3);
+            second = DispatchTargetAsync(service, item.AppointmentId, clock);
+            await sender.SecondStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            sender.ReleaseFirst.TrySetResult();
+            await first;
+            var active = await Db(db => db.RedStarReminders.AsNoTracking().SingleAsync(r =>
+                r.AppointmentId == item.AppointmentId && r.Channel == RedStarReminderChannel.Email));
+            Assert.Equal(RedStarDeliveryState.Sending, active.State);
+            Assert.Equal(2, active.Attempts);
+            Assert.NotEqual(firstOwner, active.LeaseOwner);
+            Assert.NotNull(active.ProtectedPayload);
+            Assert.False(await Db(db => db.RedStarAudits.AnyAsync(a => a.Action == "ReminderDelivered" && a.Subject == active.Id.ToString("N"))));
+        }
+        finally
+        {
+            sender.ReleaseFirst.TrySetResult();
+            sender.ReleaseSecond.TrySetResult();
+            await first;
+            if (second is not null) await second;
+        }
+        Assert.Equal(RedStarDeliveryState.Delivered, await Db(db => db.RedStarReminders.Where(r =>
+            r.AppointmentId == item.AppointmentId && r.Channel == RedStarReminderChannel.Email).Select(r => r.State).SingleAsync()));
     }
 
     [Fact]

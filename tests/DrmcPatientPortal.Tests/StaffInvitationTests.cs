@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -50,15 +51,63 @@ public sealed partial class StaffInvitationTests(PortalFactory factory)
 
     private sealed class RecordingEmailSender : IEmailSender
     {
+        public bool Fail { get; set; }
         public ConcurrentQueue<(string Email, string Subject, string Body)> Messages { get; } = new();
         public Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
+            if (Fail) throw new IOException("SYNTHETIC-PRIVATE-TRANSPORT-TEXT");
             Messages.Enqueue((email, subject, htmlMessage));
             return Task.CompletedTask;
         }
     }
 
+    private sealed class OutboxPersistenceFailure : SaveChangesInterceptor
+    {
+        public bool Armed { get; set; }
+
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData data,
+            InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            if (Armed && data.Context!.ChangeTracker.Entries().Any(e =>
+                    e.State == EntityState.Added && e.Metadata.ClrType.Name == "OutboundNotificationMessage"))
+                throw new DbUpdateException("Synthetic outbox persistence failure.");
+            return ValueTask.FromResult(result);
+        }
+    }
+
     private static string Email() => $"staff.{Guid.NewGuid():N}@fixtures.test";
+
+    private WebApplicationFactory<Program> WithSender(RecordingEmailSender sender, TestClock? clock = null) =>
+        factory.WithWebHostBuilder(b => b.ConfigureTestServices(s =>
+        {
+            s.RemoveAll<IEmailSender>();
+            s.AddSingleton<IEmailSender>(sender);
+            if (clock is not null)
+            {
+                s.RemoveAll<TimeProvider>();
+                s.AddSingleton<TimeProvider>(clock);
+            }
+        }));
+
+    private async Task<(int Id, string Code)> CreateQueuedInvitationAsync(HttpClient admin, string email)
+    {
+        var response = await admin.PostFormAsync("/Admin/StaffInvitations/Create", "/Admin/StaffInvitations/Create",
+            new Dictionary<string, string> { ["Email"] = email, ["Role"] = "RadiologyStaff" });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var html = await response.Content.ReadAsStringAsync();
+        Assert.Contains("We queued the signup link", html);
+        using var scope = factory.Services.CreateScope();
+        var invitation = await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().StaffInvitations.AsNoTracking()
+            .Where(i => i.Email == email).OrderByDescending(i => i.Id).FirstAsync();
+        return (invitation.Id, IssuedCode().Match(html).Groups[1].Value);
+    }
+
+    private async Task<OutboundNotificationMessage> OutboxAsync(int invitationId)
+    {
+        using var scope = factory.Services.CreateScope();
+        return await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().OutboundNotifications.AsNoTracking()
+            .SingleAsync(m => m.StaffInvitationId == invitationId);
+    }
 
     // Inserts an invitation directly so signup rules can be tested without the Admin UI.
     private async Task<(int Id, string Code)> SeedAsync(string email, string role = "LabStaff", TimeSpan? expiresIn = null, bool revoked = false)
@@ -110,11 +159,11 @@ public sealed partial class StaffInvitationTests(PortalFactory factory)
     }
 
     [Fact]
-    public async Task Admin_invites_staff_with_a_one_time_link_queued_for_email_delivery()
+    public async Task Admin_invites_staff_with_a_one_time_link_queued_and_only_a_hash_stored()
     {
         var sender = new RecordingEmailSender();
         using var host = factory.WithWebHostBuilder(b => b.ConfigureTestServices(s => { s.RemoveAll<IEmailSender>(); s.AddSingleton<IEmailSender>(sender); }));
-        var admin = await StaffAccounts.SignInAsync(host, StaffAccounts.AdminEmail, "Admin");
+        var admin = await StaffAccounts.SignInAsync(host, $"inviter.{Guid.NewGuid():N}@fixtures.test", "Admin");
         var email = Email();
         var response = await admin.PostFormAsync("/Admin/StaffInvitations/Create", "/Admin/StaffInvitations/Create",
             new Dictionary<string, string> { ["Email"] = email, ["Role"] = "RadiologyStaff" });
@@ -135,19 +184,173 @@ public sealed partial class StaffInvitationTests(PortalFactory factory)
         Assert.Equal("RadiologyStaff", stored.Role);
         Assert.True(await db.AdminAuditLogs.AnyAsync(a => a.Entity == "StaffInvitations" && a.Action == "Invite" && a.RecordKey == stored.Id.ToString()));
         Assert.DoesNotContain(code, await (await admin.GetAsync("/Admin/StaffInvitations")).Content.ReadAsStringAsync());
-
-        var queued = await db.OutboundNotifications.AsNoTracking().SingleAsync(m => m.StaffInvitationId == stored.Id);
+        var queued = await OutboxAsync(stored.Id);
         Assert.Equal(OutboundNotificationStatus.Pending, queued.Status);
-        Assert.Equal(0, queued.AttemptCount);
+        Assert.Equal(OutboundNotificationChannel.Email, queued.Channel);
+        Assert.Equal(new DateTimeOffset(DateTime.SpecifyKind(stored.ExpiresAtUtc, DateTimeKind.Utc)), queued.ExpiresAtUtc);
         Assert.NotNull(queued.PayloadProtected);
+        var ciphertext = Encoding.UTF8.GetString(queued.PayloadProtected);
+        Assert.DoesNotContain(email, ciphertext);
+        Assert.DoesNotContain(code, ciphertext);
 
         await host.Services.GetRequiredService<OutboundNotificationDispatcher>().DispatchOnceAsync();
         var message = Assert.Single(sender.Messages, m => m.Email == email);
         Assert.Contains("/Identity/Account/Register#invite=" + code, message.Body);
-        var delivered = await db.OutboundNotifications.AsNoTracking().SingleAsync(m => m.Id == queued.Id);
+        var delivered = await OutboxAsync(stored.Id);
         Assert.Equal(OutboundNotificationStatus.Delivered, delivered.Status);
-        Assert.Equal(1, delivered.AttemptCount);
         Assert.Null(delivered.PayloadProtected);
+        Assert.Null(delivered.LeaseOwner);
+    }
+
+    [Fact]
+    public async Task Invitation_outbox_failure_rolls_back_replacement_and_audit()
+    {
+        var email = Email();
+        var failure = new OutboxPersistenceFailure();
+        var sender = new RecordingEmailSender();
+        using var host = factory.WithWebHostBuilder(b => b.ConfigureTestServices(s =>
+        {
+            s.RemoveAll<IEmailSender>();
+            s.AddSingleton<IEmailSender>(sender);
+            s.AddDbContext<ApplicationDbContext>(o => o.AddInterceptors(failure));
+        }));
+        var admin = await StaffAccounts.SignInAsync(host, $"inviter.{Guid.NewGuid():N}@fixtures.test", "Admin");
+        var (earlierId, _) = await CreateQueuedInvitationAsync(admin, email);
+        var originalMessage = await OutboxAsync(earlierId);
+        long[] originalAudits;
+        using (var before = factory.Services.CreateScope())
+            originalAudits = await before.ServiceProvider.GetRequiredService<ApplicationDbContext>().AdminAuditLogs
+                .Where(a => a.Entity == "StaffInvitations").OrderBy(a => a.Id).Select(a => a.Id).ToArrayAsync();
+        failure.Armed = true;
+        var response = await admin.PostFormAsync("/Admin/StaffInvitations/Create", "/Admin/StaffInvitations/Create",
+            new Dictionary<string, string> { ["Email"] = email, ["Role"] = "RadiologyStaff" });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("The change could not be saved", await response.Content.ReadAsStringAsync());
+        Assert.Empty(sender.Messages);
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var earlier = Assert.Single(await db.StaffInvitations.AsNoTracking().Where(i => i.Email == email).ToListAsync());
+        Assert.Equal(earlierId, earlier.Id);
+        Assert.Null(earlier.RevokedAtUtc);
+        Assert.Equal(originalAudits, await db.AdminAuditLogs.Where(a => a.Entity == "StaffInvitations")
+            .OrderBy(a => a.Id).Select(a => a.Id).ToArrayAsync());
+        var preserved = await OutboxAsync(earlierId);
+        Assert.Equal(OutboundNotificationStatus.Pending, preserved.Status);
+        Assert.Equal(originalMessage.PayloadProtected, preserved.PayloadProtected);
+        Assert.Null(preserved.CompletedAtUtc);
+    }
+
+    [Fact]
+    public async Task Invitation_delivery_survives_host_restart_after_transient_sender_failure()
+    {
+        var email = Email();
+        var clock = new TestClock(DateTimeOffset.UtcNow);
+        var failedSender = new RecordingEmailSender { Fail = true };
+        int invitationId;
+        string code;
+        using (var firstHost = WithSender(failedSender, clock))
+        {
+            var admin = await StaffAccounts.SignInAsync(firstHost, $"inviter.{Guid.NewGuid():N}@fixtures.test", "Admin");
+            (invitationId, code) = await CreateQueuedInvitationAsync(admin, email);
+            await firstHost.Services.GetRequiredService<OutboundNotificationDispatcher>().DispatchOnceAsync();
+            var retry = await OutboxAsync(invitationId);
+            Assert.Equal(OutboundNotificationStatus.Pending, retry.Status);
+            Assert.Equal(1, retry.AttemptCount);
+            Assert.Equal(clock.Now.AddSeconds(30), retry.NextAttemptAtUtc);
+            Assert.DoesNotContain("SYNTHETIC-PRIVATE-TRANSPORT-TEXT", retry.LastError ?? "");
+            Assert.NotNull(retry.PayloadProtected);
+            Assert.Empty(failedSender.Messages);
+        }
+
+        var recoveredSender = new RecordingEmailSender();
+        using var restartedHost = WithSender(recoveredSender, clock);
+        await restartedHost.Services.GetRequiredService<OutboundNotificationDispatcher>().DispatchOnceAsync();
+        Assert.DoesNotContain(recoveredSender.Messages, m => m.Email == email);
+        clock.Now = clock.Now.AddSeconds(30);
+        await restartedHost.Services.GetRequiredService<OutboundNotificationDispatcher>().DispatchOnceAsync();
+        var delivered = Assert.Single(recoveredSender.Messages, m => m.Email == email);
+        Assert.Contains("#invite=" + code, delivered.Body);
+        var completed = await OutboxAsync(invitationId);
+        Assert.Equal(OutboundNotificationStatus.Delivered, completed.Status);
+        Assert.Equal(2, completed.AttemptCount);
+        Assert.Null(completed.PayloadProtected);
+        Assert.Null(completed.LeaseOwner);
+    }
+
+    [Fact]
+    public async Task Replacing_an_invitation_cancels_its_queued_email_and_sends_only_the_new_code()
+    {
+        var email = Email();
+        var sender = new RecordingEmailSender();
+        using var host = WithSender(sender);
+        var admin = await StaffAccounts.SignInAsync(host, $"inviter.{Guid.NewGuid():N}@fixtures.test", "Admin");
+        var earlier = await CreateQueuedInvitationAsync(admin, email);
+        var replacement = await CreateQueuedInvitationAsync(admin, email);
+        var cancelled = await OutboxAsync(earlier.Id);
+        Assert.Equal(OutboundNotificationStatus.Cancelled, cancelled.Status);
+        Assert.Null(cancelled.PayloadProtected);
+        Assert.Null(cancelled.LeaseOwner);
+        Assert.NotNull(cancelled.CompletedAtUtc);
+
+        await host.Services.GetRequiredService<OutboundNotificationDispatcher>().DispatchOnceAsync();
+        var sent = Assert.Single(sender.Messages, m => m.Email == email);
+        Assert.Contains("#invite=" + replacement.Code, sent.Body);
+        Assert.DoesNotContain(earlier.Code, sent.Body);
+        Assert.Equal(OutboundNotificationStatus.Delivered, (await OutboxAsync(replacement.Id)).Status);
+    }
+
+    [Fact]
+    public async Task Revoking_an_invitation_cancels_its_queued_email()
+    {
+        var email = Email();
+        var sender = new RecordingEmailSender();
+        using var host = WithSender(sender);
+        var admin = await StaffAccounts.SignInAsync(host, $"inviter.{Guid.NewGuid():N}@fixtures.test", "Admin");
+        var invitation = await CreateQueuedInvitationAsync(admin, email);
+        string version;
+        using (var scope = factory.Services.CreateScope())
+            version = Convert.ToBase64String((await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>()
+                .StaffInvitations.AsNoTracking().SingleAsync(i => i.Id == invitation.Id)).RowVersion);
+        var response = await admin.PostFormAsync("/Admin/StaffInvitations", $"/Admin/StaffInvitations/Revoke/{invitation.Id}",
+            new Dictionary<string, string> { ["rowVersion"] = version });
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        var cancelled = await OutboxAsync(invitation.Id);
+        Assert.Equal(OutboundNotificationStatus.Cancelled, cancelled.Status);
+        Assert.Null(cancelled.PayloadProtected);
+        Assert.Null(cancelled.LeaseOwner);
+        Assert.NotNull(cancelled.CompletedAtUtc);
+        await host.Services.GetRequiredService<OutboundNotificationDispatcher>().DispatchOnceAsync();
+        Assert.DoesNotContain(sender.Messages, m => m.Email == email);
+    }
+
+    [Theory]
+    [InlineData("accepted", OutboundNotificationStatus.Cancelled)]
+    [InlineData("expired", OutboundNotificationStatus.Expired)]
+    [InlineData("recipient changed", OutboundNotificationStatus.Cancelled)]
+    public async Task Invitation_state_is_rechecked_before_delivery(string change, OutboundNotificationStatus expected)
+    {
+        var email = Email();
+        var sender = new RecordingEmailSender();
+        using var host = WithSender(sender);
+        var admin = await StaffAccounts.SignInAsync(host, $"inviter.{Guid.NewGuid():N}@fixtures.test", "Admin");
+        var invitation = await CreateQueuedInvitationAsync(admin, email);
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var stored = await db.StaffInvitations.SingleAsync(i => i.Id == invitation.Id);
+            if (change == "accepted") stored.AcceptedAtUtc = DateTime.UtcNow;
+            else if (change == "expired") stored.ExpiresAtUtc = DateTime.UtcNow.AddSeconds(-1);
+            else stored.Email = Email();
+            await db.SaveChangesAsync();
+        }
+        await host.Services.GetRequiredService<OutboundNotificationDispatcher>().DispatchOnceAsync();
+        Assert.DoesNotContain(sender.Messages, m => m.Email == email);
+        var completed = await OutboxAsync(invitation.Id);
+        Assert.Equal(expected, completed.Status);
+        Assert.Null(completed.PayloadProtected);
+        Assert.Null(completed.LeaseOwner);
+        Assert.NotNull(completed.CompletedAtUtc);
     }
 
     [Fact]

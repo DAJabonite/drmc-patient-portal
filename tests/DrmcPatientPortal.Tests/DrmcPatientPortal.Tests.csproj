@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <None Update="OcrFixtures/*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
