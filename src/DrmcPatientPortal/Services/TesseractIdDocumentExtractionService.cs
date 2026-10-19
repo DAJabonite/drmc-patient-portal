@@ -40,7 +40,6 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         var result = new IdExtractionResult
         {
             IdType = idType,
-            Success = !string.IsNullOrWhiteSpace(response.FrontText),
             RawTextFront = response.FrontText,
             RawTextBack = response.BackText,
             MeanConfidence = backImageStream is null ? response.FrontConfidence : (response.FrontConfidence + response.BackConfidence) / 2
@@ -55,6 +54,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         {
             // Default loose extraction
             ParseGenericFields(result, frontText);
+            result.Success = result.FoundFieldsSummary.Count > 0;
             return;
         }
 
@@ -96,6 +96,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
                 ParseGenericFields(result, frontText);
                 break;
         }
+        result.Success = result.FoundFieldsSummary.Count > 0;
     }
 
     #region Specific ID Parsers
@@ -241,36 +242,13 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
             }
         }
 
-        // PhilSys Front Labels: "Last Name / Apelyido", "Given Names / Mga Pangalan", "Middle Name / Gitnang Pangalan"
-        var lastNameMatch = Regex.Match(frontText, @"(?:Last\s*Name|Apelyido)[:\.\s/]+([A-Z\s\-]+?)(?=\n|Given|First|Middle|Date|Petsa|$)", RegexOptions.IgnoreCase);
-        if (lastNameMatch.Success && !string.IsNullOrWhiteSpace(lastNameMatch.Groups[1].Value))
-        {
-            result.LastName = ExtractedField<string>.From(CleanNameString(lastNameMatch.Groups[1].Value));
-        }
-
-        var firstNameMatch = Regex.Match(frontText, @"(?:Given\s*Names?|First\s*Name|Mga\s*Pangalan)[:\.\s/]+([A-Z\s\-]+?)(?=\n|Middle|Gitnang|Last|Date|Petsa|$)", RegexOptions.IgnoreCase);
-        if (firstNameMatch.Success && !string.IsNullOrWhiteSpace(firstNameMatch.Groups[1].Value))
-        {
-            result.FirstName = ExtractedField<string>.From(CleanNameString(firstNameMatch.Groups[1].Value));
-        }
-
-        var middleNameMatch = Regex.Match(frontText, @"(?:Middle\s*Name|Gitnang\s*Pangalan)[:\.\s/]+([A-Z\s\-]+?)(?=\n|Date|Petsa|Sex|Kasarian|$)", RegexOptions.IgnoreCase);
-        if (middleNameMatch.Success && !string.IsNullOrWhiteSpace(middleNameMatch.Groups[1].Value))
-        {
-            result.MiddleName = ExtractedField<string>.From(CleanNameString(middleNameMatch.Groups[1].Value));
-        }
-
-        // Fallback names if not matched by specific PhilSys bilingual labels
-        if (!result.LastName.Found && !result.FirstName.Found)
-        {
-            ExtractNameByLabels(result, frontText);
-        }
+        ExtractNameByLabels(result, frontText);
 
         ExtractDobByLabels(result, frontText);
         ExtractAddressByLabels(result, frontText);
 
         // Back: Sex & Blood Type
-        string combinedBack = string.IsNullOrWhiteSpace(backText) ? frontText : backText;
+        string combinedBack = frontText + "\n" + backText;
         ExtractSexByLabels(result, combinedBack);
         ExtractBloodTypeByLabels(result, combinedBack);
 
@@ -296,7 +274,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
     private static void ParsePostalId(IdExtractionResult result, string text)
     {
         // Postal ID Reference Number
-        var idMatch = Regex.Match(text, @"(?:Postal\s*ID\s*No|PRN|ID\s*No)[:\.\s]*([A-Z0-9\s\-]{6,20})", RegexOptions.IgnoreCase);
+        var idMatch = Regex.Match(text, @"(?:Postal\s*ID\s*No|PRN|ID\s*No)[:\.\s]*([A-Z0-9 \t\-]{6,20})", RegexOptions.IgnoreCase);
         if (idMatch.Success)
         {
             result.IdNumber = ExtractedField<string>.From(idMatch.Groups[1].Value.Trim());
@@ -371,34 +349,19 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
 
     private static void ExtractNameByLabels(IdExtractionResult result, string text)
     {
-        // 1. Check for distinct Last / First / Middle Name labels
-        var lastMatch = Regex.Match(text, @"(?:Last\s*Name|Surname|Apelyido)[:\.\s]+([A-Za-z\s\-]+?)(?=\n|First|Given|Middle|DOB|Date|$)", RegexOptions.IgnoreCase);
-        if (lastMatch.Success)
-        {
-            result.LastName = ExtractedField<string>.From(CleanNameString(lastMatch.Groups[1].Value));
-        }
+        var fields = IdDocumentLabels.Read(text);
+        result.LastName = ReadName("LastName");
+        result.FirstName = ReadName("FirstName");
+        result.MiddleName = ReadName("MiddleName");
+        if (!result.LastName.Found && !result.FirstName.Found && fields.TryGetValue("FullName", out var fullName))
+            SplitAndAssignFullName(result, CleanNameString(fullName, preserveComma: true));
 
-        var firstMatch = Regex.Match(text, @"(?:First\s*Name|Given\s*Name(?:s)?|Pangalan)[:\.\s]+([A-Za-z\s\-]+?)(?=\n|Middle|Last|Surname|DOB|Date|$)", RegexOptions.IgnoreCase);
-        if (firstMatch.Success)
+        ExtractedField<string> ReadName(string field)
         {
-            result.FirstName = ExtractedField<string>.From(CleanNameString(firstMatch.Groups[1].Value));
-        }
-
-        var middleMatch = Regex.Match(text, @"(?:Middle\s*Name|Gitnang\s*Pangalan)[:\.\s]+([A-Za-z\s\-]+?)(?=\n|Last|Surname|First|DOB|Date|$)", RegexOptions.IgnoreCase);
-        if (middleMatch.Success)
-        {
-            result.MiddleName = ExtractedField<string>.From(CleanNameString(middleMatch.Groups[1].Value));
-        }
-
-        // 2. If separate labels weren't found, search for unified "Name:" / "Full Name:"
-        if (!result.LastName.Found && !result.FirstName.Found)
-        {
-            var nameMatch = Regex.Match(text, @"(?:Name|Full\s*Name|Member\s*Name|Cardholder)[:\.\s]+([A-Za-z\s\.,\-]+?)(?=\n|DOB|Date|Address|Sex|Blood|PIN|No|$)", RegexOptions.IgnoreCase);
-            if (nameMatch.Success)
-            {
-                string rawName = CleanNameString(nameMatch.Groups[1].Value, preserveComma: true);
-                SplitAndAssignFullName(result, rawName);
-            }
+            if (!fields.TryGetValue(field, out var raw) || !Regex.IsMatch(raw, @"^[\p{L}\p{M}\s.'’\-]+$"))
+                return ExtractedField<string>.Empty();
+            var name = CleanNameString(raw);
+            return string.IsNullOrWhiteSpace(name) ? ExtractedField<string>.Empty() : ExtractedField<string>.From(name);
         }
     }
 
@@ -446,23 +409,16 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
 
     private static void ExtractDobByLabels(IdExtractionResult result, string text)
     {
-        var dobMatch = Regex.Match(text, @"(?:Date\s*of\s*Birth|Birth\s*Date|DOB|Birthday|Petsa\s*ng\s*Kapanganakan)[:\.\s]*([A-Za-z0-9\s,\/\-\.]+?)(?=\n|Sex|Gender|Address|Blood|Weight|Height|$)", RegexOptions.IgnoreCase);
-        if (dobMatch.Success)
-        {
-            string rawDate = dobMatch.Groups[1].Value.Trim();
-            if (TryParseFlexibleDate(rawDate, out DateTime dt))
-            {
-                result.DateOfBirth = ExtractedField<DateTime>.From(dt);
-            }
-        }
+        if (IdDocumentLabels.Read(text).TryGetValue("DateOfBirth", out var rawDate) &&
+            TryParseFlexibleDate(rawDate, out var date) && date != default && date.Date <= DateTime.UtcNow.Date)
+            result.DateOfBirth = ExtractedField<DateTime>.From(date);
     }
 
     private static void ExtractSexByLabels(IdExtractionResult result, string text)
     {
-        var sexMatch = Regex.Match(text, @"(?:Sex|Gender|Kasarian)[:\.\s]*\b(MALE|FEMALE|M|F|LALAKI|BABAE)\b", RegexOptions.IgnoreCase);
-        if (sexMatch.Success)
+        if (IdDocumentLabels.Read(text).TryGetValue("Sex", out var value))
         {
-            string raw = sexMatch.Groups[1].Value.ToUpperInvariant();
+            string raw = value.ToUpperInvariant();
             if (raw is "MALE" or "M" or "LALAKI") result.Sex = ExtractedField<string>.From("Male");
             else if (raw is "FEMALE" or "F" or "BABAE") result.Sex = ExtractedField<string>.From("Female");
         }
@@ -470,25 +426,15 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
 
     private static void ExtractBloodTypeByLabels(IdExtractionResult result, string text)
     {
-        var bloodMatch = Regex.Match(text, @"(?:Blood\s*Type|Blood|Uri\s*ng\s*Dugo)[:\.\s]*(A\+|A\-|B\+|B\-|AB\+|AB\-|O\+|O\-|A|B|AB|O)(?=\s|$|\n|\r|,|\.)", RegexOptions.IgnoreCase);
-        if (bloodMatch.Success)
-        {
-            result.BloodType = ExtractedField<string>.From(bloodMatch.Groups[1].Value.ToUpperInvariant().Trim());
-        }
+        if (IdDocumentLabels.Read(text).TryGetValue("BloodType", out var value) &&
+            Regex.IsMatch(value, @"^(?:AB|A|B|O)[+-]?$", RegexOptions.IgnoreCase))
+            result.BloodType = ExtractedField<string>.From(value.ToUpperInvariant());
     }
 
     private static void ExtractAddressByLabels(IdExtractionResult result, string text)
     {
-        var addrMatch = Regex.Match(text, @"(?:Address|Residence|Tirahan)[:\.\s]+([A-Za-z0-9\s,\.\-#/]+?)(?=\n\n|Blood|Sex|Height|Weight|Date|Expiry|Signature|$)", RegexOptions.IgnoreCase);
-        if (addrMatch.Success)
-        {
-            string raw = addrMatch.Groups[1].Value.Replace("\r", " ").Replace("\n", " ").Trim();
-            raw = Regex.Replace(raw, @"\s+", " ");
-            if (raw.Length >= 5)
-            {
-                result.Address = ExtractedField<string>.From(raw);
-            }
-        }
+        if (IdDocumentLabels.Read(text).TryGetValue("Address", out var address) && address.Length >= 5)
+            result.Address = ExtractedField<string>.From(address);
     }
 
     private static void ExtractIdNumberByPattern(IdExtractionResult result, string text, string regexPattern)
@@ -514,7 +460,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
     private static string CleanNameString(string input, bool preserveComma = false)
     {
         if (string.IsNullOrWhiteSpace(input)) return string.Empty;
-        string pattern = preserveComma ? @"[^A-Za-z\s\-\.,]" : @"[^A-Za-z\s\-\.]";
+        string pattern = preserveComma ? @"[^\p{L}\p{M}\s\-\.'’,]" : @"[^\p{L}\p{M}\s\-\.'’]";
         var cleaned = Regex.Replace(input, pattern, "").Trim();
         cleaned = Regex.Replace(cleaned, @"\s+", " ");
         return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(cleaned.ToLowerInvariant());

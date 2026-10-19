@@ -46,6 +46,24 @@ $(function () {
     const btnTriggerOcr = document.getElementById('btnTriggerOcr');
     const ocrProcessingState = document.getElementById('ocrProcessingState');
     const autofillNotice = document.getElementById('autofillNotice');
+    const autofillSummary = document.getElementById('autofillSummary');
+    const extractedFields = [
+        ['firstName', 'txtFirstName', 'First name'],
+        ['middleName', 'txtMiddleName', 'Middle name'],
+        ['lastName', 'txtLastName', 'Last name'],
+        ['idNumber', 'txtIdNumber', 'ID number'],
+        ['dateOfBirth', 'txtDob', 'Date of birth'],
+        ['address', 'txtAddress', 'Address'],
+        ['sex', 'txtSex', 'Sex'],
+        ['bloodType', 'txtBloodType', 'Blood type']
+    ];
+
+    function resetScanMetadata() {
+        document.getElementById('tempFrontToken').value = '';
+        document.getElementById('tempBackToken').value = '';
+        document.getElementById('ocrConfidence').value = '0';
+        autofillNotice.classList.add('d-none');
+    }
 
     const isManualEntryInput = document.getElementById('isManualEntry');
 
@@ -200,9 +218,13 @@ $(function () {
         });
     }
 
+    // Preserve staged tokens when redisplaying a form with server validation errors.
+    let previousIdType = selectIdType.value;
     // ID Type selection handler
     selectIdType.addEventListener('change', function () {
         const val = selectIdType.value;
+        if (val !== previousIdType) resetScanMetadata();
+        previousIdType = val;
         otherIdFields.hidden = val !== 'Other government-issued ID';
         otherIdName.disabled = otherIdFields.hidden;
         otherIdName.required = !otherIdFields.hidden;
@@ -228,6 +250,11 @@ $(function () {
         } else {
             backCaptureCol.classList.add('d-none');
             frontCaptureCol.className = 'col-12 col-md-8 mx-auto';
+            backPhotoInput.value = '';
+            backPreviewImg.removeAttribute('src');
+            backPreviewContainer.classList.add('d-none');
+            backPlaceholder.classList.remove('d-none');
+            document.getElementById('backInputLabel').innerHTML = '<i class="bi bi-camera me-1"></i> Snap / Select Back';
         }
     });
 
@@ -276,10 +303,19 @@ $(function () {
 
     // Front photo preview
     frontPhotoInput.addEventListener('change', function () {
+        resetScanMetadata();
+        btnTriggerOcr.disabled = !frontPhotoInput.files?.length;
+        if (!frontPhotoInput.files?.length) {
+            frontPreviewContainer.classList.add('d-none');
+            frontPlaceholder.classList.remove('d-none');
+            frontPreviewImg.removeAttribute('src');
+            document.getElementById('frontInputLabel').innerHTML = '<i class="bi bi-camera me-1"></i> Snap / Select Front';
+        }
         if (frontPhotoInput.files && frontPhotoInput.files[0]) {
             const file = frontPhotoInput.files[0];
             const reader = new FileReader();
             reader.onload = function (e) {
+                if (frontPhotoInput.files[0] !== file) return;
                 frontPreviewImg.src = e.target.result;
                 frontPreviewContainer.classList.remove('d-none');
                 frontPlaceholder.classList.add('d-none');
@@ -292,10 +328,18 @@ $(function () {
 
     // Back photo preview
     backPhotoInput.addEventListener('change', function () {
+        resetScanMetadata();
+        if (!backPhotoInput.files?.length) {
+            backPreviewContainer.classList.add('d-none');
+            backPlaceholder.classList.remove('d-none');
+            backPreviewImg.removeAttribute('src');
+            document.getElementById('backInputLabel').innerHTML = '<i class="bi bi-camera me-1"></i> Snap / Select Back';
+        }
         if (backPhotoInput.files && backPhotoInput.files[0]) {
             const file = backPhotoInput.files[0];
             const reader = new FileReader();
             reader.onload = function (e) {
+                if (backPhotoInput.files[0] !== file) return;
                 backPreviewImg.src = e.target.result;
                 backPreviewContainer.classList.remove('d-none');
                 backPlaceholder.classList.add('d-none');
@@ -312,6 +356,7 @@ $(function () {
             return;
         }
 
+        resetScanMetadata();
         step2.querySelectorAll('button, input').forEach(control => control.disabled = true);
         step2.setAttribute('aria-busy', 'true');
         document.getElementById('stepFeedback2').classList.add('d-none');
@@ -320,7 +365,7 @@ $(function () {
         const formData = new FormData();
         formData.append('idType', selectIdType.value);
         formData.append('frontPhoto', frontPhotoInput.files[0]);
-        if (backPhotoInput.files && backPhotoInput.files[0]) {
+        if (!backCaptureCol.classList.contains('d-none') && backPhotoInput.files && backPhotoInput.files[0]) {
             formData.append('backPhoto', backPhotoInput.files[0]);
         }
 
@@ -336,39 +381,39 @@ $(function () {
                 body: formData
             });
 
-            const data = await response.json().catch(() => ({}));
+            const data = await response.json().catch(() => null);
             ocrProcessingState.classList.add('d-none');
             btnTriggerOcr.disabled = false;
-            if (!response.ok) {
+            if (!response.ok || !data || typeof data.success !== 'boolean') {
                 autofillNotice.classList.add('d-none');
                 updateProgress(2);
-                showFeedback(2, data.message || 'ID scanning is unavailable. Please try again later.');
+                showFeedback(2, data?.message || 'ID scanning is unavailable. Please try again later.');
                 return;
             }
 
-            if (data.tempFrontToken) {
-                document.getElementById('tempFrontToken').value = data.tempFrontToken;
-            }
-            if (data.tempBackToken) {
-                document.getElementById('tempBackToken').value = data.tempBackToken;
-            }
-            if (data.meanConfidence) {
-                document.getElementById('ocrConfidence').value = data.meanConfidence;
-            }
+            document.getElementById('tempFrontToken').value = data.tempFrontToken || '';
+            document.getElementById('tempBackToken').value = data.tempBackToken || '';
+            document.getElementById('ocrConfidence').value = Number.isFinite(data.meanConfidence) ? data.meanConfidence : 0;
 
-            // Populate extracted fields into editable inputs
-            if (data.firstName) document.getElementById('txtFirstName').value = data.firstName;
-            if (data.middleName) document.getElementById('txtMiddleName').value = data.middleName;
-            if (data.lastName) document.getElementById('txtLastName').value = data.lastName;
-            if (data.idNumber) document.getElementById('txtIdNumber').value = data.idNumber;
-            if (data.dateOfBirth) document.getElementById('txtDob').value = data.dateOfBirth;
-            if (data.address) document.getElementById('txtAddress').value = data.address;
-            if (data.sex) document.getElementById('txtSex').value = data.sex;
-            if (data.bloodType) document.getElementById('txtBloodType').value = data.bloodType;
-
-            autofillNotice.classList.toggle('d-none', !data.success);
+            const summary = data.foundSummary || {};
+            const filled = [];
+            const missing = [];
+            // Replace every scanned field, including empty values, so a rescan cannot mix IDs.
+            for (const [property, id, label] of extractedFields) {
+                const input = document.getElementById(id);
+                input.value = data[property] || '';
+                (summary[label] && input.value ? filled : missing).push(label);
+                validator.element(input);
+            }
+            document.getElementById('stepFeedback3').classList.add('d-none');
+            autofillNotice.classList.toggle('d-none', filled.length === 0);
+            autofillNotice.classList.toggle('alert-success', missing.length === 0);
+            autofillNotice.classList.toggle('alert-warning', missing.length > 0);
+            autofillSummary.textContent = 'Filled from your ID: ' + filled.join(', ') + '. ' +
+                (missing.length ? 'Not read: ' + missing.join(', ') + '. Enter missing details; optional fields may stay blank. ' : '') +
+                'Please check every entry.';
             updateProgress(3);
-            if (!data.success) showFeedback(3, data.message || 'We could not read all ID details. Please enter or correct your information below.');
+            if (!filled.length) showFeedback(3, data.message || 'No ID details could be read. Enter your details below, or go back and try a clearer photo.');
         } catch (err) {
             ocrProcessingState.classList.add('d-none');
             btnTriggerOcr.disabled = false;
@@ -377,6 +422,7 @@ $(function () {
             showFeedback(3, 'We could not scan your ID. Please enter your details below, or go back to try again.');
         } finally {
             step2.querySelectorAll('button, input').forEach(control => control.disabled = false);
+            btnTriggerOcr.disabled = !frontPhotoInput.files?.length;
             step2.removeAttribute('aria-busy');
         }
     });
