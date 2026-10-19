@@ -208,7 +208,7 @@ public static class OcrWorker
             {
                 extraction = new()
                 {
-                    IdType = request.IdType, Success = !string.IsNullOrWhiteSpace(front.Text),
+                    IdType = request.IdType,
                     RawTextFront = front.Text, RawTextBack = back.Text,
                     MeanConfidence = request.Back is null ? front.Confidence : (front.Confidence + back.Confidence) / 2
                 };
