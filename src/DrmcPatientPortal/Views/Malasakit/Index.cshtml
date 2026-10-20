@@ -25,19 +25,22 @@
             <div class="row g-4">
                 @foreach (var tile in content.Tiles)
                 {
-                    var (action, image, alternative) = tile.Key switch
+                    var (action, image, alternative, width, height) = tile.Key switch
                     {
-                        "dswd" => ("DSWDServices", "dswd-logo.png", "DSWD logo"),
-                        "drmc-malasakit" => ("DRMCMalasakitServices", "drmc-malasakit-logo.png", "DRMC logo"),
-                        "maifip" => ("MaifipRequirements", "doh-maifip-logo.png", "Department of Health logo"),
-                        "philhealth" => ("Philhealth", "philhealth-logo.png", "PhilHealth logo"),
+                        "dswd" => ("DSWDServices", "dswd-logo", "DSWD logo", 88, 96),
+                        "drmc-malasakit" => ("DRMCMalasakitServices", "drmc-malasakit-logo", "DRMC logo", 96, 96),
+                        "maifip" => ("MaifipRequirements", "doh-maifip-logo", "Department of Health logo", 96, 96),
+                        "philhealth" => ("Philhealth", "philhealth-logo", "PhilHealth logo", 96, 96),
                         _ => throw new InvalidOperationException("Unknown institutional guide tile.")
                     };
                     <div class="col-md-6 col-lg-3">
                         <a asp-action="@action" class="dswd-service-tile card border-0 shadow-sm rounded-4 h-100 p-4 bg-white text-decoration-none">
                             <div class="d-flex align-items-start gap-3">
                                 <span class="dswd-service-icon" aria-hidden="true">
-                                    <img src="~/images/@image" alt="@alternative" />
+                                    <picture>
+                                        <source srcset="@Url.Content($"~/images/{image}.webp")" type="image/webp" />
+                                        <img src="@Url.Content($"~/images/{image}.png")" width="@width" height="@height" decoding="async" alt="@alternative" />
+                                    </picture>
                                 </span>
                                 <span class="flex-grow-1">
                                     <span class="h5 fw-bold text-dark d-block mb-2">@tile.Title</span>
