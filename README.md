@@ -501,7 +501,7 @@ A hospital record code shows that a person has a record at DRMC and links that r
 1. At the PACD or a clinic desk (for example the Red Star Clinic), Patient services staff or an Admin check the patient's valid ID against the hospital record. They then open **Registration codes › Issue code**, or **Registration code** on the patient's details page.
 2. The record must be unlinked and must have a birth date. Staff choose the issuing point, confirm the identity check, and print or show the slip. The slip has the code in the form `XXXXX-XXXXX-XXXXX` and a QR code. The full code is shown only once and is never stored: the database keeps a SHA-256 hash and the last five characters. Issuing a new code revokes any earlier active code for that record. Each issue and revoke is written to the staff audit log.
 3. The QR opens `/Identity/Account/Register#code=…`. The code is in the URL fragment, which browsers do not send to the server. On the **Credentials** step, the **Hospital record code** field is filled in from the QR, typed by the patient, or scanned with the camera where the browser supports `BarcodeDetector`. Input is not case-sensitive and ignores spaces and hyphens.
-4. Signup checks the code before creating the account. The code must be active (not used, revoked or expired), its record must still be unlinked, and the date of birth entered must match the record. If any check fails, signup shows one generic message and creates no account. On success, the code is marked used and the record is linked in a single serializable transaction, and `LINK_HOSPITAL_RECORD` is written to the patient activity log. Failures while accepting a code or invitation attempt account/link cleanup. A later audit or email-delivery failure can leave a created account and linked record; check state and resend confirmation instead of registering repeatedly.
+4. Signup checks the code before creating the account. The code must be active (not used, revoked or expired), its record must still be unlinked, and the date of birth and structured name entered must match the record. First and last names must match; middle name and suffix must also match when present on the record. Comparison ignores case, accents, whitespace differences, periods and commas. If any check fails, signup shows one generic message and creates no account. A name mismatch leaves the code unchanged. On success, the code is marked used and the record is linked in a single serializable transaction, and `LINK_HOSPITAL_RECORD` is written to the patient activity log. Failures while accepting a code or invitation attempt account/link cleanup. A later audit or email-delivery failure can leave a created account and linked record; check state and resend confirmation instead of registering repeatedly.
 
 A code is **required** to create a portal account: patients without a DRMC hospital record cannot get a code, so they cannot sign up. The signup page says so at the top, and a missing code is rejected on the server before any account is created. Setting `PatientRegistration:RequireHospitalRecordCode` to `false` makes the code optional again; accounts created that way can be linked by an Admin through **Verified portal link**. Staff use a staff invitation instead of a code, and the first Admin uses first-Admin setup (see First Admin).
 
@@ -538,10 +538,10 @@ Only the selected source is used. The clinical record stores a name snapshot, so
 
 ### 2. Create a hospital record and enroll its patient
 
-1. In **Patients** (`/Admin/Patients`), create **Test Patient** with birth date **1990-01-01**. Hospital number is optional; leave it empty rather than inventing one. Saving creates a hospital record, not a login.
+1. In **Patients** (`/Admin/Patients`), create a record with last name **Patient**, first name **Test**, and birth date **1990-01-01**. Middle name, suffix, and hospital number are optional. Saving creates a hospital record, not a login. Names display as **Patient, Test**. Existing records receive blank name parts during migration and require staff to enter them before registration can succeed; legacy full names are not split automatically.
 2. Open its **Details → Registration code**, or **Registration codes → Issue code** and select the record. Choose the issuing point, confirm the identity check for this fictional rehearsal, and issue the code. In a real workflow, staff first verify the patient's ID against the hospital record.
 3. Copy or print the slip. The full code is shown once. A new code revokes the earlier active one; keep real slips private.
-4. In the patient's separate session, open `/Identity/Account/Register`, enter the code on the Credentials step, use a different email from Admin, and enter the matching birth date on the Review step. Confirm the email using the same Development `[EMAIL OUTBOX]` process, then sign in.
+4. In the patient's separate session, open `/Identity/Account/Register`, enter the code on the Credentials step, use a different email from Admin, and enter the matching name parts and birth date on the Review step. Confirm the email using the same Development `[EMAIL OUTBOX]` process, then sign in.
 5. Back in Admin, patient Details should show **Portal account: Linked**. This page does not display the linked email, and the top-right email belongs to the signed-in Admin. Patient signup does not rename the hospital record.
 
 For a database learning check, run this read-only query in SSMS using the record's actual ID:
@@ -555,7 +555,7 @@ LEFT JOIN dbo.AspNetUsers AS u ON u.Id = p.PortalUserId
 WHERE p.Id = 1; -- Replace with the practice patient ID shown in Admin.
 ```
 
-The email should be the patient account and `EmailConfirmed` should be `1`. Linking uses the valid code and matching birth date, not a name comparison. For real enrollment, record verified identity details. An already-linked record cannot receive a new enrollment code; existing accounts use the separately verified linking workflow.
+The email should be the patient account and `EmailConfirmed` should be `1`. Signup linking requires the valid code, matching name parts, and matching birth date. For real enrollment, record verified identity details. An already-linked record cannot receive a new enrollment code; existing accounts use the separately verified linking workflow.
 
 ### 3. Add a visit and check the patient view
 
@@ -614,13 +614,13 @@ Upload, save mappings, queue a dry run, review errors and proposed counts, then 
 
 ### Import Template Reference
 
-Download the running app's templates rather than rebuilding headers manually. Headers and worksheet names are case-sensitive, fixed and ordered. The current validation version is `1.1.0`; template names still end in `_v1`. No dedicated radiology-study import exists in this version; use its Admin form.
+Download the running app's templates rather than rebuilding headers manually. Headers and worksheet names are case-sensitive, fixed and ordered. The current validation version is `1.2.0`; template names still end in `_v1`. Older patient templates containing `FullName` must be replaced with the separate name columns below; stale approvals require validation again. No dedicated radiology-study import exists in this version; use its Admin form.
 
 Patient and clinical templates start with `SourcePatientKey,SourcePatientName,SourceBirthDate`. A non-empty source patient key is required and limited to 200 characters. Names and birth dates are optional review hints, not automatic matching rules. The table's additional context follows those common columns, then the entity columns in the listed order:
 
 | Worksheet | Additional context | Entity columns |
 | --- | --- | --- |
-| Patients_v1 | None | FullName, DateOfBirth, HospitalNumber |
+| Patients_v1 | None | LastName, FirstName, MiddleName, Suffix, DateOfBirth, HospitalNumber |
 | Doctors_v1 | No common patient context | FullName, Title, Department, SubSpecialty, ClinicRoom, ScheduleSummary, OffersTeleconsult, Biography, PrcLicenseMasked, IsActive |
 | PublicAdvisories_v1 | No common patient context | Title, Slug, Category, Priority, Summary, ContentHtml, ImageUrl, IssuingUnit, PublishedAt, EffectiveUntil, IsPinned |
 | ClinicalEncounters_v1 | SourceRecordKey | EncounterReference, EncounterDate, Department, Type, HistoricalDoctorName, ChiefComplaint, PrimaryDiagnosis, SecondaryDiagnosis, ClinicalSummary, CarePlanAndInstructions, VitalSignsRecorded, FollowUpDate, FollowUpNotes |

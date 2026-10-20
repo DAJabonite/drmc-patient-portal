@@ -26,7 +26,8 @@ public static class ImportExamples
             switch (template.Name)
             {
                 case "Patients":
-                    Set(("FullName", name), ("DateOfBirth", birth), ("HospitalNumber", "EXAMPLE-" + number)); break;
+                    Set(("LastName", "Example " + number), ("FirstName", "Fictional"), ("MiddleName", "Patient"),
+                        ("Suffix", ""), ("DateOfBirth", birth), ("HospitalNumber", "EXAMPLE-" + number)); break;
                 case "Doctors":
                     Set(("FullName", doctor), ("Title", "Fictional physician"), ("SubSpecialty", "Example specialty"),
                         ("ClinicRoom", "Example room " + number), ("ScheduleSummary", "Monday 08:00-12:00"),

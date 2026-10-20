@@ -1,6 +1,7 @@
 using DrmcPatientPortal.Areas.Admin.Models;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace DrmcPatientPortal.Areas.Admin.Services;
@@ -18,7 +19,8 @@ public sealed class PatientEditor : AdminEntity<PatientRecord, PatientInput>
         EF.Functions.Collate(e.FullName, "Latin1_General_100_CI_AS").Contains(search) ||
         e.HospitalNumber != null && EF.Functions.Collate(e.HospitalNumber, "Latin1_General_100_CI_AS").Contains(search));
     public override PatientInput Input(ApplicationDbContext db, PatientRecord entity) => new()
-    { FullName = entity.FullName, DateOfBirth = entity.DateOfBirth, HospitalNumber = entity.HospitalNumber };
+    { LastName = entity.LastName, FirstName = entity.FirstName, MiddleName = entity.MiddleName, Suffix = entity.Suffix,
+        DateOfBirth = entity.DateOfBirth, HospitalNumber = entity.HospitalNumber };
     public override Task<OwnershipContext?> RecordContextAsync(ApplicationDbContext db, PatientRecord entity, CancellationToken token) =>
         Task.FromResult<OwnershipContext?>(new(entity, "Patient registry", entity.Id));
     public override IReadOnlyList<RecordField> Fields(ApplicationDbContext db, PatientRecord entity) =>
@@ -40,8 +42,13 @@ public sealed class PatientEditor : AdminEntity<PatientRecord, PatientInput>
         if (number is not null && (lookups is not null ? lookups.Exists("Hospital:" + number) : await db.PatientRecords.AnyAsync(e => e.Id != entity.Id && e.HospitalNumber != null &&
             EF.Functions.Collate(e.HospitalNumber, "Latin1_General_100_CI_AS") == number, token)))
             return WriteResult.Invalid("That hospital number is already assigned.");
-        if (string.IsNullOrWhiteSpace(input.FullName)) return WriteResult.Invalid("A patient name is required.");
-        entity.FullName = input.FullName.Trim(); entity.HospitalNumber = number;
+        if (string.IsNullOrWhiteSpace(input.LastName) || string.IsNullOrWhiteSpace(input.FirstName))
+            return WriteResult.Invalid("The patient's last name and first name are required.");
+        entity.LastName = PatientNames.Clean(input.LastName);
+        entity.FirstName = PatientNames.Clean(input.FirstName);
+        entity.MiddleName = string.IsNullOrWhiteSpace(input.MiddleName) ? null : PatientNames.Clean(input.MiddleName);
+        entity.Suffix = string.IsNullOrWhiteSpace(input.Suffix) ? null : PatientNames.Clean(input.Suffix);
+        entity.HospitalNumber = number;
         entity.DateOfBirth = input.DateOfBirth is null ? null : WallTime(input.DateOfBirth.Value.Date);
         return WriteResult.Success;
     }

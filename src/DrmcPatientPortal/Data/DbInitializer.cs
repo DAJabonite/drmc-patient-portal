@@ -393,10 +393,16 @@ public static class DbInitializer
         var primary = db.Users.FirstOrDefault(u => u.Id == primaryFixtureUserId);
         if (primary is not null)
         {
-            if (string.IsNullOrWhiteSpace(primary.FullName))
-                throw new InvalidOperationException("The primary fixture account must have a patient name.");
+            if (string.IsNullOrWhiteSpace(primary.FirstName) || string.IsNullOrWhiteSpace(primary.LastName))
+                throw new InvalidOperationException("The primary fixture account must have a first and last name.");
             var clinicalNow = ClinicalClock.WallTime(DateTimeOffset.UtcNow);
-            var patient = new PatientRecord { FullName = primary.FullName, DateOfBirth = primary.DateOfBirth, PortalUserId = primary.Id };
+            var patient = new PatientRecord
+            {
+                LastName = PatientNames.Clean(primary.LastName), FirstName = PatientNames.Clean(primary.FirstName),
+                MiddleName = string.IsNullOrWhiteSpace(primary.MiddleName) ? null : PatientNames.Clean(primary.MiddleName),
+                Suffix = string.IsNullOrWhiteSpace(primary.Suffix) ? null : PatientNames.Clean(primary.Suffix),
+                DateOfBirth = primary.DateOfBirth, PortalUserId = primary.Id
+            };
             db.PatientRecords.Add(patient);
             db.SaveChanges();
             // ClinicalEncounter is the persisted visit summary. PatientRecordId owns the record;

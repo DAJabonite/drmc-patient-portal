@@ -12,13 +12,13 @@ public sealed record ImportTemplate(string Name, Type InputType, string[] Column
 
 public static class ImportTemplates
 {
-    public const string ValidationVersion = "1.1.0";
+    public const string ValidationVersion = "1.2.0";
     private static string[] Columns(string fields, bool clinical = false, string context = "") =>
         (clinical ? new[] { "SourcePatientKey", "SourcePatientName", "SourceBirthDate" } : Array.Empty<string>())
         .Concat(context.Split(',', StringSplitOptions.RemoveEmptyEntries)).Concat(fields.Split(',')).ToArray();
     public static readonly IReadOnlyList<ImportTemplate> All =
     [
-        new("Patients", typeof(PatientInput), Columns("FullName,DateOfBirth,HospitalNumber", true), true),
+        new("Patients", typeof(PatientInput), Columns("LastName,FirstName,MiddleName,Suffix,DateOfBirth,HospitalNumber", true), true),
         new("Doctors", typeof(DoctorInput), Columns("FullName,Title,Department,SubSpecialty,ClinicRoom,ScheduleSummary,OffersTeleconsult,Biography,PrcLicenseMasked,IsActive"), false),
         new("PublicAdvisories", typeof(PublicAdvisoryInput), Columns("Title,Slug,Category,Priority,Summary,ContentHtml,ImageUrl,IssuingUnit,PublishedAt,EffectiveUntil,IsPinned"), false),
         new("ClinicalEncounters", typeof(EncounterInput), Columns("EncounterReference,EncounterDate,Department,Type,HistoricalDoctorName,ChiefComplaint,PrimaryDiagnosis,SecondaryDiagnosis,ClinicalSummary,CarePlanAndInstructions,VitalSignsRecorded,FollowUpDate,FollowUpNotes", true, "SourceRecordKey"), true),
