@@ -5,7 +5,11 @@ namespace DrmcPatientPortal.Models;
 public class PatientRecord
 {
     public int Id { get; set; }
-    public string FullName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
+    public string? MiddleName { get; set; }
+    public string? Suffix { get; set; }
+    public string FullName { get; private set; } = string.Empty;
     public DateTime? DateOfBirth { get; set; }
     public string? HospitalNumber { get; set; }
     public string? PortalUserId { get; set; }
