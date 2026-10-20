@@ -364,7 +364,7 @@ public sealed class ReliabilityHardeningTests(PortalFactory factory)
         var account = await Account();
         var labId = await Db(async db =>
         {
-            var patient = new PatientRecord { FullName = "PDF counter fixture", PortalUserId = account.Id };
+            var patient = new PatientRecord { FirstName = "PDF counter", LastName = "fixture", PortalUserId = account.Id };
             db.PatientRecords.Add(patient);
             var lab = new LabResult { Patient = patient, AccessionNumber = Guid.NewGuid().ToString("N"), TestName = "Counter fixture",
                 Status = "Available", CollectedAt = DateTime.Today.AddDays(-2), ReleasedAt = DateTime.Today.AddDays(-1) };
@@ -456,7 +456,7 @@ public sealed class ReliabilityHardeningTests(PortalFactory factory)
         var account = await Account();
         var patientId = await Db(async db =>
         {
-            var patient = new PatientRecord { FullName = "Pagination Fixture", PortalUserId = account.Id };
+            var patient = new PatientRecord { FirstName = "Pagination", LastName = "Fixture", PortalUserId = account.Id };
             db.PatientRecords.Add(patient); await db.SaveChangesAsync();
             for (var i = 0; i < 31; i++)
             {

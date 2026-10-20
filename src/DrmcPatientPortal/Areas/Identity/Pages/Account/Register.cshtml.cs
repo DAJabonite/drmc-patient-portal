@@ -49,9 +49,9 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
         private readonly IServiceScopeFactory _scopes;
 
         // One message for every code failure (unknown, used, revoked, expired, already linked or
-        // birth date mismatch), so the form never reveals which part was wrong.
+        // name or birth date mismatch), so the form never reveals which part was wrong.
         public const string HospitalRecordCodeError =
-            "We could not verify this hospital record code. Check the code and your date of birth on the Review step, or ask the PACD or your clinic for a new code.";
+            "We could not verify your hospital record. Check the code, your name, and your date of birth, or ask the PACD or your clinic for a new code.";
 
         // One message for every invitation failure (unknown, used, revoked, expired or a different
         // email address).
@@ -130,6 +130,10 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             [Display(Name = "Last name")]
             public string LastName { get; set; }
 
+            [StringLength(10, ErrorMessage = "The {0} must be at most {1} characters long.")]
+            [Display(Name = "Suffix (optional)")]
+            public string Suffix { get; set; }
+
             [Display(Name = "Date of birth")]
             [DataType(DataType.Date)]
             public DateTime? DateOfBirth { get; set; }
@@ -182,7 +186,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             [Compare("Password", ErrorMessage = "Passwords do not match.")]
             public string ConfirmPassword { get; set; }
 
-            [StringLength(64, ErrorMessage = "Enter the code exactly as printed (15 or 20 characters).")]
+            [StringLength(64, ErrorMessage = HospitalRecordCodeError)]
             [Display(Name = "Hospital record code")]
             public string HospitalRecordCode { get; set; }
 
@@ -345,14 +349,15 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                 var exempt = StaffInvitationMode || await _firstAdminSignup.AllowsAsync(Input.Email, HttpContext.RequestAborted);
                 if (RequireHospitalRecordCode && !exempt)
                 {
-                    await HospitalRecordLinkAudit.RejectedAsync(_auditLog, HttpContext, "missing_code");
-                    ModelState.AddModelError("Input.HospitalRecordCode", "Enter the hospital record code you received from the PACD or your clinic.");
+                    await RejectRecordCodeAsync();
+                    ModelState.AddModelError("Input.HospitalRecordCode", HospitalRecordCodeError);
                 }
             }
             else if (canonicalCode is null)
             {
-                await HospitalRecordLinkAudit.RejectedAsync(_auditLog, HttpContext, "malformed_code");
-                ModelState.AddModelError("Input.HospitalRecordCode", "Enter the code exactly as printed (15 or 20 characters).");
+                await RejectRecordCodeAsync();
+                if (!ModelState.TryGetValue("Input.HospitalRecordCode", out var codeState) || codeState.Errors.Count == 0)
+                    ModelState.AddModelError("Input.HospitalRecordCode", HospitalRecordCodeError);
             }
             else if (ModelState.IsValid)
             {
@@ -363,12 +368,12 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             if (ModelState.IsValid)
             {
                 var user = CreateUser();
-                user.FirstName = Input.FirstName?.Trim() ?? string.Empty;
-                user.MiddleName = string.IsNullOrWhiteSpace(Input.MiddleName) ? null : Input.MiddleName.Trim();
-                user.LastName = Input.LastName?.Trim() ?? string.Empty;
-                user.FullName = string.IsNullOrWhiteSpace(user.MiddleName)
-                    ? $"{user.FirstName} {user.LastName}"
-                    : $"{user.FirstName} {user.MiddleName} {user.LastName}";
+                user.FirstName = PatientNames.Clean(Input.FirstName);
+                user.MiddleName = string.IsNullOrWhiteSpace(Input.MiddleName) ? null : PatientNames.Clean(Input.MiddleName);
+                user.LastName = PatientNames.Clean(Input.LastName);
+                user.Suffix = string.IsNullOrWhiteSpace(Input.Suffix) ? null : PatientNames.Clean(Input.Suffix);
+                user.FullName = string.Join(' ', new[] { user.FirstName, user.MiddleName, user.LastName, user.Suffix }
+                    .Where(part => !string.IsNullOrWhiteSpace(part)));
                 user.ContactNumber = $"+63 {Input.Mobile?.Trim()}";
                 user.PhoneNumber = Input.Mobile?.Trim();
                 user.IdType = Input.IdType == PhilippineIdTypes.OtherGovernment
@@ -398,7 +403,6 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             var committed = false;
             var preserveFiles = false;
             var acknowledgementLost = false;
-            var linkFailure = "signup_failed";
             try
             {
                 // Identity, claims, document metadata, audit and verification email become visible together.
@@ -413,7 +417,6 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
 
                 if (recordCode is not null && !await RedeemCodeAsync(recordCode, user.Id))
                 {
-                    linkFailure = "redemption_conflict";
                     ModelState.AddModelError("Input.HospitalRecordCode", HospitalRecordCodeError);
                     return Page();
                 }
@@ -520,7 +523,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                     {
                         await using var auditScope = _scopes.CreateAsyncScope();
                         await HospitalRecordLinkAudit.RejectedAsync(auditScope.ServiceProvider.GetRequiredService<IAuditLogService>(),
-                            HttpContext, linkFailure, $"PatientRegistrationCode/{recordCode.Id}");
+                            HttpContext, "registration_rejected");
                     }
                 }
             }
@@ -628,6 +631,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                         user.FirstName,
                         user.MiddleName,
                         user.LastName,
+                        user.Suffix,
                         DateOfBirth = user.DateOfBirth?.ToString("yyyy-MM-dd"),
                         user.Address,
                         user.Sex,
@@ -648,7 +652,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
         }
 
         // A code is redeemable when it is active, its record is still unlinked and the record's birth
-        // date matches the one entered at signup.
+        // date and structured name match the values entered at signup.
         private async Task<PatientRegistrationCode> FindRedeemableCodeAsync(string canonicalCode, DateTime? dateOfBirth)
         {
             var hash = HospitalRecordCodes.Hash(canonicalCode);
@@ -658,11 +662,15 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                 .SingleOrDefaultAsync(HttpContext.RequestAborted);
             if (code is null || code.StatusAt(now) != RegistrationCodeStatus.Active || code.PatientRecord.PortalUserId is not null)
             {
-                await HospitalRecordLinkAudit.RejectedAsync(_auditLog, HttpContext, "unknown_or_inactive_code",
-                    code is null ? "PatientRegistrationCode" : $"PatientRegistrationCode/{code.Id}");
+                await RejectRecordCodeAsync();
                 return null;
             }
-            if (dateOfBirth is not null && code.PatientRecord.DateOfBirth?.Date == dateOfBirth.Value.Date) return code;
+            if (dateOfBirth is not null && code.PatientRecord.DateOfBirth?.Date == dateOfBirth.Value.Date)
+            {
+                if (PatientNames.Matches(code.PatientRecord, Input.LastName, Input.FirstName, Input.MiddleName, Input.Suffix)) return code;
+                await RejectRecordCodeAsync();
+                return null;
+            }
 
             var hasBirthDate = dateOfBirth is not null;
             var birthDate = dateOfBirth?.Date ?? DateTime.MinValue;
@@ -676,10 +684,13 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(c => c.LockedAtUtc, c => c.FailedAttemptCount == PatientRegistrationCode.MaximumFailedAttempts - 1 ? (DateTime?)now : null)
                     .SetProperty(c => c.FailedAttemptCount, c => c.FailedAttemptCount + 1), CancellationToken.None);
-            await HospitalRecordLinkAudit.RejectedAsync(_auditLog, HttpContext, "birth_date_mismatch", $"PatientRegistrationCode/{code.Id}");
+            await RejectRecordCodeAsync();
             await transaction.CommitAsync(CancellationToken.None);
             return null;
         }
+
+        private Task RejectRecordCodeAsync() =>
+            HospitalRecordLinkAudit.RejectedAsync(_auditLog, HttpContext, "registration_rejected");
 
         // Marks the code used and links the record inside the signup transaction. Conditional
         // updates make a concurrent second redemption or a revoke in between fail closed.
@@ -700,7 +711,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             }
             catch (Exception ex) when (ex is DbUpdateException or InvalidOperationException or Microsoft.Data.SqlClient.SqlException)
             {
-                _logger.LogError(ex, "Hospital record code {CodeId} could not be redeemed", code.Id);
+                _logger.LogError("Hospital record registration could not be completed.");
                 return false;
             }
         }

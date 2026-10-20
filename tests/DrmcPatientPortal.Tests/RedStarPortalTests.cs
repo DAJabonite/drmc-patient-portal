@@ -93,7 +93,7 @@ public sealed class RedStarPortalTests(PortalFactory factory)
         var date = ClinicalClock.Today.AddDays(7).ToString("MMMM d, yyyy");
         Assert.Contains(date, page); Assert.Contains(date, meds); Assert.Contains("View Red Star schedule", meds);
         Assert.DoesNotContain(b.Code, page); Assert.DoesNotContain(b.Name, page);
-        await Db(async db => { db.PatientRecords.Add(new PatientRecord { FullName = a.Name, PortalUserId = b.UserId }); await db.SaveChangesAsync(); return true; });
+        await Db(async db => { db.PatientRecords.Add(new PatientRecord { FirstName = a.Name, LastName = "Fixture", PortalUserId = b.UserId }); await db.SaveChangesAsync(); return true; });
         var bPage = await clientB.GetStringAsync("/Patient/RedStar"); Assert.DoesNotContain("PRIVATE-MEDICINE-" + a.Code[3..], bPage);
         Assert.Equal(HttpStatusCode.NotFound, (await clientB.PostFormAsync("/Patient/RedStar", "/Patient/RedStar/Confirm/" + a.AppointmentId,
             new Dictionary<string, string> { ["rowVersion"] = await Version(a.AppointmentId) })).StatusCode);
@@ -185,7 +185,7 @@ public sealed class RedStarPortalTests(PortalFactory factory)
     public async Task Historical_registration_labels_are_neutral_in_shared_views()
     {
         var unique = Guid.NewGuid().ToString("N");
-        await Db(async db => { db.PatientRegistrationCodes.Add(new PatientRegistrationCode { PatientRecord = new PatientRecord { FullName = "Synthetic legacy " + unique },
+        await Db(async db => { db.PatientRegistrationCodes.Add(new PatientRegistrationCode { PatientRecord = new PatientRecord { FirstName = "Synthetic legacy", LastName = unique },
             IssuingPoint = "Red Star Clinic", CodeHint = "ABCDE", CodeHash = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(unique)),
             IssuedAtUtc = DateTime.UtcNow, ExpiresAtUtc = DateTime.UtcNow.AddDays(1) }); await db.SaveChangesAsync(); return true; });
         var html = await (await StaffAccounts.PatientServicesAsync(factory)).GetStringAsync("/Admin/RegistrationCodes?search=" + unique);

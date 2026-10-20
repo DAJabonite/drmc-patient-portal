@@ -11,6 +11,8 @@ public class ApplicationUser : IdentityUser
 
     public string LastName { get; set; } = string.Empty;
 
+    public string? Suffix { get; set; }
+
     public string FullName { get; set; } = string.Empty;
 
     public string ContactNumber { get; set; } = string.Empty;

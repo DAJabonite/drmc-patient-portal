@@ -16,7 +16,7 @@ public static class ImportValidation
         .Select(group =>
         {
             var source = group.FirstOrDefault(row => row.Template == "Patients") ?? group.First();
-            return new ImportGroup(group.Key, source.Fields.GetValueOrDefault("FullName") ?? source.Fields["SourcePatientName"],
+            return new ImportGroup(group.Key, source.Fields["SourcePatientName"],
                 source.Fields.GetValueOrDefault("DateOfBirth") ?? source.Fields["SourceBirthDate"], group.Count(), source.Template == "Patients", source.Fields.GetValueOrDefault("HospitalNumber") ?? "");
         }).ToList();
 

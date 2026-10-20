@@ -471,7 +471,7 @@ public sealed partial class StaffInvitationTests(PortalFactory factory)
         // The shared test host has AdminBootstrap disabled, so no email is exempt.
         var email = Email();
         var response = await SignupForms.PostAsync(factory.CreatePortalClient(), SignupForms.Signup(email));
-        Assert.Contains("Enter the hospital record code you received", await response.Content.ReadAsStringAsync());
+        Assert.Contains(WebUtility.HtmlEncode(RegisterModel.HospitalRecordCodeError), await response.Content.ReadAsStringAsync());
         var page = await factory.CreatePortalClient().GetStringAsync("/Identity/Account/Register");
         Assert.Matches("id=\"hospitalRecordCode\"[^>]*data-val-required=", page);
     }
@@ -511,7 +511,7 @@ public sealed class FirstAdminSignupTests : IAsyncLifetime
 
         var other = await SignupForms.PostAsync(Client(), SignupForms.Signup("someone.else@fixtures.test"));
         Assert.Equal(HttpStatusCode.OK, other.StatusCode);
-        Assert.Contains("Enter the hospital record code you received", await other.Content.ReadAsStringAsync());
+        Assert.Contains(WebUtility.HtmlEncode(RegisterModel.HospitalRecordCodeError), await other.Content.ReadAsStringAsync());
 
         var first = await SignupForms.PostAsync(Client(), SignupForms.Signup(BootstrapEmail.ToUpperInvariant()));
         Assert.Equal(HttpStatusCode.Redirect, first.StatusCode);
@@ -531,7 +531,7 @@ public sealed class FirstAdminSignupTests : IAsyncLifetime
         await StaffAccounts.EnsureAccountAsync(_host.Services, "real.admin@fixtures.test", true, "Admin");
         var closed = await SignupForms.PostAsync(Client(), SignupForms.Signup(BootstrapEmail));
         Assert.Equal(HttpStatusCode.OK, closed.StatusCode);
-        Assert.Contains("Enter the hospital record code you received", await closed.Content.ReadAsStringAsync());
+        Assert.Contains(WebUtility.HtmlEncode(RegisterModel.HospitalRecordCodeError), await closed.Content.ReadAsStringAsync());
         Assert.Matches("id=\"hospitalRecordCode\"[^>]*data-val-required=", await Client().GetStringAsync("/Identity/Account/Register"));
     }
 }

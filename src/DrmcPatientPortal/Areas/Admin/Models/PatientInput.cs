@@ -5,8 +5,14 @@ namespace DrmcPatientPortal.Areas.Admin.Models;
 
 public sealed class PatientInput : AdminInput, IValidatableObject
 {
-    [Required, StringLength(100000), Display(Name = "Full name")]
-    public string FullName { get; set; } = "";
+    [Required, StringLength(60), Display(Name = "Last name")]
+    public string LastName { get; set; } = "";
+    [Required, StringLength(60), Display(Name = "First name")]
+    public string FirstName { get; set; } = "";
+    [StringLength(60), Display(Name = "Middle name (optional)")]
+    public string? MiddleName { get; set; }
+    [StringLength(10), Display(Name = "Suffix (optional)")]
+    public string? Suffix { get; set; }
     [DataType(DataType.Date), Display(Name = "Birth date")]
     public DateTime? DateOfBirth { get; set; }
     [StringLength(450), Display(Name = "Hospital number")]

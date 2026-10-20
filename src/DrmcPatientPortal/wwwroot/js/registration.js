@@ -512,7 +512,7 @@ $(function () {
             validator.element(staffInput);
             if (recordCodeRequired) {
                 recordCodeInput.setAttribute('required', '');
-                $(recordCodeInput).rules('add', { required: true, messages: { required: 'Enter the hospital record code you received from the PACD or your clinic.' } });
+                $(recordCodeInput).rules('add', { required: true, messages: { required: recordCodePanel.dataset.codeError } });
             }
         }
     }

@@ -71,11 +71,28 @@ public sealed class ImportsController(ApplicationDbContext db, ImportStaging sta
         try
         {
             var envelope = await staging.LoadAsync(id, cancellationToken);
-            var groups = ImportValidation.Groups(ImportParser.Parse(envelope.Content, envelope.Format, envelope.Template));
+            var rows = ImportParser.Parse(envelope.Content, envelope.Format, envelope.Template);
+            var groups = ImportValidation.Groups(rows);
             page = Math.Clamp(page, 1, Math.Max(1, (groups.Count + 24) / 25));
             var visible = groups.Skip((page - 1) * 25).Take(25).ToArray();
-            var mappings = visible.Select(group => envelope.Mappings.SingleOrDefault(mapping => mapping.SourcePatientKey == group.Key) ?? new ImportMapping
-            { SourcePatientKey = group.Key, Patient = new PatientInput { FullName = group.Name, HospitalNumber = group.HospitalNumber, DateOfBirth = DateTime.TryParseExact(group.BirthDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var date) ? date : null } }).ToList();
+            var patientRows = rows.Where(row => row.Template == "Patients").GroupBy(row => row.Fields["SourcePatientKey"].Trim(), StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.First().Fields, StringComparer.Ordinal);
+            var mappings = visible.Select(group =>
+            {
+                var fields = patientRows.GetValueOrDefault(group.Key);
+                return envelope.Mappings.SingleOrDefault(mapping => mapping.SourcePatientKey == group.Key) ?? new ImportMapping
+                {
+                    SourcePatientKey = group.Key,
+                    Patient = new PatientInput
+                    {
+                        LastName = fields?.GetValueOrDefault("LastName") ?? "", FirstName = fields?.GetValueOrDefault("FirstName") ?? "",
+                        MiddleName = fields?.GetValueOrDefault("MiddleName"), Suffix = fields?.GetValueOrDefault("Suffix"),
+                        HospitalNumber = group.HospitalNumber,
+                        DateOfBirth = DateTime.TryParseExact(group.BirthDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
+                            System.Globalization.DateTimeStyles.None, out var date) ? date : null
+                    }
+                };
+            }).ToList();
             if (groups.Count == 0)
             {
                 await PreviewAudit(id, [], cancellationToken);

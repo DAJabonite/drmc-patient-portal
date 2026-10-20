@@ -105,6 +105,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         base.OnModelCreating(builder);
         RedStarModel.Configure(builder, protection);
         builder.UseCollation("Latin1_General_100_BIN2");
+        builder.Entity<ApplicationUser>().Property(x => x.Suffix).HasMaxLength(10);
         builder.Entity<InstitutionalGuideHead>(e =>
         {
             e.HasKey(x => x.Key);
@@ -209,6 +210,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<PatientRecord>(e =>
         {
+            e.Property(x => x.LastName).IsRequired().HasMaxLength(60);
+            e.Property(x => x.FirstName).IsRequired().HasMaxLength(60);
+            e.Property(x => x.MiddleName).HasMaxLength(60);
+            e.Property(x => x.Suffix).HasMaxLength(10);
+            e.Property(x => x.FullName).HasMaxLength(194).HasComputedColumnSql(
+                "CAST(CASE WHEN [LastName] = N'' OR [FirstName] = N'' THEN N'' ELSE [LastName] + N', ' + [FirstName]" +
+                " + CASE WHEN NULLIF([MiddleName], N'') IS NULL THEN N'' ELSE N' ' + [MiddleName] END" +
+                " + CASE WHEN NULLIF([Suffix], N'') IS NULL THEN N'' ELSE N' ' + [Suffix] END END AS nvarchar(194))", stored: true);
             e.Property(x => x.HospitalNumber).HasMaxLength(450).UseCollation("Latin1_General_100_CI_AS");
             e.HasIndex(x => x.HospitalNumber).IsUnique();
             e.HasIndex(x => x.PortalUserId).IsUnique();
