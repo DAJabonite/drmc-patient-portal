@@ -46,7 +46,7 @@ internal static class SignupForms
 [Collection(PortalCollection.Name)]
 public sealed partial class StaffInvitationTests(PortalFactory factory)
 {
-    [GeneratedRegex("data-registration-code[^>]*>([0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5})<")]
+    [GeneratedRegex("data-registration-code[^>]*>([0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5})<")]
     private static partial Regex IssuedCode();
 
     private sealed class RecordingEmailSender : IEmailSender
@@ -171,7 +171,7 @@ public sealed partial class StaffInvitationTests(PortalFactory factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("no-store", response.Headers.CacheControl?.ToString());
         var code = IssuedCode().Match(html).Groups[1].Value;
-        Assert.Matches("^[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}$", code);
+        Assert.Matches("^[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}$", code);
         Assert.Contains("<svg", html);
         Assert.Contains("We queued the signup link", html);
         Assert.Empty(sender.Messages);
@@ -424,7 +424,7 @@ public sealed partial class StaffInvitationTests(PortalFactory factory)
         await AssertRejectedAsync(email, HospitalRecordCodes.Generate()); // unknown code
         await AssertRejectedAsync(expiredEmail, expired);
         var malformed = await SignupForms.PostAsync(factory.CreatePortalClient(), SignupForms.Signup(Email(), invitation: "ABC-123"));
-        Assert.Contains("Enter the 15-character invitation code", await malformed.Content.ReadAsStringAsync());
+        Assert.Contains("Enter the invitation code exactly as sent (15 or 20 characters)", await malformed.Content.ReadAsStringAsync());
 
         Assert.Equal(HttpStatusCode.Redirect, (await SignupForms.PostAsync(factory.CreatePortalClient(), SignupForms.Signup(email, invitation: code))).StatusCode);
         var replay = Email();

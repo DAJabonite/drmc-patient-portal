@@ -197,6 +197,9 @@ public sealed class PortalRequestControls(RequestDelegate next)
     }
     private static async Task Rejected(HttpContext context, PortalRequestKind kind, RateLimitLease lease)
     {
+        if (kind != PortalRequestKind.Scan && HttpMethods.IsPost(context.Request.Method) &&
+            (context.Request.Path.Value ?? "").TrimEnd('/').Equals("/Identity/Account/Register", StringComparison.OrdinalIgnoreCase))
+            await HospitalRecordLinkAudit.RejectedAsync(context.RequestServices.GetRequiredService<IAuditLogService>(), context, "rate_limited");
         var retry = lease.TryGetMetadata(MetadataName.RetryAfter, out var delay) ? delay.TotalSeconds : kind == PortalRequestKind.Email ? 900 : 60;
         context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
         context.Response.Headers.RetryAfter = Math.Max(1, (int)Math.Ceiling(retry)).ToString(CultureInfo.InvariantCulture);

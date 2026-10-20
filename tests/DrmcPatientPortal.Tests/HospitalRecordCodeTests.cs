@@ -14,10 +14,10 @@ namespace DrmcPatientPortal.Tests;
 public sealed class HospitalRecordCodeFormatTests
 {
     [Fact]
-    public void Generated_codes_are_15_unambiguous_characters_in_three_groups()
+    public void Generated_codes_are_20_unambiguous_characters_in_four_groups()
     {
         var codes = Enumerable.Range(0, 500).Select(_ => HospitalRecordCodes.Generate()).ToArray();
-        Assert.All(codes, code => Assert.Matches("^[0-9A-HJKMNP-TV-Z]{5}-[0-9A-HJKMNP-TV-Z]{5}-[0-9A-HJKMNP-TV-Z]{5}$", code));
+        Assert.All(codes, code => Assert.Matches("^[0-9A-HJKMNP-TV-Z]{5}(-[0-9A-HJKMNP-TV-Z]{5}){3}$", code));
         Assert.Equal(codes.Length, codes.Distinct().Count());
     }
 
@@ -54,7 +54,7 @@ public sealed partial class HospitalRecordCodeTests(PortalFactory factory)
 {
     private static readonly DateTime BirthDate = new(1988, 3, 14);
 
-    [GeneratedRegex("data-registration-code[^>]*>([0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5})<")]
+    [GeneratedRegex("data-registration-code[^>]*>([0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5})<")]
     private static partial Regex IssuedCode();
 
     private async Task<int> NewPatientAsync(DateTime? birthDate = null, bool noBirthDate = false)
@@ -294,7 +294,7 @@ public sealed partial class HospitalRecordCodeTests(PortalFactory factory)
     {
         var response = await SignupAsync(factory.CreatePortalClient(), Email(), "ABC-123", BirthDate);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("Enter the 15-character code exactly as printed", await response.Content.ReadAsStringAsync());
+        Assert.Contains("Enter the code exactly as printed (15 or 20 characters)", await response.Content.ReadAsStringAsync());
     }
 
     private HttpClient OptionalModeClient(out IDisposable host)

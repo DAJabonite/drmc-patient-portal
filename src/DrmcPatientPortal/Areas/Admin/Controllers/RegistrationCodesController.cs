@@ -71,7 +71,7 @@ public sealed class RegistrationCodesController(ApplicationDbContext db, AdminWr
             var now = DateTime.UtcNow;
             // One active code per record: issuing a new one replaces any earlier code.
             var active = await database.PatientRegistrationCodes.Where(c => c.PatientRecordId == id && c.RedeemedAtUtc == null &&
-                c.RevokedAtUtc == null && c.ExpiresAtUtc > now).ToListAsync(cancellationToken);
+                c.RevokedAtUtc == null && c.LockedAtUtc == null && c.FailedAttemptCount < PatientRegistrationCode.MaximumFailedAttempts && c.ExpiresAtUtc > now).ToListAsync(cancellationToken);
             foreach (var earlier in active) earlier.RevokedAtUtc = now;
             var canonical = HospitalRecordCodes.Normalize(HospitalRecordCodes.Generate())!;
             var issuedBy = await database.Users.AsNoTracking().Where(u => u.Id == ActorId).Select(u => new { u.Id, u.Email }).SingleAsync(cancellationToken);
@@ -148,7 +148,7 @@ public sealed class RegistrationCodesController(ApplicationDbContext db, AdminWr
         await AdminAudit.ViewAsync(db, User, Entity, [patient.Id], "Create", token);
         var now = DateTime.UtcNow;
         var active = await db.PatientRegistrationCodes.CountAsync(c => c.PatientRecordId == patient.Id && c.RedeemedAtUtc == null &&
-            c.RevokedAtUtc == null && c.ExpiresAtUtc > now, token);
+            c.RevokedAtUtc == null && c.LockedAtUtc == null && c.FailedAttemptCount < PatientRegistrationCode.MaximumFailedAttempts && c.ExpiresAtUtc > now, token);
         ViewData["LifetimeDays"] = (int)options.Value.CodeLifetime.TotalDays;
         return View("Create", new RegistrationCodeIssuePage(new(patient, "Hospital record code", patient.Id), input,
             patient.PortalUserId is not null, patient.DateOfBirth is not null, active));

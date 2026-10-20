@@ -1032,6 +1032,11 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Property<DateTime>("ExpiresAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("FailedAttemptCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<DateTime>("IssuedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -1049,6 +1054,9 @@ namespace DrmcPatientPortal.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(80)
                         .HasColumnType("nvarchar(80)");
+
+                    b.Property<DateTime?>("LockedAtUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("PatientRecordId")
                         .HasColumnType("int");
@@ -1076,7 +1084,10 @@ namespace DrmcPatientPortal.Data.Migrations
 
                     b.HasIndex("PatientRecordId");
 
-                    b.ToTable("PatientRegistrationCodes");
+                    b.ToTable("PatientRegistrationCodes", t =>
+                        {
+                            t.HasCheckConstraint("CK_PatientRegistrationCodes_FailedAttemptCount", "[FailedAttemptCount] BETWEEN 0 AND 5");
+                        });
                 });
 
             modelBuilder.Entity("DrmcPatientPortal.Models.PortalSession", b =>

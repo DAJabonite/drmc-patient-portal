@@ -66,7 +66,7 @@ public static class AdminChips
             "available" or "final" or "linked" or "redeemed" or "activated" or "active" or "succeeded" or "completed" or "normal" or "valid" or "yes" or "mild" => ChipTone.Success,
             "in progress" or "awaiting setup" or "pending verification" or "staged" or "validated" or "queued" or "running" or "validationqueued"
                 or "validating" or "approvalqueued" or "approving" or "moderate" or "on hold" or "onhold" => ChipTone.Warning,
-            "failed" or "severe" or "critical" or "high" or "low" or "critical high" or "critical low" => ChipTone.Danger,
+            "failed" or "locked" or "severe" or "critical" or "high" or "low" or "critical high" or "critical low" => ChipTone.Danger,
             "unlinked" or "cancelled" or "expired" or "revoked" or "discontinued" or "inactive" or "no" => ChipTone.Neutral,
             _ => ChipTone.Info,
         };
