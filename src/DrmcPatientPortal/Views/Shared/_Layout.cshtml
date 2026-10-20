@@ -38,8 +38,11 @@
     <header class="masthead d-none d-lg-block" role="banner">
         <div class="container d-flex justify-content-between align-items-center gap-4">
             <a class="d-inline-block" asp-area="" asp-controller="Home" asp-action="Index" aria-label="Davao Regional Medical Center home">
-                <img class="masthead-lockup" src="~/images/drmc-masthead.png"
-                     alt="Davao Regional Medical Center, Republic of the Philippines, Department of Health, Brgy. Apokon, Tagum City, Davao del Norte" />
+                <picture>
+                    <source srcset="@Url.Content("~/images/drmc-masthead.webp")" type="image/webp" />
+                    <img class="masthead-lockup" src="~/images/drmc-masthead.png" width="1123" height="100" decoding="async"
+                         alt="Davao Regional Medical Center, Republic of the Philippines, Department of Health, Brgy. Apokon, Tagum City, Davao del Norte" />
+                </picture>
             </a>
 
             <div class="masthead-tools d-flex align-items-center gap-3">
@@ -84,8 +87,11 @@
     <header class="mobile-header d-lg-none" role="banner">
         <div class="container-fluid justify-content-between gap-2">
             <a class="mobile-brand" asp-area="" asp-controller="Home" asp-action="Index" aria-label="Davao Regional Medical Center home">
-                <img src="~/images/drmc-masthead.png"
-                     alt="Davao Regional Medical Center, Department of Health" />
+                <picture>
+                    <source srcset="@Url.Content("~/images/drmc-masthead.webp")" type="image/webp" />
+                    <img src="~/images/drmc-masthead.png" width="1123" height="100" decoding="async"
+                         alt="Davao Regional Medical Center, Department of Health" />
+                </picture>
             </a>
             <button class="mobile-menu-trigger" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileUtilityMenu"
                     aria-controls="mobileUtilityMenu" aria-label="@Loc["Mobile_Menu"]">
@@ -145,7 +151,10 @@
     <footer class="footer-drmc" role="contentinfo">
         <div class="container">
             <div class="footer-primary">
-                <img class="footer-seal" src="~/images/drmc-seal.png" alt="Davao Regional Medical Center seal" />
+                <picture class="footer-seal">
+                    <source srcset="@Url.Content("~/images/drmc-seal.webp")" type="image/webp" />
+                    <img src="~/images/drmc-seal.png" width="100" height="97" loading="lazy" decoding="async" alt="Davao Regional Medical Center seal" />
+                </picture>
                 <div>
                     <h2 class="h6 text-white mb-1">Davao Regional Medical Center</h2>
                     <p class="mb-0">Brgy. Apokon, Tagum City, Davao del Norte<br />@Loc["Header_Tagline"]</p>
@@ -207,7 +216,7 @@
 
     <partial name="_MobileNavigation" />
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery/jquery.min.js"></script>
     <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)

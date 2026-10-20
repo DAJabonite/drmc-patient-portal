@@ -26,7 +26,10 @@
         <aside class="admin-sidebar offcanvas-lg offcanvas-start" id="adminSidebar" tabindex="-1" aria-label="Admin navigation">
             <div class="admin-sidebar-brand">
                 <a asp-area="Admin" asp-controller="Home" asp-action="Index" class="admin-brand-link">
-                    <img src="~/images/drmc-seal.png" alt="" width="36" height="36" />
+                    <picture>
+                        <source srcset="@Url.Content("~/images/drmc-seal.webp")" type="image/webp" />
+                        <img src="~/images/drmc-seal.png" alt="" width="36" height="36" decoding="async" />
+                    </picture>
                     <span class="admin-brand-name">DRMC Admin</span>
                 </a>
                 <button type="button" class="btn-close btn-close-white d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#adminSidebar" aria-label="Close navigation"></button>
@@ -106,7 +109,7 @@
             </main>
         </div>
     </div>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery/jquery.min.js"></script>
     <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/admin.js" asp-append-version="true"></script>

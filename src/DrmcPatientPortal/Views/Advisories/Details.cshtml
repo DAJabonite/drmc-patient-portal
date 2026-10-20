@@ -56,7 +56,10 @@
             <!-- Verification Footer -->
             <div class="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between flex-wrap gap-2 mt-4">
                 <div class="d-flex align-items-center gap-2">
-                    <img src="~/images/drmc-seal.png" alt="DRMC Seal" style="height: 36px; width: auto;" />
+                    <picture>
+                        <source srcset="@Url.Content("~/images/drmc-seal.webp")" type="image/webp" />
+                        <img src="~/images/drmc-seal.png" width="100" height="97" loading="lazy" decoding="async" alt="DRMC Seal" style="height: 36px; width: auto;" />
+                    </picture>
                     <div class="small text-muted">
                         <strong class="text-dark d-block">Official DRMC Public Health Release</strong>
                         Republic of the Philippines &middot; Department of Health
