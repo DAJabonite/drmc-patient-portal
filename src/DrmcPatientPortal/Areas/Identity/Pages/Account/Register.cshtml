@@ -348,7 +348,7 @@
 
                             <!-- Hospital record code (from PACD or a clinic desk) -->
                             <div class="col-12 mt-3">
-                                <div class="registration-record-code p-3 rounded-3 border @(Model.StaffInvitationMode ? "d-none" : "")" id="hospitalRecordCodePanel" data-code-required="@((Model.RequireHospitalRecordCode && !Model.FirstAdminSetupOpen) ? "true" : "false")">
+                                <div class="registration-record-code p-3 rounded-3 border @(Model.StaffInvitationMode ? "d-none" : "")" id="hospitalRecordCodePanel" data-code-required="@((Model.RequireHospitalRecordCode && !Model.FirstAdminSetupOpen) ? "true" : "false")" data-code-error="@RegisterModel.HospitalRecordCodeError">
                                     <div class="d-flex gap-3 align-items-start">
                                         <span class="registration-record-code-icon" aria-hidden="true"><i class="bi bi-hospital"></i></span>
                                         <div class="flex-grow-1 registration-record-code-body">

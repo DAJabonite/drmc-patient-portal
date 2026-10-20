@@ -512,7 +512,7 @@ $(function () {
             validator.element(staffInput);
             if (recordCodeRequired) {
                 recordCodeInput.setAttribute('required', '');
-                $(recordCodeInput).rules('add', { required: true, messages: { required: recordCodeInput.dataset.valRequired } });
+                $(recordCodeInput).rules('add', { required: true, messages: { required: recordCodePanel.dataset.codeError } });
             }
         }
     }
