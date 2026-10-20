@@ -90,7 +90,7 @@ public sealed class RadiologyAdminTests(PortalFactory factory)
         var client = await StaffAccounts.AdminAsync(factory);
         var patient = await Db(async db =>
         {
-            var record = new PatientRecord { FullName = "Synthetic Deletion Blocked" };
+            var record = new PatientRecord { FirstName = "Synthetic", LastName = "Deletion Blocked" };
             db.PatientRecords.Add(record);
             await db.SaveChangesAsync();
             db.RadiologyStudies.Add(new RadiologyStudy

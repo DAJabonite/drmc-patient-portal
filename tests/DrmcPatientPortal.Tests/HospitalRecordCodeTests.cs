@@ -61,7 +61,7 @@ public sealed partial class HospitalRecordCodeTests(PortalFactory factory)
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var record = new PatientRecord { FullName = "Synthetic Code Patient " + Guid.NewGuid().ToString("N")[..6], DateOfBirth = noBirthDate ? null : birthDate ?? BirthDate };
+        var record = new PatientRecord { FirstName = "Synthetic", LastName = "Signup", DateOfBirth = noBirthDate ? null : birthDate ?? BirthDate };
         db.PatientRecords.Add(record);
         await db.SaveChangesAsync();
         return record.Id;
@@ -290,11 +290,11 @@ public sealed partial class HospitalRecordCodeTests(PortalFactory factory)
     }
 
     [Fact]
-    public async Task Malformed_code_shows_a_format_error()
+    public async Task Malformed_code_shows_the_generic_error()
     {
         var response = await SignupAsync(factory.CreatePortalClient(), Email(), "ABC-123", BirthDate);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("Enter the code exactly as printed (15 or 20 characters)", await response.Content.ReadAsStringAsync());
+        Assert.Contains(System.Net.WebUtility.HtmlEncode(RegisterModel.HospitalRecordCodeError), await response.Content.ReadAsStringAsync());
     }
 
     private HttpClient OptionalModeClient(out IDisposable host)
@@ -324,7 +324,7 @@ public sealed partial class HospitalRecordCodeTests(PortalFactory factory)
             var email = Email();
             var response = await SignupAsync(client, email, code, BirthDate);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            Assert.Contains("Enter the hospital record code you received", await response.Content.ReadAsStringAsync());
+            Assert.Contains(System.Net.WebUtility.HtmlEncode(RegisterModel.HospitalRecordCodeError), await response.Content.ReadAsStringAsync());
             using var scope = factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             Assert.False(await db.Users.AnyAsync(u => u.Email == email));
