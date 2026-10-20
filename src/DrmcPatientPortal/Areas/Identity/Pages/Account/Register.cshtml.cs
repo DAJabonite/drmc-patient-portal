@@ -182,11 +182,11 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             [Compare("Password", ErrorMessage = "Passwords do not match.")]
             public string ConfirmPassword { get; set; }
 
-            [StringLength(64, ErrorMessage = "Enter the 15-character code exactly as printed.")]
+            [StringLength(64, ErrorMessage = "Enter the code exactly as printed (15 or 20 characters).")]
             [Display(Name = "Hospital record code")]
             public string HospitalRecordCode { get; set; }
 
-            [StringLength(64, ErrorMessage = "Enter the 15-character invitation code exactly as sent.")]
+            [StringLength(64, ErrorMessage = "Enter the invitation code exactly as sent (15 or 20 characters).")]
             [Display(Name = "Staff invitation code")]
             public string StaffInvitationCode { get; set; }
 
@@ -329,7 +329,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             {
                 var canonicalInvite = HospitalRecordCodes.Normalize(Input.StaffInvitationCode);
                 if (canonicalInvite is null)
-                    ModelState.AddModelError("Input.StaffInvitationCode", "Enter the 15-character invitation code exactly as sent, for example 7KQ2M-X9D4T-H3VNP.");
+                    ModelState.AddModelError("Input.StaffInvitationCode", "Enter the invitation code exactly as sent (15 or 20 characters).");
                 else if (ModelState.IsValid)
                 {
                     invitation = await FindAcceptableInvitationAsync(canonicalInvite, Input.Email);
@@ -344,11 +344,15 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                 // A staff invitation or first-Admin setup replaces the hospital record code.
                 var exempt = StaffInvitationMode || await _firstAdminSignup.AllowsAsync(Input.Email, HttpContext.RequestAborted);
                 if (RequireHospitalRecordCode && !exempt)
+                {
+                    await HospitalRecordLinkAudit.RejectedAsync(_auditLog, HttpContext, "missing_code");
                     ModelState.AddModelError("Input.HospitalRecordCode", "Enter the hospital record code you received from the PACD or your clinic.");
+                }
             }
             else if (canonicalCode is null)
             {
-                ModelState.AddModelError("Input.HospitalRecordCode", "Enter the 15-character code exactly as printed, for example 7KQ2M-X9D4T-H3VNP.");
+                await HospitalRecordLinkAudit.RejectedAsync(_auditLog, HttpContext, "malformed_code");
+                ModelState.AddModelError("Input.HospitalRecordCode", "Enter the code exactly as printed (15 or 20 characters).");
             }
             else if (ModelState.IsValid)
             {
@@ -394,6 +398,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             var committed = false;
             var preserveFiles = false;
             var acknowledgementLost = false;
+            var linkFailure = "signup_failed";
             try
             {
                 // Identity, claims, document metadata, audit and verification email become visible together.
@@ -408,6 +413,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
 
                 if (recordCode is not null && !await RedeemCodeAsync(recordCode, user.Id))
                 {
+                    linkFailure = "redemption_conflict";
                     ModelState.AddModelError("Input.HospitalRecordCode", HospitalRecordCodeError);
                     return Page();
                 }
@@ -508,6 +514,14 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                     _db.ChangeTracker.Clear();
                     if (!preserveFiles && document is not null)
                         await DeleteRegistrationFilesAsync(user.Id, document.FrontPhotoFileName, document.BackPhotoFileName);
+                    // This audit must survive rollback, without retaining the rolled-back account ID.
+                    // An uncertain commit is not classified as a rejected link.
+                    if (!preserveFiles && recordCode is not null)
+                    {
+                        await using var auditScope = _scopes.CreateAsyncScope();
+                        await HospitalRecordLinkAudit.RejectedAsync(auditScope.ServiceProvider.GetRequiredService<IAuditLogService>(),
+                            HttpContext, linkFailure, $"PatientRegistrationCode/{recordCode.Id}");
+                    }
                 }
             }
 
@@ -637,14 +651,34 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
         // date matches the one entered at signup.
         private async Task<PatientRegistrationCode> FindRedeemableCodeAsync(string canonicalCode, DateTime? dateOfBirth)
         {
-            if (dateOfBirth is null) return null;
             var hash = HospitalRecordCodes.Hash(canonicalCode);
             var now = DateTime.UtcNow;
-            var birthDate = dateOfBirth.Value.Date;
-            return await _db.PatientRegistrationCodes.AsNoTracking()
-                .Where(c => c.CodeHash == hash && c.RedeemedAtUtc == null && c.RevokedAtUtc == null && c.ExpiresAtUtc > now &&
-                    c.PatientRecord.PortalUserId == null && c.PatientRecord.DateOfBirth != null && c.PatientRecord.DateOfBirth.Value.Date == birthDate)
+            var code = await _db.PatientRegistrationCodes.AsNoTracking().Include(c => c.PatientRecord)
+                .Where(c => c.CodeHash == hash)
                 .SingleOrDefaultAsync(HttpContext.RequestAborted);
+            if (code is null || code.StatusAt(now) != RegistrationCodeStatus.Active || code.PatientRecord.PortalUserId is not null)
+            {
+                await HospitalRecordLinkAudit.RejectedAsync(_auditLog, HttpContext, "unknown_or_inactive_code",
+                    code is null ? "PatientRegistrationCode" : $"PatientRegistrationCode/{code.Id}");
+                return null;
+            }
+            if (dateOfBirth is not null && code.PatientRecord.DateOfBirth?.Date == dateOfBirth.Value.Date) return code;
+
+            var hasBirthDate = dateOfBirth is not null;
+            var birthDate = dateOfBirth?.Date ?? DateTime.MinValue;
+            // Increment from the database value, not the earlier read. This short transaction commits
+            // the attempt and its audit together, independently of any later signup transaction.
+            await using var transaction = await _db.Database.BeginTransactionAsync(CancellationToken.None);
+            await _db.PatientRegistrationCodes.Where(c => c.Id == code.Id && c.RedeemedAtUtc == null && c.RevokedAtUtc == null &&
+                    c.LockedAtUtc == null && c.FailedAttemptCount < PatientRegistrationCode.MaximumFailedAttempts &&
+                    c.ExpiresAtUtc > DateTime.UtcNow && c.PatientRecord.PortalUserId == null &&
+                    (!hasBirthDate || c.PatientRecord.DateOfBirth == null || c.PatientRecord.DateOfBirth.Value.Date != birthDate))
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(c => c.LockedAtUtc, c => c.FailedAttemptCount == PatientRegistrationCode.MaximumFailedAttempts - 1 ? (DateTime?)now : null)
+                    .SetProperty(c => c.FailedAttemptCount, c => c.FailedAttemptCount + 1), CancellationToken.None);
+            await HospitalRecordLinkAudit.RejectedAsync(_auditLog, HttpContext, "birth_date_mismatch", $"PatientRegistrationCode/{code.Id}");
+            await transaction.CommitAsync(CancellationToken.None);
+            return null;
         }
 
         // Marks the code used and links the record inside the signup transaction. Conditional
@@ -655,10 +689,12 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             try
             {
                 var redeemed = await _db.PatientRegistrationCodes
-                    .Where(c => c.Id == code.Id && c.RedeemedAtUtc == null && c.RevokedAtUtc == null && c.ExpiresAtUtc > now)
+                    .Where(c => c.Id == code.Id && c.RowVersion == code.RowVersion && c.RedeemedAtUtc == null &&
+                        c.RevokedAtUtc == null && c.LockedAtUtc == null && c.FailedAttemptCount < PatientRegistrationCode.MaximumFailedAttempts && c.ExpiresAtUtc > now)
                     .ExecuteUpdateAsync(s => s.SetProperty(c => c.RedeemedAtUtc, now).SetProperty(c => c.RedeemedByUserId, userId), CancellationToken.None);
                 var linked = redeemed == 1 && await _db.PatientRecords
-                    .Where(p => p.Id == code.PatientRecordId && p.PortalUserId == null)
+                    .Where(p => p.Id == code.PatientRecordId && p.RowVersion == code.PatientRecord.RowVersion && p.PortalUserId == null &&
+                        p.DateOfBirth != null && p.DateOfBirth.Value.Date == code.PatientRecord.DateOfBirth.Value.Date)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.PortalUserId, userId), CancellationToken.None) == 1;
                 return linked;
             }

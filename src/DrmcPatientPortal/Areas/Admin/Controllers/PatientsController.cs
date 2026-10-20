@@ -2,12 +2,13 @@ using DrmcPatientPortal.Areas.Admin.Models;
 using DrmcPatientPortal.Areas.Admin.Services;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace DrmcPatientPortal.Areas.Admin.Controllers;
 
-public sealed class PatientsController(ApplicationDbContext db, AdminWrites writes) :
+public sealed class PatientsController(ApplicationDbContext db, AdminWrites writes, IAuditLogService audit) :
     AdminCrudController<PatientRecord, PatientInput>(db, writes, new PatientEditor())
 {
     [HttpGet]
@@ -29,7 +30,11 @@ public sealed class PatientsController(ApplicationDbContext db, AdminWrites writ
     private async Task<IActionResult> ChangeLink(int id, PatientLinkInput input, bool unlink, CancellationToken token)
     {
         var patient = await Find(Database, id, token);
-        if (patient is null) return AdminConflicts.Missing(this);
+        if (patient is null)
+        {
+            await HospitalRecordLinkAudit.RejectedAsync(audit, HttpContext, "staff_record_missing", $"PatientRecord/{id}");
+            return AdminConflicts.Missing(this);
+        }
         var version = AdminAudit.Version(input.RowVersion);
         if (version is null) ModelState.AddModelError(nameof(input.RowVersion), "Reload the patient record before continuing.");
         if (ModelState.IsValid)
@@ -57,6 +62,10 @@ public sealed class PatientsController(ApplicationDbContext db, AdminWrites writ
                 database.Entry(current).Property(p => p.RowVersion).OriginalValue = version!;
                 current.PortalUserId = unlink ? null : account.Id;
                 await database.SaveChangesAsync(token);
+                // Previously issued codes must never become usable again after a staff unlink.
+                var now = DateTime.UtcNow;
+                await database.PatientRegistrationCodes.Where(c => c.PatientRecordId == id && c.RedeemedAtUtc == null && c.RevokedAtUtc == null)
+                    .ExecuteUpdateAsync(s => s.SetProperty(c => c.RevokedAtUtc, now), token);
                 await AdminAudit.AddAsync(database, User, unlink ? "Unlink" : "Link", "Patients", id.ToString(), id,
                     fields: [nameof(PatientRecord.PortalUserId)], cancellationToken: token);
                 return WriteResult.Success;
@@ -65,6 +74,7 @@ public sealed class PatientsController(ApplicationDbContext db, AdminWrites writ
             if (result.Conflict) Response.StatusCode = StatusCodes.Status409Conflict;
             ModelState.AddModelError("", result.Error!);
         }
+        await HospitalRecordLinkAudit.RejectedAsync(audit, HttpContext, unlink ? "staff_unlink_rejected" : "staff_link_rejected", $"PatientRecord/{id}");
         return await LinkPage(patient, input, token);
     }
 

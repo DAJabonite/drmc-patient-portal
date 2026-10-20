@@ -429,7 +429,7 @@ $(function () {
         }
     });
 
-    // Hospital record code: format as XXXXX-XXXXX-XXXXX, prefill from a QR link (#code=...), and
+    // Hospital record code: format in groups of five (20 characters; legacy 15 accepted), prefill from a QR link (#code=...), and
     // scan a QR with the camera where the browser supports BarcodeDetector.
     const recordCodeInput = document.getElementById('hospitalRecordCode');
     const recordCodePanel = document.getElementById('hospitalRecordCodePanel');
@@ -448,7 +448,7 @@ $(function () {
             const c = raw === 'O' ? '0' : (raw === 'I' || raw === 'L') ? '1' : raw;
             if (codeAlphabet.includes(c)) out += c;
         }
-        return out.slice(0, 15);
+        return out; // Do not silently truncate an overlong code into a valid one.
     }
 
     function formatCode(value) {
@@ -469,7 +469,7 @@ $(function () {
 
     function setRecordCode(value, message) {
         recordCodeInput.value = formatCode(value);
-        recordCodePanel.classList.toggle('is-filled', canonicalCode(recordCodeInput.value).length === 15);
+        recordCodePanel.classList.toggle('is-filled', [15, 20].includes(canonicalCode(recordCodeInput.value).length));
         recordCodeStatus.textContent = message || '';
         if (recordCodeInput.value) validator.element(recordCodeInput);
     }
@@ -478,7 +478,7 @@ $(function () {
         const caret = recordCodeInput.selectionStart === recordCodeInput.value.length;
         const formatted = formatCode(recordCodeInput.value);
         if (formatted !== recordCodeInput.value && caret) recordCodeInput.value = formatted;
-        recordCodePanel.classList.toggle('is-filled', canonicalCode(recordCodeInput.value).length === 15);
+        recordCodePanel.classList.toggle('is-filled', [15, 20].includes(canonicalCode(recordCodeInput.value).length));
         recordCodeStatus.textContent = '';
     });
     recordCodeInput.addEventListener('blur', function () {
@@ -505,7 +505,7 @@ $(function () {
             $(recordCodeInput).rules('remove', 'required');
             validator.element(recordCodeInput);
             if (invite) staffInput.value = formatCode(invite);
-            staffPanel.classList.toggle('is-filled', canonicalCode(staffInput.value).length === 15);
+            staffPanel.classList.toggle('is-filled', [15, 20].includes(canonicalCode(staffInput.value).length));
         } else {
             staffInput.value = '';
             staffPanel.classList.remove('is-filled');
@@ -521,7 +521,7 @@ $(function () {
         const caret = staffInput.selectionStart === staffInput.value.length;
         const formatted = formatCode(staffInput.value);
         if (formatted !== staffInput.value && caret) staffInput.value = formatted;
-        staffPanel.classList.toggle('is-filled', canonicalCode(staffInput.value).length === 15);
+        staffPanel.classList.toggle('is-filled', [15, 20].includes(canonicalCode(staffInput.value).length));
     });
     staffInput.addEventListener('blur', function () {
         if (staffInput.value) staffInput.value = formatCode(staffInput.value);
@@ -582,7 +582,7 @@ $(function () {
                         const value = codeFromScan(found[0].rawValue);
                         stopScan();
                         if (value === null) return;
-                        if (canonicalCode(value).length === 15) {
+                        if ([15, 20].includes(canonicalCode(value).length)) {
                             setRecordCode(value, 'Code scanned. Check that it matches your slip.');
                         } else {
                             recordCodeStatus.textContent = 'That QR code is not a DRMC hospital record code. Type the code printed on your slip.';

@@ -13,7 +13,7 @@ public sealed class StaffInvitationOptions
     public TimeSpan Lifetime => TimeSpan.FromDays(Math.Clamp(LifetimeDays, 1, 14));
 }
 
-// Invitation codes use the hospital record code format (15 Crockford base32 characters, 75 random
+// Invitation codes use the hospital record code format (20 Crockford base32 characters, 100 random
 // bits) but live in their own table and travel in their own URL fragment key.
 public static class StaffInvitationCodes
 {

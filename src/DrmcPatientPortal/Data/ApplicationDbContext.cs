@@ -218,6 +218,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<PatientRegistrationCode>(e =>
         {
+            e.Property(x => x.FailedAttemptCount).HasDefaultValue(0);
+            e.ToTable(t => t.HasCheckConstraint("CK_PatientRegistrationCodes_FailedAttemptCount", "[FailedAttemptCount] BETWEEN 0 AND 5"));
             e.HasOne(x => x.PatientRecord).WithMany()
                 .HasForeignKey(x => x.PatientRecordId).OnDelete(DeleteBehavior.Cascade);
             e.Property(x => x.CodeHash).HasMaxLength(32).IsFixedLength();

@@ -3,13 +3,13 @@ using System.Text;
 
 namespace DrmcPatientPortal.Services;
 
-// Hospital record codes: 15 Crockford base32 characters (75 random bits) shown as XXXXX-XXXXX-XXXXX.
+// New codes contain 20 Crockford base32 characters (100 random bits), in four groups of five.
+// Previously issued 15-character codes remain acceptable until their normal expiry.
 // Input is not case-sensitive and ignores spaces and hyphens; O, I and L are read as 0, 1 and 1.
 public static class HospitalRecordCodes
 {
-    public const int Length = 15, GroupLength = 5;
-    // Formatted length including the two hyphens, used for input limits.
-    public const int DisplayLength = Length + 2;
+    public const int Length = 20, LegacyLength = 15, GroupLength = 5;
+    public const int DisplayLength = Length + Length / GroupLength - 1;
     private const string Alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
     public const string FragmentKey = "code";
 
@@ -20,7 +20,7 @@ public static class HospitalRecordCodes
         return Format(new string(chars));
     }
 
-    // Returns the canonical 15-character form, or null when the input cannot be a valid code.
+    // Returns the canonical current or legacy form, without truncating invalid extra characters.
     public static string? Normalize(string? input)
     {
         if (string.IsNullOrWhiteSpace(input) || input.Length > 64) return null;
@@ -32,11 +32,14 @@ public static class HospitalRecordCodes
             if (Alphabet.IndexOf(c) < 0) return null;
             builder.Append(c);
         }
-        return builder.Length == Length ? builder.ToString() : null;
+        return builder.Length is Length or LegacyLength ? builder.ToString() : null;
     }
 
-    public static string Format(string canonical) =>
-        string.Join('-', Enumerable.Range(0, Length / GroupLength).Select(i => canonical.Substring(i * GroupLength, GroupLength)));
+    public static string Format(string canonical)
+    {
+        if (canonical.Length is not (Length or LegacyLength)) throw new ArgumentException("Invalid code length.", nameof(canonical));
+        return string.Join('-', Enumerable.Range(0, canonical.Length / GroupLength).Select(i => canonical.Substring(i * GroupLength, GroupLength)));
+    }
 
     public static byte[] Hash(string canonical) => SHA256.HashData(Encoding.ASCII.GetBytes(canonical));
 

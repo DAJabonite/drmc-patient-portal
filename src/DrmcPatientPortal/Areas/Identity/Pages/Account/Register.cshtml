@@ -358,11 +358,11 @@
                                             <div class="input-group">
                                                 @if (Model.RequireCodeInBrowser)
                                                 {
-                                                    <input asp-for="Input.HospitalRecordCode" id="hospitalRecordCode" class="form-control registration-code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX" aria-describedby="hospitalRecordCodeHelp hospitalRecordCodeStatus" data-val-required="Enter the hospital record code you received from the PACD or your clinic." required />
+                                                    <input asp-for="Input.HospitalRecordCode" id="hospitalRecordCode" class="form-control registration-code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" aria-describedby="hospitalRecordCodeHelp hospitalRecordCodeStatus" data-val-required="Enter the hospital record code you received from the PACD or your clinic." required />
                                                 }
                                                 else
                                                 {
-                                                    <input asp-for="Input.HospitalRecordCode" id="hospitalRecordCode" class="form-control registration-code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX" aria-describedby="hospitalRecordCodeHelp hospitalRecordCodeStatus" />
+                                                    <input asp-for="Input.HospitalRecordCode" id="hospitalRecordCode" class="form-control registration-code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" aria-describedby="hospitalRecordCodeHelp hospitalRecordCodeStatus" />
                                                 }
                                                 <button type="button" class="btn btn-outline-secondary d-none" id="btnScanRecordCode" aria-controls="recordCodeScanner" aria-expanded="false">
                                                     <i class="bi bi-qr-code-scan me-1" aria-hidden="true"></i> Scan QR
@@ -386,7 +386,7 @@
                                         <div class="flex-grow-1 registration-record-code-body">
                                             <label asp-for="Input.StaffInvitationCode" for="staffInvitationCode" class="form-label fw-semibold mb-1">Staff invitation code</label>
                                             <p class="small text-muted mb-2" id="staffInvitationHelp">You are creating a DRMC staff account. Use the email address the invitation was sent to. Your staff role is added after you confirm your email and turn on two-factor authentication.</p>
-                                            <input asp-for="Input.StaffInvitationCode" id="staffInvitationCode" class="form-control registration-code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX" aria-describedby="staffInvitationHelp" />
+                                            <input asp-for="Input.StaffInvitationCode" id="staffInvitationCode" class="form-control registration-code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" aria-describedby="staffInvitationHelp" />
                                             <span asp-validation-for="Input.StaffInvitationCode" class="field-validation-error"></span>
                                             <button type="button" class="btn btn-link btn-sm p-0 mt-2 text-primary-drmc" id="btnUseRecordCode" aria-controls="hospitalRecordCodePanel">Use a hospital record code instead</button>
                                         </div>

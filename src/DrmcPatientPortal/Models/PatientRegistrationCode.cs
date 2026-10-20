@@ -8,6 +8,7 @@ namespace DrmcPatientPortal.Models;
 public class PatientRegistrationCode
 {
     public const int HintLength = 5, IssuingPointLength = 80;
+    public const int MaximumFailedAttempts = 5;
 
     public int Id { get; set; }
     public int PatientRecordId { get; set; }
@@ -22,17 +23,20 @@ public class PatientRegistrationCode
     public DateTime? RedeemedAtUtc { get; set; }
     public string? RedeemedByUserId { get; set; }
     public DateTime? RevokedAtUtc { get; set; }
+    public int FailedAttemptCount { get; set; }
+    public DateTime? LockedAtUtc { get; set; }
     [Timestamp]
     public byte[] RowVersion { get; set; } = [];
 
     public RegistrationCodeStatus StatusAt(DateTime utcNow) =>
         RedeemedAtUtc is not null ? RegistrationCodeStatus.Redeemed
         : RevokedAtUtc is not null ? RegistrationCodeStatus.Revoked
+        : LockedAtUtc is not null || FailedAttemptCount >= MaximumFailedAttempts ? RegistrationCodeStatus.Locked
         : ExpiresAtUtc <= utcNow ? RegistrationCodeStatus.Expired
         : RegistrationCodeStatus.Active;
 }
 
-public enum RegistrationCodeStatus { Active, Redeemed, Revoked, Expired }
+public enum RegistrationCodeStatus { Active, Redeemed, Revoked, Expired, Locked }
 
 // Shared registration records must not identify a confidential clinic affiliation.
 public static class RegistrationCodeIssuingPoints

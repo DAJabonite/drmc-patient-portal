@@ -59,7 +59,8 @@ public sealed class HomeController(ApplicationDbContext db, AdminAccessScope sco
             ("Patients", async () => { var n = await db.PatientRecords.CountAsync(p => p.PortalUserId == null, cancellationToken);
                 return new AdminMetric("Unlinked patient records", n, "bi-link-45deg", "Patients", "No verified portal account yet", n > 0); }),
             ("RegistrationCodes", async () => { var n = await db.PatientRegistrationCodes.CountAsync(c =>
-                    c.RedeemedAtUtc == null && c.RevokedAtUtc == null && c.ExpiresAtUtc > utcNow, cancellationToken);
+                    c.RedeemedAtUtc == null && c.RevokedAtUtc == null && c.LockedAtUtc == null &&
+                    c.FailedAttemptCount < PatientRegistrationCode.MaximumFailedAttempts && c.ExpiresAtUtc > utcNow, cancellationToken);
                 return new AdminMetric("Active registration codes", n, "bi-qr-code", "RegistrationCodes", "Issued and waiting for patient signup"); }),
             ("Prescriptions", async () => { var n = await db.Prescriptions.CountAsync(p => p.Status == PrescriptionStatus.Active, cancellationToken);
                 return new AdminMetric("Active prescriptions", n, "bi-capsule", "Prescriptions", "Visible on patient medication lists"); }),
