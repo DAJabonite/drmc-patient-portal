@@ -62,6 +62,8 @@ namespace DrmcPatientPortal.Data.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM [PatientRecords] WHERE DATALENGTH([FirstName]) > 0 OR DATALENGTH([LastName]) > 0 OR DATALENGTH([MiddleName]) > 0 OR DATALENGTH([Suffix]) > 0) OR EXISTS (SELECT 1 FROM [AspNetUsers] WHERE DATALENGTH([Suffix]) > 0) THROW 51013, 'Structured patient names and account suffixes must be retained; downgrade is blocked.', 1;");
+
             // Remove the computed column before dropping the parts it depends on.
             migrationBuilder.DropColumn(
                 name: "FullName",

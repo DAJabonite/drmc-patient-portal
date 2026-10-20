@@ -41,10 +41,15 @@ public static class PatientNames
         var result = new StringBuilder();
         foreach (var rune in (value ?? "").Normalize(NormalizationForm.FormD).EnumerateRunes())
         {
-            if (rune.Value is '.' or ',' || Rune.GetUnicodeCategory(rune) is UnicodeCategory.NonSpacingMark
-                or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark) continue;
-            result.Append(rune.ToString());
+            if (rune.Value is '.' or ',' || IsAccent(rune)) continue;
+            result.Append(Rune.ToUpperInvariant(Rune.ToLowerInvariant(rune)).ToString());
         }
         return Clean(result.ToString());
     }
+
+    // Preserve script vowel signs, enclosing marks and variation selectors: they are not accents.
+    private static bool IsAccent(Rune rune) => Rune.GetUnicodeCategory(rune) == UnicodeCategory.NonSpacingMark
+        && rune.Value != 0x034F // Combining grapheme joiner is a formatting character, not an accent.
+        && rune.Value is >= 0x0300 and <= 0x036F or >= 0x1AB0 and <= 0x1AFF
+            or >= 0x1DC0 and <= 0x1DFF or >= 0xFE20 and <= 0xFE2F;
 }
