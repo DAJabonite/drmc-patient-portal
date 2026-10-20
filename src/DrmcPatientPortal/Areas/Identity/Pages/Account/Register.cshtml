@@ -214,20 +214,26 @@
 
                         <div class="row g-3">
                             <!-- Names -->
-                            <div class="col-md-4">
+                            <div class="col-md-6">
+                                <label asp-for="Input.LastName" for="txtLastName" class="form-label fw-semibold">Last name</label>
+                                <input asp-for="Input.LastName" id="txtLastName" class="form-control" autocomplete="family-name" placeholder="Last name as printed on your ID" maxlength="60" />
+                                <span asp-validation-for="Input.LastName" class="field-validation-error"></span>
+                            </div>
+                            <div class="col-md-6">
                                 <label asp-for="Input.FirstName" for="txtFirstName" class="form-label fw-semibold">First name</label>
-                                <input asp-for="Input.FirstName" id="txtFirstName" class="form-control" autocomplete="given-name" placeholder="Given names as printed on your ID" />
+                                <input asp-for="Input.FirstName" id="txtFirstName" class="form-control" autocomplete="given-name" placeholder="Given names as printed on your ID" maxlength="60" />
                                 <span asp-validation-for="Input.FirstName" class="field-validation-error"></span>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <label asp-for="Input.MiddleName" for="txtMiddleName" class="form-label fw-semibold">Middle name <span class="registration-optional">(Optional)</span></label>
-                                <input asp-for="Input.MiddleName" id="txtMiddleName" class="form-control" autocomplete="additional-name" placeholder="Middle name, if printed" />
+                                <input asp-for="Input.MiddleName" id="txtMiddleName" class="form-control" autocomplete="additional-name" placeholder="Middle name, if printed" maxlength="60" />
                                 <span asp-validation-for="Input.MiddleName" class="field-validation-error"></span>
                             </div>
-                            <div class="col-md-4">
-                                <label asp-for="Input.LastName" for="txtLastName" class="form-label fw-semibold">Last name</label>
-                                <input asp-for="Input.LastName" id="txtLastName" class="form-control" autocomplete="family-name" placeholder="Last name as printed on your ID" />
-                                <span asp-validation-for="Input.LastName" class="field-validation-error"></span>
+                            <div class="col-md-6">
+                                <label asp-for="Input.Suffix" for="txtSuffix" class="form-label fw-semibold">Suffix <span class="registration-optional">(Optional)</span></label>
+                                <input asp-for="Input.Suffix" id="txtSuffix" class="form-control" autocomplete="honorific-suffix" maxlength="10" aria-describedby="suffixHelp" />
+                                <div id="suffixHelp" class="form-text">Jr., Sr., III. Leave blank if none</div>
+                                <span asp-validation-for="Input.Suffix" class="field-validation-error"></span>
                             </div>
 
                             <!-- ID Number -->
@@ -349,16 +355,16 @@
                                             <label asp-for="Input.HospitalRecordCode" for="hospitalRecordCode" class="form-label fw-semibold mb-1">Hospital record code @if (!Model.RequireHospitalRecordCode) { <span class="registration-optional">(Optional)</span> }</label>
                                             @if (Model.RequireHospitalRecordCode)
                                             {
-                                                <p class="small text-muted mb-2" id="hospitalRecordCodeHelp">Enter the code from the slip you received at the PACD or the Clinic registration desk. It shows you have a DRMC hospital record and links your records to this account. Your date of birth must match your hospital record. No code yet? Visit the PACD with a valid ID to get one.</p>
+                                                <p class="small text-muted mb-2" id="hospitalRecordCodeHelp">Enter the code from the slip you received at the PACD or the Clinic registration desk. It shows you have a DRMC hospital record and links your records to this account. Your name and date of birth must match your hospital record. No code yet? Visit the PACD with a valid ID to get one.</p>
                                             }
                                             else
                                             {
-                                                <p class="small text-muted mb-2" id="hospitalRecordCodeHelp">Been admitted or treated at DRMC? Ask the PACD or the Clinic registration desk for a code. It shows you have a hospital record and links your records to this account. Your date of birth must match your hospital record.</p>
+                                                <p class="small text-muted mb-2" id="hospitalRecordCodeHelp">Been admitted or treated at DRMC? Ask the PACD or the Clinic registration desk for a code. It shows you have a hospital record and links your records to this account. Your name and date of birth must match your hospital record.</p>
                                             }
                                             <div class="input-group">
                                                 @if (Model.RequireCodeInBrowser)
                                                 {
-                                                    <input asp-for="Input.HospitalRecordCode" id="hospitalRecordCode" class="form-control registration-code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" aria-describedby="hospitalRecordCodeHelp hospitalRecordCodeStatus" data-val-required="Enter the hospital record code you received from the PACD or your clinic." required />
+                                                    <input asp-for="Input.HospitalRecordCode" id="hospitalRecordCode" class="form-control registration-code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" aria-describedby="hospitalRecordCodeHelp hospitalRecordCodeStatus" data-val-required="@RegisterModel.HospitalRecordCodeError" required />
                                                 }
                                                 else
                                                 {
