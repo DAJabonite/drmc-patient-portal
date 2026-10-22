@@ -110,7 +110,8 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
     private static void ParsePassport(IdExtractionResult result, string text)
     {
         ExtractNameByLabels(result, text);
-        ExtractIdNumberByPattern(result, text, @"(?:Passport\s*(?:No|Number|\#)?[:\.\s]*)([A-Z0-9]{8,10})\b");
+        // Require the number label and a digit: the document title is not a number.
+        ExtractIdNumberByPattern(result, text, @"Passport\s*(?:No\.?|Number|\#)[:\.\s]*((?=[A-Z0-9]*\d)[A-Z0-9]{8,10})\b");
         ExtractDobByLabels(result, text);
         ExtractSexByLabels(result, text);
         // 1. Attempt Machine Readable Zone (MRZ) 2-line ICAO 9303 Type P Parsing
@@ -186,7 +187,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
 
         // Fallback: Label-anchored parsing if MRZ was unreadable or cropped
         ExtractNameByLabels(result, text);
-        ExtractIdNumberByPattern(result, text, @"(?:Passport\s*(?:No|Number|\#)?[:\.\s]*)([A-Z0-9]{8,10})");
+        ExtractIdNumberByPattern(result, text, @"Passport\s*(?:No\.?|Number|\#)[:\.\s]*((?=[A-Z0-9]*\d)[A-Z0-9]{8,10})\b");
         ExtractDobByLabels(result, text);
         ExtractSexByLabels(result, text);
         PopulateFullName(result);

@@ -143,6 +143,18 @@ public class IdExtractionTests
         Assert.Empty(Parse(PhilippineIdTypes.Pwd, "Name: L, -").FoundFieldsSummary);
     }
 
+    [Theory]
+    [InlineData("PHILIPPINE PASSPORT\nPassport No.: P1234567", "P1234567")]
+    [InlineData("PHILIPPINE PASSPORT\nSYNTHETIC TEST DOCUMENT", null)]
+    [InlineData("Passport Number: UNKNOWN", null)]
+    [InlineData("Passport No.: ABCDEFGH", null)]
+    public void Passport_number_requires_a_number_label_and_digits(string text, string? expected)
+    {
+        var fields = Parse(PhilippineIdTypes.Passport, text);
+        Assert.Equal(expected, fields.IdNumber.Value);
+        Assert.Equal(expected is not null, fields.IdNumber.Found);
+    }
+
     [Fact]
     public void Passport_mrz_keeps_all_given_names_and_checks_number_and_birth_date_digits()
     {

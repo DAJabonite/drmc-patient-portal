@@ -3103,12 +3103,17 @@ code,
 .registration-record-code-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: #fff; border: 1px solid #c9d9ea; color: var(--drmc-primary); font-size: 1.15rem; }
 .registration-code-input { font-family: var(--bs-font-monospace); letter-spacing: .06em; text-transform: uppercase; }
 .registration-code-input::placeholder { letter-spacing: .06em; }
+.registration-code-entry { display: flex; gap: .5rem; }
+.registration-code-entry .registration-code-input { flex: 1; min-width: 0; }
+.registration-code-entry .btn { flex-shrink: 0; white-space: nowrap; }
 .registration-record-code.is-filled { border-color: #146c43 !important; }
 .registration-staff-invite { background: #f6f5fb; }
 .registration-staff-invite:not(.is-filled) { border-color: #d6d1ea !important; }
 .registration-record-scanner video { display: block; width: 100%; max-width: 320px; aspect-ratio: 1; object-fit: cover; border-radius: .5rem; background: #0b1f33; }
 @media (max-width: 575.98px) {
     .registration-record-code-icon { display: none; }
+    .registration-code-entry { flex-direction: column; }
+    .registration-code-entry .registration-code-input { flex: auto; width: 100%; }
 }
 
 #main-content > .row {

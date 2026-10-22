@@ -333,6 +333,26 @@ Registration ID scanning runs locally in the bounded OCR worker. Selecting a pho
 
 The review form lists recovered details and expected fields that still need entry, using the selected ID's capability metadata. All entries remain editable. Unknown blood type stays blank, and dates or names that cannot be read reliably require manual entry. Every rescan replaces the previous scan's fields, including empty values. OCR assists review and does not establish document authenticity. Automated image fixtures contain synthetic identities only; personal ID images must not be committed as fixtures or written to diagnostic logs.
 
+The hospital record code field also offers camera QR scanning. Native QR detection is used when available, with locally bundled jsQR 1.4.0 as a fallback. Frames stay in the browser; camera access requires HTTPS or localhost and the patient's permission. Manual code entry remains available. The camera closes on cancellation, a completed scan, leaving the credentials step, changing signup modes, submitting, or hiding/leaving the page. The issued QR link can also be opened with the phone's camera app to prefill the code at the start of signup.
+
+Synthetic photo tests exercise every ID selection with the following expected fields. These are representative test layouts, not a guarantee for every card version, camera, or image quality. Unreadable details still need review and manual entry.
+
+| ID selection | Fields verified from synthetic photos |
+| --- | --- |
+| PhilSys | Name, ID number, birth date, address; sex and blood type from the back |
+| Driver's license | Name, license number, birth date, address, sex, blood type |
+| Philippine passport | Name, passport number, birth date, sex from labelled biodata |
+| UMID | Name, CRN, birth date, address, sex |
+| Postal ID | Name, reference number, birth date, address |
+| PhilHealth | Name, PIN |
+| SSS / GSIS | Name, SSS number and GSIS number variants |
+| PRC | Name, registration number |
+| Senior citizen | Name, ID number |
+| PWD | Name, ID number |
+| Other government-issued ID | Name, labelled ID number; other layouts remain best effort |
+
+Passport MRZ text tests separately verify check digits. Unreadable MRZ photo tests require any recovered number or birth date to match the source; unknown values may remain blank. Passport headings must never become ID numbers.
+
 ### Authentication and request controls
 
 Authentication cookies contain an opaque session identifier. Every authenticated request performs an indexed SQL session/user-stamp check. Sign-out commits revocation of that browser's session before success, including copied-cookie replay; other browsers remain signed in. Password changes rotate the initiating browser's session and invalidate other sessions on their next request. Password resets invalidate all older sessions. Sliding renewal updates an existing active session and cannot recreate a revoked session. Existing cookies from older builds require a fresh sign-in. Verified MFA survives principal refresh; authenticator sign-in codes are consumed atomically, including Identity's two adjacent time steps in each direction. Enrollment verification remains separate.
@@ -378,6 +398,8 @@ The tests cover public pages, the sign-in requirement, patient record isolation,
 The shared test host disables background security cleanup so tests that advance a simulated clock cannot remove another test's sessions. Dedicated cleanup tests drive that worker explicitly; normal application startup keeps the worker enabled.
 
 Synthetic OCR cards use the bundled OFL-licensed Arimo font and the pinned `Tesseract.Data.English` model so their pixels and language data remain consistent on Windows and Linux. They do not depend on host font discovery or the distro's model variant. Application startup tests separately exercise the configured native OCR runtime and language data. CI checks these image fixtures before running the remaining integration tests, then verifies container persistence.
+
+Run camera QR regression checks with Node.js 22: `node --test tests/registration-qr.test.cjs`. No npm install is needed. These tests render a synthetic QRCoder matrix into camera pixels and exercise the real bundled decoder, native detection/fallback, invalid payloads, camera errors, and cancellation races. CI runs them alongside the .NET suite.
 
 Views must not use inline `<script>` blocks or `on*` attributes, because the Content Security Policy only allows `script-src 'self'`. Put scripts in `wwwroot/js`; use `data-auto-submit` on a form control or `data-confirm="..."` on a form for the common cases.
 

@@ -1,6 +1,7 @@
 $(function () {
     // Step state tracking
     let currentStep = 1;
+    let recordCodeScanner;
     let isManualFlow = document.getElementById('isManualEntry').value.toLowerCase() === 'true';
 
     const step1 = document.getElementById('wizardStep1');
@@ -127,6 +128,7 @@ $(function () {
     }
 
     function updateProgress(step, moveFocus = true) {
+        if (step !== 4) recordCodeScanner?.stop();
         currentStep = step;
         const steps = [step1, step2, step3, step4];
         const btns = [btnStep1, btnStep2, btnStep3, btnStep4];
@@ -429,18 +431,13 @@ $(function () {
         }
     });
 
-    // Hospital record code: format in groups of five (20 characters; legacy 15 accepted), prefill from a QR link (#code=...), and
-    // scan a QR with the camera where the browser supports BarcodeDetector.
+    // Hospital record code: manual entry, QR links, and local camera decoding.
     const recordCodeInput = document.getElementById('hospitalRecordCode');
     const recordCodePanel = document.getElementById('hospitalRecordCodePanel');
     const recordCodeStatus = document.getElementById('hospitalRecordCodeStatus');
     const scanButton = document.getElementById('btnScanRecordCode');
-    const scanner = document.getElementById('recordCodeScanner');
-    const scanVideo = document.getElementById('recordCodeVideo');
     const dobInput = document.getElementById('txtDob');
     const codeAlphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-    let scanStream = null;
-    let scanTimer = null;
 
     function canonicalCode(value) {
         let out = '';
@@ -454,17 +451,6 @@ $(function () {
     function formatCode(value) {
         const c = canonicalCode(value);
         return c.match(/.{1,5}/g)?.join('-') ?? '';
-    }
-
-    function codeFromScan(text) {
-        try {
-            const url = new URL(text);
-            const invite = new URLSearchParams(url.hash.slice(1)).get('invite');
-            if (invite) { setStaffMode(true, invite); return null; }
-            const fromHash = new URLSearchParams(url.hash.slice(1)).get('code');
-            if (fromHash) return fromHash;
-        } catch { /* not a URL; treat as the code itself */ }
-        return text;
     }
 
     function setRecordCode(value, message) {
@@ -497,7 +483,7 @@ $(function () {
         staffPanel.classList.toggle('d-none', !staff);
         requirementLine?.classList.toggle('d-none', staff);
         if (staff) {
-            if (scanStream) stopScan();
+            recordCodeScanner?.stop();
             recordCodeInput.value = '';
             recordCodePanel.classList.remove('is-filled');
             // jQuery Validate also reads the HTML required attribute, so drop both.
@@ -533,72 +519,47 @@ $(function () {
     // Codes travel in the URL fragment, which is never sent to the server; remove them from the
     // address bar and history once read.
     const hashParams = new URLSearchParams(window.location.hash.slice(1));
-    const hashCode = hashParams.get('code');
-    const hashInvite = hashParams.get('invite');
-    if (hashInvite) {
-        setStaffMode(true, hashInvite);
-        document.getElementById('staffInviteNotice').classList.remove('d-none');
-        history.replaceState(null, '', window.location.pathname + window.location.search);
-    } else if (hashCode) {
-        setRecordCode(hashCode, 'Filled in from your QR code.');
-        document.getElementById('hospitalCodeNotice').classList.remove('d-none');
+    if (hashParams.has('code') || hashParams.has('invite')) {
+        const payload = DrmcRegistrationQr.parsePayload(window.location.href, window.location.href);
+        if (payload?.kind === 'invite') {
+            setStaffMode(true, payload.code);
+            document.getElementById('staffInviteNotice').classList.remove('d-none');
+        } else if (payload) {
+            setRecordCode(payload.code, 'Filled in from your QR code.');
+            document.getElementById('hospitalCodeNotice').classList.remove('d-none');
+        } else {
+            recordCodeStatus.textContent = 'That QR link is invalid. Type the code on your slip.';
+        }
         history.replaceState(null, '', window.location.pathname + window.location.search);
     }
 
-    function stopScan() {
-        if (scanTimer) { clearTimeout(scanTimer); scanTimer = null; }
-        scanStream?.getTracks().forEach(t => t.stop());
-        scanStream = null;
-        scanVideo.srcObject = null;
-        scanner.classList.add('d-none');
-        scanButton.setAttribute('aria-expanded', 'false');
-    }
-
-    if ('BarcodeDetector' in window && navigator.mediaDevices?.getUserMedia) {
-        scanButton.classList.remove('d-none');
-        scanButton.addEventListener('click', async function () {
-            if (scanStream) { stopScan(); scanButton.focus(); return; }
-            let detector;
-            try {
-                const formats = await window.BarcodeDetector.getSupportedFormats();
-                if (!formats.includes('qr_code')) throw new Error('QR not supported');
-                detector = new window.BarcodeDetector({ formats: ['qr_code'] });
-                scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-            } catch {
-                stopScan();
-                recordCodeStatus.textContent = 'The camera could not be opened. Type the code printed under the QR instead.';
+    recordCodeScanner = new DrmcRegistrationQr.CameraScanner({
+        video: document.getElementById('recordCodeVideo'),
+        container: document.getElementById('recordCodeScanner'),
+        button: scanButton,
+        stopButton: document.getElementById('btnStopScan'),
+        status: recordCodeStatus,
+        onScan(text) {
+            const payload = DrmcRegistrationQr.parsePayload(text, window.location.href);
+            if (payload?.kind === 'invite') {
+                setStaffMode(true, payload.code);
+                document.getElementById('staffInviteNotice').classList.remove('d-none');
+                staffInput.focus();
                 return;
             }
-            scanner.classList.remove('d-none');
-            scanButton.setAttribute('aria-expanded', 'true');
-            recordCodeStatus.textContent = 'Point your camera at the QR code on your slip.';
-            scanVideo.srcObject = scanStream;
-            await scanVideo.play().catch(() => { });
-            const tick = async function () {
-                if (!scanStream) return;
-                try {
-                    const found = await detector.detect(scanVideo);
-                    if (found.length) {
-                        const value = codeFromScan(found[0].rawValue);
-                        stopScan();
-                        if (value === null) return;
-                        if ([15, 20].includes(canonicalCode(value).length)) {
-                            setRecordCode(value, 'Code scanned. Check that it matches your slip.');
-                        } else {
-                            recordCodeStatus.textContent = 'That QR code is not a DRMC hospital record code. Type the code printed on your slip.';
-                        }
-                        recordCodeInput.focus();
-                        return;
-                    }
-                } catch { /* frame not ready yet */ }
-                scanTimer = setTimeout(tick, 250);
-            };
-            tick();
-        });
-        document.getElementById('btnStopScan').addEventListener('click', function () { stopScan(); scanButton.focus(); });
-    }
+            if (payload) setRecordCode(payload.code, 'Code scanned. Check that it matches your slip.');
+            else recordCodeStatus.textContent = 'That QR is not a DRMC registration code. Type the code on your slip.';
+            recordCodeInput.focus();
+        }
+    });
+    window.addEventListener('pagehide', () => recordCodeScanner.stop());
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) recordCodeScanner.stop();
+    });
+    consentElement.addEventListener('show.bs.modal', () => recordCodeScanner.stop());
 
     form.addEventListener('submit', function (event) {
+        recordCodeScanner.stop();
         if (submitting) { event.preventDefault(); return; }
         if (!accepted) { event.preventDefault(); consentModal.show(); return; }
         // Enter advances the current step rather than posting an unfinished wizard.
@@ -628,7 +589,6 @@ $(function () {
             dobInput.focus();
             return;
         }
-        if (scanStream) stopScan();
         submitting = true;
         const submit = document.getElementById('registerSubmit');
         submit.disabled = true;
