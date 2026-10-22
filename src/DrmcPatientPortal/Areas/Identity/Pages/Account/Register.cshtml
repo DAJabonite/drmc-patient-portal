@@ -353,15 +353,8 @@
                                         <span class="registration-record-code-icon" aria-hidden="true"><i class="bi bi-hospital"></i></span>
                                         <div class="flex-grow-1 registration-record-code-body">
                                             <label asp-for="Input.HospitalRecordCode" for="hospitalRecordCode" class="form-label fw-semibold mb-1">Hospital record code @if (!Model.RequireHospitalRecordCode) { <span class="registration-optional">(Optional)</span> }</label>
-                                            @if (Model.RequireHospitalRecordCode)
-                                            {
-                                                <p class="small text-muted mb-2" id="hospitalRecordCodeHelp">Enter the code from the slip you received at the PACD or the Clinic registration desk. It shows you have a DRMC hospital record and links your records to this account. Your name and date of birth must match your hospital record. No code yet? Visit the PACD with a valid ID to get one.</p>
-                                            }
-                                            else
-                                            {
-                                                <p class="small text-muted mb-2" id="hospitalRecordCodeHelp">Been admitted or treated at DRMC? Ask the PACD or the Clinic registration desk for a code. It shows you have a hospital record and links your records to this account. Your name and date of birth must match your hospital record.</p>
-                                            }
-                                            <div class="input-group">
+                                            <p class="small text-muted mb-2" id="hospitalRecordCodeHelp">Enter your PACD/Clinic code or scan its QR. Your name and birth date must match your hospital record.</p>
+                                            <div class="registration-code-entry">
                                                 @if (Model.RequireCodeInBrowser)
                                                 {
                                                     <input asp-for="Input.HospitalRecordCode" id="hospitalRecordCode" class="form-control registration-code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" aria-describedby="hospitalRecordCodeHelp hospitalRecordCodeStatus" data-val-required="@RegisterModel.HospitalRecordCodeError" required />
@@ -370,11 +363,12 @@
                                                 {
                                                     <input asp-for="Input.HospitalRecordCode" id="hospitalRecordCode" class="form-control registration-code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" aria-describedby="hospitalRecordCodeHelp hospitalRecordCodeStatus" />
                                                 }
-                                                <button type="button" class="btn btn-outline-secondary d-none" id="btnScanRecordCode" aria-controls="recordCodeScanner" aria-expanded="false">
+                                                <button type="button" class="btn btn-outline-secondary" id="btnScanRecordCode" aria-controls="recordCodeScanner" aria-expanded="false">
                                                     <i class="bi bi-qr-code-scan me-1" aria-hidden="true"></i> Scan QR
                                                 </button>
                                             </div>
                                             <span asp-validation-for="Input.HospitalRecordCode" class="field-validation-error"></span>
+                                            <p class="small text-muted mb-0 mt-2">No code yet? Visit the PACD with a valid ID.</p>
                                             <p class="small text-muted mb-0 mt-1" id="hospitalRecordCodeStatus" role="status" aria-live="polite"></p>
                                             <div class="registration-record-scanner d-none mt-2" id="recordCodeScanner">
                                                 <video id="recordCodeVideo" playsinline muted aria-label="Camera preview for scanning the QR code"></video>
@@ -464,6 +458,8 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/lib/jsqr/jsQR.js" asp-append-version="true"></script>
+    <script src="~/js/registration-qr.js" asp-append-version="true"></script>
     <script src="~/js/registration.js" asp-append-version="true"></script>
 
 }
