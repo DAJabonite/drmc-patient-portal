@@ -216,7 +216,7 @@ public sealed class OutboundNotificationDispatcher(IServiceScopeFactory scopes, 
 }
 
 public sealed class OutboundNotificationWorker(OutboundNotificationDispatcher dispatcher, IOptions<OutboundNotificationOptions> options,
-    TimeProvider clock, ILogger<OutboundNotificationWorker> logger) : BackgroundService
+    TimeProvider clock, ILogger<OutboundNotificationWorker> logger, PortalWorkerHealth health) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -232,6 +232,7 @@ public sealed class OutboundNotificationWorker(OutboundNotificationDispatcher di
                     await dispatcher.CleanupAsync(stoppingToken);
                     nextCleanup = clock.GetUtcNow().AddMinutes(5);
                 }
+                health.Success("outbound-notifications");
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
             catch (Exception error) { logger.LogWarning("Outbound notification worker unavailable ({ErrorType}).", error.GetType().Name); }

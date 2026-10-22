@@ -132,6 +132,7 @@ public sealed class OcrRuntime : IHostedService, IDisposable
         return new(output.ToArray(), info);
     }
 
+    public bool IsReady { get; private set; }
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         try
@@ -142,6 +143,7 @@ public sealed class OcrRuntime : IHostedService, IDisposable
                     ?? throw new InvalidOperationException("The OCR startup image probe is missing.");
                 await ProcessAsync(stream, cancellationToken: cancellationToken);
             }
+            IsReady = true;
             logger.LogInformation("OCR worker startup check passed for JPEG, PNG, WebP and English language data.");
         }
         catch (Exception error) when (error is not OperationCanceledException)

@@ -299,7 +299,7 @@ public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataPro
 }
 
 public sealed class RedStarReminderWorker(RedStarReminderService reminders, IOptions<RedStarOptions> options,
-    TimeProvider clock, ILogger<RedStarReminderWorker> logger) : BackgroundService
+    TimeProvider clock, ILogger<RedStarReminderWorker> logger, PortalWorkerHealth health) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -315,6 +315,7 @@ public sealed class RedStarReminderWorker(RedStarReminderService reminders, IOpt
                     nextGeneration = RedStarReminderService.NextDailyRun(clock.GetUtcNow());
                 }
                 await reminders.DispatchAsync(stoppingToken);
+                health.Success("private-reminders");
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
             catch (Exception error) { logger.LogWarning("Appointment notification worker unavailable ({ErrorType}).", error.GetType().Name); }

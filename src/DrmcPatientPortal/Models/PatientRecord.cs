@@ -9,6 +9,10 @@ public class PatientRecord
     public string FirstName { get; set; } = string.Empty;
     public string? MiddleName { get; set; }
     public string? Suffix { get; set; }
+    // Retain the exact legacy spelling until staff reconcile the separate name fields.
+    public string? LegacyFullName { get; set; }
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public bool NeedsNameReview => string.IsNullOrWhiteSpace(FirstName) || string.IsNullOrWhiteSpace(LastName);
     public string FullName { get; private set; } = string.Empty;
     public DateTime? DateOfBirth { get; set; }
     public string? HospitalNumber { get; set; }

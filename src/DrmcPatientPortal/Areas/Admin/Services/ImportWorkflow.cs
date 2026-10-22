@@ -230,7 +230,7 @@ public sealed class ImportWorkflow(IServiceScopeFactory scopes, ImportStaging st
     }
 }
 
-public sealed class ImportWorker(IServiceScopeFactory scopes, ILogger<ImportWorker> logger) : BackgroundService
+public sealed class ImportWorker(IServiceScopeFactory scopes, ILogger<ImportWorker> logger, DrmcPatientPortal.Services.PortalWorkerHealth health) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -255,6 +255,7 @@ public sealed class ImportWorker(IServiceScopeFactory scopes, ILogger<ImportWork
                         logger.LogInformation("Import phase {Phase} for batch {BatchId} completed in {ElapsedMilliseconds} ms", phase, id.Value, timer.ElapsedMilliseconds);
                     }
                     await workflow.MaintainAsync(stoppingToken);
+                    health.Success("imports");
                 }
                 catch (Exception error) when (error is not OperationCanceledException) { logger.LogWarning("Import processing is unavailable; no batch will be replayed automatically."); }
                 await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);

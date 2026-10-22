@@ -158,7 +158,7 @@ public sealed class AccountEmailDispatcher(IServiceScopeFactory scopes, IDataPro
 }
 
 public sealed class AccountEmailWorker(AccountEmailDispatcher dispatcher, IOptions<AccountEmailOptions> options,
-    TimeProvider clock, ILogger<AccountEmailWorker> logger) : BackgroundService
+    TimeProvider clock, ILogger<AccountEmailWorker> logger, PortalWorkerHealth health) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -174,6 +174,7 @@ public sealed class AccountEmailWorker(AccountEmailDispatcher dispatcher, IOptio
                     await dispatcher.CleanupAsync(stoppingToken);
                     nextCleanup = clock.GetUtcNow().AddMinutes(5);
                 }
+                health.Success("account-email");
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
             catch (Exception error) { logger.LogWarning("Account email worker unavailable ({ErrorType}).", error.GetType().Name); }

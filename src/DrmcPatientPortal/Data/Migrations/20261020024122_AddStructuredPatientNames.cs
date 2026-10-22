@@ -10,6 +10,9 @@ namespace DrmcPatientPortal.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // Preserve the exact original name before replacing the stored column.
+            migrationBuilder.AddColumn<string>(name: "LegacyFullName", table: "PatientRecords", type: "nvarchar(max)", nullable: true);
+            migrationBuilder.Sql("UPDATE [PatientRecords] SET [LegacyFullName] = [FullName];");
             migrationBuilder.AddColumn<string>(
                 name: "FirstName",
                 table: "PatientRecords",
@@ -50,10 +53,9 @@ namespace DrmcPatientPortal.Data.Migrations
             migrationBuilder.AlterColumn<string>(
                 name: "FullName",
                 table: "PatientRecords",
-                type: "nvarchar(194)",
-                maxLength: 194,
+                type: "nvarchar(max)",
                 nullable: false,
-                computedColumnSql: "CAST(CASE WHEN [LastName] = N'' OR [FirstName] = N'' THEN N'' ELSE [LastName] + N', ' + [FirstName] + CASE WHEN NULLIF([MiddleName], N'') IS NULL THEN N'' ELSE N' ' + [MiddleName] END + CASE WHEN NULLIF([Suffix], N'') IS NULL THEN N'' ELSE N' ' + [Suffix] END END AS nvarchar(194))",
+                computedColumnSql: "CAST(CASE WHEN [LastName] = N'' OR [FirstName] = N'' THEN COALESCE([LegacyFullName], N'') ELSE [LastName] + N', ' + [FirstName] + CASE WHEN NULLIF([MiddleName], N'') IS NULL THEN N'' ELSE N' ' + [MiddleName] END + CASE WHEN NULLIF([Suffix], N'') IS NULL THEN N'' ELSE N' ' + [Suffix] END END AS nvarchar(max))",
                 stored: true,
                 oldClrType: typeof(string),
                 oldType: "nvarchar(max)");
@@ -75,6 +77,9 @@ namespace DrmcPatientPortal.Data.Migrations
                 type: "nvarchar(max)",
                 nullable: false,
                 defaultValue: "");
+
+            migrationBuilder.Sql("UPDATE [PatientRecords] SET [FullName] = COALESCE([LegacyFullName], N'');");
+            migrationBuilder.DropColumn(name: "LegacyFullName", table: "PatientRecords");
 
             migrationBuilder.DropColumn(
                 name: "FirstName",

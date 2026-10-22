@@ -994,9 +994,8 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Property<string>("FullName")
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasMaxLength(194)
-                        .HasColumnType("nvarchar(194)")
-                        .HasComputedColumnSql("CAST(CASE WHEN [LastName] = N'' OR [FirstName] = N'' THEN N'' ELSE [LastName] + N', ' + [FirstName] + CASE WHEN NULLIF([MiddleName], N'') IS NULL THEN N'' ELSE N' ' + [MiddleName] END + CASE WHEN NULLIF([Suffix], N'') IS NULL THEN N'' ELSE N' ' + [Suffix] END END AS nvarchar(194))", true);
+                        .HasColumnType("nvarchar(max)")
+                        .HasComputedColumnSql("CAST(CASE WHEN [LastName] = N'' OR [FirstName] = N'' THEN COALESCE([LegacyFullName], N'') ELSE [LastName] + N', ' + [FirstName] + CASE WHEN NULLIF([MiddleName], N'') IS NULL THEN N'' ELSE N' ' + [MiddleName] END + CASE WHEN NULLIF([Suffix], N'') IS NULL THEN N'' ELSE N' ' + [Suffix] END END AS nvarchar(max))", true);
 
                     b.Property<string>("HospitalNumber")
                         .HasMaxLength(450)
@@ -1007,6 +1006,9 @@ namespace DrmcPatientPortal.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("LegacyFullName")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("MiddleName")
                         .HasMaxLength(60)

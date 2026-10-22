@@ -15,6 +15,7 @@ src/DrmcPatientPortal/App_Data/PatientIdDocuments/
 src/DrmcPatientPortal/App_Data/DataProtectionKeys/
 
 # Local tooling and generated output
+**/App_Data/
 .env*
 secrets/
 .codex-docs/

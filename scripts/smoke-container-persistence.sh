@@ -45,7 +45,7 @@ wait_for_portal() {
     address="$(docker compose port --index "$index" portal 8080)"
     ready=false
     for attempt in $(seq 1 60); do
-      if curl --silent --fail --header 'Host: localhost' --output /dev/null --max-time 2 "http://$address/"; then ready=true; break; fi
+      if curl --silent --fail --header 'Host: localhost' --output /dev/null --max-time 6 "http://$address/health/ready"; then ready=true; break; fi
       sleep 1
     done
     if [ "$ready" != true ]; then

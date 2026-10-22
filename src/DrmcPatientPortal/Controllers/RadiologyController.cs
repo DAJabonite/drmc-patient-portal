@@ -146,6 +146,7 @@ public class RadiologyController : Controller
             };
         }).ToList();
 
+        await _auditLog.LogAsync(user.Id, "VIEW_RADIOLOGY_LIST", "Patient/Radiology", "Viewed owned imaging availability.", HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
         return View(new RadiologyIndexViewModel
         {
             PreparationGuide = await _guides.GetAsync("radiology-preparation", cancellationToken: HttpContext.RequestAborted),

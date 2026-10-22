@@ -33,6 +33,10 @@
             </div>
 
             <h2 class="h3 fw-bold text-dark mb-3">@adv.Title</h2>
+            @if (Model.IsExpired)
+            {
+                <p class="alert alert-warning" role="status">Archived advisory: this notice has expired. Check current hospital bulletins for the latest instructions.</p>
+            }
             
             <div class="p-3 bg-light rounded-3 border mb-4">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 text-muted small">

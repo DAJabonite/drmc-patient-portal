@@ -72,6 +72,26 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.ToTable("AccountEmails");
                 });
 
+            modelBuilder.Entity("DrmcPatientPortal.Models.AccountEmailThrottle", b =>
+                {
+                    b.Property<string>("RecipientHash")
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<DateTimeOffset>("WindowStartUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.HasKey("RecipientHash", "WindowStartUtc");
+
+                    b.HasIndex("WindowStartUtc");
+
+                    b.ToTable("AccountEmailThrottles");
+                });
+
             modelBuilder.Entity("DrmcPatientPortal.Models.AdminAuditLog", b =>
                 {
                     b.Property<long>("Id")
@@ -446,6 +466,35 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.HasIndex("Department");
 
                     b.ToTable("Doctors");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.DocumentProtectionState", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LastDocumentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LastFile")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("LastOwner")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("Phase")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProtectedCanary")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DocumentProtectionStates");
                 });
 
             modelBuilder.Entity("DrmcPatientPortal.Models.ImportBatch", b =>
@@ -991,9 +1040,8 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Property<string>("FullName")
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasMaxLength(194)
-                        .HasColumnType("nvarchar(194)")
-                        .HasComputedColumnSql("CAST(CASE WHEN [LastName] = N'' OR [FirstName] = N'' THEN N'' ELSE [LastName] + N', ' + [FirstName] + CASE WHEN NULLIF([MiddleName], N'') IS NULL THEN N'' ELSE N' ' + [MiddleName] END + CASE WHEN NULLIF([Suffix], N'') IS NULL THEN N'' ELSE N' ' + [Suffix] END END AS nvarchar(194))", true);
+                        .HasColumnType("nvarchar(max)")
+                        .HasComputedColumnSql("CAST(CASE WHEN [LastName] = N'' OR [FirstName] = N'' THEN COALESCE([LegacyFullName], N'') ELSE [LastName] + N', ' + [FirstName] + CASE WHEN NULLIF([MiddleName], N'') IS NULL THEN N'' ELSE N' ' + [MiddleName] END + CASE WHEN NULLIF([Suffix], N'') IS NULL THEN N'' ELSE N' ' + [Suffix] END END AS nvarchar(max))", true);
 
                     b.Property<string>("HospitalNumber")
                         .HasMaxLength(450)
@@ -1004,6 +1052,9 @@ namespace DrmcPatientPortal.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("LegacyFullName")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("MiddleName")
                         .HasMaxLength(60)
@@ -1223,6 +1274,36 @@ namespace DrmcPatientPortal.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Prescriptions");
+                });
+
+            modelBuilder.Entity("DrmcPatientPortal.Models.PrivateFileRetirement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTimeOffset>("FirstUnreferencedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Owner")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Kind", "Owner", "FileName")
+                        .IsUnique();
+
+                    b.ToTable("PrivateFileRetirements");
                 });
 
             modelBuilder.Entity("DrmcPatientPortal.Models.PublicAdvisory", b =>

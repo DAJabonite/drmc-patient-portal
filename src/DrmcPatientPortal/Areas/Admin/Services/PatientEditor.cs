@@ -14,7 +14,7 @@ public sealed class PatientEditor : AdminEntity<PatientRecord, PatientInput>
     public override bool Clinical => true;
     public override int? PatientId(PatientRecord entity) => entity.Id;
     public override string Summary(PatientRecord entity) => "Hospital number: " + (entity.HospitalNumber ?? "unassigned") +
-        (entity.PortalUserId is null ? " | Unlinked" : " | Linked");
+        (entity.PortalUserId is null ? " | Unlinked" : " | Linked") + (entity.NeedsNameReview ? " | Name review required" : "");
     public override IQueryable<PatientRecord> Search(IQueryable<PatientRecord> query, string search) => query.Where(e =>
         EF.Functions.Collate(e.FullName, "Latin1_General_100_CI_AS").Contains(search) ||
         e.HospitalNumber != null && EF.Functions.Collate(e.HospitalNumber, "Latin1_General_100_CI_AS").Contains(search));
@@ -24,7 +24,9 @@ public sealed class PatientEditor : AdminEntity<PatientRecord, PatientInput>
     public override Task<OwnershipContext?> RecordContextAsync(ApplicationDbContext db, PatientRecord entity, CancellationToken token) =>
         Task.FromResult<OwnershipContext?>(new(entity, "Patient registry", entity.Id));
     public override IReadOnlyList<RecordField> Fields(ApplicationDbContext db, PatientRecord entity) =>
-    [new("Full name", entity.FullName), new("Birth date", entity.DateOfBirth?.ToString("yyyy-MM-dd") ?? "unassigned"),
+    [new("Full name", entity.FullName), new("Preserved legacy name", entity.LegacyFullName ?? "None"),
+        new("Name review", entity.NeedsNameReview ? "Staff must verify the separate name fields before issuing a registration code." : "Complete"),
+        new("Birth date", entity.DateOfBirth?.ToString("yyyy-MM-dd") ?? "unassigned"),
         new("Hospital number", entity.HospitalNumber ?? "unassigned"), new("Portal account", entity.PortalUserId is null ? "Unlinked" : "Linked")];
     public override async Task<IReadOnlyDictionary<string, int>> DependentsAsync(ApplicationDbContext db, PatientRecord entity, CancellationToken token) =>
         new Dictionary<string, int>
