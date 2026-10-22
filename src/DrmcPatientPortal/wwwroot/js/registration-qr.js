@@ -1,6 +1,8 @@
 (function () {
     'use strict';
 
+    // Decoder: bundled jsQR 1.4.0, Apache-2.0 (see lib/jsqr/LICENSE).
+
     // Match HospitalRecordCodes.Normalize: reject extra characters instead of stripping
     // unrelated QR text into something that merely has the right length.
     function normalize(value) {

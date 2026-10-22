@@ -333,26 +333,6 @@ Registration ID scanning runs locally in the bounded OCR worker. Selecting a pho
 
 The review form lists recovered details and expected fields that still need entry, using the selected ID's capability metadata. All entries remain editable. Unknown blood type stays blank, and dates or names that cannot be read reliably require manual entry. Every rescan replaces the previous scan's fields, including empty values. OCR assists review and does not establish document authenticity. Automated image fixtures contain synthetic identities only; personal ID images must not be committed as fixtures or written to diagnostic logs.
 
-The hospital record code field also offers camera QR scanning. Native QR detection is used when available, with locally bundled jsQR 1.4.0 as a fallback. Frames stay in the browser; camera access requires HTTPS or localhost and the patient's permission. Manual code entry remains available. The camera closes on cancellation, a completed scan, leaving the credentials step, changing signup modes, submitting, or hiding/leaving the page. The issued QR link can also be opened with the phone's camera app to prefill the code at the start of signup.
-
-Synthetic photo tests exercise every ID selection with the following expected fields. These are representative test layouts, not a guarantee for every card version, camera, or image quality. Unreadable details still need review and manual entry.
-
-| ID selection | Fields verified from synthetic photos |
-| --- | --- |
-| PhilSys | Name, ID number, birth date, address; sex and blood type from the back |
-| Driver's license | Name, license number, birth date, address, sex, blood type |
-| Philippine passport | Name, passport number, birth date, sex from labelled biodata |
-| UMID | Name, CRN, birth date, address, sex |
-| Postal ID | Name, reference number, birth date, address |
-| PhilHealth | Name, PIN |
-| SSS / GSIS | Name, SSS number and GSIS number variants |
-| PRC | Name, registration number |
-| Senior citizen | Name, ID number |
-| PWD | Name, ID number |
-| Other government-issued ID | Name, labelled ID number; other layouts remain best effort |
-
-Passport MRZ text tests separately verify check digits. Unreadable MRZ photo tests require any recovered number or birth date to match the source; unknown values may remain blank. Passport headings must never become ID numbers.
-
 ### Authentication and request controls
 
 Authentication cookies contain an opaque session identifier. Every authenticated request performs an indexed SQL session/user-stamp check. Sign-out commits revocation of that browser's session before success, including copied-cookie replay; other browsers remain signed in. Password changes rotate the initiating browser's session and invalidate other sessions on their next request. Password resets invalidate all older sessions. Sliding renewal updates an existing active session and cannot recreate a revoked session. Existing cookies from older builds require a fresh sign-in. Verified MFA survives principal refresh; authenticator sign-in codes are consumed atomically, including Identity's two adjacent time steps in each direction. Enrollment verification remains separate.
@@ -398,8 +378,6 @@ The tests cover public pages, the sign-in requirement, patient record isolation,
 The shared test host disables background security cleanup so tests that advance a simulated clock cannot remove another test's sessions. Dedicated cleanup tests drive that worker explicitly; normal application startup keeps the worker enabled.
 
 Synthetic OCR cards use the bundled OFL-licensed Arimo font and the pinned `Tesseract.Data.English` model so their pixels and language data remain consistent on Windows and Linux. They do not depend on host font discovery or the distro's model variant. Application startup tests separately exercise the configured native OCR runtime and language data. CI checks these image fixtures before running the remaining integration tests, then verifies container persistence.
-
-Run camera QR regression checks with Node.js 22: `node --test tests/registration-qr.test.cjs`. No npm install is needed. These tests render a synthetic QRCoder matrix into camera pixels and exercise the real bundled decoder, native detection/fallback, invalid payloads, camera errors, and cancellation races. CI runs them alongside the .NET suite.
 
 Views must not use inline `<script>` blocks or `on*` attributes, because the Content Security Policy only allows `script-src 'self'`. Put scripts in `wwwroot/js`; use `data-auto-submit` on a form control or `data-confirm="..."` on a form for the common cases.
 
@@ -521,8 +499,8 @@ General Identity administration, sensitive ID-document metadata, audit tables, m
 A hospital record code shows that a person has a record at DRMC and links that record to the portal account they create, without a separate staff linking step. The code is an enrollment credential for a verified hospital record, separate from a staff invitation.
 
 1. At the PACD or a clinic desk (for example the Red Star Clinic), Patient services staff or an Admin check the patient's valid ID against the hospital record. They then open **Registration codes › Issue code**, or **Registration code** on the patient's details page.
-2. The record must be unlinked and must have a birth date. Staff choose the issuing point, confirm the identity check, and print or show the slip. The slip has the code in the form `XXXXX-XXXXX-XXXXX` and a QR code. The full code is shown only once and is never stored: the database keeps a SHA-256 hash and the last five characters. Issuing a new code revokes any earlier active code for that record. Each issue and revoke is written to the staff audit log.
-3. The QR opens `/Identity/Account/Register#code=…`. The code is in the URL fragment, which browsers do not send to the server. On the **Credentials** step, the **Hospital record code** field is filled in from the QR, typed by the patient, or scanned with the camera where the browser supports `BarcodeDetector`. Input is not case-sensitive and ignores spaces and hyphens.
+2. The record must be unlinked and must have a birth date. Staff choose the issuing point, confirm the identity check, and print or show the slip. The slip has the code in the form `XXXXX-XXXXX-XXXXX-XXXXX` and a QR code. The full code is shown only once and is never stored: the database keeps a SHA-256 hash and the last five characters. Issuing a new code revokes any earlier active code for that record. Each issue and revoke is written to the staff audit log.
+3. The QR opens `/Identity/Account/Register#code=…`. The code is in the URL fragment, which browsers do not send to the server. On the **Credentials** step, the **Hospital record code** field is filled in from the QR link, typed by the patient, or scanned with **Scan QR**. Camera scanning uses native detection when available and a bundled jsQR fallback otherwise; frames stay in the browser. Camera access requires HTTPS or localhost and permission. Input is not case-sensitive, ignores spaces and hyphens, and still accepts previously issued 15-character codes until expiry.
 4. Signup checks the code before creating the account. The code must be active (not used, revoked or expired), its record must still be unlinked, and the date of birth and structured name entered must match the record. First and last names must match; middle name and suffix must also match when present on the record. Comparison ignores case, accents, whitespace differences, periods and commas. If any check fails, signup shows one generic message and creates no account. A name mismatch leaves the code unchanged. On success, the code is marked used and the record is linked in a single serializable transaction, and `LINK_HOSPITAL_RECORD` is written to the patient activity log. Failures while accepting a code or invitation attempt account/link cleanup. A later audit or email-delivery failure can leave a created account and linked record; check state and resend confirmation instead of registering repeatedly.
 
 A code is **required** to create a portal account: patients without a DRMC hospital record cannot get a code, so they cannot sign up. The signup page says so at the top, and a missing code is rejected on the server before any account is created. Setting `PatientRegistration:RequireHospitalRecordCode` to `false` makes the code optional again; accounts created that way can be linked by an Admin through **Verified portal link**. Staff use a staff invitation instead of a code, and the first Admin uses first-Admin setup (see First Admin).
@@ -532,7 +510,7 @@ A code is **required** to create a portal account: patients without a DRMC hospi
 Staff usually have no hospital record, so they cannot get a hospital record code. An Admin invites them instead; patient signup stays strict.
 
 1. An Admin opens **Staff invitations › Invite staff** (also linked from Staff access), enters the staff member's work email and picks LabStaff, RadiologyStaff or PatientServicesStaff. Admin is never granted by invitation. If an account with that email already exists, the Admin is sent to Staff access instead.
-2. The portal emails a one-time link and shows it once with a QR code to print or show. The code has the same `XXXXX-XXXXX-XXXXX` format as hospital record codes but lives in its own table; only a SHA-256 hash and the last five characters are stored. A new invitation for the same email revokes the earlier unused one. Invitations expire after `StaffInvitations:LifetimeDays` (default 3). Invite and revoke actions are written to the staff audit log.
+2. The portal emails a one-time link and shows it once with a QR code to print or show. The code has the same `XXXXX-XXXXX-XXXXX-XXXXX` format as hospital record codes but lives in its own table; only a SHA-256 hash and the last five characters are stored. A new invitation for the same email revokes the earlier unused one. Invitations expire after `StaffInvitations:LifetimeDays` (default 3). Invite and revoke actions are written to the staff audit log.
 3. The link opens `/Identity/Account/Register#invite=…`. On **Credentials**, the **Staff invitation code** panel replaces the hospital record code panel. Staff can also switch to it with **DRMC staff with an invitation? Use it instead** and type the code.
 4. Signup checks that the invitation is unused, not revoked, not expired and was sent to the email being registered. Any failure shows one generic message and creates no account. On success the invitation is marked accepted with a conditional update (a second signup with the same code fails), and `ACCEPT_STAFF_INVITATION` is written to the activity log.
 5. The role is **not** granted at signup. It is granted automatically once the account has a confirmed email and two-factor authentication, right after the email is confirmed or 2FA is turned on, whichever comes last. The grant refreshes the security stamp and is written to the staff audit log under the inviting Admin. The person then signs out and signs in with an authenticator code to open Administration.

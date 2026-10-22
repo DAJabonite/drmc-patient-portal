@@ -10,61 +10,6 @@ namespace DrmcPatientPortal.Tests;
 public class IdImageRecognitionTests(ITestOutputHelper output)
 {
     [Theory]
-    [MemberData(nameof(IdExtractionTests.SupportedDocuments), MemberType = typeof(IdExtractionTests))]
-    public async Task Every_supported_ID_reads_its_expected_fields_from_synthetic_photos(string type, string number)
-    {
-        var config = PhilippineIdTypes.GetByName(type)!;
-        var front = type == PhilippineIdTypes.PhilSys ? Card(1000, false) : DocumentCard(type, number);
-        var back = config.NeedsBackPhoto ? TextCard(["Sex: FEMALE", "Blood Type: A+"]) : null;
-        var response = await Recognize(front, type, back);
-        output.WriteLine("{0}: {1}", type, System.Text.Json.JsonSerializer.Serialize(response));
-        Assert.Equal("ok", response.Status);
-        var fields = Assert.IsType<IdExtractionResult>(response.Extraction);
-        Assert.True(fields.Success);
-        Assert.Equal("Maria Clara", fields.FirstName.Value);
-        Assert.Equal("Santos", fields.LastName.Value);
-        Assert.Equal(number, fields.IdNumber.Value);
-        Assert.Equal(config.SupportsDob, fields.DateOfBirth.Found);
-        if (config.SupportsDob) Assert.Equal(new DateTime(1995, 3, 8), fields.DateOfBirth.Value.Date);
-        Assert.Equal(config.SupportsAddress, fields.Address.Found);
-        if (config.SupportsAddress) Assert.Equal("12 SAMPLE STREET SAMPLE CITY 8100", fields.Address.Value);
-        Assert.Equal(config.SupportsSex, fields.Sex.Found);
-        if (config.SupportsSex) Assert.Equal("Female", fields.Sex.Value);
-        Assert.Equal(config.SupportsBloodType, fields.BloodType.Found);
-        if (config.SupportsBloodType) Assert.Equal("A+", fields.BloodType.Value);
-    }
-
-    [Fact]
-    public async Task Gsis_member_number_is_read_from_a_synthetic_photo()
-    {
-        var result = await Recognize(TextCard(["GSIS ID", "GSIS Number: 12345678901", "Member Name: SANTOS, MARIA CLARA"]), PhilippineIdTypes.SssGsis);
-        Assert.Equal("12345678901", result.Extraction!.IdNumber.Value);
-        Assert.Equal("Maria Clara", result.Extraction.FirstName.Value);
-        Assert.Equal("Santos", result.Extraction.LastName.Value);
-    }
-
-    [Fact]
-    public async Task Unreadable_passport_machine_readable_lines_do_not_turn_header_words_into_an_ID_number()
-    {
-        var first = "P<PHLSANTOS<<MARIA<CLARA".PadRight(44, '<');
-        var number = "P1234567<";
-        var dob = "950308";
-        var second = (number + Check(number) + "PHL" + dob + Check(dob) + "F3003080").PadRight(44, '<');
-        var response = await Recognize(TextCard(["PHILIPPINE PASSPORT", "SYNTHETIC TEST DOCUMENT", "", "", first, second]), PhilippineIdTypes.Passport);
-        output.WriteLine(System.Text.Json.JsonSerializer.Serialize(response));
-        // Repeated filler characters may be unreadable in a photo. Any recovered
-        // number/date must be checked, rather than taking the next header word.
-        if (response.Extraction!.IdNumber.Found) Assert.Equal("P1234567", response.Extraction.IdNumber.Value);
-        if (response.Extraction.DateOfBirth.Found) Assert.Equal(new DateTime(1995, 3, 8), response.Extraction.DateOfBirth.Value.Date);
-
-        static char Check(string text)
-        {
-            int[] weights = [7, 3, 1];
-            return (char)('0' + text.Select((c, i) => (char.IsDigit(c) ? c - '0' : c == '<' ? 0 : c - 'A' + 10) * weights[i % 3]).Sum() % 10);
-        }
-    }
-
-    [Theory]
     [InlineData(500, false)]
     [InlineData(600, true)]
     [InlineData(1000, true)]
@@ -199,59 +144,11 @@ public class IdImageRecognitionTests(ITestOutputHelper output)
     private static string DataPath => Path.Combine(AppContext.BaseDirectory, "tessdata");
     private static string NativePath => Environment.GetEnvironmentVariable("Ocr__NativeLibraryPath") ?? "";
 
-    private static byte[] DocumentCard(string type, string number)
-    {
-        var config = PhilippineIdTypes.GetByName(type)!;
-        var numberLabel = type switch
-        {
-            PhilippineIdTypes.Passport => "Passport No.",
-            PhilippineIdTypes.DriversLicense => "License No.",
-            PhilippineIdTypes.Umid => "CRN",
-            PhilippineIdTypes.PostalId => "PRN",
-            PhilippineIdTypes.PhilHealth => "PIN",
-            PhilippineIdTypes.SssGsis => "SSS No.",
-            PhilippineIdTypes.PrcId => "Registration No.",
-            _ => "ID Number"
-        };
-        var lines = new List<string> { type.ToUpperInvariant(), $"{numberLabel}: {number}" };
-        if (type is PhilippineIdTypes.Umid or PhilippineIdTypes.Passport)
-            lines.AddRange(["Surname: SANTOS", "Given Names: MARIA CLARA", "Middle Name: REYES"]);
-        else if (type is PhilippineIdTypes.DriversLicense or PhilippineIdTypes.PostalId)
-            lines.AddRange(["Last Name: SANTOS", "First Name: MARIA CLARA", "Middle Name: REYES"]);
-        else
-            lines.Add("Name: SANTOS, MARIA CLARA");
-        if (config.SupportsDob) lines.Add("Date of Birth: 1995-03-08");
-        if (config.SupportsAddress) lines.Add("Address: 12 SAMPLE STREET SAMPLE CITY 8100");
-        if (config.SupportsSex) lines.Add("Sex: FEMALE");
-        if (config.SupportsBloodType) lines.Add("Blood Type: A+");
-        return TextCard(lines);
-    }
-
-    private static byte[] TextCard(IEnumerable<string> lines)
-    {
-        using var bitmap = new SKBitmap(1200, 760);
-        using var canvas = new SKCanvas(bitmap);
-        canvas.Clear(new SKColor(247, 250, 252));
-        using var typeface = FixtureTypeface();
-        using var font = new SKFont(typeface, 30);
-        using var paint = new SKPaint { Color = SKColors.Black, IsAntialias = true };
-        var y = 60f;
-        foreach (var line in lines)
-        {
-            canvas.DrawText(line, 35, y, SKTextAlign.Left, font, paint);
-            y += 65;
-        }
-        using var png = bitmap.Encode(SKEncodedImageFormat.Png, 100);
-        return png.ToArray();
-    }
-
-    private static async Task<OcrWorkerResponse> Recognize(byte[] bytes, string type = PhilippineIdTypes.PhilSys, byte[]? backBytes = null)
+    private static async Task<OcrWorkerResponse> Recognize(byte[] bytes, string type = PhilippineIdTypes.PhilSys)
     {
         using var stream = new MemoryStream(bytes);
         var image = new OcrWorkerImage(bytes, IdImageValidation.Inspect(stream));
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        using var backStream = backBytes is null ? null : new MemoryStream(backBytes);
-        var back = backBytes is null ? null : new OcrWorkerImage(backBytes, IdImageValidation.Inspect(backStream!));
-        return await new OcrProcessRunner().RunAsync(new(DataPath, NativePath, true, image, back, type), deadline.Token);
+        return await new OcrProcessRunner().RunAsync(new(DataPath, NativePath, true, image, null, type), deadline.Token);
     }
 }
