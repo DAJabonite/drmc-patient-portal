@@ -16,6 +16,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         optionsBuilder.ReplaceService<IModelCacheKeyFactory, RedStarModelCacheKeyFactory>();
     public DbSet<Doctor> Doctors => Set<Doctor>();
     public DbSet<PatientRecord> PatientRecords => Set<PatientRecord>();
+    public DbSet<DocumentProtectionState> DocumentProtectionStates => Set<DocumentProtectionState>();
+    public DbSet<AccountEmailThrottle> AccountEmailThrottles => Set<AccountEmailThrottle>();
+    public DbSet<PrivateFileRetirement> PrivateFileRetirements => Set<PrivateFileRetirement>();
     public DbSet<PublicAdvisory> PublicAdvisories => Set<PublicAdvisory>();
     public DbSet<InstitutionalGuideHead> InstitutionalGuideHeads => Set<InstitutionalGuideHead>();
     public DbSet<InstitutionalGuideRevision> InstitutionalGuideRevisions => Set<InstitutionalGuideRevision>();
@@ -103,6 +106,24 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        builder.Entity<DocumentProtectionState>(e =>
+        {
+            e.Property(x => x.Id).ValueGeneratedNever();
+            e.Property(x => x.LastOwner).HasMaxLength(255);
+            e.Property(x => x.LastFile).HasMaxLength(255);
+        });
+        builder.Entity<AccountEmailThrottle>(e =>
+        {
+            e.HasKey(x => new { x.RecipientHash, x.WindowStartUtc });
+            e.Property(x => x.RecipientHash).HasMaxLength(64).IsUnicode(false);
+            e.HasIndex(x => x.WindowStartUtc);
+        });
+        builder.Entity<PrivateFileRetirement>(e =>
+        {
+            e.Property(x => x.Owner).HasMaxLength(255);
+            e.Property(x => x.FileName).HasMaxLength(255);
+            e.HasIndex(x => new { x.Kind, x.Owner, x.FileName }).IsUnique();
+        });
         RedStarModel.Configure(builder, protection);
         builder.UseCollation("Latin1_General_100_BIN2");
         builder.Entity<ApplicationUser>().Property(x => x.Suffix).HasMaxLength(10);
@@ -214,10 +235,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.Property(x => x.FirstName).IsRequired().HasMaxLength(60);
             e.Property(x => x.MiddleName).HasMaxLength(60);
             e.Property(x => x.Suffix).HasMaxLength(10);
-            e.Property(x => x.FullName).HasMaxLength(194).HasComputedColumnSql(
-                "CAST(CASE WHEN [LastName] = N'' OR [FirstName] = N'' THEN N'' ELSE [LastName] + N', ' + [FirstName]" +
+            e.Property(x => x.FullName).HasComputedColumnSql(
+                "CAST(CASE WHEN [LastName] = N'' OR [FirstName] = N'' THEN COALESCE([LegacyFullName], N'') ELSE [LastName] + N', ' + [FirstName]" +
                 " + CASE WHEN NULLIF([MiddleName], N'') IS NULL THEN N'' ELSE N' ' + [MiddleName] END" +
-                " + CASE WHEN NULLIF([Suffix], N'') IS NULL THEN N'' ELSE N' ' + [Suffix] END END AS nvarchar(194))", stored: true);
+                " + CASE WHEN NULLIF([Suffix], N'') IS NULL THEN N'' ELSE N' ' + [Suffix] END END AS nvarchar(max))", stored: true);
             e.Property(x => x.HospitalNumber).HasMaxLength(450).UseCollation("Latin1_General_100_CI_AS");
             e.HasIndex(x => x.HospitalNumber).IsUnique();
             e.HasIndex(x => x.PortalUserId).IsUnique();

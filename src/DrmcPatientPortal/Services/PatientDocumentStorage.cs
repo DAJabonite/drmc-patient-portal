@@ -39,6 +39,12 @@ public sealed class PatientDocumentStorage : IPatientDocumentStorage
     private readonly PatientDocumentStorageOptions _options;
     private readonly IDataProtector _fileProtector;
     private readonly IDataProtector _tokenProtector;
+    internal string CreateProtectionCanary() => _tokenProtector.Protect("DRMC.PatientDocuments.Ready.v3");
+    internal void VerifyProtectionCanary(string value)
+    {
+        if (_tokenProtector.Unprotect(value) != "DRMC.PatientDocuments.Ready.v3")
+            throw new CryptographicException("Patient document protection verification failed.");
+    }
 
     public PatientDocumentStorage(IWebHostEnvironment environment, IOptions<PatientDocumentStorageOptions> options, IDataProtectionProvider protectionProvider, OcrRuntime ocr)
     {
@@ -182,7 +188,7 @@ public sealed class PatientDocumentStorage : IPatientDocumentStorage
         return (result.ValidatedBytes!, result.ContentType);
     }
 
-    // Startup only. Replace plaintext at its original path before changing database references;
+    // Offline maintenance only. Replace plaintext at its original path before changing references;
     // a crash or uncertain database commit can therefore leave only encrypted duplicates.
     internal async Task<byte[]> ProtectLegacySourceAsync(PrivateStorageRoot root, string[] components, CancellationToken token)
     {
@@ -229,7 +235,7 @@ public sealed class PatientDocumentStorage : IPatientDocumentStorage
     private sealed record StagingTokenPayload(string SessionId, string FileName, string ContentType, DateTime ExpiresAtUtc);
 }
 
-public sealed class TemporaryDocumentCleanupService(IServiceProvider services, ILogger<TemporaryDocumentCleanupService> logger) : BackgroundService
+public sealed class TemporaryDocumentCleanupService(IServiceProvider services, ILogger<TemporaryDocumentCleanupService> logger, PortalWorkerHealth health) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -239,6 +245,7 @@ public sealed class TemporaryDocumentCleanupService(IServiceProvider services, I
             {
                 using var scope = services.CreateScope();
                 await scope.ServiceProvider.GetRequiredService<IPatientDocumentStorage>().DeleteExpiredTemporaryFilesAsync(stoppingToken);
+                health.Success("temporary-documents");
             }
             catch (Exception ex) when (!stoppingToken.IsCancellationRequested)
             {

@@ -1,12 +1,19 @@
+using System.Data.Common;
+using System.Net;
+using System.Threading.Channels;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -15,6 +22,153 @@ namespace DrmcPatientPortal.Tests;
 [Collection(PortalCollection.Name)]
 public sealed class OutboxRecoveryTests(PortalFactory factory)
 {
+    private sealed class SlowBatchSender(TestClock clock, bool fail) : IEmailSender
+    {
+        public Channel<TaskCompletionSource> Attempts { get; } = Channel.CreateUnbounded<TaskCompletionSource>();
+        public async Task SendEmailAsync(string email, string subject, string htmlMessage)
+        {
+            clock.Now = clock.Now.AddSeconds(30);
+            var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            await Attempts.Writer.WriteAsync(release);
+            await release.Task;
+            if (fail) throw new TimeoutException("Synthetic provider timeout.");
+        }
+    }
+
+    private static void RefreshOtherWorkers(PortalWorkerHealth health)
+    {
+        foreach (var worker in new[] { "imports", "security-cleanup", "temporary-documents", "operations" }) health.Success(worker);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    public async Task Active_mail_batches_remain_ready_and_stopped_workers_expire(bool accountEmail, bool fail)
+    {
+        // A separate database keeps other tests' due messages out of the controlled 25-message batch.
+        var isolated = new PortalFactory();
+        try
+        {
+            await isolated.InitializeAsync();
+            var clock = new TestClock(DateTimeOffset.UtcNow);
+            var sender = new SlowBatchSender(clock, fail);
+            var workerName = accountEmail ? "account-email" : "outbound-notifications";
+            var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AccountEmail:WorkerEnabled"] = accountEmail.ToString(),
+                ["Notifications:Outbox:WorkerEnabled"] = (!accountEmail).ToString()
+            }).Build();
+            using var health = new PortalWorkerHealth(clock, config);
+            using var host = isolated.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+            {
+                services.RemoveAll<TimeProvider>(); services.AddSingleton<TimeProvider>(clock);
+                services.RemoveAll<IEmailSender>(); services.AddSingleton<IEmailSender>(sender);
+                services.RemoveAll<PortalWorkerHealth>(); services.AddSingleton(health);
+            }));
+            using var client = host.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new("https://localhost") });
+            var accountDispatcher = host.Services.GetRequiredService<AccountEmailDispatcher>();
+            var outboundDispatcher = host.Services.GetRequiredService<OutboundNotificationDispatcher>();
+            clock.Now = clock.Now.AddMinutes(3);
+            RefreshOtherWorkers(health);
+            Assert.Equal(HttpStatusCode.ServiceUnavailable, (await client.GetAsync("/health/ready")).StatusCode);
+            // Empty queue scans also prove that an idle worker is functioning.
+            if (accountEmail) await accountDispatcher.DispatchOnceAsync(reportProgress: () => health.Success(workerName));
+            else await outboundDispatcher.DispatchOnceAsync(reportProgress: () => health.Success(workerName));
+            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/health/ready")).StatusCode);
+
+            var ids = Enumerable.Range(0, 25).Select(_ => Guid.NewGuid()).ToArray();
+            using var scope = host.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var userId = await db.Users.Where(u => u.Email == PortalFactory.PrimaryEmail).Select(u => u.Id).SingleAsync();
+            foreach (var id in ids)
+            {
+                if (accountEmail) host.Services.GetRequiredService<IAccountEmailQueue>().Stage(db, id, userId,
+                    "batch@fixtures.test", "Batch fixture", "Synthetic batch delivery.");
+                else host.Services.GetRequiredService<IOutboundNotificationQueue>().Stage(db, id,
+                    OutboundNotificationChannel.Email, new("batch@fixtures.test", "Batch fixture", "Synthetic batch delivery."));
+            }
+            await db.SaveChangesAsync();
+            var started = clock.Now;
+            using BackgroundService worker = accountEmail
+                ? new AccountEmailWorker(accountDispatcher, Options.Create(new AccountEmailOptions()), clock, NullLogger<AccountEmailWorker>.Instance, health)
+                : new OutboundNotificationWorker(outboundDispatcher, Options.Create(new OutboundNotificationOptions()), clock, NullLogger<OutboundNotificationWorker>.Instance, health);
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+            await worker.StartAsync(default);
+            try
+            {
+                for (var attempt = 0; attempt < ids.Length; attempt++)
+                {
+                    var release = await sender.Attempts.Reader.ReadAsync(deadline.Token);
+                    try
+                    {
+                        RefreshOtherWorkers(health);
+                        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/health/ready", deadline.Token)).StatusCode);
+                    }
+                    finally { release.TrySetResult(); }
+                }
+                while (accountEmail
+                    ? await db.AccountEmails.AnyAsync(m => ids.Contains(m.Id) && m.Status == AccountEmailStatus.Sending, deadline.Token)
+                    : await db.OutboundNotifications.AnyAsync(m => ids.Contains(m.Id) && m.Status == OutboundNotificationStatus.Sending, deadline.Token))
+                    await Task.Delay(10, deadline.Token);
+            }
+            finally { await worker.StopAsync(default); }
+            Assert.Equal(TimeSpan.FromSeconds(25 * 30), clock.Now - started);
+            if (accountEmail)
+            {
+                var messages = await db.AccountEmails.AsNoTracking().Where(m => ids.Contains(m.Id)).ToListAsync();
+                Assert.Equal(25, messages.Count);
+                Assert.All(messages, m => { Assert.Equal(1, m.Attempts); Assert.Equal(fail ? AccountEmailStatus.Pending : AccountEmailStatus.Delivered, m.Status); });
+            }
+            else
+            {
+                var messages = await db.OutboundNotifications.AsNoTracking().Where(m => ids.Contains(m.Id)).ToListAsync();
+                Assert.Equal(25, messages.Count);
+                Assert.All(messages, m => { Assert.Equal(1, m.AttemptCount); Assert.Equal(fail ? OutboundNotificationStatus.Pending : OutboundNotificationStatus.Delivered, m.Status); });
+            }
+            clock.Now = clock.Now.AddMinutes(2).AddSeconds(1);
+            RefreshOtherWorkers(health);
+            Assert.Equal(HttpStatusCode.ServiceUnavailable, (await client.GetAsync("/health/ready")).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/health/live")).StatusCode);
+        }
+        finally { await ((IAsyncLifetime)isolated).DisposeAsync(); }
+    }
+
+    private sealed class UnavailableQueueReads : DbCommandInterceptor
+    {
+        public bool Armed { get; set; }
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command, CommandEventData eventData,
+            InterceptionResult<DbDataReader> result, CancellationToken cancellationToken = default)
+        {
+            if (Armed && (command.CommandText.Contains("[AccountEmails]") || command.CommandText.Contains("[OutboundNotifications]")))
+                throw new InvalidOperationException("Synthetic queue database failure.");
+            return ValueTask.FromResult(result);
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Queue_scan_failures_and_shutdown_do_not_report_progress(bool accountEmail)
+    {
+        var fault = new UnavailableQueueReads();
+        using var host = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+            services.AddDbContext<ApplicationDbContext>(options => options.AddInterceptors(fault))));
+        var account = host.Services.GetRequiredService<AccountEmailDispatcher>();
+        var outbound = host.Services.GetRequiredService<OutboundNotificationDispatcher>();
+        var progress = 0;
+        Task Dispatch(CancellationToken token) => accountEmail
+            ? account.DispatchOnceAsync(token, () => progress++) : outbound.DispatchOnceAsync(token, () => progress++);
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Dispatch(cancelled.Token));
+        fault.Armed = true;
+        try { await Assert.ThrowsAsync<InvalidOperationException>(() => Dispatch(default)); }
+        finally { fault.Armed = false; }
+        Assert.Equal(0, progress);
+    }
+
     private sealed class ExpiringSender(TestClock clock, string recipient) : IEmailSender
     {
         public int Attempts { get; private set; }

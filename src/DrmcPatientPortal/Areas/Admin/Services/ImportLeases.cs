@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DrmcPatientPortal.Areas.Admin.Services;
 
-public sealed class ImportLeases(IServiceScopeFactory scopes, ILogger<ImportLeases> logger)
+public sealed class ImportLeases(IServiceScopeFactory scopes, ILogger<ImportLeases> logger, DrmcPatientPortal.Services.PortalWorkerHealth health)
 {
     public string WorkerInstanceId { get; } = $"{Environment.MachineName[..Math.Min(Environment.MachineName.Length, 100)]}:{Environment.ProcessId}:{Guid.NewGuid():N}";
 
@@ -43,6 +43,7 @@ public sealed class ImportLeases(IServiceScopeFactory scopes, ILogger<ImportLeas
         if (affected != 1) throw new ImportLeaseLostException();
         var renewed = await db.ImportBatches.Where(row => row.Id == batch.Id).Select(row => row.RowVersion).SingleAsync(token);
         await transaction.CommitAsync(token);
+        health.Success("imports");
         logger.LogInformation("Import lease renewed {BatchId} {OwnerId}", batch.Id, WorkerInstanceId);
         return renewed;
     }

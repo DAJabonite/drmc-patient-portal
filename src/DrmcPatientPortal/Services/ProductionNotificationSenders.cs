@@ -21,6 +21,7 @@ public sealed class EmailDeliveryOptions
 public sealed class SmsDeliveryOptions
 {
     public const string SectionName = "Notifications:Sms";
+    public bool Enabled { get; set; }
     public string Endpoint { get; set; } = string.Empty;
     public string ApiKey { get; set; } = string.Empty;
     public string SenderId { get; set; } = "DRMC";
@@ -49,6 +50,7 @@ public sealed class HttpSmsSender(HttpClient client, IOptions<SmsDeliveryOptions
     public async Task SendSmsAsync(string number, string message, CancellationToken token = default)
     {
         var settings = options.Value;
+        if (!settings.Enabled) throw new InvalidOperationException("SMS delivery is disabled.");
         using var request = new HttpRequestMessage(HttpMethod.Post, settings.Endpoint)
         {
             Content = JsonContent.Create(new { to = number, message, senderId = settings.SenderId })

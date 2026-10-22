@@ -187,7 +187,8 @@ public sealed class ReliabilityHardeningTests(PortalFactory factory)
             return await db.SaveChangesAsync();
         });
         var cleanup = new PortalSecurityCleanup(host.Services.GetRequiredService<IServiceScopeFactory>(), clock);
-        using var worker = new PortalSecurityCleanupWorker(cleanup, clock, NullLogger<PortalSecurityCleanupWorker>.Instance);
+        using var worker = new PortalSecurityCleanupWorker(cleanup, clock, NullLogger<PortalSecurityCleanupWorker>.Instance,
+            host.Services.GetRequiredService<PortalWorkerHealth>());
         await worker.StartAsync(default);
         try
         {

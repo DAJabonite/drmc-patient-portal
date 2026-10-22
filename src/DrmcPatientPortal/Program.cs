@@ -17,6 +17,8 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using Microsoft.Data.SqlClient;
 using System.Net;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 if (args is ["--ocr-worker"])
 {
@@ -33,6 +35,17 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<PortalWorkerHealth>();
+builder.Services.AddOptions<PortalOperationsOptions>().Bind(builder.Configuration.GetSection("PortalOperations"))
+    .Validate(x => x.MinimumFreeDiskMb >= 0 && x.QueueWarningMinutes > 0, "Operational thresholds require non-negative disk capacity and positive queue age.")
+    .Validate(x => builder.Environment.IsDevelopment() || x.MonitorWorkers, "Worker monitoring is required outside Development.").ValidateOnStart();
+builder.Services.AddHostedService<PortalOperationsWorker>();
+builder.Services.AddHealthChecks().AddCheck<PortalReadinessHealthCheck>("ready", tags: ["ready"], timeout: TimeSpan.FromSeconds(5));
+builder.Services.AddOptions<PrivateRetentionOptions>().Bind(builder.Configuration.GetSection("PrivateRetention"))
+    .Validate(x => !x.Enabled || !string.IsNullOrWhiteSpace(x.ApprovedPolicyId) && x.OrphanGraceDays is >= 7 and <= 3650,
+        "Private retention requires an approved policy identifier and a 7–3650 day orphan grace period.").ValidateOnStart();
+builder.Services.AddSingleton<PrivateFileRetention>();
+builder.Services.AddHostedService<PrivateFileRetentionWorker>();
 builder.Services.AddScoped<InstitutionalGuideService>();
 builder.Services.AddOptions<WebsiteUsageOptions>().Bind(builder.Configuration.GetSection(WebsiteUsageOptions.Section))
     .Validate(x => x.RetentionMonths > 0, "Website usage retention must be a positive number of calendar months.").ValidateOnStart();
@@ -68,6 +81,7 @@ builder.Services.AddOptions<PortalRateLimitOptions>().Bind(builder.Configuration
     .Validate(x => x.AuthenticationPerIp > 0 && x.AuthenticationPerAccount > 0 && x.EmailPerIp > 0 && x.EmailPerAccount > 0 &&
         x.ScansPerIp > 0 && x.ScansPerUser > 0 && x.ConcurrentScans > 0 && x.PdfPerUser > 0, "All rate limits must be positive.").ValidateOnStart();
 builder.Services.AddSingleton<PortalRequestLimiter>();
+builder.Services.AddSingleton<SharedEmailRequestLimiter>();
 builder.Services.AddSingleton<PortalSessionStore>();
 builder.Services.AddSingleton<PortalSecurityCleanup>();
 builder.Services.AddHostedService<PortalSecurityCleanupWorker>();
@@ -99,6 +113,8 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
     // Email confirmation defaults on; set Identity:RequireConfirmedAccount=false only for isolated local review.
     var requireConfirmedAccount = builder.Configuration.GetValue("Identity:RequireConfirmedAccount", true);
+    if (!builder.Environment.IsDevelopment() && !requireConfirmedAccount)
+        throw new InvalidOperationException("Confirmed accounts are required outside Development.");
     options.SignIn.RequireConfirmedAccount = requireConfirmedAccount;
     options.SignIn.RequireConfirmedEmail = requireConfirmedAccount;
     options.User.RequireUniqueEmail = true;
@@ -143,11 +159,11 @@ else
 {
     builder.Services.AddOptions<EmailDeliveryOptions>()
         .Bind(builder.Configuration.GetSection(EmailDeliveryOptions.SectionName))
-        .Validate(x => !string.IsNullOrWhiteSpace(x.Host) && x.Port > 0 && !string.IsNullOrWhiteSpace(x.FromAddress), "SMTP configuration is required in Production.")
+        .Validate(x => !string.IsNullOrWhiteSpace(x.Host) && x.Port is > 0 and <= 65535 && !string.IsNullOrWhiteSpace(x.FromAddress) && x.UseSsl, "SMTP configuration with TLS is required in Production.")
         .ValidateOnStart();
     builder.Services.AddOptions<SmsDeliveryOptions>()
         .Bind(builder.Configuration.GetSection(SmsDeliveryOptions.SectionName))
-        .Validate(x => Uri.TryCreate(x.Endpoint, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps && !string.IsNullOrWhiteSpace(x.ApiKey), "An HTTPS SMS webhook and API key are required in Production.")
+        .Validate(x => !x.Enabled || Uri.TryCreate(x.Endpoint, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps && !string.IsNullOrWhiteSpace(x.ApiKey), "Enabled SMS delivery requires an HTTPS webhook and API key in Production.")
         .ValidateOnStart();
     builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
     builder.Services.AddHttpClient<ISmsSender, HttpSmsSender>();
@@ -247,13 +263,23 @@ await using (var protectionScope = app.Services.CreateAsyncScope())
     if (args.SequenceEqual(new[] { "redstar-protection", "upgrade" }))
     {
         await RedStarProtectionUpgrade.RunAsync(protectionDb);
+        await PatientDocumentProtectionUpgrade.RunAsync(protectionDb,
+            protectionScope.ServiceProvider.GetRequiredService<PatientDocumentStorage>(), app.Environment);
         app.Logger.LogInformation("Private registry protection upgrade verified and complete.");
         return;
     }
     await RedStarProtectionUpgrade.VerifyReadyAsync(protectionDb);
-    await PatientDocumentProtectionUpgrade.RunAsync(protectionDb,
-        protectionScope.ServiceProvider.GetRequiredService<PatientDocumentStorage>(), app.Environment);
-    app.Logger.LogInformation("Patient attachment protection verified; startup upgrade complete.");
+    if (args is ["patient-documents", "upgrade" or "verify"])
+    {
+        await PatientDocumentProtectionUpgrade.RunAsync(protectionDb,
+            protectionScope.ServiceProvider.GetRequiredService<PatientDocumentStorage>(), app.Environment,
+            verifyAll: args[1] == "verify");
+        app.Logger.LogInformation("Patient attachment protection maintenance complete.");
+        return;
+    }
+    await PatientDocumentProtectionUpgrade.VerifyReadyAsync(protectionDb,
+        protectionScope.ServiceProvider.GetRequiredService<PatientDocumentStorage>());
+    app.Logger.LogInformation("Patient attachment protection readiness verified.");
 }
 if (trustedProxies.Length > 0) app.UseForwardedHeaders();
 await AdminBootstrap.InitializeAsync(app.Services, app.Configuration);
@@ -337,11 +363,21 @@ app.UseRequestLocalization(localizationOptions);
 app.UseSession();
 
 app.UseAuthentication();
-app.UseMiddleware<PortalRequestControls>();
 app.UseAuthorization();
+app.UseMiddleware<PortalRequestControls>();
 app.UseMiddleware<WebsiteUsageMiddleware>();
 
 app.MapStaticAssets();
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false,
+    ResponseWriter = (context, _) => context.Response.WriteAsync("Healthy")
+});
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = (context, report) => context.Response.WriteAsync(report.Status == HealthStatus.Healthy ? "Healthy" : "Unhealthy")
+});
 
 app.MapAreaControllerRoute(name: "admin", areaName: "Admin", pattern: "Admin/{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();

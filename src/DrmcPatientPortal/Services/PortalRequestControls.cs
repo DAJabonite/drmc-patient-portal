@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Http.Features;
+using DrmcPatientPortal.Areas.Admin.Services;
 
 namespace DrmcPatientPortal.Services;
 
@@ -97,15 +98,18 @@ public sealed class PortalRequestControls(RequestDelegate next)
         var action = context.GetEndpoint()?.Metadata.GetMetadata<Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor>();
         var labUpload = HttpMethods.IsPost(context.Request.Method) && action?.ControllerName == "LabResults" &&
             action.RouteValues.TryGetValue("area", out var area) && area == "Admin" && context.Request.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) == true;
-        var sensitiveMultipart = (registrationPost && context.Request.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) == true) || labUpload;
+        var importUpload = HttpMethods.IsPost(context.Request.Method) && action?.ActionName == "Upload" &&
+            action.ControllerName is "Imports" or "RedStarImports" && action.RouteValues.TryGetValue("area", out var importArea) && importArea == "Admin";
+        var sensitiveMultipart = (registrationPost && context.Request.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) == true) || labUpload || importUpload;
         using var scanLease = kind == PortalRequestKind.Scan || sensitiveMultipart ? limiter.ScanConcurrency.AttemptAcquire() : null;
         if (scanLease is { IsAcquired: false }) { await Rejected(context, kind, scanLease); return; }
         var userId = context.User.Identity?.IsAuthenticated == true ? context.User.FindFirstValue(ClaimTypes.NameIdentifier) : null;
         using var scanUserLease = kind == PortalRequestKind.Scan && userId is not null ? limiter.AcquireAccount(PortalRequestKind.Scan, userId, address) : null;
         if (scanUserLease is { IsAcquired: false }) { await Rejected(context, kind, scanUserLease); return; }
-        if (registrationPost || labUpload)
+        if (registrationPost || labUpload || importUpload)
         {
             var maximumRequestBytes = registrationPost ? IdImageValidation.MaximumRequestBytes :
+                importUpload ? (action!.ControllerName == "Imports" ? ImportParser.MaxBytes : RedStarRegistryParser.MaxBytes) + 1024 * 1024 :
                 LabReportStorage.MaximumBytes + (action!.ActionName == "UploadReport" ? 65536 : 1024 * 1024);
             if (context.Request.ContentLength > maximumRequestBytes)
             { await Invalid(context, kind, "The upload request exceeds its size limit.", 413); return; }
@@ -128,6 +132,7 @@ public sealed class PortalRequestControls(RequestDelegate next)
         {
             if (registrationPost) await Invalid(context, kind, "The upload form is invalid. Use ID photos of at most 5 MB each.");
             else if (labUpload) await Invalid(context, kind, "Choose a PDF file no larger than 10 MiB.");
+            else if (importUpload) await Invalid(context, kind, "The import upload is invalid or exceeds its size limit.");
             else await Invalid(context, kind);
             return;
         }
@@ -139,17 +144,42 @@ public sealed class PortalRequestControls(RequestDelegate next)
             await Invalid(context, kind);
             return;
         }
-        string accountKey = form?["Input.Email"].ToString() ?? "";
+        // String model binding selects the first value, even when a field is repeated.
+        string accountKey = form?["Input.Email"].FirstOrDefault() ?? "";
         if (string.IsNullOrEmpty(accountKey)) accountKey = context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Request.Query["userId"].ToString();
         if (string.IsNullOrEmpty(accountKey) && kind == PortalRequestKind.Authentication)
         {
             var pending = await context.AuthenticateAsync(IdentityConstants.TwoFactorUserIdScheme);
             accountKey = pending.Principal?.FindFirstValue(ClaimTypes.Name) ?? "";
         }
-        if (string.IsNullOrEmpty(accountKey)) accountKey = form?["Input.NewEmail"].ToString() ?? "anonymous";
+        if (string.IsNullOrEmpty(accountKey)) accountKey = form?["Input.NewEmail"].FirstOrDefault() ?? "anonymous";
         using var accountLease = kind is PortalRequestKind.Authentication or PortalRequestKind.Email or PortalRequestKind.Pdf
             ? limiter.AcquireAccount(kind, accountKey, address) : null;
         if (accountLease is { IsAcquired: false }) { await Rejected(context, kind, accountLease); return; }
+        if (kind == PortalRequestKind.Email)
+        {
+            // Changing an address is limited by the destination; verification uses the
+            // confirmed account's address, never a caller-supplied account identifier.
+            var manageEmail = (context.Request.Path.Value ?? "").TrimEnd('/').Equals("/Identity/Account/Manage/Email", StringComparison.OrdinalIgnoreCase);
+            string? recipient;
+            if (manageEmail && context.Request.Query["handler"].ToString().Equals("SendVerificationEmail", StringComparison.OrdinalIgnoreCase))
+            {
+                var users = context.RequestServices.GetRequiredService<UserManager<Models.ApplicationUser>>();
+                var user = await users.GetUserAsync(context.User);
+                recipient = user?.Email;
+            }
+            else recipient = form?[manageEmail ? "Input.NewEmail" : "Input.Email"].FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(recipient)) recipient = "anonymous";
+            var shared = await context.RequestServices.GetRequiredService<SharedEmailRequestLimiter>()
+                .AcquireAsync(recipient, context.RequestAborted);
+            if (!shared.Allowed)
+            {
+                context.Response.StatusCode = 429;
+                context.Response.Headers.RetryAfter = shared.RetryAfter.ToString(CultureInfo.InvariantCulture);
+                await context.Response.WriteAsync("Too many attempts. Wait before trying again.");
+                return;
+            }
+        }
         var directUpload = registrationPost && kind != PortalRequestKind.Scan && form?.Files.Any(f => f.Length > 0) == true;
         using var uploadIpLease = directUpload ? limiter.AcquireIp(PortalRequestKind.Scan, address) : null;
         if (uploadIpLease is { IsAcquired: false }) { await Rejected(context, kind, uploadIpLease); return; }

@@ -128,6 +128,7 @@ public class LabResultsController : Controller
         };
         ViewData["PdfDisclosureEnabled"] = _resultsOptions.CurrentValue.ShowFullResults;
 
+        await _auditLog.LogAsync(user.Id, "VIEW_LAB_LIST", "Patient/LabResults", "Viewed owned laboratory availability.", HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
         return View(model);
     }
 

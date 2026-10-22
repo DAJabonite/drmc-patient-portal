@@ -65,6 +65,7 @@ public class MedicationsController : Controller
             Schedules = schedules, SchedulePagination = schedulePagination, AllergyPagination = allergyPagination
         };
 
+        await _auditLog.LogAsync(user.Id, "VIEW_MEDICATION_LIST", "Patient/Medications", "Viewed owned prescriptions, schedules and allergies.", HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
         return View(model);
     }
 

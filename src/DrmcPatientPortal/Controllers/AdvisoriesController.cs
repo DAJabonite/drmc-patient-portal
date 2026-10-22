@@ -10,16 +10,19 @@ namespace DrmcPatientPortal.Controllers;
 public class AdvisoriesController : Controller
 {
     private readonly ApplicationDbContext _db;
+    private readonly TimeProvider _clock;
 
-    public AdvisoriesController(ApplicationDbContext db)
+    public AdvisoriesController(ApplicationDbContext db, TimeProvider clock)
     {
         _db = db;
+        _clock = clock;
     }
 
     // GET /Advisories
     public async Task<IActionResult> Index(AdvisoryCategory? category, string? search, int page = 1)
     {
-        var query = _db.PublicAdvisories.AsQueryable();
+        var now = _clock.GetUtcNow().UtcDateTime;
+        var query = _db.PublicAdvisories.Where(a => a.PublishedAt <= now && (a.EffectiveUntil == null || a.EffectiveUntil > now));
 
         if (category.HasValue)
         {
@@ -41,7 +44,9 @@ public class AdvisoriesController : Controller
             .ThenByDescending(a => a.Id).Skip(pagination.Offset).Take(PortalPagination.Size)
             .ToListAsync());
 
-        var pinnedAlert = await SqlReadRetry.RunAsync(_db, () => _db.PublicAdvisories.OrderByDescending(a => a.PublishedAt).ThenByDescending(a => a.Id)
+        var pinnedAlert = await SqlReadRetry.RunAsync(_db, () => _db.PublicAdvisories
+            .Where(a => a.PublishedAt <= now && (a.EffectiveUntil == null || a.EffectiveUntil > now))
+            .OrderByDescending(a => a.PublishedAt).ThenByDescending(a => a.Id)
             .FirstOrDefaultAsync(a => a.IsPinned && a.Priority == AdvisoryPriority.Urgent));
 
         var model = new AdvisoriesIndexViewModel
@@ -66,8 +71,9 @@ public class AdvisoriesController : Controller
             return RedirectToAction(nameof(Index));
         }
 
+        var now = _clock.GetUtcNow().UtcDateTime;
         var advisory = await SqlReadRetry.RunAsync(_db, () => _db.PublicAdvisories
-            .FirstOrDefaultAsync(a => a.Slug == targetSlug));
+            .FirstOrDefaultAsync(a => a.Slug == targetSlug && a.PublishedAt <= now));
 
         if (advisory is null)
         {
@@ -80,7 +86,7 @@ public class AdvisoriesController : Controller
         if (advisory.ViewCount < int.MaxValue) advisory.ViewCount++;
 
         var related = await SqlReadRetry.RunAsync(_db, () => _db.PublicAdvisories
-            .Where(a => a.Id != advisory.Id)
+            .Where(a => a.Id != advisory.Id && a.PublishedAt <= now && (a.EffectiveUntil == null || a.EffectiveUntil > now))
             .OrderByDescending(a => a.PublishedAt)
             .Take(3)
             .ToListAsync());
@@ -88,6 +94,7 @@ public class AdvisoriesController : Controller
         var model = new AdvisoryDetailViewModel
         {
             Advisory = advisory,
+            IsExpired = advisory.EffectiveUntil <= now,
             RelatedAdvisories = related
         };
 
@@ -106,6 +113,7 @@ public class AdvisoriesIndexViewModel
 
 public class AdvisoryDetailViewModel
 {
+    public bool IsExpired { get; set; }
     public PublicAdvisory Advisory { get; set; } = null!;
     public string SanitizedContentHtml => AdvisoryHtml.Clean(Advisory.ContentHtml);
     public IReadOnlyList<PublicAdvisory> RelatedAdvisories { get; set; } = Array.Empty<PublicAdvisory>();

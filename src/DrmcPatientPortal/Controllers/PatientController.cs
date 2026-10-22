@@ -13,11 +13,13 @@ public class PatientController : Controller
 {
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IAuditLogService _auditLog;
 
-    public PatientController(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+    public PatientController(ApplicationDbContext db, UserManager<ApplicationUser> userManager, IAuditLogService auditLog)
     {
         _db = db;
         _userManager = userManager;
+        _auditLog = auditLog;
     }
 
     public async Task<IActionResult> Home()
@@ -57,6 +59,7 @@ public class PatientController : Controller
             Departments = ClinicalDepartments.All,
         };
 
+        await _auditLog.LogAsync(user.Id, "VIEW_PATIENT_DASHBOARD", "Patient/Home", "Viewed owned clinical previews and counts.", HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
         return View(model);
     }
 

@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Hosting;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using Microsoft.Extensions.Options;
 
 namespace DrmcPatientPortal.Tests;
 
@@ -67,6 +68,7 @@ public sealed class PortalFactory : WebApplicationFactory<Program>, IAsyncLifeti
         builder.UseSetting("RedStar:WorkerEnabled", "false");
         builder.UseSetting("RedStar:RemindersEnabled", "false");
         builder.UseSetting("WebsiteUsage:Enabled", "false");
+        builder.UseSetting("PortalOperations:MonitorWorkers", "false");
         foreach (var setting in new[] { "AuthenticationPerIp", "AuthenticationPerAccount", "EmailPerIp", "EmailPerAccount", "ScansPerIp", "PdfPerUser" })
             builder.UseSetting("RateLimits:" + setting, "100000");
     }
@@ -99,7 +101,16 @@ public sealed class PortalFactory : WebApplicationFactory<Program>, IAsyncLifeti
         // Fixtures require an already migrated schema, so migrate before the host starts.
         await using (var provider = await DatabaseServicesAsync())
         await using (var scope = provider.CreateAsyncScope())
-            await RedStarProtectionUpgrade.RunAsync(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>());
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            await RedStarProtectionUpgrade.RunAsync(db);
+            var environment = new TestEnvironment { ContentRootPath = _storageRoot, WebRootPath = Path.Combine(_storageRoot, "wwwroot") };
+            var storage = new PatientDocumentStorage(environment, Options.Create(new PatientDocumentStorageOptions
+            {
+                RootPath = Path.Combine(_storageRoot, "documents"), TemporaryPath = Path.Combine(_storageRoot, "uploads")
+            }), provider.GetRequiredService<IDataProtectionProvider>(), null!);
+            await PatientDocumentProtectionUpgrade.RunAsync(db, storage, environment);
+        }
         _ = Server;
     }
 

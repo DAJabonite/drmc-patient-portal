@@ -114,6 +114,7 @@ public class VisitsController : Controller
             TotalCount = pagination.Total,
         };
 
+        await _auditLog.LogAsync(user.Id, "VIEW_ENCOUNTER_LIST", "Patient/Visits", "Viewed owned encounter summaries.", HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
         return View(model);
     }
 

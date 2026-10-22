@@ -81,14 +81,20 @@ public sealed class OutboundNotificationQueue(IServiceScopeFactory scopes, IData
 public sealed class OutboundNotificationDispatcher(IServiceScopeFactory scopes, IDataProtectionProvider protection,
     IOptions<OutboundNotificationOptions> options, TimeProvider clock, ILogger<OutboundNotificationDispatcher> logger)
 {
-    public async Task DispatchOnceAsync(CancellationToken token = default)
+    public async Task DispatchOnceAsync(CancellationToken token = default, Action? reportProgress = null)
     {
+        void Progress()
+        {
+            token.ThrowIfCancellationRequested();
+            reportProgress?.Invoke();
+        }
         await using var scope = scopes.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await FinalizeAbandonedAsync(db, token);
         var now = clock.GetUtcNow();
         var ids = await SqlReadRetry.RunAsync(db, () => Due(db, now)
             .OrderBy(m => m.NextAttemptAtUtc).ThenBy(m => m.Id).Select(m => m.Id).Take(25).ToListAsync(token), token);
+        Progress();
         foreach (var id in ids)
         {
             now = clock.GetUtcNow();
@@ -98,10 +104,10 @@ public sealed class OutboundNotificationDispatcher(IServiceScopeFactory scopes, 
                 .ExecuteUpdateAsync(set => set.SetProperty(m => m.Status, OutboundNotificationStatus.Sending)
                     .SetProperty(m => m.AttemptCount, m => m.AttemptCount + 1).SetProperty(m => m.LeaseOwner, owner)
                     .SetProperty(m => m.LeaseExpiresAtUtc, (DateTimeOffset?)now.AddMinutes(2)), token);
-            if (claimed != 1) continue;
+            if (claimed != 1) { Progress(); continue; }
             var message = await db.OutboundNotifications.AsNoTracking().SingleOrDefaultAsync(m =>
                 m.Id == id && m.Status == OutboundNotificationStatus.Sending && m.LeaseOwner == owner, token);
-            if (message is null) continue;
+            if (message is null) { Progress(); continue; }
             try
             {
                 var payload = JsonSerializer.Deserialize<OutboundNotificationPayload>(protection.CreateProtector(KeyRingProtection.OutboundNotificationPurpose)
@@ -114,11 +120,13 @@ public sealed class OutboundNotificationDispatcher(IServiceScopeFactory scopes, 
                         !string.Equals(invitation.Email, payload.Recipient, StringComparison.OrdinalIgnoreCase))
                     {
                         await CompleteAsync(db, message, OutboundNotificationStatus.Cancelled, token);
+                        Progress();
                         continue;
                     }
                     if (new DateTimeOffset(DateTime.SpecifyKind(invitation.ExpiresAtUtc, DateTimeKind.Utc)) <= clock.GetUtcNow())
                     {
                         await CompleteAsync(db, message, OutboundNotificationStatus.Expired, token);
+                        Progress();
                         continue;
                     }
                 }
@@ -126,6 +134,7 @@ public sealed class OutboundNotificationDispatcher(IServiceScopeFactory scopes, 
                 if (remaining <= TimeSpan.Zero)
                 {
                     await CompleteAsync(db, message, OutboundNotificationStatus.Expired, token);
+                    Progress();
                     continue;
                 }
                 using var deadline = new CancellationTokenSource(remaining < TimeSpan.FromSeconds(30) ? remaining : TimeSpan.FromSeconds(30), clock);
@@ -161,6 +170,8 @@ public sealed class OutboundNotificationDispatcher(IServiceScopeFactory scopes, 
                     logger.LogWarning("Outbound notification {MessageId} ({Channel}) {Status} after attempt {Attempt} ({ErrorType}).",
                         id, message.Channel, status, message.AttemptCount, error.GetType().Name);
             }
+            // A persisted retry is worker progress even when the provider is unavailable.
+            Progress();
         }
     }
 
@@ -216,7 +227,7 @@ public sealed class OutboundNotificationDispatcher(IServiceScopeFactory scopes, 
 }
 
 public sealed class OutboundNotificationWorker(OutboundNotificationDispatcher dispatcher, IOptions<OutboundNotificationOptions> options,
-    TimeProvider clock, ILogger<OutboundNotificationWorker> logger) : BackgroundService
+    TimeProvider clock, ILogger<OutboundNotificationWorker> logger, PortalWorkerHealth health) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -226,12 +237,13 @@ public sealed class OutboundNotificationWorker(OutboundNotificationDispatcher di
         {
             try
             {
-                await dispatcher.DispatchOnceAsync(stoppingToken);
+                await dispatcher.DispatchOnceAsync(stoppingToken, () => health.Success("outbound-notifications"));
                 if (clock.GetUtcNow() >= nextCleanup)
                 {
                     await dispatcher.CleanupAsync(stoppingToken);
                     nextCleanup = clock.GetUtcNow().AddMinutes(5);
                 }
+                health.Success("outbound-notifications");
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
             catch (Exception error) { logger.LogWarning("Outbound notification worker unavailable ({ErrorType}).", error.GetType().Name); }

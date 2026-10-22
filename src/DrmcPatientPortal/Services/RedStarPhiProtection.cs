@@ -48,6 +48,7 @@ public sealed class RedStarPhiProtection(IDataProtectionProvider provider, strin
     public string? HospitalNumberIndex(string? value) => value is null ? null : Index("HospitalNumber", NormalizeCode(value));
     public string? AccountIndex(string? value) => value is null ? null : Index("PortalAccount", value);
     public string KeyCheck => Index("KeyVerification.v1", "DRMC.RedStar");
+    public string EmailRecipientIndex(string value) => Index("Portal.EmailRecipientThrottle.v1", value);
     private string Index(string domain, string value)
     {
         lock (gate)
