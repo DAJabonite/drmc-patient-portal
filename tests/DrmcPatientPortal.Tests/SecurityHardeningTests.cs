@@ -46,6 +46,42 @@ internal sealed class TestEnvironment : IWebHostEnvironment
 public sealed class SecurityConfigurationTests
 {
     [Fact]
+    public async Task Account_throttle_uses_the_first_email_value_when_login_fields_repeat()
+    {
+        using var limiter = new PortalRequestLimiter(Options.Create(new PortalRateLimitOptions { AuthenticationPerAccount = 1 }));
+        var accepted = 0;
+        var controls = new PortalRequestControls(_ => { accepted++; return Task.CompletedTask; });
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var context = new DefaultHttpContext();
+            context.Request.Method = "POST";
+            context.Request.Path = "/Identity/Account/Login";
+            context.Request.ContentType = "application/x-www-form-urlencoded";
+            context.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>
+            {
+                ["Input.Email"] = new(new[] { "patient@fixtures.test", $"nonce{attempt}@fixtures.test" })
+            });
+            await controls.InvokeAsync(context, limiter);
+            Assert.Equal(attempt == 0 ? 200 : 429, context.Response.StatusCode);
+        }
+        Assert.Equal(1, accepted);
+    }
+
+    [Fact]
+    public void Disabled_mail_workers_are_not_required_for_readiness()
+    {
+        var clock = new TestClock(DateTimeOffset.UtcNow);
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["AccountEmail:WorkerEnabled"] = "false", ["Notifications:Outbox:WorkerEnabled"] = "false"
+        }).Build();
+        using var health = new PortalWorkerHealth(clock, config);
+        clock.Now = clock.Now.AddMinutes(3);
+        foreach (var worker in new[] { "imports", "security-cleanup", "temporary-documents", "operations" }) health.Success(worker);
+        Assert.True(health.WorkersReady());
+    }
+
+    [Fact]
     public void Authenticator_signin_matches_the_rfc6238_sha1_test_vector()
     {
         // RFC 6238 Appendix B: SHA-1 secret "12345678901234567890", time 59, 8-digit value 94287082.

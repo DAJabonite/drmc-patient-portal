@@ -60,8 +60,13 @@ public sealed class AccountEmailQueue(IServiceScopeFactory scopes, IDataProtecti
 public sealed class AccountEmailDispatcher(IServiceScopeFactory scopes, IDataProtectionProvider protection,
     IOptions<AccountEmailOptions> options, TimeProvider clock, ILogger<AccountEmailDispatcher> logger)
 {
-    public async Task DispatchOnceAsync(CancellationToken token = default)
+    public async Task DispatchOnceAsync(CancellationToken token = default, Action? reportProgress = null)
     {
+        void Progress()
+        {
+            token.ThrowIfCancellationRequested();
+            reportProgress?.Invoke();
+        }
         await using var scope = scopes.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var now = clock.GetUtcNow();
@@ -71,6 +76,7 @@ public sealed class AccountEmailDispatcher(IServiceScopeFactory scopes, IDataPro
             (m.Status == AccountEmailStatus.Pending && m.NextAttemptUtc <= now ||
              m.Status == AccountEmailStatus.Sending && m.LeaseExpiresUtc <= now))
             .OrderBy(m => m.NextAttemptUtc).ThenBy(m => m.Id).Select(m => m.Id).Take(25).ToListAsync(token), token);
+        Progress();
         foreach (var id in ids)
         {
             now = clock.GetUtcNow();
@@ -80,9 +86,9 @@ public sealed class AccountEmailDispatcher(IServiceScopeFactory scopes, IDataPro
                 .ExecuteUpdateAsync(set => set.SetProperty(m => m.Status, AccountEmailStatus.Sending)
                     .SetProperty(m => m.Attempts, m => m.Attempts + 1).SetProperty(m => m.LeaseOwner, owner)
                     .SetProperty(m => m.LeaseExpiresUtc, (DateTimeOffset?)now.AddMinutes(2)), token);
-            if (claimed != 1) continue;
+            if (claimed != 1) { Progress(); continue; }
             var message = await db.AccountEmails.AsNoTracking().SingleOrDefaultAsync(m => m.Id == id && m.LeaseOwner == owner, token);
-            if (message is null) continue;
+            if (message is null) { Progress(); continue; }
             try
             {
                 var payload = JsonSerializer.Deserialize<AccountEmailPayload>(protection.CreateProtector("DRMC.AccountEmail.v1")
@@ -123,6 +129,8 @@ public sealed class AccountEmailDispatcher(IServiceScopeFactory scopes, IDataPro
                 if (changed == 1 && terminal)
                     logger.LogWarning("Account email {MessageId} (Email) terminal status {Status} after attempt {Attempt} ({ErrorType}).", id, status, message.Attempts, error.GetType().Name);
             }
+            // A persisted retry is worker progress even when the mail provider is unavailable.
+            Progress();
         }
     }
 
@@ -168,7 +176,7 @@ public sealed class AccountEmailWorker(AccountEmailDispatcher dispatcher, IOptio
         {
             try
             {
-                await dispatcher.DispatchOnceAsync(stoppingToken);
+                await dispatcher.DispatchOnceAsync(stoppingToken, () => health.Success("account-email"));
                 if (clock.GetUtcNow() >= nextCleanup)
                 {
                     await dispatcher.CleanupAsync(stoppingToken);

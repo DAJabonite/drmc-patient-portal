@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -76,6 +77,87 @@ public sealed class EmailVerificationTests(PortalFactory factory)
             ["Input.Email"] = email,
             ["__RequestVerificationToken"] = StaffAccounts.Token(html),
         }));
+    }
+
+    private WebApplicationFactory<Program> ThrottledReplica() => factory.WithWebHostBuilder(builder =>
+        builder.ConfigureTestServices(services => services.Configure<PortalRateLimitOptions>(options => options.EmailPerAccount = 1)));
+
+    private static async Task<HttpResponseMessage> RepeatedRecipientAsync(HttpClient client, string path, string field, string recipient)
+    {
+        var page = await client.GetStringAsync(path.Split('?')[0]);
+        return await client.PostAsync(path, new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
+        {
+            new(field, recipient), new(field, $"nonce.{Guid.NewGuid():N}@fixtures.test"),
+            new("__RequestVerificationToken", StaffAccounts.Token(page))
+        }));
+    }
+
+    private async Task ConfirmAccountAsync(string userId)
+    {
+        using var scope = factory.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = (await users.FindByIdAsync(userId))!;
+        user.EmailConfirmed = true;
+        Assert.True((await users.UpdateAsync(user)).Succeeded);
+    }
+
+    private async Task AssertQueuedRecipientAsync(WebApplicationFactory<Program> host, string userId, string recipient)
+    {
+        var message = await QueuedEmailAsync(userId);
+        var protector = host.Services.GetRequiredService<IDataProtectionProvider>().CreateProtector("DRMC.AccountEmail.v1");
+        var payload = System.Text.Json.JsonSerializer.Deserialize<AccountEmailPayload>(protector.Unprotect(message.ProtectedPayload!));
+        Assert.Equal(recipient, payload!.Recipient);
+    }
+
+    [Theory]
+    [InlineData("/Identity/Account/ForgotPassword", true)]
+    [InlineData("/Identity/Account/ForgotPassword", false)]
+    [InlineData(ResendPath, true)]
+    [InlineData(ResendPath, false)]
+    public async Task Repeated_email_fields_cannot_bypass_the_shared_recipient_limit_across_hosts(string path, bool existing)
+    {
+        var account = await NewAccountAsync();
+        if (path.EndsWith("ForgotPassword", StringComparison.Ordinal)) await ConfirmAccountAsync(account.Id);
+        var recipient = existing ? account.Email : $"unknown.{Guid.NewGuid():N}@fixtures.test";
+        using var first = ThrottledReplica();
+        using var second = ThrottledReplica();
+        using var firstClient = Client(first);
+        using var secondClient = Client(second);
+        var accepted = await RepeatedRecipientAsync(firstClient, path, "Input.Email", recipient);
+        Assert.Equal(HttpStatusCode.Redirect, accepted.StatusCode);
+        var limited = await RepeatedRecipientAsync(secondClient, path, "Input.Email", recipient);
+        Assert.Equal(HttpStatusCode.TooManyRequests, limited.StatusCode);
+        Assert.NotNull(limited.Headers.RetryAfter);
+        if (existing) await AssertQueuedRecipientAsync(first, account.Id, recipient);
+        else
+        {
+            using var scope = first.Services.CreateScope();
+            Assert.False(await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().AccountEmails.AnyAsync(m => m.UserId == account.Id));
+        }
+    }
+
+    [Theory]
+    [InlineData("ChangeEmail")]
+    [InlineData("SendVerificationEmail")]
+    public async Task Manage_email_limits_the_bound_destination_or_stored_verification_address_across_hosts(string handler)
+    {
+        var account = await NewAccountAsync();
+        await ConfirmAccountAsync(account.Id);
+        var destination = $"destination.{Guid.NewGuid():N}@fixtures.test";
+        using var first = ThrottledReplica();
+        using var second = ThrottledReplica();
+        using var firstClient = Client(first);
+        using var secondClient = Client(second);
+        await firstClient.SignInSuccessfullyAsync(account.Email, PortalFactory.Password);
+        await secondClient.SignInSuccessfullyAsync(account.Email, PortalFactory.Password);
+        var path = "/Identity/Account/Manage/Email?handler=" + handler;
+        var accepted = await RepeatedRecipientAsync(firstClient, path, "Input.NewEmail", destination);
+        Assert.Equal(HttpStatusCode.Redirect, accepted.StatusCode);
+        var secondDestination = handler == "ChangeEmail" ? destination : $"ignored.{Guid.NewGuid():N}@fixtures.test";
+        var limited = await RepeatedRecipientAsync(secondClient, path, "Input.NewEmail", secondDestination);
+        Assert.Equal(HttpStatusCode.TooManyRequests, limited.StatusCode);
+        Assert.NotNull(limited.Headers.RetryAfter);
+        await AssertQueuedRecipientAsync(first, account.Id, handler == "ChangeEmail" ? destination : account.Email);
     }
 
     [Theory]

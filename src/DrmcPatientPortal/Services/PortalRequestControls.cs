@@ -144,14 +144,15 @@ public sealed class PortalRequestControls(RequestDelegate next)
             await Invalid(context, kind);
             return;
         }
-        string accountKey = form?["Input.Email"].ToString() ?? "";
+        // String model binding selects the first value, even when a field is repeated.
+        string accountKey = form?["Input.Email"].FirstOrDefault() ?? "";
         if (string.IsNullOrEmpty(accountKey)) accountKey = context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Request.Query["userId"].ToString();
         if (string.IsNullOrEmpty(accountKey) && kind == PortalRequestKind.Authentication)
         {
             var pending = await context.AuthenticateAsync(IdentityConstants.TwoFactorUserIdScheme);
             accountKey = pending.Principal?.FindFirstValue(ClaimTypes.Name) ?? "";
         }
-        if (string.IsNullOrEmpty(accountKey)) accountKey = form?["Input.NewEmail"].ToString() ?? "anonymous";
+        if (string.IsNullOrEmpty(accountKey)) accountKey = form?["Input.NewEmail"].FirstOrDefault() ?? "anonymous";
         using var accountLease = kind is PortalRequestKind.Authentication or PortalRequestKind.Email or PortalRequestKind.Pdf
             ? limiter.AcquireAccount(kind, accountKey, address) : null;
         if (accountLease is { IsAcquired: false }) { await Rejected(context, kind, accountLease); return; }
@@ -167,7 +168,7 @@ public sealed class PortalRequestControls(RequestDelegate next)
                 var user = await users.GetUserAsync(context.User);
                 recipient = user?.Email;
             }
-            else recipient = form?[manageEmail ? "Input.NewEmail" : "Input.Email"].ToString();
+            else recipient = form?[manageEmail ? "Input.NewEmail" : "Input.Email"].FirstOrDefault();
             if (string.IsNullOrWhiteSpace(recipient)) recipient = "anonymous";
             var shared = await context.RequestServices.GetRequiredService<SharedEmailRequestLimiter>()
                 .AcquireAsync(recipient, context.RequestAborted);
