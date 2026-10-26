@@ -17,6 +17,18 @@
     });
 })();
 
+// Keep staff role menus inside the viewport on narrow and short screens.
+document.querySelectorAll(".staff-access-actions .dropdown-toggle").forEach((button) => {
+    window.bootstrap.Dropdown.getOrCreateInstance(button, {
+        popperConfig: (config) => ({
+            ...config,
+            modifiers: config.modifiers.map((modifier) => modifier.name === "preventOverflow"
+                ? { ...modifier, options: { ...modifier.options, padding: 8, altAxis: true } }
+                : modifier),
+        }),
+    });
+});
+
 // Print buttons (registration code slip).
 document.querySelectorAll("[data-admin-print]").forEach((button) => button.addEventListener("click", () => window.print()));
 

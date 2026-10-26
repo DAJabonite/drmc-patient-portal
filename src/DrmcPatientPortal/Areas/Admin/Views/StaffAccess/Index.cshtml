@@ -34,9 +34,9 @@
     </div>
     @if (Model.Rows.Count > 0)
     {
-        <div class="table-responsive">
-            <table class="table admin-table admin-table-stack">
-                <thead><tr><th scope="col">Account</th><th scope="col">Sign-in requirements</th><th scope="col">Staff roles</th><th scope="col" class="text-end">Change access</th></tr></thead>
+        <div class="staff-access-table-wrap">
+            <table class="table admin-table admin-table-stack staff-access-table">
+                <thead><tr><th scope="col">Account</th><th scope="col">Sign-in requirements</th><th scope="col">Current roles</th><th scope="col" class="text-end staff-access-actions">Actions</th></tr></thead>
                 <tbody>
                 @foreach (var row in Model.Rows)
                 {
@@ -49,39 +49,46 @@
                                 @if (row.LockedOut) { <span class="@AdminChips.Css("failed")">Locked out</span> }
                             </span>
                         </td>
-                        <td data-label="Staff roles">
+                        <td data-label="Current roles">
                             @if (row.Roles.Count == 0) { <span class="admin-muted">None</span> }
                             else { <span class="admin-chips">@foreach (var role in row.Roles) { <span class="@AdminChips.Css("active")">@StaffRoles.Label(role)</span> }</span> }
                         </td>
-                        <td class="text-end" data-label="Change access">
-                            <div class="d-flex flex-wrap gap-2 justify-content-end">
-                                @foreach (var role in StaffRoles.Grantable)
-                                {
-                                    var has = row.Roles.Contains(role);
-                                    <form asp-area="Admin" asp-controller="StaffAccess" asp-action="Update" method="post" class="d-inline">
-                                        <input type="hidden" name="userId" value="@row.Id" />
-                                        <input type="hidden" name="role" value="@role" />
-                                        <input type="hidden" name="grant" value="@(has ? "false" : "true")" />
-                                        <input type="hidden" name="concurrencyStamp" value="@row.ConcurrencyStamp" />
-                                        <input type="hidden" name="search" value="@Model.Search" />
-                                        <input type="hidden" name="all" value="@(Model.AllAccounts ? "true" : "false")" />
-                                        <input type="hidden" name="page" value="@Model.Page" />
-                                        @if (has)
-                                        {
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">Revoke @StaffRoles.Label(role).ToLowerInvariant()<span class="visually-hidden"> from @row.Email</span></button>
-                                        }
-                                        else if (row.EligibleForGrant)
-                                        {
-                                            <button type="submit" class="btn btn-sm btn-outline-primary">Grant @StaffRoles.Label(role).ToLowerInvariant()<span class="visually-hidden"> to @row.Email</span></button>
-                                        }
-                                        else
-                                        {
-                                            <button type="submit" class="btn btn-sm btn-outline-secondary" disabled aria-describedby="eligibility-@row.Id">Grant @StaffRoles.Label(role).ToLowerInvariant()</button>
-                                        }
-                                    </form>
-                                }
+                        <td class="text-end staff-access-actions" data-label="Actions">
+                            <div class="dropdown d-inline-block">
+                                <button id="roles-toggle-@row.Id" class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-offset="0,8"
+                                        aria-expanded="false" aria-controls="roles-menu-@row.Id" aria-label="Manage roles for @row.Email"
+                                        aria-describedby="@(row.EligibleForGrant ? null : $"eligibility-{row.Id}")">Manage roles</button>
+                                <ul id="roles-menu-@row.Id" class="dropdown-menu dropdown-menu-end staff-role-menu shadow-sm" aria-labelledby="roles-toggle-@row.Id">
+                                    <li><h2 class="dropdown-header">Staff roles</h2></li>
+                                    @foreach (var role in StaffRoles.Grantable)
+                                    {
+                                        var has = row.Roles.Contains(role);
+                                        var grantBlocked = !has && !row.EligibleForGrant;
+                                        var actionLabel = has ? $"Revoke {StaffRoles.Label(role).ToLowerInvariant()} from {row.Email}" : $"Grant {StaffRoles.Label(role).ToLowerInvariant()} to {row.Email}";
+                                        <li>
+                                            <form asp-area="Admin" asp-controller="StaffAccess" asp-action="Update" method="post">
+                                                <input type="hidden" name="userId" value="@row.Id" />
+                                                <input type="hidden" name="role" value="@role" />
+                                                <input type="hidden" name="grant" value="@(has ? "false" : "true")" />
+                                                <input type="hidden" name="concurrencyStamp" value="@row.ConcurrencyStamp" />
+                                                <input type="hidden" name="search" value="@Model.Search" />
+                                                <input type="hidden" name="all" value="@(Model.AllAccounts ? "true" : "false")" />
+                                                <input type="hidden" name="page" value="@Model.Page" />
+                                                <button type="submit" class="dropdown-item staff-role-action" disabled="@grantBlocked" aria-label="@actionLabel"
+                                                        aria-describedby="@(grantBlocked ? $"eligibility-{row.Id}" : null)">
+                                                    <span class="staff-role-label">@StaffRoles.Label(role)</span>
+                                                    <span class="staff-role-verb @(has ? "text-danger" : "staff-role-grant")">@(has ? "Revoke" : "Grant")</span>
+                                                </button>
+                                            </form>
+                                        </li>
+                                    }
+                                    @if (!row.EligibleForGrant)
+                                    {
+                                        <li><hr class="dropdown-divider" /></li>
+                                        <li><p id="eligibility-@row.Id" class="dropdown-item-text small admin-muted mb-0">Needs a confirmed email and 2FA before a role can be granted.</p></li>
+                                    }
+                                </ul>
                             </div>
-                            @if (!row.EligibleForGrant) { <div id="eligibility-@row.Id" class="admin-muted small mt-1">Needs a confirmed email and 2FA before a role can be granted.</div> }
                         </td>
                     </tr>
                 }
