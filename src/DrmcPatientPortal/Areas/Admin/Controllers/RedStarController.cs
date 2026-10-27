@@ -22,16 +22,12 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
 
     [HttpGet]
     public async Task<IActionResult> Index(string? search, string worklist = "all", RedStarProgram? program = null,
-        RedStarStatus? status = null, int page = 1, string? month = null, CancellationToken cancellationToken = default)
+        RedStarRegistryStatusFilter? status = null, int page = 1, string? month = null, int? year = null,
+        CancellationToken cancellationToken = default)
     {
-        search = search?.Trim();
-        if (!ModelState.IsValid || search?.Length > 120 || !Worklists.Contains(worklist) || program.HasValue && !Enum.IsDefined(program.Value) ||
-            status.HasValue && !Enum.IsDefined(status.Value)) return BadRequest();
         var today = ClinicalClock.Today;
-        month ??= today.ToString("yyyy-MM", CultureInfo.InvariantCulture);
-        if (!DateTime.TryParseExact(month, "yyyy-MM", CultureInfo.InvariantCulture, DateTimeStyles.None, out var monthStart) ||
-            monthStart.Year is < 1900 or > 2200) return BadRequest();
-        var monthEnd = monthStart.AddMonths(1);
+        if (!TryRegistryFilters(search, worklist, program, status, month, year, today, out var filters)) return BadRequest();
+        var summary = await RegistrySummaryAsync(filters.MonthStart, cancellationToken);
         var end = today.AddDays(RedStarReminderService.ReminderWindowDays);
         var all = db.RedStarEnrollments.AsNoTracking();
         var refills = OutstandingRefills();
@@ -43,10 +39,95 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
             ["followup"] = await all.CountAsync(e => e.Program == RedStarProgram.ART && refills.Any(a => a.EnrollmentId == e.Id && a.DueDate.AddMonths(1) <= today), cancellationToken),
             ["verification"] = await all.CountAsync(e => e.Status == RedStarStatus.AwaitingVerification || e.Appointments.Any(a => a.State == RedStarAppointmentState.Scheduled && !a.RemindersVerified), cancellationToken),
             ["requests"] = await all.CountAsync(e => db.RedStarRescheduleRequests.Any(r => r.Appointment.EnrollmentId == e.Id && r.State == RedStarRequestState.Pending), cancellationToken),
-            ["living"] = await all.CountAsync(e => e.Program == RedStarProgram.ART && e.Status == RedStarStatus.Active, cancellationToken),
-            ["expired"] = await all.CountAsync(e => e.Status == RedStarStatus.Deceased && e.StatusDate >= monthStart && e.StatusDate < monthEnd, cancellationToken)
+            ["living"] = summary.LivingCount,
+            ["expired"] = summary.ExpiredThisMonthCount
         };
-        var query = worklist switch
+        var matching = await RegistryRowsAsync(filters, today, cancellationToken);
+        var total = matching.Count;
+        page = Page(page, total);
+        var rows = matching.Skip((page - 1) * PageSize).Take(PageSize).ToList();
+        await RedStarAuditTrail.RecordAsync(db, Actor, "View registry", "Registry", cancellationToken);
+        return View(new RedStarRegistryPage(rows, filters.Search, filters.Worklist, filters.Program, filters.Status,
+            page, total, counts, today, filters.Month, summary));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Export(string? search, string worklist = "all", RedStarProgram? program = null,
+        RedStarRegistryStatusFilter? status = null, string? month = null, int? year = null,
+        CancellationToken cancellationToken = default)
+    {
+        var generatedAt = ClinicalClock.WallTime(DateTimeOffset.UtcNow);
+        if (!TryRegistryFilters(search, worklist, program, status, month, year, generatedAt.Date, out var filters)) return BadRequest();
+        var rows = await RegistryRowsAsync(filters, generatedAt.Date, cancellationToken);
+        if (rows.Count > RedStarRegistryParser.MaxRows)
+        {
+            TempData["RedStarError"] = "The formatted report exceeds the 5,000-record export limit. Narrow the registry filters and try again.";
+            return RedirectToAction(nameof(Index), new { search = filters.Search, worklist = filters.Worklist,
+                program = filters.Program, status = filters.Status, month = filters.Month });
+        }
+        var summary = await RegistrySummaryAsync(filters.MonthStart, cancellationToken);
+        var worklistLabel = filters.Worklist switch
+        {
+            "today" => "Due today", "week" => "Due in the next 7 days", "overdue" => "Overdue refill",
+            "followup" => "Follow-up / LTFU review", "verification" => "Needs verification",
+            "requests" => "Reschedule requests", "expired" => "Expired in report month", _ => "All records"
+        };
+        var description = $"Search: {filters.Search ?? "All"}; Program: {filters.Program?.ToString() ?? "All"}; " +
+            $"Status: {(filters.Status.HasValue ? AdminChips.Humanize(filters.Status.Value) : "All")}; Worklist: {worklistLabel}";
+        var workbook = RedStarStaffWorkbook.Report(summary, generatedAt, rows, description);
+        await RedStarAuditTrail.RecordAsync(db, Actor, "FormattedReportExport", "PrivateRegistry", cancellationToken);
+        return File(workbook, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"RedStar-report-{filters.Month}.xlsx");
+    }
+
+    private sealed record RegistryFilters(string? Search, string Worklist, RedStarProgram? Program,
+        RedStarRegistryStatusFilter? Status, DateTime MonthStart)
+    {
+        public string Month => MonthStart.ToString("yyyy-MM", CultureInfo.InvariantCulture);
+    }
+
+    private bool TryRegistryFilters(string? search, string worklist, RedStarProgram? program,
+        RedStarRegistryStatusFilter? status, string? month, int? year, DateTime today, out RegistryFilters filters)
+    {
+        filters = null!;
+        search = Clean(search);
+        if (!ModelState.IsValid || search?.Length > 120 || !Worklists.Contains(worklist) ||
+            program.HasValue && !Enum.IsDefined(program.Value) || status.HasValue && !Enum.IsDefined(status.Value)) return false;
+        var selectedYear = year ?? today.Year;
+        var selectedMonth = today.Month;
+        if (!string.IsNullOrWhiteSpace(month))
+        {
+            if (DateTime.TryParseExact(month, "yyyy-MM", CultureInfo.InvariantCulture, DateTimeStyles.None, out var combined))
+            {
+                if (year.HasValue && year.Value != combined.Year) return false;
+                selectedYear = combined.Year;
+                selectedMonth = combined.Month;
+            }
+            else if (!int.TryParse(month, NumberStyles.None, CultureInfo.InvariantCulture, out selectedMonth)) return false;
+        }
+        if (selectedYear is < 1900 or > 2200 || selectedMonth is < 1 or > 12) return false;
+        filters = new(search, worklist, program, status == RedStarRegistryStatusFilter.Deceased ? RedStarRegistryStatusFilter.Expired : status,
+            new DateTime(selectedYear, selectedMonth, 1));
+        return true;
+    }
+
+    private async Task<RedStarMonthlySummary> RegistrySummaryAsync(DateTime monthStart, CancellationToken cancellationToken)
+    {
+        var all = db.RedStarEnrollments.AsNoTracking();
+        var monthEnd = monthStart.AddMonths(1);
+        var active = await all.CountAsync(e => e.Status == RedStarStatus.Active, cancellationToken);
+        var living = await all.CountAsync(e => e.Program == RedStarProgram.ART && e.Status == RedStarStatus.Active, cancellationToken);
+        var expired = await all.CountAsync(e => e.Status == RedStarStatus.Deceased && e.StatusDate >= monthStart && e.StatusDate < monthEnd, cancellationToken);
+        return new(active, living, expired, monthStart);
+    }
+
+    private async Task<List<RedStarRegistryRow>> RegistryRowsAsync(RegistryFilters filters, DateTime today, CancellationToken cancellationToken)
+    {
+        var all = db.RedStarEnrollments.AsNoTracking();
+        var refills = OutstandingRefills();
+        var end = today.AddDays(RedStarReminderService.ReminderWindowDays);
+        var monthStart = filters.MonthStart;
+        var monthEnd = monthStart.AddMonths(1);
+        var query = filters.Worklist switch
         {
             "today" => all.Where(e => refills.Any(a => a.EnrollmentId == e.Id && a.DueDate == today)),
             "week" => all.Where(e => refills.Any(a => a.EnrollmentId == e.Id && a.DueDate >= today && a.DueDate <= end)),
@@ -57,8 +138,16 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
             "expired" => all.Where(e => e.Status == RedStarStatus.Deceased && e.StatusDate >= monthStart && e.StatusDate < monthEnd),
             _ => all
         };
-        if (program.HasValue) query = query.Where(e => e.Program == program);
-        if (status.HasValue) query = query.Where(e => e.Status == status);
+        if (filters.Program.HasValue) query = query.Where(e => e.Program == filters.Program);
+        if (filters.Status == RedStarRegistryStatusFilter.Living)
+            query = query.Where(e => e.Program == RedStarProgram.ART && e.Status == RedStarStatus.Active);
+        else if (filters.Status == RedStarRegistryStatusFilter.Expired)
+            query = query.Where(e => e.Status == RedStarStatus.Deceased && e.StatusDate >= monthStart && e.StatusDate < monthEnd);
+        else if (filters.Status.HasValue)
+        {
+            var clinicalStatus = (RedStarStatus)filters.Status.Value;
+            query = query.Where(e => e.Status == clinicalStatus);
+        }
         // Ciphertext cannot be searched or sorted by SQL. Project only the registry
         // summary, then apply the existing private search/order before pagination.
         var summaries = await query
@@ -70,14 +159,9 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
                 refills.Where(a => a.EnrollmentId == e.Id).OrderBy(a => a.DueDate).ThenBy(a => a.Id)
                     .Select(a => (bool?)a.RemindersVerified).FirstOrDefault(), e.StatusDate))
             .ToListAsync(cancellationToken);
-        var matching = summaries.Where(e => string.IsNullOrEmpty(search) ||
-            RedStarPhiProtection.Contains(e.PatientCode, search) || RedStarPhiProtection.Contains(e.CodeName, search)).ToList();
-        var total = matching.Count;
-        page = Page(page, total);
-        var rows = matching.OrderBy(e => e.PatientCode, RedStarPhiProtection.RegistryOrder).ThenBy(e => e.EnrollmentId)
-            .Skip((page - 1) * PageSize).Take(PageSize).ToList();
-        await RedStarAuditTrail.RecordAsync(db, Actor, "View registry", "Registry", cancellationToken);
-        return View(new RedStarRegistryPage(rows, search, worklist, program, status, page, total, counts, today, month));
+        return summaries.Where(e => filters.Search is null ||
+            RedStarPhiProtection.Contains(e.PatientCode, filters.Search) || RedStarPhiProtection.Contains(e.CodeName, filters.Search))
+            .OrderBy(e => e.PatientCode, RedStarPhiProtection.RegistryOrder).ThenBy(e => e.EnrollmentId).ToList();
     }
 
     [HttpGet]

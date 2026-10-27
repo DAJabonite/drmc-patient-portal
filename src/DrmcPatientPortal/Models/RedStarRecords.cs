@@ -24,6 +24,9 @@ public sealed class RedStarPatient
 
 public enum RedStarProgram { ART, PrEP, PEP, NewbornProphylaxis, Unverified }
 public enum RedStarStatus { AwaitingVerification, Active, TransferredOut, Discontinued, Completed, Deceased }
+// Registry reporting categories do not introduce clinical lifecycle states.
+// Keep the legacy status values so existing named and numeric filters still bind.
+public enum RedStarRegistryStatusFilter { AwaitingVerification, Active, TransferredOut, Discontinued, Completed, Deceased, Living, Expired }
 public enum RedStarAppointmentKind { Refill, Lab, Consultation }
 public enum RedStarAppointmentState { Scheduled, PickedUp, Cancelled }
 public enum RedStarRequestState { Pending, Approved, Declined }

@@ -1,5 +1,10 @@
 @model RedStarRegistryPage
-@{ ViewData["Title"] = "Red Star registry"; var pages = Math.Max(1, (Model.Total + 24) / 25); }
+@using System.Globalization
+@{
+    ViewData["Title"] = "Red Star registry";
+    var pages = Math.Max(1, (Model.Total + 24) / 25);
+    var reportPeriod = Model.Summary.MonthStart.ToString("MMMM yyyy", CultureInfo.InvariantCulture);
+}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <div><h1 class="h3 mb-1">Red Star</h1><p class="text-muted mb-0">Refill schedules, follow-up work and private clinic records.</p></div>
     <div class="d-flex flex-wrap gap-2">
@@ -7,15 +12,34 @@
         <a asp-controller="RedStarImports" asp-action="Index" class="btn btn-outline-secondary">Import registry</a>
         <a asp-action="Deliveries" class="btn btn-outline-secondary">Reminders</a>
         <a asp-action="Audit" class="btn btn-outline-secondary">Access history</a>
+        <form asp-action="Export" method="post">
+            <input name="search" type="hidden" value="@Model.Search" />
+            <input name="program" type="hidden" value="@Model.Program" />
+            <input name="status" type="hidden" value="@Model.Status" />
+            <input name="worklist" type="hidden" value="@Model.Worklist" />
+            <input name="month" type="hidden" value="@Model.Month" />
+            <button class="btn btn-outline-primary" type="submit">Download Formatted Report</button>
+        </form>
     </div>
 </div>
 <partial name="_Status" />
 <div class="row g-3 mb-4">
-    <div class="col-md-4"><div class="card h-100"><div class="card-body"><span class="d-block text-muted">Current Active / LIVING (ART)</span><strong class="fs-3">@Model.Counts["living"]</strong></div></div></div>
-    <div class="col-md-4"><a asp-action="Index" asp-route-worklist="expired" asp-route-month="@Model.Month" class="card h-100 text-decoration-none @(Model.Worklist == "expired" ? "border-primary" : null)"><div class="card-body"><span class="d-block text-muted">EXPIRED / deceased in @Model.Month</span><strong class="fs-3">@Model.Counts["expired"]</strong></div></a></div>
-    <div class="col-md-4"><form asp-action="Index" method="get" class="card h-100"><div class="card-body"><input name="worklist" type="hidden" value="expired" /><label for="report-month" class="form-label">Expired report month</label><div class="d-flex gap-2"><input id="report-month" name="month" type="month" value="@Model.Month" class="form-control" required /><button class="btn btn-outline-primary" type="submit">View</button></div></div></form></div>
+    <div class="col-sm-4"><a asp-action="Index" asp-route-search="@Model.Search" asp-route-program="@Model.Program" asp-route-status="Active" asp-route-worklist="all" asp-route-month="@Model.Month" class="card h-100 text-decoration-none @(Model.Status == RedStarRegistryStatusFilter.Active ? "border-primary" : null)"><div class="card-body"><span class="d-block text-muted">Active</span><strong class="fs-3">@Model.Summary.ActiveCount</strong><span class="d-block small text-muted">All programs</span></div></a></div>
+    <div class="col-sm-4"><a asp-action="Index" asp-route-search="@Model.Search" asp-route-program="@Model.Program" asp-route-status="Living" asp-route-worklist="all" asp-route-month="@Model.Month" class="card h-100 text-decoration-none @(Model.Status == RedStarRegistryStatusFilter.Living ? "border-primary" : null)"><div class="card-body"><span class="d-block text-muted">Living</span><strong class="fs-3">@Model.Summary.LivingCount</strong><span class="d-block small text-muted">Current Active / LIVING (ART)</span></div></a></div>
+    <div class="col-sm-4"><a asp-action="Index" asp-route-search="@Model.Search" asp-route-program="@Model.Program" asp-route-status="Expired" asp-route-worklist="all" asp-route-month="@Model.Month" class="card h-100 text-decoration-none @(Model.Status == RedStarRegistryStatusFilter.Expired || Model.Worklist == "expired" ? "border-primary" : null)"><div class="card-body"><span class="d-block text-muted">Expired (@reportPeriod)</span><strong class="fs-3">@Model.Summary.ExpiredThisMonthCount</strong><span class="d-block small text-muted">Recorded status date in this month</span></div></a></div>
 </div>
-<p class="small text-muted">LIVING is the current active ART total. The monthly EXPIRED report uses the recorded status date; it does not reconstruct historical living totals.</p>
+<div class="card mb-3"><div class="card-body">
+    <form asp-action="Index" method="get" class="d-flex flex-wrap gap-3 align-items-end">
+        <input name="search" type="hidden" value="@Model.Search" />
+        <input name="program" type="hidden" value="@Model.Program" />
+        <input name="status" type="hidden" value="@Model.Status" />
+        <input name="worklist" type="hidden" value="@Model.Worklist" />
+        <div><label for="report-month" class="form-label">Report month / year</label><input id="report-month" name="month" type="month" value="@Model.Month" min="1900-01" max="2200-12" class="form-control" required /></div>
+        <button class="btn btn-outline-primary" type="submit">Apply period</button>
+    </form>
+</div></div>
+<p class="small text-muted">Summary totals cover the entire registry. Active and Living are current totals; the selected report month applies to Expired records using their recorded status date. Table filters apply to the listed and downloaded rows.</p>
+<h2 class="h6">Clinic-wide worklists</h2>
 <div class="row g-3 mb-4">
     @foreach (var item in new[] { ("today", "Due today"), ("week", "Due in the next 7 days"), ("overdue", "Overdue refill"), ("followup", "Follow-up / LTFU review"), ("verification", "Needs verification"), ("requests", "Reschedule requests") })
     {
@@ -27,7 +51,7 @@
     <form asp-action="Index" method="get" class="row g-3 align-items-end">
         <div class="col-md-4"><label for="search" class="form-label">Patient code / code name</label><input id="search" name="search" value="@Model.Search" maxlength="120" class="form-control" autocomplete="off" /></div>
         <div class="col-md-3"><label for="program" class="form-label">Program</label><select id="program" name="program" class="form-select"><option value="">All programs</option>@foreach (var program in Enum.GetValues<RedStarProgram>()) { <option value="@program" selected="@(Model.Program == program)">@program</option> }</select></div>
-        <div class="col-md-3"><label for="status" class="form-label">Status</label><select id="status" name="status" class="form-select"><option value="">All statuses</option>@foreach (var status in Enum.GetValues<RedStarStatus>()) { <option value="@status" selected="@(Model.Status == status)">@AdminChips.Humanize(status)</option> }</select></div>
+        <div class="col-md-3"><label for="status" class="form-label">Status</label><select id="status" name="status" class="form-select"><option value="">All statuses</option>@foreach (var status in new[] { RedStarRegistryStatusFilter.Active, RedStarRegistryStatusFilter.Living, RedStarRegistryStatusFilter.Expired, RedStarRegistryStatusFilter.AwaitingVerification, RedStarRegistryStatusFilter.TransferredOut, RedStarRegistryStatusFilter.Discontinued, RedStarRegistryStatusFilter.Completed }) { <option value="@status" selected="@(Model.Status == status)">@(status == RedStarRegistryStatusFilter.Living ? "Living (active ART)" : AdminChips.Humanize(status))</option> }</select></div>
         <input name="worklist" type="hidden" value="@Model.Worklist" />
         <input name="month" type="hidden" value="@Model.Month" />
         <div class="col-md-2"><button class="btn btn-primary" type="submit">Filter</button> <a asp-action="Index" class="btn btn-link">All</a></div>
@@ -38,7 +62,7 @@
     <tbody>
     @foreach (var row in Model.Rows)
     {
-        <tr><td data-label="Patient code"><a asp-action="Details" asp-route-id="@row.EnrollmentId" class="fw-semibold">@row.PatientCode</a></td><td data-label="Code name">@row.CodeName</td><td data-label="Program">@row.Program</td><td data-label="Status">@AdminChips.Humanize(row.Status)
+        <tr><td data-label="Patient code"><a asp-action="Details" asp-route-id="@row.EnrollmentId" class="fw-semibold">@row.PatientCode</a></td><td data-label="Code name">@row.CodeName</td><td data-label="Program">@row.Program</td><td data-label="Status">@(row.Status == RedStarStatus.Deceased ? "Expired" : AdminChips.Humanize(row.Status))
             @if (row.Status == RedStarStatus.Deceased && row.StatusDate.HasValue) { <div class="small text-muted">Expired @row.StatusDate.Value.ToString("dd MMM yyyy")</div> }
         </td><td data-label="Next refill">@(row.NextRefill?.ToString("dd MMM yyyy") ?? "Not scheduled")
             @if (row.NextRefill.HasValue) { <div class="mt-1"><partial name="_RefillBadge" model="@(new RedStarRefillBadge(row.NextRefill.Value, Model.Today, row.NextRefillVerified == true))" /></div> }

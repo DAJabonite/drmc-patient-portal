@@ -6,9 +6,10 @@ namespace DrmcPatientPortal.Areas.Admin.Models;
 public sealed record RedStarRegistryRow(int EnrollmentId, int PatientId, string PatientCode, string CodeName,
     RedStarProgram Program, RedStarStatus Status, DateTime? NextRefill, int PendingRequests, bool FollowUpReview,
     bool? NextRefillVerified = null, DateTime? StatusDate = null);
+public sealed record RedStarMonthlySummary(int ActiveCount, int LivingCount, int ExpiredThisMonthCount, DateTime MonthStart);
 public sealed record RedStarRegistryPage(IReadOnlyList<RedStarRegistryRow> Rows, string? Search, string Worklist,
-    RedStarProgram? Program, RedStarStatus? Status, int Page, int Total, IReadOnlyDictionary<string, int> Counts,
-    DateTime Today, string Month);
+    RedStarProgram? Program, RedStarRegistryStatusFilter? Status, int Page, int Total, IReadOnlyDictionary<string, int> Counts,
+    DateTime Today, string Month, RedStarMonthlySummary Summary);
 public sealed record RedStarDetailsPage(RedStarEnrollment Enrollment, IReadOnlyList<RedStarAppointment> Appointments,
     IReadOnlyList<RedStarDispense> Dispenses, IReadOnlyList<RedStarRescheduleRequest> Requests,
     int AppointmentPage, int AppointmentTotal, int HistoryPage, int HistoryTotal, int RequestPage, int RequestTotal);
