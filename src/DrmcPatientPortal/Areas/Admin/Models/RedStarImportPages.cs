@@ -3,8 +3,12 @@ using DrmcPatientPortal.Models;
 
 namespace DrmcPatientPortal.Areas.Admin.Models;
 
+public enum RedStarImportFormat { Xlsx, Csv }
+
 public sealed class RedStarImportPreview
 {
+    public RedStarImportFormat SourceFormat { get; set; } = RedStarImportFormat.Xlsx;
+    public List<string> SkippedSheets { get; set; } = [];
     public List<RedStarImportRow> Rows { get; set; } = [];
     public List<string> DeferredColumns { get; set; } = [];
     public int IgnoredRows { get; set; }

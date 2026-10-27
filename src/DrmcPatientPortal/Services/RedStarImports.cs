@@ -45,9 +45,10 @@ public sealed class RedStarImports(IDataProtectionProvider protection, AdminWrit
         { throw new ImportRejectedException("The protected preview is unavailable. Upload the source again."); }
     }
 
-    public async Task<(Guid Id, WriteResult Result)> StageAsync(byte[] content, string actor, CancellationToken token)
+    public async Task<(Guid Id, WriteResult Result)> StageAsync(byte[] content, string actor, CancellationToken token,
+        RedStarImportFormat format = RedStarImportFormat.Xlsx)
     {
-        var parsed = RedStarRegistryParser.Parse(content);
+        var parsed = RedStarRegistryParser.Parse(content, format);
         var id = Guid.NewGuid();
         var protectedSource = source.Protect(content);
         var protectedPreview = Protect(parsed);
@@ -138,7 +139,7 @@ public sealed class RedStarImports(IDataProtectionProvider protection, AdminWrit
         if (!System.ComponentModel.DataAnnotations.Validator.TryValidateObject(choice, context, [], true) ||
             !Enum.IsDefined(choice.Program) || !Enum.IsDefined(choice.Status))
             return $"Review required fields and field lengths in {row.Sheet}, row {row.Number}.";
-        if (row.Sheet.Equals("RHIVDA 2025", StringComparison.OrdinalIgnoreCase) &&
+        if (RedStarRegistryLayout.Find(row.Sheet)?.Name == "RHIVDA 2025" &&
             (choice.Program != RedStarProgram.Unverified || choice.Status != RedStarStatus.AwaitingVerification))
             return "Name-only rHIVda entries must remain unverified and awaiting verification. Verify clinical enrollment separately.";
         if (choice.PatientCode.Any(char.IsControl) || choice.FullName.Any(char.IsControl)) return "Names and private codes must not contain control characters.";
@@ -258,33 +259,40 @@ public static class RedStarRegistryParser
 {
     public const int MaxBytes = 10 * 1024 * 1024;
     public const int MaxRows = 5000;
-    private static readonly HashSet<string> SheetNames = new(StringComparer.OrdinalIgnoreCase)
-    { "LIVING", "PrEP", "PEP", "NB PROPHYLAXIS", "TRANS OUT", "EXPIRED", "REACTIVE WHEN TESTED, NONREACTI", "RHIVDA 2025" };
-
-    public static RedStarImportPreview Parse(byte[] bytes)
+    public static RedStarImportPreview Parse(byte[] bytes, RedStarImportFormat format = RedStarImportFormat.Xlsx)
     {
-        if (bytes.Length is 0 or > MaxBytes) throw new ImportRejectedException("Upload a non-empty .xlsx workbook of at most 10 MB.");
+        if (bytes.Length is 0 or > MaxBytes) throw new ImportRejectedException("Upload a non-empty .xlsx or UTF-8 .csv file of at most 10 MB.");
+        if (!Enum.IsDefined(format)) throw new ImportRejectedException("Select an .xlsx or UTF-8 .csv file.");
         try
         {
-            var formulaCells = CheckWorkbook(bytes);
+            // Validate the whole package before skipping any tabs. Comment/note parts are
+            // never mapped into patient values, but still undergo archive and XML checks.
+            var formulaCells = format == RedStarImportFormat.Xlsx ? CheckWorkbook(bytes) : new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+            var utf8 = new UTF8Encoding(false, true);
+            if (format == RedStarImportFormat.Csv) utf8.GetCharCount(bytes);
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             using var stream = new MemoryStream(bytes);
-            using var reader = ExcelReaderFactory.CreateOpenXmlReader(stream);
-            var result = new RedStarImportPreview();
+            using var reader = format == RedStarImportFormat.Csv
+                ? ExcelReaderFactory.CreateCsvReader(stream, new ExcelReaderConfiguration
+                { FallbackEncoding = utf8, AutodetectSeparators = [','], TrimWhiteSpace = false })
+                : ExcelReaderFactory.CreateOpenXmlReader(stream);
+            var result = new RedStarImportPreview { SourceFormat = format };
             var deferred = new HashSet<string>(StringComparer.Ordinal);
             var sheets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var physicalRows = 0;
             do
             {
-                var sheet = reader.Name.Trim();
-                if (!SheetNames.Contains(sheet) || !sheets.Add(sheet)) throw new ImportRejectedException("Use the recognized Red Star registry sheet names, once per workbook.");
+                var sheet = format == RedStarImportFormat.Csv ? "CSV" : reader.Name;
+                var layout = format == RedStarImportFormat.Xlsx ? RedStarRegistryLayout.Find(sheet) : null;
+                if (format == RedStarImportFormat.Xlsx && layout is null) { result.SkippedSheets.Add(sheet); continue; }
+                if (!sheets.Add(Text(sheet))) throw new ImportRejectedException("Use each Red Star registry sheet name once per workbook.");
                 if (!reader.Read()) continue;
                 if (reader.FieldCount > 128) throw new ImportRejectedException("A registry sheet exceeds 128 columns.");
                 var header = Enumerable.Range(0, reader.FieldCount).Select(i => Text(reader.GetValue(i))).ToArray();
                 var fields = header.Select(Field).ToArray();
-                var headerless = sheet.Equals("RHIVDA 2025", StringComparison.OrdinalIgnoreCase) && !fields.Contains("name");
+                var headerless = layout?.Name == "RHIVDA 2025" && !fields.Contains("name");
                 if (!headerless && !fields.Contains("name") && !fields.Contains("code"))
-                    throw new ImportRejectedException("Each registry sheet needs a patient name or patient code header in its first row.");
+                    throw new ImportRejectedException("Each registry sheet or CSV needs a patient name or patient code header in its first row.");
                 if (headerless) { fields = new string?[reader.FieldCount]; fields[0] = "name"; }
                 else
                 {
@@ -298,33 +306,39 @@ public static class RedStarRegistryParser
                 {
                     if (!headerless && number == 1) { number++; if (!reader.Read()) break; }
                     else number++;
-                    if (++physicalRows > 100000) throw new ImportRejectedException("The workbook exceeds its row safety limit.");
+                    if (++physicalRows > 100000) throw new ImportRejectedException("The file exceeds its row safety limit.");
                     var values = Enumerable.Range(0, reader.FieldCount).Select(i => reader.GetValue(i)).ToArray();
                     if (values.All(x => string.IsNullOrWhiteSpace(Text(x)))) { result.IgnoredRows++; continue; }
                     var name = Value(values, fields, "name"); var code = Value(values, fields, "code");
                     if (IsNote(name) || IsNote(code) || (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(code))) { result.IgnoredRows++; continue; }
-                    if (result.Rows.Count == MaxRows) throw new ImportRejectedException("Import at most 5,000 patient rows per workbook.");
+                    if (result.Rows.Count == MaxRows) throw new ImportRejectedException("Import at most 5,000 patient rows per file.");
                     for (var c = 0; c < fields.Length; c++)
                         if (fields[c] is not null && formulaCells.TryGetValue(sheet, out var formulas) && formulas.Contains(Column(c) + number))
                             throw new ImportRejectedException("Imported patient fields must contain values, not formulas. Export core fields as values before uploading.");
+                    var sourceStatus = Value(values, fields, "status", cleanAnnotations: false);
                     var row = new RedStarImportRow { Key = sheet + ":" + number, Sheet = sheet, Number = number,
                         FullName = name, PatientCode = code, CodeName = Value(values, fields, "codename"),
                         HospitalNumber = Optional(Value(values, fields, "hospital")), ContactNumber = Optional(Value(values, fields, "contact")),
                         Address = Optional(Value(values, fields, "address")), ReceivingHub = Optional(Value(values, fields, "hub")),
                         Medicines = string.Join(" / ", fields.Select((f, i) => f == "medicines" ? Text(values[i]) : "").Where(x => !string.IsNullOrWhiteSpace(x))),
-                        SourceStatus = Optional(Value(values, fields, "status")), Program = Program(sheet), Status = Status(sheet) };
+                        SourceStatus = Optional(StructuredText(sourceStatus)),
+                        Program = layout is null ? RedStarProgram.Unverified : Program(layout.Name),
+                        Status = layout is null ? RedStarStatus.AwaitingVerification : Status(layout.Name) };
                     var explicitProgram = Value(values, fields, "program");
                     if (explicitProgram.Length != 0)
                     {
                         if (Enum.TryParse<RedStarProgram>(explicitProgram, true, out var program) && Enum.IsDefined(program)) row.Program = program;
                         else { row.Program = RedStarProgram.Unverified; row.Warnings.Add("Unknown program; verify before clinical enrollment."); }
                     }
+                    else if (format == RedStarImportFormat.Csv) row.Warnings.Add("No program is recorded in this CSV; verify the program during reconciliation.");
+                    if (format == RedStarImportFormat.Csv && row.SourceStatus is null)
+                        row.Warnings.Add("No status is recorded in this CSV; verify the status during reconciliation.");
                     row.EnrolledDate = Date(values, fields, "enrolled", row);
                     row.StartDate = Date(values, fields, "start", row);
                     row.StatusDate = Date(values, fields, "statusdate", row);
                     row.DispensedDate = Date(values, fields, "dispensed", row);
                     row.NextRefillDate = Date(values, fields, "next", row);
-                    ApplyStatus(row);
+                    ApplyStatus(row, sourceStatus);
                     row.ContactNumber = NormalizePhone(row.ContactNumber, row.Warnings);
                     if (row.PatientCode.Length == 0) row.Warnings.Add("Missing clinic code: assign a private review code or explicitly select an existing record.");
                     if (row.FullName.Length == 0) row.Warnings.Add("Missing patient name: reconcile it before including this row.");
@@ -335,24 +349,54 @@ public static class RedStarRegistryParser
                     result.Rows.Add(row);
                 } while (reader.Read());
             } while (reader.NextResult());
-            if (result.Rows.Count == 0) throw new ImportRejectedException("The workbook contains no patient rows to review.");
+            if (result.Rows.Count == 0) throw new ImportRejectedException("The file contains no recognized patient rows to review.");
             foreach (var group in result.Rows.Where(x => x.PatientCode.Length != 0).GroupBy(x => x.PatientCode, StringComparer.OrdinalIgnoreCase).Where(x => x.Count() > 1))
-                foreach (var row in group) row.Warnings.Add("This clinic code appears more than once in the workbook. Reconcile duplicates explicitly.");
+                foreach (var row in group) row.Warnings.Add("This clinic code appears more than once in the file. Reconcile duplicates explicitly.");
             result.DeferredColumns = deferred.OrderBy(x => x, StringComparer.Ordinal).ToList();
             return result;
         }
         catch (Exception error) when (error is IOException or XmlException or ArgumentException or NotSupportedException or OverflowException or ExcelDataReader.Exceptions.ExcelReaderException)
-        { throw new ImportRejectedException("The workbook is malformed or uses an unsupported format."); }
+        { throw new ImportRejectedException("The file is malformed or uses an unsupported format. Upload an .xlsx workbook or a UTF-8, comma-delimited CSV."); }
     }
 
-    private static string Text(object? value) => value is DateTime date ? date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : (Convert.ToString(value, CultureInfo.InvariantCulture) ?? "").Trim();
-    private static string Value(object?[] values, string?[] fields, string key) => Array.IndexOf(fields, key) is var index && index >= 0 ? Text(values[index]) : "";
+    private static string Text(object? value) => value is DateTime date ? date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+        : Regex.Replace(Convert.ToString(value, CultureInfo.InvariantCulture) ?? "", @"\s+", " ").Trim();
+
+    private static string StructuredText(string text)
+    {
+        // Only balanced suffixes following a value are remarks. Parentheses within
+        // the value (including phone formatting) and all free-text fields survive.
+        var end = text.Length;
+        while (end > 0 && text[end - 1] == ')')
+        {
+            var depth = 0;
+            var start = end - 1;
+            for (; start >= 0; start--)
+            {
+                if (text[start] == ')') depth++;
+                else if (text[start] == '(' && --depth == 0) break;
+            }
+            var valueEnd = start;
+            while (valueEnd > 0 && char.IsWhiteSpace(text[valueEnd - 1])) valueEnd--;
+            if (valueEnd <= 0) break;
+            end = valueEnd;
+        }
+        return text[..end];
+    }
+
+    private static string Value(object?[] values, string?[] fields, string key, bool cleanAnnotations = true)
+    {
+        var index = Array.IndexOf(fields, key);
+        if (index < 0) return "";
+        var text = Text(values[index]);
+        return cleanAnnotations && key is not ("name" or "address" or "hub" or "medicines") ? StructuredText(text) : text;
+    }
     private static string? Optional(string value) => value.Length == 0 ? null : value;
     private static bool IsNote(string value) => value.Length > 250 || Regex.IsMatch(value, @"^(note|reminder|instructions?|lost to follow|ltfu)\b", RegexOptions.IgnoreCase) ||
         value.Contains("7 days before", StringComparison.OrdinalIgnoreCase) || value.Contains("monthly reminder", StringComparison.OrdinalIgnoreCase);
     private static string? Field(string header)
     {
-        var key = Regex.Replace(header.ToUpperInvariant(), "[^A-Z0-9]", "");
+        var key = Regex.Replace(StructuredText(header).ToUpperInvariant(), "[^A-Z0-9]", "");
         return key switch
         {
             "NAME" or "PATIENTNAME" or "FULLNAME" => "name", "PATIENTCODE" => "code", "CODENAME" => "codename",
@@ -371,11 +415,12 @@ public static class RedStarRegistryParser
     private static DateTime? Date(object?[] values, string?[] fields, string key, RedStarImportRow row)
     {
         var index = Array.IndexOf(fields, key);
-        if (index < 0 || string.IsNullOrWhiteSpace(Text(values[index]))) return null;
+        if (index < 0) return null;
+        var text = StructuredText(Text(values[index]));
+        if (text.Length == 0) return null;
         if (values[index] is DateTime date && date.Year is >= 1900 and <= 2200) return date.Date;
         if (values[index] is double serial && serial is > 1 and < 110000)
         { var converted = DateTime.FromOADate(serial); if (converted.Year <= 2200) return converted.Date; }
-        var text = Text(values[index]);
         if (DateTime.TryParseExact(text, ["yyyy-MM-dd", "M/d/yyyy", "M/d/yy", "MM/dd/yyyy", "d-MMM-yyyy", "MMMM d, yyyy", "MMM d, yyyy"],
             CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out date) && date.Year is >= 1900 and <= 2200) return date.Date;
         row.Warnings.Add($"The {key} date could not be read; enter a verified date or deliberately leave it empty. The original remains in the protected archive.");
@@ -388,7 +433,7 @@ public static class RedStarRegistryParser
     private static RedStarStatus Status(string sheet) => sheet.ToUpperInvariant() switch
     { "TRANS OUT" => RedStarStatus.TransferredOut, "EXPIRED" => RedStarStatus.Deceased,
         "RHIVDA 2025" or "REACTIVE WHEN TESTED, NONREACTI" => RedStarStatus.AwaitingVerification, _ => RedStarStatus.Active };
-    private static void ApplyStatus(RedStarImportRow row)
+    private static void ApplyStatus(RedStarImportRow row, string originalStatus)
     {
         if (string.IsNullOrWhiteSpace(row.SourceStatus)) return;
         var normalized = row.SourceStatus.ToUpperInvariant();
@@ -396,12 +441,13 @@ public static class RedStarRegistryParser
         else if (normalized.Contains("TRANS OUT") || normalized.Contains("TRANSOUT") || normalized.Contains("TRANSFERRED")) row.Status = RedStarStatus.TransferredOut;
         else if (normalized.Contains("D/C") || normalized.Contains("DISCONTINUED")) row.Status = RedStarStatus.Discontinued;
         else if (normalized.Contains("COMPLETED")) row.Status = RedStarStatus.Completed;
-        else if (normalized is "ACTIVE" or "ON ART" or "ON PREP" or "ON PEP") row.Status = RedStarStatus.Active;
+        else if (normalized is "ACTIVE" or "LIVING" or "ON ART" or "ON PREP" or "ON PEP") row.Status = RedStarStatus.Active;
         else if (Enum.TryParse<RedStarStatus>(row.SourceStatus, true, out var status) && Enum.IsDefined(status)) row.Status = status;
         else { row.Status = RedStarStatus.AwaitingVerification; row.Warnings.Add("Ambiguous source status: verify the reconciled status before approval."); }
-        var date = Regex.Match(normalized, @"\b\d{1,2}/\d{1,2}/\d{4}\b");
-        if (date.Success && !row.StatusDate.HasValue && DateTime.TryParseExact(date.Value, "M/d/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var effective))
-        { row.StatusDate = effective.Date; row.Warnings.Add("A status date was extracted as month/day/year. Confirm it during reconciliation."); }
+        var date = Regex.Match(originalStatus, @"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4})\b");
+        if (date.Success && !row.StatusDate.HasValue && DateTime.TryParseExact(date.Value, ["M/d/yyyy", "yyyy-MM-dd"], CultureInfo.InvariantCulture, DateTimeStyles.None, out var effective)
+            && effective.Year is >= 1900 and <= 2200)
+        { row.StatusDate = effective.Date; row.Warnings.Add("A status date was extracted from the source status. Confirm it during reconciliation."); }
     }
 
     public static string? NormalizePhone(string? phone, List<string>? warnings = null)

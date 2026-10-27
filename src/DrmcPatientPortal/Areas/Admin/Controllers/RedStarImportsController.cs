@@ -18,6 +18,9 @@ public sealed class RedStarImportsController(ApplicationDbContext db, RedStarImp
     private string Actor => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException("An authenticated actor is required.");
 
     [HttpGet]
+    public IActionResult DownloadTemplate() => File(RedStarRegistryLayout.CsvTemplate(), "text/csv; charset=utf-8", "redstar-import-template.csv");
+
+    [HttpGet]
     public async Task<IActionResult> Index(int page = 1, CancellationToken cancellationToken = default)
     {
         var count = await db.RedStarImportBatches.CountAsync(cancellationToken);
@@ -32,8 +35,9 @@ public sealed class RedStarImportsController(ApplicationDbContext db, RedStarImp
     [HttpPost, RequestSizeLimit(RedStarRegistryParser.MaxBytes + 1024 * 1024), RequestFormLimits(MultipartBodyLengthLimit = RedStarRegistryParser.MaxBytes + 1024 * 1024)]
     public async Task<IActionResult> Upload(IFormFile? file, CancellationToken cancellationToken)
     {
-        if (file is null || !Path.GetExtension(file.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase) || file.Length is <= 0 or > RedStarRegistryParser.MaxBytes)
-        { TempData["RedStarImportMessage"] = "Select a non-empty .xlsx registry of at most 10 MB."; return RedirectToAction(nameof(Index)); }
+        var extension = Path.GetExtension(file?.FileName)?.ToLowerInvariant();
+        if (file is null || extension is not (".xlsx" or ".csv") || file.Length is <= 0 or > RedStarRegistryParser.MaxBytes)
+        { TempData["RedStarImportMessage"] = "Select a non-empty .xlsx or UTF-8 .csv registry of at most 10 MB."; return RedirectToAction(nameof(Index)); }
         try
         {
             using var bytes = new MemoryStream();
@@ -44,7 +48,8 @@ public sealed class RedStarImportsController(ApplicationDbContext db, RedStarImp
                 if (bytes.Length + read > RedStarRegistryParser.MaxBytes) throw new ImportRejectedException("The upload exceeds 10 MB.");
                 await bytes.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
             }
-            var (id, result) = await imports.StageAsync(bytes.ToArray(), Actor, cancellationToken);
+            var format = extension == ".csv" ? RedStarImportFormat.Csv : RedStarImportFormat.Xlsx;
+            var (id, result) = await imports.StageAsync(bytes.ToArray(), Actor, cancellationToken, format);
             if (result.Succeeded) return RedirectToAction(nameof(Reconcile), new { id });
             TempData["RedStarImportMessage"] = result.Error;
         }
@@ -115,7 +120,13 @@ public sealed class RedStarImportsController(ApplicationDbContext db, RedStarImp
         var batch = await db.RedStarImportBatches.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (batch is null) return NotFound();
         await RedStarAuditTrail.RecordAsync(db, Actor, "ImportSourceDownload", id.ToString("N"), cancellationToken);
-        try { return File(imports.ReadSource(batch), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Registry-source.xlsx"); }
+        try
+        {
+            var format = imports.Read(batch).SourceFormat;
+            return format == RedStarImportFormat.Csv
+                ? File(imports.ReadSource(batch), "text/csv; charset=utf-8", "Registry-source.csv")
+                : File(imports.ReadSource(batch), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Registry-source.xlsx");
+        }
         catch (ImportRejectedException error) { TempData["RedStarImportMessage"] = error.Message; return RedirectToAction(nameof(Reconcile), new { id }); }
     }
 

@@ -3,8 +3,12 @@
 @{ ViewData["Title"] = "Reconcile registry"; var pages = Math.Max(1, (Model.Preview.Rows.Count + 24) / 25); var approved = Model.Batch.ApprovedUtc.HasValue; }
 <div class="admin-page-header"><div><h1 class="admin-title">@(approved ? "Approved registry batch" : "Reconcile registry")</h1><p class="admin-subtitle">@Model.Preview.Rows.Count patient rows · @Model.Preview.IgnoredRows blank or explanatory rows skipped · @Model.Preview.Choices.Count saved include decisions</p></div><a asp-action="Index" class="btn btn-outline-primary">Back to imports</a></div>
 @if (TempData["RedStarImportMessage"] is string message) { <div class="alert alert-info" role="status">@message</div> }
+@if (Model.Preview.SkippedSheets.Count != 0)
+{
+    <div class="alert alert-info" role="status">Unrecognized tabs were skipped: @string.Join(", ", Model.Preview.SkippedSheets). Only recognized patient tabs are included in this preview.</div>
+}
 <div class="alert alert-secondary">Existing records require their explicit private record ID. Verify the clinic code and identifying details in the <a asp-controller="RedStar" asp-action="Index">registry</a> before selecting an update. Blank medicine and date fields preserve existing values. Included updates can replace a schedule; reminders remain inactive on newly imported schedules.</div>
-<details class="admin-card mb-3"><summary class="admin-card-header">Deferred source columns (@Model.Preview.DeferredColumns.Count)</summary><div class="admin-card-body"><p class="small text-muted">These columns remain in the protected original workbook and are not clinical chart entries in this release.</p><ul>@foreach (var column in Model.Preview.DeferredColumns) { <li>@column</li> }</ul><form asp-action="Source" asp-route-id="@Model.Batch.Id" method="post"><button class="btn btn-outline-secondary" type="submit">Download protected original</button></form></div></details>
+<details class="admin-card mb-3"><summary class="admin-card-header">Deferred source columns (@Model.Preview.DeferredColumns.Count)</summary><div class="admin-card-body"><p class="small text-muted">These columns remain in the protected original file and are not clinical chart entries in this release.</p><ul>@foreach (var column in Model.Preview.DeferredColumns) { <li>@column</li> }</ul><form asp-action="Source" asp-route-id="@Model.Batch.Id" method="post"><button class="btn btn-outline-secondary" type="submit">Download protected original</button></form></div></details>
 <form asp-action="Reconcile" asp-route-id="@Model.Batch.Id" method="post" class="admin-form">
     <input type="hidden" name="Version" value="@Convert.ToBase64String(Model.Batch.RowVersion)" /><input type="hidden" name="Page" value="@Model.Page" />
     @for (var i = 0; i < Model.Rows.Count; i++)

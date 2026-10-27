@@ -106,7 +106,7 @@ internal static class RedStarStaffWorkbook
         ],
     };
 
-    public static IReadOnlyList<string> ForSheet(string name) => Headers[name];
+    public static IReadOnlyList<string> ForSheet(string name) => Headers[RedStarRegistryLayout.Find(name)?.Name ?? name];
 
     private const string Spreadsheet = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
     private const string OfficeRelationships = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
