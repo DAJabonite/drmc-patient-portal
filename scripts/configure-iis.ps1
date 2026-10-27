@@ -67,6 +67,7 @@ $directories = [ordered]@{
     PatientDocuments__RootPath = 'patient-documents'
     PatientDocuments__TemporaryPath = 'temporary-uploads'
     LabReports__RootPath = 'lab-reports'
+    AdvisoryImages__RootPath = 'advisory-images'
     Imports__StagingPath = 'imports'
 }
 foreach ($key in $directories.Keys) { $settings[$key] = Join-Path $privateRoot $directories[$key] }

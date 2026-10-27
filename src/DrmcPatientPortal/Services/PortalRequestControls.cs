@@ -98,18 +98,22 @@ public sealed class PortalRequestControls(RequestDelegate next)
         var action = context.GetEndpoint()?.Metadata.GetMetadata<Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor>();
         var labUpload = HttpMethods.IsPost(context.Request.Method) && action?.ControllerName == "LabResults" &&
             action.RouteValues.TryGetValue("area", out var area) && area == "Admin" && context.Request.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) == true;
+        var advisoryUpload = HttpMethods.IsPost(context.Request.Method) && action?.ControllerName == "PublicAdvisories" &&
+            action.RouteValues.TryGetValue("area", out var advisoryArea) && advisoryArea == "Admin" &&
+            context.Request.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) == true;
         var importUpload = HttpMethods.IsPost(context.Request.Method) && action?.ActionName == "Upload" &&
             action.ControllerName is "Imports" or "RedStarImports" && action.RouteValues.TryGetValue("area", out var importArea) && importArea == "Admin";
-        var sensitiveMultipart = (registrationPost && context.Request.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) == true) || labUpload || importUpload;
+        var sensitiveMultipart = (registrationPost && context.Request.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) == true) || labUpload || advisoryUpload || importUpload;
         using var scanLease = kind == PortalRequestKind.Scan || sensitiveMultipart ? limiter.ScanConcurrency.AttemptAcquire() : null;
         if (scanLease is { IsAcquired: false }) { await Rejected(context, kind, scanLease); return; }
         var userId = context.User.Identity?.IsAuthenticated == true ? context.User.FindFirstValue(ClaimTypes.NameIdentifier) : null;
         using var scanUserLease = kind == PortalRequestKind.Scan && userId is not null ? limiter.AcquireAccount(PortalRequestKind.Scan, userId, address) : null;
         if (scanUserLease is { IsAcquired: false }) { await Rejected(context, kind, scanUserLease); return; }
-        if (registrationPost || labUpload || importUpload)
+        if (registrationPost || labUpload || advisoryUpload || importUpload)
         {
             var maximumRequestBytes = registrationPost ? IdImageValidation.MaximumRequestBytes :
                 importUpload ? (action!.ControllerName == "Imports" ? ImportParser.MaxBytes : RedStarRegistryParser.MaxBytes) + 1024 * 1024 :
+                advisoryUpload ? AdvisoryImageStorage.MaximumRequestBytes :
                 LabReportStorage.MaximumBytes + (action!.ActionName == "UploadReport" ? 65536 : 1024 * 1024);
             if (context.Request.ContentLength > maximumRequestBytes)
             { await Invalid(context, kind, "The upload request exceeds its size limit.", 413); return; }
@@ -132,6 +136,7 @@ public sealed class PortalRequestControls(RequestDelegate next)
         {
             if (registrationPost) await Invalid(context, kind, "The upload form is invalid. Use ID photos of at most 5 MB each.");
             else if (labUpload) await Invalid(context, kind, "Choose a PDF file no larger than 10 MiB.");
+            else if (advisoryUpload) await Invalid(context, kind, AdvisoryImageStorage.InvalidImageMessage);
             else if (importUpload) await Invalid(context, kind, "The import upload is invalid or exceeds its size limit.");
             else await Invalid(context, kind);
             return;

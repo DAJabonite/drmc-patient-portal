@@ -14,11 +14,11 @@ namespace DrmcPatientPortal.Areas.Admin.Controllers;
 [RequestSizeLimit(LabReportStorage.MaximumBytes + 1024 * 1024)]
 [RequestFormLimits(MultipartBodyLengthLimit = LabReportStorage.MaximumBytes + 1024 * 1024)]
 public sealed class LabResultsController(ApplicationDbContext db, AdminWrites writes, ILabReportStorage storage,
-    ILogger<LabResultsController> logger, IAuditLogService auditLog) : AdminCrudController<LabResult, LabInput>(db, writes, new LabEditor())
+    ILogger<LabResultsController> logger, IAuditLogService auditLog) : AdminCrudController<LabResult, LabUploadInput>(db, writes, new LabUploadEditor())
 {
     private string? previousReport;
 
-    protected override async Task<WriteResult> SaveRecordAsync(ApplicationDbContext database, LabInput input, LabResult entity, CancellationToken token)
+    protected override async Task<WriteResult> SaveRecordAsync(ApplicationDbContext database, LabUploadInput input, LabResult entity, CancellationToken token)
     {
         // Creation needs the generated lab ID before storage can bind encryption to the record.
         // Both saves and the required audit remain in the existing transaction.
@@ -92,7 +92,7 @@ public sealed class LabResultsController(ApplicationDbContext db, AdminWrites wr
         var result = version is null ? WriteResult.Stale : await Writes.RunAsync(async database =>
         {
             var lab = await database.LabResults.SingleOrDefaultAsync(l => l.Id == id, token);
-            if (lab is null || !version.SequenceEqual(AdminEntity<LabResult, LabInput>.Version(database, lab))) return WriteResult.Stale;
+            if (lab is null || !version.SequenceEqual(AdminEntity<LabResult, LabUploadInput>.Version(database, lab))) return WriteResult.Stale;
             previous = lab.ReportFileName;
             lab.ReportFileName = stored?.FileName;
             lab.ReportSize = stored?.Size;

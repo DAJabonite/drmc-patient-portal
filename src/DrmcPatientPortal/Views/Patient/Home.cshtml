@@ -90,7 +90,7 @@
                                 {
                                     <a asp-controller="LabResults" asp-action="Details" asp-route-id="@lab.Id" class="record-preview">
                                         <span><strong>@lab.TestName</strong><small>@lab.CollectedAt.ToString("MMM d, yyyy")</small></span>
-                                        <span class="badge status-badge @(lab.Status == "Available" ? "text-bg-success" : "text-bg-warning")">@lab.Status</span>
+                                        <span class="text-primary-drmc fw-semibold">View report</span>
                                     </a>
                                 }
                             </div>

@@ -41,6 +41,7 @@ public sealed class PatientEditor : AdminEntity<PatientRecord, PatientInput>
         OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
     {
         var number = string.IsNullOrWhiteSpace(input.HospitalNumber) ? null : input.HospitalNumber.Trim();
+        if (number is null) return WriteResult.Invalid("Enter a hospital number.");
         if (number is not null && (lookups is not null ? lookups.Exists("Hospital:" + number) : await db.PatientRecords.AnyAsync(e => e.Id != entity.Id && e.HospitalNumber != null &&
             EF.Functions.Collate(e.HospitalNumber, "Latin1_General_100_CI_AS") == number, token)))
             return WriteResult.Invalid("That hospital number is already assigned.");

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace DrmcPatientPortal.Controllers;
 
@@ -14,12 +15,15 @@ public class PatientController : Controller
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IAuditLogService _auditLog;
+    private readonly IOptionsMonitor<PatientResultsOptions> _resultsOptions;
 
-    public PatientController(ApplicationDbContext db, UserManager<ApplicationUser> userManager, IAuditLogService auditLog)
+    public PatientController(ApplicationDbContext db, UserManager<ApplicationUser> userManager, IAuditLogService auditLog,
+        IOptionsMonitor<PatientResultsOptions> resultsOptions)
     {
         _db = db;
         _userManager = userManager;
         _auditLog = auditLog;
+        _resultsOptions = resultsOptions;
     }
 
     public async Task<IActionResult> Home()
@@ -36,9 +40,10 @@ public class PatientController : Controller
             .OrderByDescending(e => e.EncounterDate)
             .ThenByDescending(e => e.Id).Take(1).ToListAsync());
 
-        var latestLab = await SqlReadRetry.RunAsync(_db, () => _db.LabResults
-            .AsNoTracking()
+        var visibleLabs = _db.LabResults.AsNoTracking()
             .Where(l => l.Patient.PortalUserId == user.Id)
+            .Where(PatientResultsDisclosure.PdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow));
+        var latestLab = await SqlReadRetry.RunAsync(_db, () => visibleLabs
             .OrderByDescending(l => l.CollectedAt)
             .ThenByDescending(l => l.Id).Take(1).ToListAsync());
 
@@ -54,7 +59,7 @@ public class PatientController : Controller
             Encounters = encounters,
             LabResults = latestLab,
             EncountersCount = await SqlReadRetry.RunAsync(_db, () => _db.ClinicalEncounters.CountAsync(e => e.Patient.PortalUserId == user.Id)),
-            LabResultsCount = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.CountAsync(e => e.Patient.PortalUserId == user.Id)),
+            LabResultsCount = await SqlReadRetry.RunAsync(_db, () => visibleLabs.CountAsync()),
             ActivePrescriptionsCount = activePrescriptions,
             Departments = ClinicalDepartments.All,
         };

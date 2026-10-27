@@ -184,6 +184,8 @@ builder.Services.AddScoped<PatientDocumentStorage>();
 builder.Services.AddScoped<IPatientDocumentStorage>(services => services.GetRequiredService<PatientDocumentStorage>());
 builder.Services.Configure<LabReportStorageOptions>(builder.Configuration.GetSection("LabReports"));
 builder.Services.AddScoped<ILabReportStorage, LabReportStorage>();
+builder.Services.Configure<AdvisoryImageStorageOptions>(builder.Configuration.GetSection("AdvisoryImages"));
+builder.Services.AddScoped<IAdvisoryImageStorage, AdvisoryImageStorage>();
 builder.Services.AddHostedService<TemporaryDocumentCleanupService>();
 
 // Validate the public origin before evaluating production key protection or touching storage.

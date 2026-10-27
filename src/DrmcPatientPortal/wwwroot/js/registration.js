@@ -475,13 +475,11 @@ $(function () {
     // who usually have no hospital record. Only one of the two panels is shown at a time.
     const staffPanel = document.getElementById('staffInvitationPanel');
     const staffInput = document.getElementById('staffInvitationCode');
-    const requirementLine = document.getElementById('hospitalCodeRequirement');
     const recordCodeRequired = recordCodePanel.dataset.codeRequired === 'true';
 
     function setStaffMode(staff, invite) {
         recordCodePanel.classList.toggle('d-none', staff);
         staffPanel.classList.toggle('d-none', !staff);
-        requirementLine?.classList.toggle('d-none', staff);
         if (staff) {
             recordCodeScanner?.stop();
             recordCodeInput.value = '';

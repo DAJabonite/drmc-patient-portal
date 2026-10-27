@@ -1,4 +1,5 @@
 using DrmcPatientPortal.Models;
+using System.Linq.Expressions;
 
 namespace DrmcPatientPortal.Services;
 
@@ -14,6 +15,10 @@ public sealed class PatientResultsOptions
 // Server-side release rules for patient pages. Times are Manila wall time, as stored.
 public static class PatientResultsDisclosure
 {
+    public static Expression<Func<LabResult, bool>> PdfEligibility(bool disclosureEnabled, DateTime manilaNow) => result =>
+        disclosureEnabled && result.ReportFileName != null && result.Status == "Available"
+        && result.ReleasedAt.HasValue && result.ReleasedAt.Value <= manilaNow;
+
     // A study is released when it has a final (or amended) report whose release time has passed.
     public static bool IsReleased(RadiologyStatus status, DateTime? releasedAt, DateTime manilaNow) =>
         status is RadiologyStatus.Final or RadiologyStatus.Amended
