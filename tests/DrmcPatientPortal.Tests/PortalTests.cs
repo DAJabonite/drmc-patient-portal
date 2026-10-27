@@ -1,4 +1,8 @@
 using System.Net;
+using DrmcPatientPortal.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
 using DrmcPatientPortal.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,6 +12,22 @@ namespace DrmcPatientPortal.Tests;
 [Collection(PortalCollection.Name)]
 public sealed class PortalTests(PortalFactory factory)
 {
+    private WebApplicationFactory<Program>? reportHost;
+    private WebApplicationFactory<Program> ReportHost => reportHost ??= factory.WithWebHostBuilder(b => b.UseSetting("PatientResults:ShowFullResults", "true"));
+    private HttpClient ReportClient() => ReportHost.CreateClient(new() { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+    private async Task SeedVisibleLab()
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var patient = await db.PatientRecords.SingleAsync(p => p.PortalUser!.Email == PortalFactory.PrimaryEmail);
+        db.LabResults.Add(new LabResult
+        {
+            PatientRecordId = patient.Id, AccessionNumber = "PORTAL-TEST-" + Guid.NewGuid().ToString("N"),
+            TestName = "Synthetic special diagnostics", Category = LabCategory.SpecialDiagnostics, Status = "Available",
+            CollectedAt = DateTime.Today.AddDays(-2), ReleasedAt = DateTime.Today.AddDays(-1), ReportFileName = Guid.NewGuid().ToString("N")
+        });
+        await db.SaveChangesAsync();
+    }
     [Theory]
     [InlineData("/")]
     [InlineData("/Directory")]
@@ -57,14 +77,15 @@ public sealed class PortalTests(PortalFactory factory)
     [Fact]
     public async Task Patient_can_open_own_records_but_another_patient_cannot()
     {
-        var owner = factory.CreatePortalClient();
+        await SeedVisibleLab();
+        var owner = ReportClient();
         await owner.SignInSuccessfullyAsync(PortalFactory.PrimaryEmail, PortalFactory.Password);
         var visit = PortalClient.Links(await owner.GetStringAsync("/Patient/Visits"), "/Patient/Visits/Details/").First();
         var lab = PortalClient.Links(await owner.GetStringAsync("/Patient/LabResults"), "/Patient/LabResults/Details/").First();
         Assert.Equal(HttpStatusCode.OK, (await owner.GetAsync(visit)).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await owner.GetAsync(lab)).StatusCode);
 
-        var other = factory.CreatePortalClient();
+        var other = ReportClient();
         await other.SignInSuccessfullyAsync(PortalFactory.EmptyEmail, PortalFactory.Password);
         foreach (var path in new[] { visit, lab })
         {
@@ -77,7 +98,8 @@ public sealed class PortalTests(PortalFactory factory)
     [Fact]
     public async Task Lab_results_show_readable_category_names()
     {
-        var client = factory.CreatePortalClient();
+        await SeedVisibleLab();
+        var client = ReportClient();
         await client.SignInSuccessfullyAsync(PortalFactory.PrimaryEmail, PortalFactory.Password);
         var labs = PortalClient.Links(await client.GetStringAsync("/Patient/LabResults"), "/Patient/LabResults/Details/");
         Assert.NotEmpty(labs);

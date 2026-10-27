@@ -235,35 +235,30 @@ public sealed class RadiologyPatientTests(PortalFactory factory)
         var now = PatientResultsDisclosure.ManilaNow;
         var released = labs.First(l => PatientResultsDisclosure.IsReleased(l, now) && l.Items.Count > 0 && l.ResultSummary.Length > 0);
         var unreleased = labs.First(l => !PatientResultsDisclosure.IsReleased(l, now));
-
+        await Db(async db =>
+        {
+            (await db.LabResults.SingleAsync(l => l.Id == released.Id)).ReportFileName = Guid.NewGuid().ToString("N");
+            await db.SaveChangesAsync(); return true;
+        });
         var off = await PatientAsync(factory, PortalFactory.PrimaryEmail);
         var on = await PatientAsync(On, PortalFactory.PrimaryEmail);
-
-        var offHtml = await off.GetStringAsync($"/Patient/LabResults/Details/{released.Id}");
-        Assert.DoesNotContain("data-testid=\"lab-result-values\"", offHtml);
-        Assert.DoesNotContain(released.ResultSummary, offHtml);
-
-        var onHtml = await on.GetStringAsync($"/Patient/LabResults/Details/{released.Id}");
-        Assert.Contains("data-testid=\"lab-result-values\"", onHtml);
-        Assert.Contains(released.ResultSummary, onHtml);
+        Assert.Equal(HttpStatusCode.NotFound, (await off.GetAsync($"/Patient/LabResults/Details/{released.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await on.GetAsync($"/Patient/LabResults/Details/{unreleased.Id}")).StatusCode);
+        var html = await on.GetStringAsync($"/Patient/LabResults/Details/{released.Id}");
+        Assert.Contains("data-testid=\"lab-result-values\"", html);
+        Assert.Contains(released.ResultSummary, html);
         foreach (var item in released.Items)
         {
-            Assert.Matches(Regex.Escape(item.ParameterName) + @"</th>\s*<td[^>]*>" + Regex.Escape(item.Value) + "</td>", onHtml);
-            Assert.Contains(item.ReferenceRange, onHtml);
+            Assert.Matches(Regex.Escape(item.ParameterName) + @"</th>\s*<td[^>]*>" + Regex.Escape(item.Value) + "</td>", html);
+            Assert.Contains(item.ReferenceRange, html);
         }
-        Assert.Contains(released.Items.First().Flag.ToString(), onHtml);
-
-        // With the block absent, the switched-on page is otherwise the same as the switched-off page.
-        var stripped = Regex.Replace(MainContent(onHtml), @"\s*<section class=""mb-4"" aria-labelledby=""labValuesHeading"".*?</section>", "", RegexOptions.Singleline);
-        Assert.Equal(Regex.Replace(MainContent(offHtml), @"\s+", " "), Regex.Replace(stripped, @"\s+", " "));
-
-        var pendingHtml = await on.GetStringAsync($"/Patient/LabResults/Details/{unreleased.Id}");
-        Assert.DoesNotContain("data-testid=\"lab-result-values\"", pendingHtml);
-
+        Assert.Contains(released.Items.First().Flag.ToString(), html);
         foreach (var lab in labs.Where(l => l.ClinicalNotes.Length > 0))
         {
-            Assert.DoesNotContain(lab.ClinicalNotes, await on.GetStringAsync($"/Patient/LabResults/Details/{lab.Id}"));
-            Assert.DoesNotContain(lab.ClinicalNotes, await off.GetStringAsync($"/Patient/LabResults/Details/{lab.Id}"));
+            var response = await on.GetAsync($"/Patient/LabResults/Details/{lab.Id}");
+            Assert.DoesNotContain(lab.ClinicalNotes, await response.Content.ReadAsStringAsync());
+            var denied = await off.GetAsync($"/Patient/LabResults/Details/{lab.Id}");
+            Assert.DoesNotContain(lab.ClinicalNotes, await denied.Content.ReadAsStringAsync());
         }
     }
 

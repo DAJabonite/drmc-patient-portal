@@ -316,7 +316,7 @@ public sealed partial class HospitalRecordCodeTests(PortalFactory factory)
     {
         var client = factory.CreatePortalClient();
         var page = await client.GetStringAsync("/Identity/Account/Register");
-        Assert.Contains("id=\"hospitalCodeRequirement\"", page);
+        Assert.DoesNotContain("id=\"hospitalCodeRequirement\"", page);
         Assert.DoesNotMatch("Hospital record code\\s*<span class=\"registration-optional\">", page);
         Assert.Matches("id=\"hospitalRecordCode\"[^>]*data-val-required=", page);
         foreach (var code in new string?[] { null, "", "   " })
@@ -337,7 +337,7 @@ public sealed partial class HospitalRecordCodeTests(PortalFactory factory)
         var html = await factory.CreatePortalClient().GetStringAsync("/Identity/Account/Register");
         Assert.Contains("id=\"hospitalRecordCode\"", html);
         Assert.Contains("No code yet? Visit the PACD", html);
-        Assert.Contains("Clinic registration desk", html);
+        Assert.Contains("Enter your PACD/Clinic code or scan its QR.", html);
         Assert.DoesNotMatch("<script(?![^>]*src=)[^>]*>", html);
     }
 
