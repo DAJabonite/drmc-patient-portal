@@ -27,8 +27,16 @@ public sealed class LabReportTests(PortalFactory factory)
         return await query(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>());
     }
 
-    private Task<int> PatientId() => Db(db => db.PatientRecords
-        .Where(p => p.PortalUser!.Email == PortalFactory.PrimaryEmail).Select(p => p.Id).SingleAsync());
+    private Task<int> PatientId() => Db(async db =>
+    {
+        var patient = await db.PatientRecords.SingleAsync(p => p.PortalUser!.Email == PortalFactory.PrimaryEmail);
+        if (!patient.HasHospitalNumber)
+        {
+            patient.HospitalNumber = "LAB-FIXTURE-PRIMARY";
+            await db.SaveChangesAsync();
+        }
+        return patient.Id;
+    });
 
     private static Dictionary<string, string> Fields(string accession, string? version = null) => new()
     {

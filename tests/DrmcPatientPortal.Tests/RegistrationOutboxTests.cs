@@ -168,7 +168,8 @@ public sealed class RegistrationOutboxTests(PortalFactory factory)
             };
             var registration = new PatientRegistrationCode
             {
-                PatientRecord = new PatientRecord { FirstName = "Synthetic", LastName = "Staff", DateOfBirth = birthDate },
+                PatientRecord = new PatientRecord { FirstName = "Synthetic", LastName = "Staff", DateOfBirth = birthDate,
+                    HospitalNumber = "OUTBOX-" + Guid.NewGuid().ToString("N") },
                 CodeHash = HospitalRecordCodes.Hash(HospitalRecordCodes.Normalize(recordCode)!),
                 CodeHint = recordCode[^5..], IssuingPoint = RegistrationCodeIssuingPoints.Pacd,
                 IssuedById = actor.Id, IssuedByEmail = actor.Email!, IssuedAtUtc = now, ExpiresAtUtc = now.AddDays(1),
