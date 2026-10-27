@@ -6,5 +6,10 @@
     <div class="col-md-6"><label asp-for="MiddleName" class="form-label"></label><input asp-for="MiddleName" maxlength="60" class="form-control" /><span asp-validation-for="MiddleName" class="text-danger"></span></div>
     <div class="col-md-6"><label asp-for="Suffix" class="form-label"></label><input asp-for="Suffix" maxlength="10" class="form-control" /><span asp-validation-for="Suffix" class="text-danger"></span></div>
     <div class="col-md-6"><label asp-for="DateOfBirth" class="form-label"></label><input asp-for="DateOfBirth" type="date" class="form-control" /><span asp-validation-for="DateOfBirth" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="HospitalNumber" class="form-label"></label><input asp-for="HospitalNumber" class="form-control" /><span asp-validation-for="HospitalNumber" class="text-danger"></span></div>
+    <div class="col-md-6">
+        <label asp-for="HospitalNumber" class="form-label">Hospital number (MRN) <span class="text-danger">(required)</span></label>
+        <input asp-for="HospitalNumber" class="form-control" maxlength="450" required aria-required="true" aria-describedby="hospitalNumberHelp hospitalNumberValidation" />
+        <div id="hospitalNumberHelp" class="form-text">Use the patient's assigned hospital number. Each number must belong to only one patient.</div>
+        <span asp-validation-for="HospitalNumber" id="hospitalNumberValidation" class="text-danger"></span>
+    </div>
 </div>

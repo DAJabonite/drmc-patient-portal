@@ -2,7 +2,7 @@
 @{
     ViewData["Title"] = "Issue registration code";
     var days = ViewData["LifetimeDays"] is int d ? d : 7;
-    var blocked = Model.Linked || !Model.HasBirthDate;
+    var blocked = Model.Linked || !Model.Context.Patient.HasHospitalNumber || Model.Context.Patient.NeedsNameReview || !Model.HasBirthDate;
 }
 <div class="admin-page-header">
     <div>
@@ -15,6 +15,14 @@
 @if (Model.Linked)
 {
     <div class="alert alert-info" role="status">This hospital record is already linked to a portal account, so the patient does not need a code. To sign in, they use the email address on that account.</div>
+}
+else if (!Model.Context.Patient.HasHospitalNumber)
+{
+    <div class="alert alert-warning" role="status">This record has no hospital number. Add it to the hospital record before issuing a code.</div>
+}
+else if (Model.Context.Patient.NeedsNameReview)
+{
+    <div class="alert alert-warning" role="status">Verify and complete the patient's separate name fields before issuing a code.</div>
 }
 else if (!Model.HasBirthDate)
 {

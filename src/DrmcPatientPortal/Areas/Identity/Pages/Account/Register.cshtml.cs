@@ -359,7 +359,8 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                 if (!ModelState.TryGetValue("Input.HospitalRecordCode", out var codeState) || codeState.Errors.Count == 0)
                     ModelState.AddModelError("Input.HospitalRecordCode", HospitalRecordCodeError);
             }
-            else if (ModelState.IsValid)
+            else if (ModelState.IsValid || new[] { "Input.LastName", "Input.FirstName", "Input.MiddleName", "Input.Suffix", "Input.DateOfBirth" }
+                .Any(field => ModelState.TryGetValue(field, out var state) && state.Errors.Count > 0))
             {
                 recordCode = await FindRedeemableCodeAsync(canonicalCode, Input.DateOfBirth);
                 if (recordCode is null) ModelState.AddModelError("Input.HospitalRecordCode", HospitalRecordCodeError);
@@ -665,27 +666,14 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                 await RejectRecordCodeAsync();
                 return null;
             }
-            if (dateOfBirth is not null && code.PatientRecord.DateOfBirth?.Date == dateOfBirth.Value.Date)
+            if (!code.PatientRecord.HasHospitalNumber)
             {
-                if (PatientNames.Matches(code.PatientRecord, Input.LastName, Input.FirstName, Input.MiddleName, Input.Suffix)) return code;
                 await RejectRecordCodeAsync();
                 return null;
             }
-
-            var hasBirthDate = dateOfBirth is not null;
-            var birthDate = dateOfBirth?.Date ?? DateTime.MinValue;
-            // Increment from the database value, not the earlier read. This short transaction commits
-            // the attempt and its audit together, independently of any later signup transaction.
-            await using var transaction = await _db.Database.BeginTransactionAsync(CancellationToken.None);
-            await _db.PatientRegistrationCodes.Where(c => c.Id == code.Id && c.RedeemedAtUtc == null && c.RevokedAtUtc == null &&
-                    c.LockedAtUtc == null && c.FailedAttemptCount < PatientRegistrationCode.MaximumFailedAttempts &&
-                    c.ExpiresAtUtc > DateTime.UtcNow && c.PatientRecord.PortalUserId == null &&
-                    (!hasBirthDate || c.PatientRecord.DateOfBirth == null || c.PatientRecord.DateOfBirth.Value.Date != birthDate))
-                .ExecuteUpdateAsync(s => s
-                    .SetProperty(c => c.LockedAtUtc, c => c.FailedAttemptCount == PatientRegistrationCode.MaximumFailedAttempts - 1 ? (DateTime?)now : null)
-                    .SetProperty(c => c.FailedAttemptCount, c => c.FailedAttemptCount + 1), CancellationToken.None);
-            await RejectRecordCodeAsync();
-            await transaction.CommitAsync(CancellationToken.None);
+            if (HospitalRecordCodes.MatchesIdentity(code.PatientRecord, Input.LastName, Input.FirstName, dateOfBirth, Input.MiddleName, Input.Suffix))
+                return code;
+            await HospitalRecordCodes.RejectIdentityMismatchAsync(_db, _auditLog, HttpContext, code.Id, "registration_rejected");
             return null;
         }
 

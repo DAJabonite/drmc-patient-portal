@@ -1,5 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
+using DrmcPatientPortal.Data;
+using DrmcPatientPortal.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace DrmcPatientPortal.Services;
 
@@ -12,6 +15,38 @@ public static class HospitalRecordCodes
     public const int DisplayLength = Length + Length / GroupLength - 1;
     private const string Alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
     public const string FragmentKey = "code";
+    public const string LinkError = "We could not verify the hospital record and portal account.";
+
+    // Every identity factor must match. A legacy record without an MRN must be repaired first.
+    public static bool MatchesIdentity(PatientRecord record, string? lastName, string? firstName, DateTime? birthDate,
+        string? middleName = null, string? suffix = null) =>
+        record.HasHospitalNumber && birthDate is not null && record.DateOfBirth is not null
+        && record.DateOfBirth.Value.Date == birthDate.Value.Date
+        && PatientNames.Matches(record, lastName, firstName, middleName, suffix);
+
+    // MRNs retain leading zeros and punctuation; only surrounding whitespace and case vary.
+    public static bool MatchesRecord(PatientRecord record, string? hospitalNumber, string? lastName, string? firstName,
+        DateTime? birthDate, string? middleName = null, string? suffix = null) =>
+        !string.IsNullOrWhiteSpace(hospitalNumber) && record.HasHospitalNumber
+        && string.Equals(record.HospitalNumber!.Trim(), hospitalNumber.Trim(), StringComparison.OrdinalIgnoreCase)
+        && MatchesIdentity(record, lastName, firstName, birthDate, middleName, suffix);
+
+    // Call only outside the rejected linking/signup transaction. The attempt and required audit
+    // commit together, and concurrent failures increment the database value rather than a snapshot.
+    public static async Task RejectIdentityMismatchAsync(ApplicationDbContext db, IAuditLogService audit,
+        HttpContext context, int codeId, string reason, string resource = "PatientRegistrationCode")
+    {
+        var now = DateTime.UtcNow;
+        await using var transaction = await db.Database.BeginTransactionAsync(CancellationToken.None);
+        await db.PatientRegistrationCodes.Where(c => c.Id == codeId && c.RedeemedAtUtc == null && c.RevokedAtUtc == null
+                && c.LockedAtUtc == null && c.FailedAttemptCount < PatientRegistrationCode.MaximumFailedAttempts
+                && c.ExpiresAtUtc > now && c.PatientRecord.PortalUserId == null)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(c => c.LockedAtUtc, c => c.FailedAttemptCount == PatientRegistrationCode.MaximumFailedAttempts - 1 ? (DateTime?)now : null)
+                .SetProperty(c => c.FailedAttemptCount, c => c.FailedAttemptCount + 1), CancellationToken.None);
+        await HospitalRecordLinkAudit.RejectedAsync(audit, context, reason, resource);
+        await transaction.CommitAsync(CancellationToken.None);
+    }
 
     public static string Generate()
     {

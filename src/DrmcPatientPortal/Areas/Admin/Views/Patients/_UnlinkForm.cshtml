@@ -1,0 +1,14 @@
+@model PatientUnlinkInput
+<form method="post" asp-action="Unlink" asp-route-id="@ViewContext.RouteData.Values["id"]" class="admin-card admin-form">
+    <div class="admin-card-body">
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+        <input asp-for="RowVersion" type="hidden" />
+        <div class="mb-3"><label asp-for="Email" class="form-label">Confirmed linked account email</label><input asp-for="Email" class="form-control" /><span asp-validation-for="Email" class="text-danger"></span></div>
+        <div class="form-check"><input asp-for="IdentityVerified" class="form-check-input" /><label asp-for="IdentityVerified" class="form-check-label">Staff checked the patient's identity</label></div>
+        <span asp-validation-for="IdentityVerified" class="text-danger"></span>
+    </div>
+    <div class="admin-form-actions">
+        <a asp-area="Admin" asp-action="Index" class="btn btn-outline-secondary me-auto">Back</a>
+        <button type="submit" class="btn btn-outline-danger"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Unlink</button>
+    </div>
+</form>

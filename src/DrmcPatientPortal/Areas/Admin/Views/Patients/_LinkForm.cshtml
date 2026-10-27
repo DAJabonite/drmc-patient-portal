@@ -4,11 +4,14 @@
         <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
         <input asp-for="RowVersion" type="hidden" />
         <div class="mb-3"><label asp-for="Email" class="form-label">Confirmed account email</label><input asp-for="Email" class="form-control" /><span asp-validation-for="Email" class="text-danger"></span></div>
+        <p class="form-text">The account's saved name and birth date must match this hospital record.</p>
+        <div class="mb-3"><label asp-for="HospitalNumber" class="form-label">Hospital number (required)</label><input asp-for="HospitalNumber" class="form-control" maxlength="450" required aria-required="true" /><span asp-validation-for="HospitalNumber" class="text-danger"></span></div>
+        <div class="mb-3"><label asp-for="HospitalRecordCode" class="form-label">Hospital record code (required)</label><input asp-for="HospitalRecordCode" class="form-control" maxlength="64" autocomplete="off" spellcheck="false" required aria-required="true" /><span asp-validation-for="HospitalRecordCode" class="text-danger"></span><div class="form-text">Enter the active code issued to this patient. Linking uses the code once.</div></div>
         <div class="form-check"><input asp-for="IdentityVerified" class="form-check-input" /><label asp-for="IdentityVerified" class="form-check-label">Staff checked the patient's identity</label></div>
+        <span asp-validation-for="IdentityVerified" class="text-danger"></span>
     </div>
     <div class="admin-form-actions">
         <a asp-area="Admin" asp-action="Index" class="btn btn-outline-secondary me-auto">Back</a>
         <button type="submit" asp-action="Link" asp-route-id="@ViewContext.RouteData.Values["id"]" class="btn btn-primary"><i class="bi bi-link-45deg me-1" aria-hidden="true"></i>Link</button>
-        <button type="submit" asp-action="Unlink" asp-route-id="@ViewContext.RouteData.Values["id"]" class="btn btn-outline-danger"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Unlink</button>
     </div>
 </form>
