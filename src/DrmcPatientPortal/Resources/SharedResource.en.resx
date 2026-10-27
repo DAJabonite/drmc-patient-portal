@@ -263,4 +263,6 @@
   <data name="RS_Notifications" xml:space="preserve"><value>DRMC appointment notifications</value></data>
   <data name="Guide_EffectiveOn" xml:space="preserve"><value>Effective:</value></data>
   <data name="Guide_LastReviewed" xml:space="preserve"><value>Last reviewed:</value></data>
+  <data name="RS_ReplenishmentReminder" xml:space="preserve"><value>Medicine replenishment reminder</value></data>
+  <data name="RS_DateUnverified" xml:space="preserve"><value>Refill date awaiting clinic verification</value></data>
 </root>

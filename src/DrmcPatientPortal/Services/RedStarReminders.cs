@@ -19,14 +19,24 @@ public sealed class RedStarOptions
     public int MaximumAttempts { get; set; } = 5;
 }
 
+public enum RedStarRefillUrgency { Overdue, DueToday, DueSoon, Scheduled }
+
 public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataProtectionProvider protection,
     IOptions<RedStarOptions> options, IOptions<PortalOptions> portalOptions, IHostEnvironment environment,
     TimeProvider clock, ILogger<RedStarReminderService> logger)
 {
+    public const int ReminderWindowDays = 7;
     private const string ProtectionPurpose = "DRMC.PrivateAppointmentReminder.v1";
     private int MaximumAttempts => Math.Clamp(options.Value.MaximumAttempts, 1, 20);
     private sealed record Payload(string Recipient, DateTime DueDate);
     private sealed record Candidate(int Id, int Revision, DateTime DueDate, string UserId, bool EmailOptIn);
+
+    public static RedStarRefillUrgency ClassifyRefill(DateTime due, DateTime today)
+    {
+        var days = (due.Date - today.Date).Days;
+        return days < 0 ? RedStarRefillUrgency.Overdue : days == 0 ? RedStarRefillUrgency.DueToday
+            : days <= ReminderWindowDays ? RedStarRefillUrgency.DueSoon : RedStarRefillUrgency.Scheduled;
+    }
 
     // Return the latest applicable milestone, including when a worker starts between milestones.
     // AddMonths always uses the original appointment date, so Jan 31 -> Feb 28 -> Mar 31.
@@ -35,11 +45,11 @@ public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataPro
         due = due.Date;
         today = today.Date;
         if (today < due)
-            return (due - today).Days <= 7 ? "SevenDaysBefore" : null;
+            return (due - today).Days <= ReminderWindowDays ? "SevenDaysBefore" : null;
         var months = (today.Year - due.Year) * 12 + today.Month - due.Month;
         if (months > 0 && due.AddMonths(months) > today) months--;
         if (months >= 1) return "Month:" + months.ToString(CultureInfo.InvariantCulture);
-        return (today - due).Days >= 7 ? "SevenDaysOverdue" : "DueToday";
+        return (today - due).Days >= ReminderWindowDays ? "SevenDaysOverdue" : "DueToday";
     }
 
     public static DateTimeOffset NextDailyRun(DateTimeOffset utc)
@@ -64,7 +74,7 @@ public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataPro
         {
             var afterId = lastId;
             var candidates = await SqlReadRetry.RunAsync(db, () => Eligible(db, now)
-                .Where(a => a.Id > afterId && a.DueDate <= today.AddDays(7)).OrderBy(a => a.Id).Take(100)
+                .Where(a => a.Id > afterId && a.DueDate <= today.AddDays(ReminderWindowDays)).OrderBy(a => a.Id).Take(100)
                 .Select(a => new Candidate(a.Id, a.Revision, a.DueDate, a.Enrollment.Patient.PortalUserId!,
                     a.Enrollment.Patient.EmailRemindersEnabled)).ToListAsync(token), token);
             if (candidates.Count == 0) break;

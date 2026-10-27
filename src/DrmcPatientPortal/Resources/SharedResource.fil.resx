@@ -263,4 +263,6 @@
   <data name="RS_Notifications" xml:space="preserve"><value>Mga abiso sa appointment sa DRMC</value></data>
   <data name="Guide_EffectiveOn" xml:space="preserve"><value>May bisa mula:</value></data>
   <data name="Guide_LastReviewed" xml:space="preserve"><value>Huling sinuri:</value></data>
+  <data name="RS_ReplenishmentReminder" xml:space="preserve"><value>Paalala sa muling pagkuha ng gamot</value></data>
+  <data name="RS_DateUnverified" xml:space="preserve"><value>Hinihintay ang pagtiyak ng klinika sa petsa ng pagkuha</value></data>
 </root>
