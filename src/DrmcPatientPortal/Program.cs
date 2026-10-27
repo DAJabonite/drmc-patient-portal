@@ -286,13 +286,13 @@ await using (var protectionScope = app.Services.CreateAsyncScope())
 if (trustedProxies.Length > 0) app.UseForwardedHeaders();
 await AdminBootstrap.InitializeAsync(app.Services, app.Configuration);
 
-// Fixtures require explicit opt-in and an already migrated, empty business schema.
+// General fixtures require an empty business schema; private demo records can be backfilled after opt-in.
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    DbInitializer.Initialize(db, userManager, app.Configuration);
+    DbInitializer.Initialize(db, userManager, app.Configuration, scope.ServiceProvider.GetRequiredService<TimeProvider>());
 }
 
 // Configure the HTTP request pipeline.

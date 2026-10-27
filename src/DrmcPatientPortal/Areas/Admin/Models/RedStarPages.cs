@@ -4,16 +4,22 @@ using DrmcPatientPortal.Models;
 namespace DrmcPatientPortal.Areas.Admin.Models;
 
 public sealed record RedStarRegistryRow(int EnrollmentId, int PatientId, string PatientCode, string CodeName,
-    RedStarProgram Program, RedStarStatus Status, DateTime? NextRefill, int PendingRequests, bool FollowUpReview);
+    RedStarProgram Program, RedStarStatus Status, DateTime? NextRefill, int PendingRequests, bool FollowUpReview,
+    bool? NextRefillVerified = null, DateTime? StatusDate = null);
 public sealed record RedStarRegistryPage(IReadOnlyList<RedStarRegistryRow> Rows, string? Search, string Worklist,
-    RedStarProgram? Program, RedStarStatus? Status, int Page, int Total, IReadOnlyDictionary<string, int> Counts);
+    RedStarProgram? Program, RedStarStatus? Status, int Page, int Total, IReadOnlyDictionary<string, int> Counts,
+    DateTime Today, string Month);
 public sealed record RedStarDetailsPage(RedStarEnrollment Enrollment, IReadOnlyList<RedStarAppointment> Appointments,
     IReadOnlyList<RedStarDispense> Dispenses, IReadOnlyList<RedStarRescheduleRequest> Requests,
     int AppointmentPage, int AppointmentTotal, int HistoryPage, int HistoryTotal, int RequestPage, int RequestTotal);
 public sealed record RedStarAuditPage(IReadOnlyList<RedStarAudit> Rows, int Page, int Total);
 public sealed record RedStarDeliveryRow(Guid Id, string PatientCode, DateTime DueDate, string Stage,
-    RedStarReminderChannel Channel, RedStarDeliveryState State, int Attempts, DateTimeOffset CreatedUtc, DateTimeOffset? CompletedUtc);
-public sealed record RedStarDeliveriesPage(IReadOnlyList<RedStarDeliveryRow> Rows, int Page, int Total);
+    RedStarReminderChannel Channel, RedStarDeliveryState State, int Attempts, DateTimeOffset CreatedUtc, DateTimeOffset? CompletedUtc,
+    bool Current, bool Verified);
+public sealed record RedStarRefillWorklistRow(int EnrollmentId, string PatientCode, string CodeName, DateTime DueDate, bool Verified);
+public sealed record RedStarRefillBadge(DateTime DueDate, DateTime Today, bool Verified);
+public sealed record RedStarDeliveriesPage(IReadOnlyList<RedStarDeliveryRow> Rows, int Page, int Total,
+    IReadOnlyList<RedStarRefillWorklistRow> Refills, int RefillPage, int RefillTotal, DateTime Today);
 
 public sealed class RedStarEnrollmentInput
 {

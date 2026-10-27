@@ -1,0 +1,14 @@
+@model RedStarRefillBadge
+@using DrmcPatientPortal.Services
+@{
+    var urgency = RedStarReminderService.ClassifyRefill(Model.DueDate, Model.Today);
+    var (css, label) = urgency switch
+    {
+        RedStarRefillUrgency.Overdue => ("bg-danger text-white", "Overdue replenishment"),
+        RedStarRefillUrgency.DueToday => ("bg-warning text-dark", "Replenishment due today"),
+        RedStarRefillUrgency.DueSoon => ("bg-warning text-dark", "Replenishment due soon"),
+        _ => ("bg-light text-dark border", "Refill scheduled")
+    };
+}
+<span class="badge @css">@label</span>
+@if (!Model.Verified) { <span class="badge bg-secondary">Needs verification</span> }

@@ -5,7 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DrmcPatientPortal.Services;
 
-public sealed record RedStarRefillCard(int AppointmentId, DateTime DueDate, string Medicines, bool Confirmed, string RowVersion);
+public sealed record RedStarRefillCard(int AppointmentId, DateTime DueDate, string Medicines, bool Confirmed, string RowVersion,
+    bool Verified = true);
 public sealed record RedStarPortalState(bool Enrolled, int UnreadCount);
 public sealed record RedStarPatientPage(RedStarPatient Patient, IReadOnlyList<RedStarAppointment> Appointments,
     IReadOnlyList<RedStarDispense> History, IReadOnlyList<RedStarRescheduleRequest> Requests,
@@ -46,10 +47,10 @@ public sealed class RedStarPatientService(ApplicationDbContext db, IHttpContextA
             .Where(a => ownedIds.Contains(a.Enrollment.PatientId) &&
                 a.Kind == RedStarAppointmentKind.Refill && a.State == RedStarAppointmentState.Scheduled && a.Enrollment.Status == RedStarStatus.Active)
             .OrderBy(a => a.DueDate).ThenBy(a => a.Id)
-            .Select(a => new { a.Id, a.DueDate, a.Enrollment.Medicines, a.ConfirmedUtc, a.RowVersion }).FirstOrDefaultAsync(token), token);
+            .Select(a => new { a.Id, a.DueDate, a.Enrollment.Medicines, a.ConfirmedUtc, a.RowVersion, a.RemindersVerified }).FirstOrDefaultAsync(token), token);
         if (card is null) return null;
         await RedStarAuditTrail.RecordAsync(db, userId, "ViewRefill", "Appointment/" + card.Id, token);
-        return new(card.Id, card.DueDate, card.Medicines, card.ConfirmedUtc is not null, Convert.ToBase64String(card.RowVersion));
+        return new(card.Id, card.DueDate, card.Medicines, card.ConfirmedUtc is not null, Convert.ToBase64String(card.RowVersion), card.RemindersVerified);
     }
 
     public async Task<RedStarPatientPage?> PageAsync(string userId, int page, CancellationToken token)

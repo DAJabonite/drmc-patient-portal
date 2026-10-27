@@ -11,21 +11,24 @@ namespace DrmcPatientPortal.Data;
 // Existing rows are retained so repeated Development startup does not reset accounts or patient data.
 public static class DbInitializer
 {
-    public static void Initialize(ApplicationDbContext db, UserManager<ApplicationUser> userManager, IConfiguration configuration)
+    public static void Initialize(ApplicationDbContext db, UserManager<ApplicationUser> userManager,
+        IConfiguration configuration, TimeProvider? clock = null)
     {
         if (!configuration.GetValue<bool>("DevelopmentFixtures:Enabled")) return;
         using var transaction = db.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
+        var now = (clock ?? TimeProvider.System).GetUtcNow();
+        InitializeFixtureAccounts(db, userManager, configuration, now);
+        InitializeGeneralFixtures(db, ClinicalClock.WallTime(now));
+        InitializeRedStarFixtures(db, now);
+        transaction.Commit();
+    }
+
+    private static void InitializeGeneralFixtures(ApplicationDbContext db, DateTime clinicalNow)
+    {
         if (db.Doctors.Any() || db.PublicAdvisories.Any() || db.PatientRecords.Any() ||
             db.ClinicalEncounters.Any() || db.LabResults.Any() || db.LabResultItems.Any() || db.RadiologyStudies.Any() ||
             db.Prescriptions.Any() || db.MedicationDoseSchedules.Any() || db.PatientAllergies.Any() ||
             db.PatientIdDocuments.Any() || db.AuditLogs.Any() || db.AdminAuditLogs.Any() || db.ImportBatches.Any()) return;
-        string Required(string key) => !string.IsNullOrWhiteSpace(configuration[key])
-            ? configuration[key]! : throw new InvalidOperationException("Explicit fixture credentials are required.");
-        var primaryEmail = Required("DevelopmentFixtures:Primary:Email");
-        var primaryPassword = Required("DevelopmentFixtures:Primary:Password");
-        var emptyEmail = Required("DevelopmentFixtures:Empty:Email");
-        var emptyPassword = Required("DevelopmentFixtures:Empty:Password");
-
         // 1. Example doctor directory, grouped by the static ClinicalDepartments catalog.
         // Names, rooms, schedules, and biographies require institutional verification before publication.
         if (!db.Doctors.Any())
@@ -39,7 +42,7 @@ public static class DbInitializer
                     Department = "Internal Medicine",
                     SubSpecialty = "Adult Medical Oncology & General Internal Medicine",
                     ClinicRoom = "OPD Bldg 1, Room 201",
-                    ScheduleSummary = "Mon / Wed / Fri · 8:00 AM - 12:00 PM",
+                    ScheduleSummary = "Mon / Wed / Fri Â· 8:00 AM - 12:00 PM",
                     OffersTeleconsult = true,
                     Biography = "Senior Consultant in Internal Medicine with subspecialty training in Medical Oncology. Chairperson of DRMC Cancer Care Committee.",
                     PrcLicenseMasked = "PRC Lic. No. 0089***"
@@ -51,7 +54,7 @@ public static class DbInitializer
                     Department = "Internal Medicine",
                     SubSpecialty = "Pulmonary Medicine & Critical Care",
                     ClinicRoom = "OPD Bldg 1, Room 202",
-                    ScheduleSummary = "Tue / Thu / Sat · 9:00 AM - 1:00 PM",
+                    ScheduleSummary = "Tue / Thu / Sat Â· 9:00 AM - 1:00 PM",
                     OffersTeleconsult = true,
                     Biography = "Specialist in adult asthma, COPD, pulmonary tuberculosis, and post-infectious lung conditions.",
                     PrcLicenseMasked = "PRC Lic. No. 0094***"
@@ -63,7 +66,7 @@ public static class DbInitializer
                     Department = "Surgery",
                     SubSpecialty = "General, Gastrointestinal & Laparoscopic Surgery",
                     ClinicRoom = "OPD Bldg 2, Room 101",
-                    ScheduleSummary = "Mon / Tue / Thu · 8:00 AM - 12:00 PM",
+                    ScheduleSummary = "Mon / Tue / Thu Â· 8:00 AM - 12:00 PM",
                     OffersTeleconsult = false,
                     Biography = "Chief of Surgical Services with expertise in minimally invasive laparoscopic cholecystectomy, hernia repairs, and gastrointestinal oncology.",
                     PrcLicenseMasked = "PRC Lic. No. 0078***"
@@ -75,7 +78,7 @@ public static class DbInitializer
                     Department = "Surgery",
                     SubSpecialty = "Orthopedic Surgery & Musculoskeletal Trauma",
                     ClinicRoom = "OPD Bldg 2, Room 103",
-                    ScheduleSummary = "Wed / Fri · 1:00 PM - 5:00 PM",
+                    ScheduleSummary = "Wed / Fri Â· 1:00 PM - 5:00 PM",
                     OffersTeleconsult = true,
                     Biography = "Orthopedic consultant managing acute fractures, joint replacements, and sports injuries.",
                     PrcLicenseMasked = "PRC Lic. No. 0091***"
@@ -87,7 +90,7 @@ public static class DbInitializer
                     Department = "Pediatrics",
                     SubSpecialty = "General Pediatrics & Preventive Child Health",
                     ClinicRoom = "Pediatric Pavilion, Room 101",
-                    ScheduleSummary = "Mon to Fri · 8:00 AM - 12:00 PM",
+                    ScheduleSummary = "Mon to Fri Â· 8:00 AM - 12:00 PM",
                     OffersTeleconsult = true,
                     Biography = "General pediatrician focusing on developmental milestones, childhood nutrition, immunization, and common pediatric infections.",
                     PrcLicenseMasked = "PRC Lic. No. 0096***"
@@ -99,7 +102,7 @@ public static class DbInitializer
                     Department = "Pediatrics",
                     SubSpecialty = "Neonatology & Newborn Critical Care",
                     ClinicRoom = "Pediatric Pavilion, Room 104",
-                    ScheduleSummary = "Tue / Thu / Sat · 1:00 PM - 4:00 PM",
+                    ScheduleSummary = "Tue / Thu / Sat Â· 1:00 PM - 4:00 PM",
                     OffersTeleconsult = true,
                     Biography = "Neonatologist managing high-risk newborn follow-ups, premature infant development, and neonatal nutrition.",
                     PrcLicenseMasked = "PRC Lic. No. 0102***"
@@ -111,7 +114,7 @@ public static class DbInitializer
                     Department = "OB-Gyne",
                     SubSpecialty = "Maternal & Fetal Medicine / High-Risk Pregnancy",
                     ClinicRoom = "Women's Health Center, Room 201",
-                    ScheduleSummary = "Mon / Wed / Fri · 8:30 AM - 12:30 PM",
+                    ScheduleSummary = "Mon / Wed / Fri Â· 8:30 AM - 12:30 PM",
                     OffersTeleconsult = true,
                     Biography = "Perinatologist specializing in complex maternal health conditions, gestational diabetes, and fetal surveillance.",
                     PrcLicenseMasked = "PRC Lic. No. 0087***"
@@ -123,7 +126,7 @@ public static class DbInitializer
                     Department = "OB-Gyne",
                     SubSpecialty = "Gynecologic Oncology & Reproductive Health",
                     ClinicRoom = "Women's Health Center, Room 203",
-                    ScheduleSummary = "Tue / Thu · 9:00 AM - 2:00 PM",
+                    ScheduleSummary = "Tue / Thu Â· 9:00 AM - 2:00 PM",
                     OffersTeleconsult = false,
                     Biography = "Consultant in screening and surgical management of gynecologic malignancies, abnormal uterine bleeding, and cervical health.",
                     PrcLicenseMasked = "PRC Lic. No. 0082***"
@@ -135,7 +138,7 @@ public static class DbInitializer
                     Department = "Family & Community Medicine",
                     SubSpecialty = "Preventive Medicine, Chronic Disease & Holistic Care",
                     ClinicRoom = "Primary Care Pavilion, Room 101",
-                    ScheduleSummary = "Mon to Fri · 8:00 AM - 4:00 PM",
+                    ScheduleSummary = "Mon to Fri Â· 8:00 AM - 4:00 PM",
                     OffersTeleconsult = true,
                     Biography = "Family physician leading the DRMC PhilHealth Konsulta program, providing continuing healthcare for entire families across life stages.",
                     PrcLicenseMasked = "PRC Lic. No. 0095***"
@@ -147,7 +150,7 @@ public static class DbInitializer
                     Department = "Family & Community Medicine",
                     SubSpecialty = "Geriatric Medicine & Palliative Home Care",
                     ClinicRoom = "Primary Care Pavilion, Room 103",
-                    ScheduleSummary = "Mon / Wed / Fri · 1:00 PM - 5:00 PM",
+                    ScheduleSummary = "Mon / Wed / Fri Â· 1:00 PM - 5:00 PM",
                     OffersTeleconsult = true,
                     Biography = "Specialist in senior citizen health optimization, polypharmacy management, and long-term care coordination.",
                     PrcLicenseMasked = "PRC Lic. No. 0090***"
@@ -159,7 +162,7 @@ public static class DbInitializer
                     Department = "Anesthesiology",
                     SubSpecialty = "Pain Management & Pre-Anesthesia Assessment",
                     ClinicRoom = "Surgical Complex, Room 301",
-                    ScheduleSummary = "Mon to Fri · 8:00 AM - 12:00 PM",
+                    ScheduleSummary = "Mon to Fri Â· 8:00 AM - 12:00 PM",
                     OffersTeleconsult = true,
                     Biography = "Consultant in perioperative anesthesia safety, interventional acute and chronic pain management.",
                     PrcLicenseMasked = "PRC Lic. No. 0084***"
@@ -171,7 +174,7 @@ public static class DbInitializer
                     Department = "Anesthesiology",
                     SubSpecialty = "Obstetric & Pediatric Anesthesia",
                     ClinicRoom = "Surgical Complex, Room 302",
-                    ScheduleSummary = "Tue / Thu · 8:00 AM - 2:00 PM",
+                    ScheduleSummary = "Tue / Thu Â· 8:00 AM - 2:00 PM",
                     OffersTeleconsult = false,
                     Biography = "Specialist in safe regional anesthesia for labor and delivery, and delicate pediatric surgical procedures.",
                     PrcLicenseMasked = "PRC Lic. No. 0086***"
@@ -183,7 +186,7 @@ public static class DbInitializer
                     Department = "Ophthalmology",
                     SubSpecialty = "Cataract & Comprehensive Ophthalmology",
                     ClinicRoom = "Eye Care Center, Room 301",
-                    ScheduleSummary = "Mon / Wed / Thu · 8:00 AM - 12:00 PM",
+                    ScheduleSummary = "Mon / Wed / Thu Â· 8:00 AM - 12:00 PM",
                     OffersTeleconsult = true,
                     Biography = "Ophthalmic surgeon specializing in modern micro-incision phacoemulsification for cataracts and routine visual acuity correction.",
                     PrcLicenseMasked = "PRC Lic. No. 0093***"
@@ -195,7 +198,7 @@ public static class DbInitializer
                     Department = "Ophthalmology",
                     SubSpecialty = "Medical Retina & Glaucoma",
                     ClinicRoom = "Eye Care Center, Room 303",
-                    ScheduleSummary = "Tue / Fri · 9:00 AM - 1:00 PM",
+                    ScheduleSummary = "Tue / Fri Â· 9:00 AM - 1:00 PM",
                     OffersTeleconsult = true,
                     Biography = "Retina specialist focused on diabetic retinopathy screening, retinal laser procedures, and long-term glaucoma control.",
                     PrcLicenseMasked = "PRC Lic. No. 0097***"
@@ -207,7 +210,7 @@ public static class DbInitializer
                     Department = "Radiology",
                     SubSpecialty = "Computed Tomography (CT) & MRI Imaging",
                     ClinicRoom = "Diagnostic Imaging Center, B1",
-                    ScheduleSummary = "Mon to Fri · 8:00 AM - 4:00 PM",
+                    ScheduleSummary = "Mon to Fri Â· 8:00 AM - 4:00 PM",
                     OffersTeleconsult = false,
                     Biography = "Diagnostic radiologist leading DRMC multi-slice CT and magnetic resonance imaging interpretations.",
                     PrcLicenseMasked = "PRC Lic. No. 0081***"
@@ -219,7 +222,7 @@ public static class DbInitializer
                     Department = "Radiology",
                     SubSpecialty = "Ultrasound, Doppler & Women's Imaging",
                     ClinicRoom = "Diagnostic Imaging Center, B1",
-                    ScheduleSummary = "Mon / Wed / Fri · 8:00 AM - 12:00 PM",
+                    ScheduleSummary = "Mon / Wed / Fri Â· 8:00 AM - 12:00 PM",
                     OffersTeleconsult = false,
                     Biography = "Specialist in diagnostic general ultrasound, vascular Doppler examinations, and digital mammography.",
                     PrcLicenseMasked = "PRC Lic. No. 0098***"
@@ -237,7 +240,7 @@ public static class DbInitializer
             {
                 new()
                 {
-                    Title = "Dengue 4S Prevention & Surveillance Alert — Davao del Norte",
+                    Title = "Dengue 4S Prevention & Surveillance Alert â€” Davao del Norte",
                     Slug = "dengue-4s-prevention-alert",
                     Category = AdvisoryCategory.HealthAlert,
                     Priority = AdvisoryPriority.Urgent,
@@ -271,7 +274,7 @@ public static class DbInitializer
                     <strong>Location:</strong> Pediatric Pavilion, Ground Floor<br/>
                     <strong>Requirements:</strong> Child's Baby Book / Immunization Card and Parent/Guardian Valid ID.</p>
                     """,
-                    IssuingUnit = "Department of Pediatrics — DRMC",
+                    IssuingUnit = "Department of Pediatrics â€” DRMC",
                     PublishedAt = DateTime.UtcNow.AddDays(-5),
                     IsPinned = false,
                     ViewCount = 890
@@ -350,52 +353,12 @@ public static class DbInitializer
             db.SaveChanges();
         }
 
-        // 3. Reviewer accounts. Production authentication and identity proofing require DRMC policy.
-        const string primaryFixtureUserId = "drmc-development-patient";
-        const string secondFixtureUserId = "drmc-development-juan";
-        var seededUsers = new List<(string id, string email, string password, string firstName, string? middleName, string lastName, string contact, string idType, string idNumber)>
-        {
-            (primaryFixtureUserId, primaryEmail, primaryPassword, "Maria Clara", "D.", "Santos", "0917 123 4567", "Philippine National ID (PhilSys)", "1234-5678-9012-3456"),
-            (secondFixtureUserId, emptyEmail, emptyPassword, "Juan Miguel", "A.", "Dela Cruz", "0918 765 4321", "PhilHealth ID", "12-345678901-2"),
-        };
-
-        foreach (var (id, email, password, firstName, middleName, lastName, contact, idType, idNumber) in seededUsers)
-        {
-            if (db.Users.Any(u => u.Id == id))
-            {
-                continue;
-            }
-
-            var user = new ApplicationUser
-            {
-                Id = id,
-                UserName = email,
-                Email = email,
-                EmailConfirmed = true,
-                FirstName = firstName,
-                MiddleName = middleName,
-                LastName = lastName,
-                FullName = string.IsNullOrWhiteSpace(middleName) ? $"{firstName} {lastName}" : $"{firstName} {middleName} {lastName}",
-                ContactNumber = contact,
-                PhoneNumber = contact,
-                IdType = idType,
-                IdNumber = idNumber,
-                PrivacyConsent = true,
-                CreatedAt = DateTime.UtcNow,
-            };
-
-            var result = userManager.CreateAsync(user, password).GetAwaiter().GetResult();
-            if (!result.Succeeded)
-                throw new InvalidOperationException("Development fixture account creation failed.");
-        }
-
-        // 4. Patient-owned example records for the current dashboard, Visits, Labs, and Medications.
-        var primary = db.Users.FirstOrDefault(u => u.Id == primaryFixtureUserId);
+        // 3. Patient-owned example records for the current dashboard, Visits, Labs, and Medications.
+        var primary = db.Users.FirstOrDefault(u => u.Id == "drmc-development-patient");
         if (primary is not null)
         {
             if (string.IsNullOrWhiteSpace(primary.FirstName) || string.IsNullOrWhiteSpace(primary.LastName))
                 throw new InvalidOperationException("The primary fixture account must have a first and last name.");
-            var clinicalNow = ClinicalClock.WallTime(DateTimeOffset.UtcNow);
             var patient = new PatientRecord
             {
                 LastName = PatientNames.Clean(primary.LastName), FirstName = PatientNames.Clean(primary.FirstName),
@@ -775,6 +738,139 @@ public static class DbInitializer
 
             db.SaveChanges();
         }
-        transaction.Commit();
+    }
+
+    private static void InitializeFixtureAccounts(ApplicationDbContext db, UserManager<ApplicationUser> userManager,
+        IConfiguration configuration, DateTimeOffset now)
+    {
+        string Required(string key) => !string.IsNullOrWhiteSpace(configuration[key])
+            ? configuration[key]! : throw new InvalidOperationException("Explicit fixture credentials are required.");
+        var primaryEmail = Required("DevelopmentFixtures:Primary:Email");
+        var primaryPassword = Required("DevelopmentFixtures:Primary:Password");
+        var emptyEmail = Required("DevelopmentFixtures:Empty:Email");
+        var emptyPassword = Required("DevelopmentFixtures:Empty:Password");
+
+        // Reviewer accounts. Production authentication and identity proofing require DRMC policy.
+        const string primaryFixtureUserId = "drmc-development-patient";
+        const string secondFixtureUserId = "drmc-development-juan";
+        var seededUsers = new List<(string id, string email, string password, string firstName, string? middleName, string lastName, string contact, string idType, string idNumber)>
+        {
+            (primaryFixtureUserId, primaryEmail, primaryPassword, "Maria Clara", "D.", "Santos", "0917 123 4567", "Philippine National ID (PhilSys)", "1234-5678-9012-3456"),
+            (secondFixtureUserId, emptyEmail, emptyPassword, "Juan Miguel", "A.", "Dela Cruz", "0918 765 4321", "PhilHealth ID", "12-345678901-2"),
+        };
+
+        foreach (var (id, email, password, firstName, middleName, lastName, contact, idType, idNumber) in seededUsers)
+        {
+            if (db.Users.Any(u => u.Id == id))
+            {
+                continue;
+            }
+
+            var user = new ApplicationUser
+            {
+                Id = id,
+                UserName = email,
+                Email = email,
+                EmailConfirmed = true,
+                FirstName = firstName,
+                MiddleName = middleName,
+                LastName = lastName,
+                FullName = string.IsNullOrWhiteSpace(middleName) ? $"{firstName} {lastName}" : $"{firstName} {middleName} {lastName}",
+                ContactNumber = contact,
+                PhoneNumber = contact,
+                IdType = idType,
+                IdNumber = idNumber,
+                PrivacyConsent = true,
+                CreatedAt = now.UtcDateTime,
+            };
+
+            var result = userManager.CreateAsync(user, password).GetAwaiter().GetResult();
+            if (!result.Succeeded)
+                throw new InvalidOperationException("Development fixture account creation failed.");
+        }
+    }
+
+    private static void InitializeRedStarFixtures(ApplicationDbContext db, DateTimeOffset now)
+    {
+        // Entirely fictional demonstration records; never copy rows from a clinic workbook.
+        var today = ClinicalClock.WallTime(now).Date;
+        var monthStart = new DateTime(today.Year, today.Month, 1);
+        string[] names = ["Maria Clara D. Santos", "Rafael Mendoza", "Isabel Navarro", "Paolo Villanueva",
+            "Camille Reyes", "Adrian Bautista", "Elena Mercado", "Marco Salazar", "Nina Castillo",
+            "Gabriel Ramos", "Sofia Aguilar", "Luis Fernandez", "Mikaela Torres", "Daniel Flores",
+            "Bianca Domingo", "Carlo Santiago", "Teresa Valdez", "Emilio Pascual", "Clara Gutierrez",
+            "Victor Alonzo", "Lucia Padilla", "Miguel Soriano", "Andrea Marquez", "Roberto Lim"];
+        string[] codeNames = ["Orchid", "Narra", "Sampaguita", "Acacia", "Jasmine", "Molave", "Dahlia", "Bamboo",
+            "Iris", "Mahogany", "Azalea", "Ipil", "Magnolia", "Yakal", "Camellia", "Talisay",
+            "Marigold", "Balete", "Lotus", "Lauan", "Rosal", "Banaba", "Lily", "Mango"];
+        string[] medicines = ["Tenofovir / Lamivudine / Dolutegravir",
+            "Abacavir / Lamivudine / Dolutegravir", "Tenofovir / Lamivudine / Efavirenz"];
+        int[] refillOffsets = [-35, -10, -7, -2, 0, 0, 1, 3, 6, 7, 14, 21, 30, 45, 60, 90];
+        var codes = Enumerable.Range(1, names.Length).Select(i => $"RS-DEMO-{i:D3}").ToArray();
+        var indexes = codes.Select(db.Phi.PatientCodeIndex).ToArray();
+        var existing = db.RedStarPatients.Where(p => indexes.Contains(p.PatientCodeBlindIndex!))
+            .Select(p => p.PatientCodeBlindIndex!).ToHashSet(StringComparer.Ordinal);
+        var primary = db.Users.Single(u => u.Id == "drmc-development-patient");
+        var primaryIndex = db.Phi.AccountIndex(primary.Id);
+        var primaryAlreadyLinked = db.RedStarPatients.Any(p => p.PortalUserIdBlindIndex == primaryIndex);
+        var histories = new List<(RedStarAppointment Appointment, RedStarDispense Dispense)>();
+        for (var i = 0; i < names.Length; i++)
+        {
+            // A present patient is staff-owned after creation: never restore deleted schedules or reset edits.
+            if (existing.Contains(indexes[i])) continue;
+            var active = i < refillOffsets.Length;
+            var statusDate = active ? today.AddYears(-2).AddDays(i * 7 + 14)
+                : i < 21 ? monthStart.AddDays((today.Day - 1) * (i - 16) / 4)
+                : monthStart.AddMonths(-(i - 20)).AddDays(9 + i - 21);
+            var patient = new RedStarPatient
+            {
+                PatientCode = codes[i], CodeName = "Demo " + codeNames[i],
+                FullName = i == 0 ? primary.FullName : names[i], HospitalNumber = $"DEMO-HRN-{i + 1:D3}",
+                ContactNumber = $"+63900000{i + 1:D4}",
+                Address = $"Demo Block {i + 1}, Barangay Example, Tagum City",
+                PortalUserId = i == 0 && !primaryAlreadyLinked ? primary.Id : null,
+                EmailRemindersEnabled = false
+            };
+            var enrollment = new RedStarEnrollment
+            {
+                Patient = patient, Program = RedStarProgram.ART,
+                Status = active ? RedStarStatus.Active : RedStarStatus.Deceased,
+                EnrolledDate = today.AddYears(-2).AddDays(i * 7),
+                StartDate = today.AddYears(-2).AddDays(i * 7 + 14), StatusDate = statusDate,
+                Medicines = medicines[i % medicines.Length]
+            };
+            var refillDate = active ? today.AddDays(refillOffsets[i]) : statusDate;
+            var daysSupplied = active && refillOffsets[i] > 60 ? 90 : active && refillOffsets[i] > 30 ? 60 : 30;
+            var dispensedDate = refillDate.AddDays(-daysSupplied);
+            var pickup = new RedStarAppointment
+            {
+                Enrollment = enrollment, Kind = RedStarAppointmentKind.Refill,
+                DueDate = dispensedDate, State = RedStarAppointmentState.PickedUp,
+                RemindersVerified = true, Label = "Fictional demo medicine pickup"
+            };
+            enrollment.Appointments.Add(pickup);
+            if (active)
+                enrollment.Appointments.Add(new RedStarAppointment
+                {
+                    Enrollment = enrollment, Kind = RedStarAppointmentKind.Refill,
+                    DueDate = refillDate, State = RedStarAppointmentState.Scheduled,
+                    RemindersVerified = true, Label = "Fictional demo refill schedule"
+                });
+            db.RedStarEnrollments.Add(enrollment);
+            histories.Add((pickup, new RedStarDispense
+            {
+                Enrollment = enrollment, DispensedDate = dispensedDate, DaysSupplied = daysSupplied,
+                EstimatedSupplyEnd = refillDate, Medicines = enrollment.Medicines,
+                RecordedById = "development-fixture"
+            }));
+        }
+        if (histories.Count == 0) return;
+        db.SaveChanges();
+        foreach (var (appointment, dispense) in histories)
+        {
+            dispense.AppointmentId = appointment.Id;
+            db.RedStarDispenses.Add(dispense);
+        }
+        db.SaveChanges();
     }
 }

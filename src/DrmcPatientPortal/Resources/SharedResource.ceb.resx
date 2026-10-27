@@ -263,4 +263,6 @@
   <data name="RS_Notifications" xml:space="preserve"><value>Mga abiso sa appointment sa DRMC</value></data>
   <data name="Guide_EffectiveOn" xml:space="preserve"><value>Epektibo sukad:</value></data>
   <data name="Guide_LastReviewed" xml:space="preserve"><value>Kataposang gisusi:</value></data>
+  <data name="RS_ReplenishmentReminder" xml:space="preserve"><value>Pahinumdom sa pagkuha pag-usab sa tambal</value></data>
+  <data name="RS_DateUnverified" xml:space="preserve"><value>Gipaabot ang pag-verify sa klinika sa petsa sa pagkuha</value></data>
 </root>
