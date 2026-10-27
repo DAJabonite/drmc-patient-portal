@@ -1,3 +1,5 @@
+using System.Text;
+using System.Text.RegularExpressions;
 using DrmcPatientPortal.Models;
 
 namespace DrmcPatientPortal.Services;
@@ -19,6 +21,42 @@ public static class RedStarRegistryLayout
         new("Status", "TREATMENT STATUS"), new("Program", "Program"),
         new("StatusDate", "Status Date"), new("ReceivingHub", "Receiving Hub")
     ];
+
+    public static readonly IReadOnlyList<RedStarRegistryColumn> ImportColumns = Core
+        .Select(column => column.Field == "Status" ? column with { Header = "Status" } : column).ToArray();
+
+    public static byte[] CsvTemplate()
+    {
+        Dictionary<string, string>[] samples =
+        [
+            new()
+            {
+                ["FullName"] = "Synthetic Patient Alpha", ["Address"] = "Sample Street, Fictional City",
+                ["HospitalNumber"] = "0000123", ["PatientCode"] = "SAMPLE-001", ["CodeName"] = "ALPHA",
+                ["EnrolledDate"] = "2026-01-10", ["StartDate"] = "2026-01-12",
+                ["DispensedDate"] = "2026-10-01", ["NextRefillDate"] = "2026-10-31",
+                ["ContactNumber"] = "+639171234567", ["Medicines"] = "Sample medicine (example only)",
+                ["Status"] = "Active", ["Program"] = "ART", ["StatusDate"] = "", ["ReceivingHub"] = ""
+            },
+            new()
+            {
+                ["FullName"] = "Synthetic Patient Niño", ["Address"] = "Sample \"B\" Street, Fictional City",
+                ["HospitalNumber"] = "0000456", ["PatientCode"] = "SAMPLE-002", ["CodeName"] = "BETA",
+                ["EnrolledDate"] = "2025-05-01", ["StartDate"] = "2025-05-02",
+                ["DispensedDate"] = "", ["NextRefillDate"] = "", ["ContactNumber"] = "",
+                ["Medicines"] = "Sample medicine (example only)", ["Status"] = "Expired", ["Program"] = "ART",
+                ["StatusDate"] = "2026-10-15", ["ReceivingHub"] = ""
+            }
+        ];
+        static string Escape(string value) => value.IndexOfAny([',', '"', '\r', '\n']) < 0
+            ? value : "\"" + value.Replace("\"", "\"\"") + "\"";
+        var csv = new StringBuilder();
+        csv.AppendJoin(',', ImportColumns.Select(column => Escape(column.Header))).Append("\r\n");
+        foreach (var sample in samples)
+            csv.AppendJoin(',', ImportColumns.Select(column => Escape(sample[column.Field]))).Append("\r\n");
+        var encoding = new UTF8Encoding(true);
+        return encoding.GetPreamble().Concat(encoding.GetBytes(csv.ToString())).ToArray();
+    }
 
     private static RedStarRegistrySheet Sheet(string name, params RedStarRegistryColumn[] staffColumns)
     {
@@ -60,8 +98,12 @@ public static class RedStarRegistryLayout
             new("Medicines", "ARV REGIMEN"), new("StatusDate", "DATE EXPIRED"))
     ];
 
-    public static RedStarRegistrySheet? Find(string? name) => Sheets.SingleOrDefault(sheet =>
-        string.Equals(sheet.Name, name, StringComparison.OrdinalIgnoreCase));
+    public static RedStarRegistrySheet? Find(string? name)
+    {
+        var normalized = Regex.Replace(name ?? "", @"\s+", " ").Trim();
+        if (normalized.Equals("ACTIVE", StringComparison.OrdinalIgnoreCase)) normalized = "LIVING";
+        return Sheets.SingleOrDefault(sheet => string.Equals(sheet.Name, normalized, StringComparison.OrdinalIgnoreCase));
+    }
 
     public static IReadOnlyList<RedStarRegistryColumn> ExportColumns(RedStarRegistrySheet sheet)
     {
