@@ -61,7 +61,8 @@ public sealed partial class HospitalRecordCodeTests(PortalFactory factory)
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var record = new PatientRecord { FirstName = "Synthetic", LastName = "Signup", DateOfBirth = noBirthDate ? null : birthDate ?? BirthDate };
+        var record = new PatientRecord { FirstName = "Synthetic", LastName = "Signup", DateOfBirth = noBirthDate ? null : birthDate ?? BirthDate,
+            HospitalNumber = "SIGNUP-" + Guid.NewGuid().ToString("N") };
         db.PatientRecords.Add(record);
         await db.SaveChangesAsync();
         return record.Id;

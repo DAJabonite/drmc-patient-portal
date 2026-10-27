@@ -65,7 +65,13 @@ public sealed class LabResultsController(ApplicationDbContext db, AdminWrites wr
             TempData["ReportError"] = "Choose a PDF and reload the record before saving.";
             return RedirectToAction(nameof(Report), new { area = "Admin", id });
         }
-        if (!await Database.LabResults.AnyAsync(l => l.Id == id, token)) return NotFound();
+        var patient = await Database.LabResults.Where(l => l.Id == id).Select(l => l.Patient).SingleOrDefaultAsync(token);
+        if (patient is null) return NotFound();
+        if (!patient.HasHospitalNumber)
+        {
+            TempData["ReportError"] = LabUploadEditor.MissingHospitalNumberError;
+            return RedirectToAction(nameof(Report), new { area = "Admin", id });
+        }
         StoredLabReport stored;
         try { stored = await storage.StoreAsync(id, report, token); }
         catch (InvalidDataException error)
@@ -91,8 +97,10 @@ public sealed class LabResultsController(ApplicationDbContext db, AdminWrites wr
         string? previous = null;
         var result = version is null ? WriteResult.Stale : await Writes.RunAsync(async database =>
         {
-            var lab = await database.LabResults.SingleOrDefaultAsync(l => l.Id == id, token);
+            var lab = await database.LabResults.Include(l => l.Patient).SingleOrDefaultAsync(l => l.Id == id, token);
             if (lab is null || !version.SequenceEqual(AdminEntity<LabResult, LabUploadInput>.Version(database, lab))) return WriteResult.Stale;
+            if (stored is not null && !lab.Patient.HasHospitalNumber)
+                return WriteResult.Invalid(LabUploadEditor.MissingHospitalNumberError);
             previous = lab.ReportFileName;
             lab.ReportFileName = stored?.FileName;
             lab.ReportSize = stored?.Size;

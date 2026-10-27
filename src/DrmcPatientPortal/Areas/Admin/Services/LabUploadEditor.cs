@@ -8,6 +8,7 @@ namespace DrmcPatientPortal.Areas.Admin.Services;
 // Manual PDF uploads are independent of the structured lab import contract.
 public sealed class LabUploadEditor : ClinicalEditor<LabResult, LabUploadInput>
 {
+    internal const string MissingHospitalNumberError = "Add a hospital number to the patient record before uploading a report.";
     public override string Name => "LabResults";
     public override string Title => "Laboratory result";
     public override string SearchColumn => nameof(LabResult.TestName);
@@ -30,6 +31,8 @@ public sealed class LabUploadEditor : ClinicalEditor<LabResult, LabUploadInput>
         OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
     {
         if (context is null) return Task.FromResult(WriteResult.Invalid("The patient record no longer exists."));
+        if (input.Report is not null && !context.Patient.HasHospitalNumber)
+            return Task.FromResult(WriteResult.Invalid(MissingHospitalNumberError));
         if (create && input.Report is null) return Task.FromResult(WriteResult.Invalid("Choose the lab report PDF."));
         if (create)
         {

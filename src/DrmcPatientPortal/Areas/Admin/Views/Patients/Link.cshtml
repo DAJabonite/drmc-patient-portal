@@ -5,5 +5,12 @@
     <span class="@(Model.Linked ? "admin-chip admin-chip-success" : "admin-chip")">Portal account: @(Model.Linked ? "Linked" : "Unlinked")</span>
 </div>
 <partial name="_Context" model="Model.Context" />
-<partial name="_LinkForm" model="Model.Input" view-data="ViewData" />
+@if (Model.Linked)
+{
+    <partial name="_UnlinkForm" model="Model.UnlinkInput" view-data="ViewData" />
+}
+else
+{
+    <partial name="_LinkForm" model="Model.Input" view-data="ViewData" />
+}
 @section Scripts { <partial name="_ValidationScriptsPartial" /> }

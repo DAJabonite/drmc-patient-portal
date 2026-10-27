@@ -66,6 +66,8 @@ public sealed class RegistrationCodesController(ApplicationDbContext db, AdminWr
             var current = await database.PatientRecords.SingleOrDefaultAsync(p => p.Id == id, cancellationToken);
             if (current is null) return WriteResult.Invalid("The patient record no longer exists.");
             if (current.PortalUserId is not null) return WriteResult.Invalid("This hospital record is already linked to a portal account, so it does not need a code.");
+            if (!current.HasHospitalNumber)
+                return WriteResult.Invalid("Add the patient's hospital number to the hospital record before issuing a code.");
             if (current.NeedsNameReview)
                 return WriteResult.Invalid("Ask an administrator to verify and complete the patient's separate name fields before issuing a code. The preserved legacy name is available on the patient record.");
             if (current.DateOfBirth is null)

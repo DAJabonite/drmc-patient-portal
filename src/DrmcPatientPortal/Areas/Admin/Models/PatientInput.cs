@@ -24,11 +24,22 @@ public sealed class PatientInput : AdminInput, IValidatableObject
     }
 }
 
-public sealed class PatientLinkInput : AdminInput
+public abstract class PatientAccountInput : AdminInput
 {
     [Required, EmailAddress, StringLength(256)]
     public string Email { get; set; } = "";
     [Range(typeof(bool), "true", "true", ErrorMessage = "Confirm that staff checked the patient's identity.")]
     public bool IdentityVerified { get; set; }
 }
-public sealed record PatientLinkPage(OwnershipContext Context, PatientLinkInput Input, bool Linked);
+
+public sealed class PatientLinkInput : PatientAccountInput
+{
+    [Required(ErrorMessage = "Enter a hospital number."), StringLength(450), Display(Name = "Hospital number")]
+    public string? HospitalNumber { get; set; }
+    [Required(ErrorMessage = "Enter the hospital record code."), StringLength(64), Display(Name = "Hospital record code")]
+    public string? HospitalRecordCode { get; set; }
+}
+
+public sealed class PatientUnlinkInput : PatientAccountInput;
+
+public sealed record PatientLinkPage(OwnershipContext Context, PatientLinkInput Input, PatientUnlinkInput UnlinkInput, bool Linked);

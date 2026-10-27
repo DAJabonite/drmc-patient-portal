@@ -16,6 +16,8 @@ public class PatientRecord
     public string FullName { get; private set; } = string.Empty;
     public DateTime? DateOfBirth { get; set; }
     public string? HospitalNumber { get; set; }
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public bool HasHospitalNumber => !string.IsNullOrWhiteSpace(HospitalNumber);
     public string? PortalUserId { get; set; }
     public ApplicationUser? PortalUser { get; set; }
     [Timestamp]
