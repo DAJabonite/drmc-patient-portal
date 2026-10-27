@@ -32,7 +32,7 @@ public sealed class LabReportTests(PortalFactory factory)
 
     private static Dictionary<string, string> Fields(string accession, string? version = null) => new()
     {
-        ["AccessionNumber"] = accession, ["TestName"] = "Synthetic PDF laboratory result",
+        ["AccessionNumber"] = accession, ["TestName"] = "Synthetic PDF laboratory result " + accession,
         ["Category"] = "Hematology", ["Status"] = "Available",
         ["CollectedAt"] = PatientResultsDisclosure.ManilaNow.AddDays(-2).ToString("yyyy-MM-ddTHH:mm:ss"),
         ["ReleasedAt"] = PatientResultsDisclosure.ManilaNow.AddDays(-1).ToString("yyyy-MM-ddTHH:mm:ss"),
@@ -65,7 +65,7 @@ public sealed class LabReportTests(PortalFactory factory)
         var admin = await StaffAccounts.AdminAsync(factory);
         var response = await Save(admin, $"/Admin/LabResults/Create/{await PatientId()}", Fields(accession), Pdf);
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        return await Db(db => db.LabResults.AsNoTracking().SingleAsync(l => l.AccessionNumber == accession));
+        return await Db(db => db.LabResults.AsNoTracking().SingleAsync(l => l.TestName == "Synthetic PDF laboratory result " + accession));
     }
 
     private Task<string> Version(int id) => Db(async db => Convert.ToBase64String(
@@ -104,16 +104,18 @@ public sealed class LabReportTests(PortalFactory factory)
         var patient = await Patient(disclosure ? Enabled : factory, PortalFactory.PrimaryEmail);
         var index = await patient.GetStringAsync("/Patient/LabResults");
         var action = Regex.Match(index, $"<a(?=[^>]*href=\"/Patient/LabResults/Details/{id}\")[^>]*>[\\s\\S]*?</a>").Value;
-        Assert.NotEmpty(action);
-        Assert.Contains(available ? "Report available" : "Report unavailable", action);
-        Assert.Contains(available ? "btn-success" : "btn-outline-secondary", action);
+        Assert.Equal(available, !string.IsNullOrEmpty(action));
+        if (available) Assert.Contains("View report", action);
+        Assert.DoesNotContain("Report unavailable", index);
+        Assert.DoesNotContain("Report available", index);
         Assert.DoesNotContain("Check Status &amp; Location", index);
         Assert.DoesNotContain("Claiming Unit:", index);
-        var detail = await patient.GetStringAsync($"/Patient/LabResults/Details/{id}");
-        Assert.Contains("Official Lab Report (PDF)", detail);
-        Assert.DoesNotContain("Claiming Requirements", detail);
-        Assert.DoesNotContain("Releasing Location", detail);
+        var response = await patient.GetAsync($"/Patient/LabResults/Details/{id}");
+        Assert.Equal(available ? HttpStatusCode.OK : HttpStatusCode.NotFound, response.StatusCode);
+        var detail = await response.Content.ReadAsStringAsync();
         Assert.Equal(available, detail.Contains("name=\"password\""));
+        var dashboard = await patient.GetStringAsync("/Patient/Home");
+        if (!available) Assert.DoesNotContain($"/Patient/LabResults/Details/{id}", dashboard);
     }
 
     [Fact]

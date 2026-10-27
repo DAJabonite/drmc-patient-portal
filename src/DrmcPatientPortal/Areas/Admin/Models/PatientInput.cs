@@ -15,7 +15,7 @@ public sealed class PatientInput : AdminInput, IValidatableObject
     public string? Suffix { get; set; }
     [DataType(DataType.Date), Display(Name = "Birth date")]
     public DateTime? DateOfBirth { get; set; }
-    [StringLength(450), Display(Name = "Hospital number")]
+    [Required(ErrorMessage = "Enter a hospital number."), StringLength(450), Display(Name = "Hospital number")]
     public string? HospitalNumber { get; set; }
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

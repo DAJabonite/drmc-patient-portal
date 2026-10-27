@@ -124,8 +124,6 @@
             <div class="d-flex flex-column gap-3">
                 @foreach (var lab in Model.LabResults)
                 {
-                    var canViewPdf = ViewData["PdfDisclosureEnabled"] is true && lab.ReportFileName is not null
-                        && DrmcPatientPortal.Services.PatientResultsDisclosure.IsReleased(lab, DrmcPatientPortal.Services.PatientResultsDisclosure.ManilaNow);
                     <div class="card border-0 shadow-sm rounded-4 p-4 bg-white hover-shadow-sm transition">
                         <div class="row align-items-center g-3">
                             <div class="col-md-7">
@@ -134,7 +132,7 @@
                                         @lab.Category.DisplayName()
                                     </span>
                                     <span class="record-reference small text-muted">
-                                        Accession: <strong>@lab.AccessionNumber</strong>
+                                        Report reference: <strong>@lab.AccessionNumber</strong>
                                     </span>
                                 </div>
 
@@ -155,8 +153,8 @@
 
                             <div class="col-md-5 text-md-end">
                                 <div class="d-flex gap-2 justify-content-md-end">
-                                    <a asp-action="Details" asp-route-id="@lab.Id" class="btn @(canViewPdf ? "btn-success" : "btn-outline-secondary") rounded-pill px-4 fw-semibold">
-                                        <i class="bi @(canViewPdf ? "bi-lock-fill" : "bi-file-earmark-lock") me-1" aria-hidden="true"></i> @(canViewPdf ? "Report available" : "Report unavailable")
+                                    <a asp-action="Details" asp-route-id="@lab.Id" class="btn btn-success rounded-pill px-4 fw-semibold">
+                                        <i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i> View report
                                     </a>
                                 </div>
                             </div>

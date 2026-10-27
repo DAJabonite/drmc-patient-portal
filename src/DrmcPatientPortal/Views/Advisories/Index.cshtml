@@ -122,6 +122,10 @@
                             </span>
                         </div>
 
+                        @if (DrmcPatientPortal.Services.AdvisoryImageStorage.IsManagedUrl(adv.ImageUrl))
+                        {
+                            <img src="@adv.ImageUrl" alt="@adv.Title" class="img-fluid rounded mb-3 advisory-image" loading="lazy" decoding="async" />
+                        }
                         <h2 class="h5 fw-bold text-dark mb-2">@adv.Title</h2>
                         <p class="text-muted mb-3 flex-grow-1">@adv.Summary</p>
 

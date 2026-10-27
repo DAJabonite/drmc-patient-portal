@@ -20,7 +20,24 @@
         <p id="advisory-content-help" class="form-text">Allowed HTML: p, ul, ol, li, strong, em, b, i, h2, h3, h4, blockquote, br, and a. Links may use HTTPS, HTTP, mailto:, or a local path starting with a single /. Other formatting and attributes are removed; readable content is preserved except inside unsafe elements.</p>
         <span asp-validation-for="ContentHtml" class="text-danger"></span>
     </div>
-    <div class="col-md-6"><label asp-for="ImageUrl" class="form-label"></label><input asp-for="ImageUrl" class="form-control" /><span asp-validation-for="ImageUrl" class="text-danger"></span></div>
+    <div class="col-md-6">
+        <label asp-for="ImageUpload" class="form-label"></label>
+        <input asp-for="ImageUpload" type="file" accept="image/jpeg,image/png,image/webp" class="form-control" aria-describedby="advisoryImageHelp" />
+        <span asp-validation-for="ImageUpload" class="text-danger"></span>
+        <p id="advisoryImageHelp" class="form-text">JPEG, PNG or static WebP, up to 5 MiB. Leave blank to keep the current image.</p>
+        @{ var currentImage = ViewData["CurrentImageUrl"] as string ?? Model.ImageUrl; }
+        @if (!string.IsNullOrEmpty(currentImage))
+        {
+            @if (DrmcPatientPortal.Services.AdvisoryImageStorage.IsManagedUrl(currentImage))
+            {
+                <img src="@currentImage" alt="@Model.Title" class="img-fluid rounded border mb-2" style="max-height: 200px;" />
+            }
+            <div class="form-check">
+                <input asp-for="RemoveImage" class="form-check-input" />
+                <label asp-for="RemoveImage" class="form-check-label"></label>
+            </div>
+        }
+    </div>
     <div class="col-md-6"><label asp-for="IssuingUnit" class="form-label"></label><input asp-for="IssuingUnit" class="form-control" /><span asp-validation-for="IssuingUnit" class="text-danger"></span></div>
     <div class="col-md-6"><label asp-for="PublishedAt" class="form-label"></label><input asp-for="PublishedAt" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="PublishedAt" class="text-danger"></span></div>
     <div class="col-md-6"><label asp-for="EffectiveUntil" class="form-label"></label><input asp-for="EffectiveUntil" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="EffectiveUntil" class="text-danger"></span></div>

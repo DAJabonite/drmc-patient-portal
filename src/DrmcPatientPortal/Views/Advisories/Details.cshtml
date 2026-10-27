@@ -53,6 +53,10 @@
                 @adv.Summary
             </div>
 
+            @if (DrmcPatientPortal.Services.AdvisoryImageStorage.IsManagedUrl(adv.ImageUrl))
+            {
+                <img src="@adv.ImageUrl" alt="@adv.Title" class="img-fluid rounded mb-4 advisory-image" decoding="async" />
+            }
             <div class="advisory-content text-dark leading-relaxed mb-4">
                 @Html.Raw(Model.SanitizedContentHtml)
             </div>

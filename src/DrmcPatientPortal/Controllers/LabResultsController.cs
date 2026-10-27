@@ -50,6 +50,7 @@ public class LabResultsController : Controller
 
         var query = _db.LabResults
             .Include(l => l.Items)
+            .Where(PatientResultsDisclosure.PdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow))
             .Where(l => l.Patient.PortalUserId == user.Id)
             .AsQueryable();
 
@@ -104,7 +105,7 @@ public class LabResultsController : Controller
             }
         }
 
-        var allCount = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.CountAsync(l => l.Patient.PortalUserId == user.Id));
+        var allCount = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.Where(PatientResultsDisclosure.PdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow)).CountAsync(l => l.Patient.PortalUserId == user.Id));
         var pagination = await PortalPagination.CreateAsync(query, _db, page);
         ViewData["Pagination"] = pagination;
         var available = await SqlReadRetry.RunAsync(_db, () => query.CountAsync(r => r.Status == "Available"));
@@ -126,7 +127,6 @@ public class LabResultsController : Controller
             TotalAvailable = available,
             TotalInProgress = pagination.Total - available
         };
-        ViewData["PdfDisclosureEnabled"] = _resultsOptions.CurrentValue.ShowFullResults;
 
         await _auditLog.LogAsync(user.Id, "VIEW_LAB_LIST", "Patient/LabResults", "Viewed owned laboratory availability.", HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
         return View(model);
@@ -141,6 +141,7 @@ public class LabResultsController : Controller
 
         var result = await SqlReadRetry.RunAsync(_db, () => _db.LabResults
             .Include(l => l.Items)
+            .Where(PatientResultsDisclosure.PdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow))
             .FirstOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id));
 
         if (result is null)
@@ -148,16 +149,12 @@ public class LabResultsController : Controller
             return NotFound();
         }
 
-        // D4: item values and the result summary are shown only for released results with the switch on.
-        // ClinicalNotes stay staff-only either way.
-        var showFullResults = _resultsOptions.CurrentValue.ShowFullResults
-            && PatientResultsDisclosure.IsReleased(result, PatientResultsDisclosure.ManilaNow);
-        ViewData["ShowFullResults"] = showFullResults;
-        ViewData["CanAccessPdf"] = showFullResults && result.ReportFileName is not null;
+        // The query admits only released PDFs with disclosure enabled. Clinical notes remain staff-only.
+        ViewData["ShowFullResults"] = true;
 
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
         await _auditLog.LogAsync(user.Id, "VIEW_LAB_REPORT", $"LabResult/{id}",
-            showFullResults ? "Viewed released laboratory result values." : "Viewed laboratory report availability.", ip);
+            "Viewed released laboratory report.", ip);
 
         return View("Details", result);
     }
@@ -171,8 +168,8 @@ public class LabResultsController : Controller
         Response.Headers["X-Content-Type-Options"] = "nosniff";
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
-        var lab = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.AsNoTracking().SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token), token);
-        if (!Eligible(lab)) return NotFound();
+        var lab = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.AsNoTracking().Where(PatientResultsDisclosure.PdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow)).SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token), token);
+        if (lab is null) return NotFound();
         if (intent is not ("view" or "download")) return BadRequest();
         if (string.IsNullOrEmpty(password) || password.Length > 1024)
             return await PasswordError(id, "Enter your login password for each View or Download action.");
@@ -186,19 +183,16 @@ public class LabResultsController : Controller
         catch (DirectoryNotFoundException) { return NotFound(); }
         catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
         { return StatusCode(503); }
-        var fresh = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.AsNoTracking().SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token), token);
-        if (!Eligible(fresh) || fresh!.ReportFileName != lab!.ReportFileName) return NotFound();
+        var fresh = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.AsNoTracking().Where(PatientResultsDisclosure.PdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow)).SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token), token);
+        if (fresh is null || fresh.ReportFileName != lab!.ReportFileName) return NotFound();
         try { await _auditLog.LogAsync(user.Id, intent == "view" ? "VIEW_LAB_PDF" : "DOWNLOAD_LAB_PDF", $"LabResult/{id}",
             intent == "view" ? "Viewed laboratory report PDF." : "Downloaded laboratory report PDF.",
             HttpContext.Connection.RemoteIpAddress?.ToString() ?? ""); }
         catch (AuditLogPersistenceException) { return StatusCode(503); }
-        fresh = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.AsNoTracking().SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token), token);
-        if (!Eligible(fresh) || fresh!.ReportFileName != lab.ReportFileName || await _userManager.IsLockedOutAsync(user)) return NotFound();
+        fresh = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.AsNoTracking().Where(PatientResultsDisclosure.PdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow)).SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token), token);
+        if (fresh is null || fresh.ReportFileName != lab.ReportFileName || await _userManager.IsLockedOutAsync(user)) return NotFound();
         return new PrivateFileResult(bytes, "application/pdf", $"lab-report-{id}.pdf", intent == "download");
     }
-
-    private bool Eligible(LabResult? lab) => lab?.ReportFileName is not null && _resultsOptions.CurrentValue.ShowFullResults
-        && PatientResultsDisclosure.IsReleased(lab, PatientResultsDisclosure.ManilaNow);
 
     private async Task<IActionResult> PasswordError(int id, string message)
     {

@@ -9,10 +9,6 @@
         <div class="auth-card auth-card-wide shadow-sm rounded-4 p-4 p-md-5 bg-white border-0">
             <div class="text-center mb-4">
                 <h1 class="h3 fw-bold text-primary-drmc mb-1">Create your patient account</h1>
-                @if (Model.RequireHospitalRecordCode)
-                {
-                    <p class="small text-muted mb-0 registration-record-required @(Model.StaffInvitationMode ? "d-none" : "")" id="hospitalCodeRequirement"><i class="bi bi-hospital me-1" aria-hidden="true"></i> For patients with a DRMC hospital record. You will need the hospital record code from the PACD or the Clinic registration desk.</p>
-                }
             </div>
 
             <ol class="registration-stepper mb-4" id="wizardStepperNav" aria-label="Registration progress">
@@ -44,7 +40,6 @@
                     <div id="stepFeedback1" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
                     <div class="mb-4">
                         <h2 class="h5 fw-bold text-dark mb-1">Select your government-issued ID</h2>
-                        <p class="small text-muted mb-3">DRMC accepts any valid government-issued ID. If your ID is not listed, select “Other government-issued ID”.</p>
 
                         <div class="mb-3">
                             <label asp-for="Input.IdType" for="selectIdType" class="form-label fw-semibold">Valid government ID</label>
@@ -100,7 +95,6 @@
                     <div id="stepFeedback2" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
                     <div class="mb-4">
                         <h2 class="h5 fw-bold text-dark mb-1">Photograph your ID card</h2>
-                        <p class="small text-muted mb-3">Take a clear photo with your phone camera or upload an existing image. Avoid glare and ensure text is in focus.</p>
 
                         <!-- Selected ID banner -->
                         <div class="alert alert-info py-2 px-3 rounded-3 d-flex align-items-center justify-content-between mb-4">
@@ -204,7 +198,6 @@
                     <div id="stepFeedback3" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
                     <div class="mb-4">
                         <h2 class="h5 fw-bold text-dark mb-1">Review &amp; confirm extracted details</h2>
-                        <p class="small text-muted mb-3">Please verify every field below. You can freely edit or complete any information before continuing.</p>
 
                         <!-- Autofill Confirmation Alert -->
                         <div id="autofillNotice" class="alert alert-success py-2 px-3 rounded-3 d-flex align-items-center gap-2 mb-3 d-none" role="status" aria-live="polite">
@@ -304,7 +297,6 @@
                     <div id="stepFeedback4" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
                     <div class="mb-4">
                         <h2 class="h5 fw-bold text-dark mb-1">Set up your login credentials</h2>
-                        <p class="small text-muted mb-3">Provide your email address, Philippine mobile number, and a strong password.</p>
 
                         <div class="row g-3">
                             <!-- Email & Mobile -->
@@ -320,7 +312,6 @@
                                     <input asp-for="Input.Mobile" class="form-control" inputmode="numeric" autocomplete="tel-national" placeholder="9175550123" />
                                 </div>
                                 <span asp-validation-for="Input.Mobile" class="field-validation-error"></span>
-                                <div class="form-text small text-muted">10-digit number starting with 9 (e.g. 9171234567).</div>
                             </div>
 
                             <!-- Passwords -->

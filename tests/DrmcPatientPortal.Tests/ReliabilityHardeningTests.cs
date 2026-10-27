@@ -462,7 +462,7 @@ public sealed class ReliabilityHardeningTests(PortalFactory factory)
             for (var i = 0; i < 31; i++)
             {
                 db.ClinicalEncounters.Add(new() { PatientRecordId = patient.Id, EncounterDate = DateTime.Today, EncounterReference = $"PAGE-{patient.Id}-{i:D2}" });
-                db.LabResults.Add(new() { PatientRecordId = patient.Id, CollectedAt = DateTime.Today, AccessionNumber = $"PAGE-{patient.Id}-{i:D2}", TestName = "Paging lab" });
+                db.LabResults.Add(new() { PatientRecordId = patient.Id, CollectedAt = DateTime.Today, AccessionNumber = $"PAGE-{patient.Id}-{i:D2}", TestName = "Paging lab", Status = "Available", ReleasedAt = DateTime.Today, ReportFileName = Guid.NewGuid().ToString("N") });
                 db.RadiologyStudies.Add(new() { PatientRecordId = patient.Id, PerformedAt = DateTime.Today, AccessionNumber = $"PAGE-{patient.Id}-{i:D2}", StudyName = "Paging radiology" });
                 db.PatientIdDocuments.Add(new() { PatientUserId = account.Id, IdType = "Passport", IdNumber = $"ID{i:D2}", IsManualEntry = true });
                 db.PatientAllergies.Add(new() { PatientRecordId = patient.Id, Allergen = $"Allergen{i:D2}" });
@@ -471,7 +471,9 @@ public sealed class ReliabilityHardeningTests(PortalFactory factory)
             }
             await db.SaveChangesAsync(); return patient.Id;
         });
-        using var client = factory.CreatePortalClient(); await client.SignInSuccessfullyAsync(account.Email, PortalFactory.Password);
+        using var enabled = factory.WithWebHostBuilder(b => b.UseSetting("PatientResults:ShowFullResults", "true"));
+        using var client = enabled.CreateClient(new() { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+        await client.SignInSuccessfullyAsync(account.Email, PortalFactory.Password);
         foreach (var path in new[] { "/Patient/Visits", "/Patient/LabResults", "/Patient/Radiology", "/Patient/Medications", "/Identity/Account/Manage/MyIds" })
         {
             var first = await client.GetStringAsync(path); Assert.Contains("31 total", first); Assert.Contains("Page 1 of 2", first);
@@ -487,7 +489,7 @@ public sealed class ReliabilityHardeningTests(PortalFactory factory)
         var medications = await client.GetStringAsync("/Patient/Medications?page=2&schedulePage=2&allergyPage=2");
         Assert.Contains("31 documented drug allergies", medications); Assert.Contains("Allergen30", medications);
         Assert.Contains("schedulePage pagination", medications); Assert.Contains("allergyPage pagination", medications);
-        using var scope = factory.Services.CreateScope();
+        using var scope = enabled.Services.CreateScope();
         var controller = ActivatorUtilities.CreateInstance<PatientController>(scope.ServiceProvider);
         var user = await scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>().FindByIdAsync(account.Id);
         var principal = await scope.ServiceProvider.GetRequiredService<IUserClaimsPrincipalFactory<ApplicationUser>>().CreateAsync(user!);

@@ -30,7 +30,10 @@ public sealed class AdvisoryEditor : AdminEntity<PublicAdvisory, PublicAdvisoryI
         var content = AdvisoryHtml.Clean(input.ContentHtml);
         if (content.Length > 100000) return WriteResult.Invalid("Cleaned content must be at most 100,000 characters.");
         entity.Title = input.Title.Trim(); entity.Slug = slug; entity.Category = input.Category; entity.Priority = input.Priority;
-        entity.Summary = input.Summary; entity.ContentHtml = content; entity.ImageUrl = string.IsNullOrWhiteSpace(input.ImageUrl) ? null : input.ImageUrl;
+        entity.Summary = input.Summary; entity.ContentHtml = content;
+        // Imports retain their explicit URL contract. Manual uploads assign a server-owned URL after validation.
+        if (lookups is not null) entity.ImageUrl = string.IsNullOrWhiteSpace(input.ImageUrl) ? null : input.ImageUrl;
+        input.ImageUrl = entity.ImageUrl;
         entity.IssuingUnit = input.IssuingUnit; entity.PublishedAt = WallTime(input.PublishedAt!.Value, create ? null : entity.PublishedAt);
         entity.EffectiveUntil = input.EffectiveUntil.HasValue ? WallTime(input.EffectiveUntil.Value, create ? null : entity.EffectiveUntil) : null; entity.IsPinned = input.IsPinned;
         return WriteResult.Success;
