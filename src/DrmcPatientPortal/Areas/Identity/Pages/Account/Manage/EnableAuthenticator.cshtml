@@ -48,7 +48,7 @@
             <form id="send-code" method="post">
                 <div class="mb-3">
                     <label asp-for="Input.Code" class="form-label small fw-semibold text-dark"></label>
-                    <input asp-for="Input.Code" class="form-control form-control-lg text-center fw-bold letter-spacing-2 rounded-3" autocomplete="off" placeholder="000000" maxlength="7" />
+                    <input asp-for="Input.Code" class="form-control form-control-lg text-center fw-bold letter-spacing-2 rounded-3 two-factor-code-input" autocomplete="off" placeholder="000000" maxlength="7" />
                     <span asp-validation-for="Input.Code" class="text-danger small"></span>
                 </div>
                 <button type="submit" class="btn btn-primary-drmc rounded-pill px-4 fw-semibold shadow-xs">
