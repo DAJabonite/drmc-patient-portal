@@ -285,7 +285,7 @@ textarea:focus-visible,
 
 .navbar-drmc .nav-link:hover {
     color: var(--drmc-primary);
-    background: var(--drmc-surface-soft);
+    background: #f8f9fa;
 }
 
 .navbar-drmc .nav-link.active {
@@ -1460,6 +1460,10 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
     border-radius: var(--drmc-radius-lg) !important;
     box-shadow: 0 4px 14px rgba(14, 78, 135, 0.05) !important;
     overflow-wrap: anywhere;
+}
+
+.department-card h3 {
+    font-size: 1.25rem;
 }
 
 .summary-card,
@@ -3103,6 +3107,12 @@ code,
 .registration-record-code-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: #fff; border: 1px solid #c9d9ea; color: var(--drmc-primary); font-size: 1.15rem; }
 .registration-code-input { font-family: var(--bs-font-monospace); letter-spacing: .06em; text-transform: uppercase; }
 .registration-code-input::placeholder { letter-spacing: .06em; }
+
+.two-factor-code-input::placeholder {
+    color: #adb5bd;
+    opacity: 1;
+}
+
 .registration-code-entry { display: flex; gap: .5rem; }
 .registration-code-entry .registration-code-input { flex: 1; min-width: 0; }
 .registration-code-entry .btn { flex-shrink: 0; white-space: nowrap; }
