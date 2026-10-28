@@ -30,8 +30,6 @@ public sealed class RadiologyInput : PhysicianInput
         if (Status is RadiologyStatus.Final or RadiologyStatus.Amended)
         {
             if (ReleasedAt is null) yield return new ValidationResult("A final or amended report needs a release time.", [nameof(ReleasedAt)]);
-            if (string.IsNullOrWhiteSpace(Findings)) yield return new ValidationResult("A final or amended report needs findings.", [nameof(Findings)]);
-            if (string.IsNullOrWhiteSpace(Impression)) yield return new ValidationResult("A final or amended report needs an impression.", [nameof(Impression)]);
         }
         if (Status == RadiologyStatus.Amended && string.IsNullOrWhiteSpace(AmendmentNote))
             yield return new ValidationResult("An amended report needs an amendment note.", [nameof(AmendmentNote)]);

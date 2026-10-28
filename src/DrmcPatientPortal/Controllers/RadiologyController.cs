@@ -22,19 +22,25 @@ public class RadiologyController : Controller
     private readonly IAuditLogService _auditLog;
     private readonly IOptionsMonitor<PatientResultsOptions> _resultsOptions;
     private readonly InstitutionalGuideService _guides;
+    private readonly IRadiologyReportStorage _storage;
+    private readonly SignInManager<ApplicationUser> _signIn;
 
     public RadiologyController(
         ApplicationDbContext db,
         UserManager<ApplicationUser> userManager,
         IAuditLogService auditLog,
         IOptionsMonitor<PatientResultsOptions> resultsOptions,
-        InstitutionalGuideService guides)
+        InstitutionalGuideService guides,
+        IRadiologyReportStorage storage,
+        SignInManager<ApplicationUser> signIn)
     {
         _db = db;
         _userManager = userManager;
         _auditLog = auditLog;
         _resultsOptions = resultsOptions;
         _guides = guides;
+        _storage = storage;
+        _signIn = signIn;
     }
 
     // GET /Patient/Radiology
@@ -175,7 +181,7 @@ public class RadiologyController : Controller
                 s.Id, s.AccessionNumber, s.StudyName, s.Modality, s.BodyRegion, s.PerformedAt,
                 s.ReleasedAt, s.Status, s.OrderingPhysician, s.RadiologistName, s.PerformingUnit,
                 s.ClinicalIndication, s.Technique, s.Comparison, s.Findings, s.Impression,
-                s.PlainLanguageSummary, s.AmendmentNote
+                s.PlainLanguageSummary, s.AmendmentNote, s.ReportFileName
             })
             .FirstOrDefaultAsync());
 
@@ -198,7 +204,9 @@ public class RadiologyController : Controller
             PerformingUnit = study.PerformingUnit,
             IsReady = ready,
             IsAmended = ready && study.Status == RadiologyStatus.Amended,
-            Report = disclose
+            HasPdfReport = disclose && study.ReportFileName is not null,
+            Report = disclose && new[] { study.ClinicalIndication, study.Technique, study.Comparison,
+                study.Findings, study.Impression, study.PlainLanguageSummary, study.AmendmentNote }.Any(s => !string.IsNullOrWhiteSpace(s))
                 ? new RadiologyReportView
                 {
                     ClinicalIndication = study.ClinicalIndication,
@@ -216,6 +224,52 @@ public class RadiologyController : Controller
         await _auditLog.LogAsync(user.Id, "VIEW_RADIOLOGY_REPORT", $"RadiologyStudy/{id}",
             disclose ? "Viewed released imaging report." : "Viewed imaging study availability and claiming notice.", ip);
 
-        return View(model);
+        return View("Details", model);
+    }
+
+    [HttpPost("Report/{id:int}"), ValidateAntiForgeryToken]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Report(int id, string? password, string? intent, CancellationToken token)
+    {
+        Response.Headers.CacheControl = "no-store, private";
+        Response.Headers.Pragma = "no-cache";
+        Response.Headers["X-Content-Type-Options"] = "nosniff";
+        var user = await _userManager.GetUserAsync(User);
+        if (user is null) return Challenge();
+        Task<RadiologyStudy?> Current() => SqlReadRetry.RunAsync(_db, () => _db.RadiologyStudies.AsNoTracking()
+            .Where(PatientResultsDisclosure.RadiologyPdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow))
+            .SingleOrDefaultAsync(s => s.Id == id && s.Patient.PortalUserId == user.Id, token), token);
+        var study = await Current();
+        if (study is null) return NotFound();
+        if (intent is not ("view" or "download")) return BadRequest();
+        if (string.IsNullOrEmpty(password) || password.Length > 1024)
+            return await PasswordError(id, "Enter your login password for each View or Download action.");
+        var locked = await _userManager.IsLockedOutAsync(user);
+        if (locked || !await _signIn.CanSignInAsync(user) || !await _userManager.CheckPasswordAsync(user, password))
+            return await PasswordError(id, locked ? "Your account is temporarily locked. Try again after the lockout period." : "The password could not be verified. Please try again.");
+        byte[] bytes;
+        try { bytes = await _storage.ReadAsync(id, study.ReportFileName!, token); }
+        catch (FileNotFoundException) { return NotFound(); }
+        catch (DirectoryNotFoundException) { return NotFound(); }
+        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
+        { return StatusCode(503); }
+        var fresh = await Current();
+        if (fresh is null || fresh.ReportFileName != study.ReportFileName) return NotFound();
+        try
+        {
+            await _auditLog.LogAsync(user.Id, intent == "view" ? "VIEW_RADIOLOGY_PDF" : "DOWNLOAD_RADIOLOGY_PDF",
+                $"RadiologyStudy/{id}", "Patient accessed released radiology PDF.", HttpContext.Connection.RemoteIpAddress?.ToString() ?? "");
+        }
+        catch (AuditLogPersistenceException) { return StatusCode(503); }
+        fresh = await Current();
+        if (fresh is null || fresh.ReportFileName != study.ReportFileName || await _userManager.IsLockedOutAsync(user)) return NotFound();
+        return new PrivateFileResult(bytes, "application/pdf", $"radiology-report-{id}.pdf", intent == "download");
+    }
+
+    private async Task<IActionResult> PasswordError(int id, string message)
+    {
+        ModelState.Clear();
+        ModelState.AddModelError("", message);
+        return await Details(id);
     }
 }

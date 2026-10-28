@@ -16,6 +16,9 @@ public class LabResult
     public string Status { get; set; } = "Available"; // Available, In progress, Pending Verification
     public string ResultSummary { get; set; } = string.Empty;
     public string? ReportFileName { get; set; }
+    public string? ReportOriginalFileNameProtected { get; set; }
+    public string? ReportContentType { get; set; }
+    public string? ReportSha256 { get; set; }
     public long? ReportSize { get; set; }
     public DateTime? ReportUploadedAtUtc { get; set; }
 

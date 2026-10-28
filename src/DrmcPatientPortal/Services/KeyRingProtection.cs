@@ -28,6 +28,7 @@ public static class KeyRingProtection
     public const string PatientDocumentPurpose = "DRMC.PatientDocuments.File.v2";
     public const string PatientStagingTokenPurpose = "DRMC.PatientDocuments.StagingToken.v1";
     public const string LabReportPurpose = "DRMC.LabReports.v1";
+    public const string RadiologyReportPurpose = "DRMC.RadiologyReports.v1";
     public const string OutboundNotificationPurpose = "DRMC.OutboundNotification.v1";
     public const string RedStarPhiPurpose = "DrmcPatientPortal.RedStar.PhiProtection.v1";
     private static readonly XNamespace ProtectionNamespace = "http://schemas.asp.net/2015/03/dataProtection";

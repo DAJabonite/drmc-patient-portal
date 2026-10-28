@@ -8,7 +8,12 @@ public sealed class LabReportStorageOptions
     public string RootPath { get; set; } = "App_Data/LabReports";
 }
 
-public sealed record StoredLabReport(string FileName, long Size);
+public sealed record StoredLabReport(string FileName, long Size)
+{
+    public string? OriginalFileNameProtected { get; init; }
+    public string? ContentType { get; init; }
+    public string? Sha256 { get; init; }
+}
 
 public interface ILabReportStorage
 {
@@ -19,67 +24,17 @@ public interface ILabReportStorage
 
 public sealed class LabReportStorage : ILabReportStorage
 {
-    public const int MaximumBytes = 10 * 1024 * 1024;
-    private readonly PrivateStorageRoot root;
-    private readonly IDataProtectionProvider protection;
+    public const int MaximumBytes = PdfReportStorage.MaximumBytes;
+    private readonly PdfReportStorage storage;
 
     public LabReportStorage(IWebHostEnvironment environment, IOptions<LabReportStorageOptions> options,
         IDataProtectionProvider protection)
     {
-        this.protection = protection;
-        root = new(environment, options.Value.RootPath);
+        storage = new(environment, options.Value.RootPath, protection, KeyRingProtection.LabReportPurpose);
     }
 
-    public async Task<StoredLabReport> StoreAsync(int labId, IFormFile file, CancellationToken token)
-    {
-        if (!string.Equals(Path.GetExtension(file.FileName), ".pdf", StringComparison.OrdinalIgnoreCase) ||
-            !string.Equals(file.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase) ||
-            file.Length is <= 0 or > MaximumBytes)
-            throw new InvalidDataException("Choose a PDF file no larger than 10 MiB.");
-        await using var input = file.OpenReadStream();
-        var bytes = await ReadBoundedAsync(input, MaximumBytes, token);
-        if (bytes.LongLength != file.Length || !bytes.AsSpan().StartsWith("%PDF-"u8))
-            throw new InvalidDataException("The file must have a PDF signature and match its declared size.");
-        // Format checks are not malware scanning. The original filename is never persisted.
-        var name = Guid.NewGuid().ToString("N");
-        Directory.CreateDirectory(root.Resolve());
-        var encrypted = Protector(labId).Protect(bytes);
-        await PrivateStorageIO.WriteNewAsync(Resolve(name), encrypted, token);
-        return new(name, bytes.LongLength);
-    }
+    public Task<StoredLabReport> StoreAsync(int labId, IFormFile file, CancellationToken token) => storage.StoreAsync(labId, file, token);
 
-    public async Task<byte[]> ReadAsync(int labId, string fileName, CancellationToken token)
-    {
-        await using var input = new FileStream(Resolve(fileName), FileMode.Open, FileAccess.Read, FileShare.Read);
-        var encrypted = await ReadBoundedAsync(input, MaximumBytes + 4096, token);
-        var bytes = Protector(labId).Unprotect(encrypted);
-        if (bytes.Length > MaximumBytes || !bytes.AsSpan().StartsWith("%PDF-"u8))
-            throw new InvalidDataException("The stored report is invalid.");
-        return bytes;
-    }
-
-    public void Delete(string fileName) => File.Delete(Resolve(fileName));
-
-    private IDataProtector Protector(int labId) => protection.CreateProtector(KeyRingProtection.LabReportPurpose, labId.ToString(System.Globalization.CultureInfo.InvariantCulture));
-
-    private string Resolve(string name)
-    {
-        if (!PrivateStorageRoot.IsGuid(name) &&
-            !(name?.Length == 36 && name.EndsWith(".pdf", StringComparison.Ordinal) && PrivateStorageRoot.IsGuid(name[..32])))
-            throw new FileNotFoundException("Invalid report reference.");
-        return root.Resolve(name!);
-    }
-
-    private static async Task<byte[]> ReadBoundedAsync(Stream input, int limit, CancellationToken token)
-    {
-        await using var output = new MemoryStream();
-        var buffer = new byte[81920];
-        int count;
-        while ((count = await input.ReadAsync(buffer, token)) != 0)
-        {
-            if (output.Length + count > limit) throw new InvalidDataException("The report exceeds the size limit.");
-            await output.WriteAsync(buffer.AsMemory(0, count), token);
-        }
-        return output.ToArray();
-    }
+    public Task<byte[]> ReadAsync(int labId, string fileName, CancellationToken token) => storage.ReadAsync(labId, fileName, token);
+    public void Delete(string fileName) => storage.Delete(fileName);
 }

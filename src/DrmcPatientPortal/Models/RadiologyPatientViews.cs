@@ -56,6 +56,7 @@ public sealed class RadiologyDetailsViewModel
     public string PerformingUnit { get; init; } = string.Empty;
     public bool IsReady { get; init; }
     public bool IsAmended { get; init; }          // only true once released
+    public bool HasPdfReport { get; init; }
     public RadiologyReportView? Report { get; init; }
     public ClinicalDepartment Department { get; init; } = ClinicalDepartments.Radiology;
 }

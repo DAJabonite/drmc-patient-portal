@@ -30,9 +30,7 @@ public sealed class LabResultsController(ApplicationDbContext db, AdminWrites wr
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         { return WriteResult.Invalid("The PDF could not be stored. Choose the file again and try saving."); }
         previousReport = entity.ReportFileName;
-        entity.ReportFileName = stored.FileName;
-        entity.ReportSize = stored.Size;
-        entity.ReportUploadedAtUtc = DateTime.UtcNow;
+        ReportAttachments.Apply(entity, stored, DateTime.UtcNow);
         await database.SaveChangesAsync(token);
         return WriteResult.Success;
     }
@@ -102,14 +100,13 @@ public sealed class LabResultsController(ApplicationDbContext db, AdminWrites wr
             if (stored is not null && !lab.Patient.HasHospitalNumber)
                 return WriteResult.Invalid(LabUploadEditor.MissingHospitalNumberError);
             previous = lab.ReportFileName;
-            lab.ReportFileName = stored?.FileName;
-            lab.ReportSize = stored?.Size;
-            lab.ReportUploadedAtUtc = stored is null ? null : DateTime.UtcNow;
+            ReportAttachments.Apply(lab, stored, DateTime.UtcNow);
             database.Entry(lab).Property("RowVersion").OriginalValue = version;
             await database.SaveChangesAsync(token);
             await AdminAudit.AddAsync(database, User, stored is null ? "Remove report" : "Upload report", "LabResults",
                 id.ToString(System.Globalization.CultureInfo.InvariantCulture), lab.PatientRecordId,
-                fields: [nameof(LabResult.ReportFileName), nameof(LabResult.ReportSize), nameof(LabResult.ReportUploadedAtUtc)], cancellationToken: token);
+                fields: [nameof(LabResult.ReportFileName), nameof(LabResult.ReportSize), nameof(LabResult.ReportUploadedAtUtc),
+                    nameof(LabResult.ReportOriginalFileNameProtected), nameof(LabResult.ReportContentType), nameof(LabResult.ReportSha256)], cancellationToken: token);
             return WriteResult.Success;
         }, token);
         // A failed/uncertain commit may have persisted the new reference. Retain both files in that

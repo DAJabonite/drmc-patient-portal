@@ -22,3 +22,7 @@
 {
     <a asp-area="Admin" asp-action="Report" asp-route-id="@Model.Id" class="btn btn-primary mt-3">Manage lab report PDF</a>
 }
+@if (controller == "RadiologyStudies")
+{
+    <a asp-area="Admin" asp-action="Report" asp-route-id="@Model.Id" class="btn btn-primary mt-3">Review radiology report PDF</a>
+}

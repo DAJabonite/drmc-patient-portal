@@ -72,7 +72,8 @@ public sealed class PortalRequestControls(RequestDelegate next)
         if (HttpMethods.IsGet(request.Method) && (path.Equals("/Identity/Account/ConfirmEmail", StringComparison.OrdinalIgnoreCase) ||
             path.Equals("/Identity/Account/ConfirmEmailChange", StringComparison.OrdinalIgnoreCase))) return PortalRequestKind.Authentication;
         if (!HttpMethods.IsPost(request.Method)) return PortalRequestKind.None;
-        if (path.StartsWith("/Patient/LabResults/Report/", StringComparison.OrdinalIgnoreCase)) return PortalRequestKind.Pdf;
+        if (path.StartsWith("/Patient/LabResults/Report/", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/Patient/Radiology/Report/", StringComparison.OrdinalIgnoreCase)) return PortalRequestKind.Pdf;
         if (path.Equals("/Identity/Account/ForgotPassword", StringComparison.OrdinalIgnoreCase) ||
             path.Equals("/Identity/Account/ResendEmailConfirmation", StringComparison.OrdinalIgnoreCase) ||
             path.Equals("/Identity/Account/Manage/Email", StringComparison.OrdinalIgnoreCase)) return PortalRequestKind.Email;
