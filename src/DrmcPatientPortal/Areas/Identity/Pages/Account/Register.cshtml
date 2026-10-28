@@ -423,7 +423,7 @@
         <div class="modal-content">
             <div class="modal-header d-block">
                 <h2 class="modal-title h4" id="consentTitle">Before you create an account</h2>
-                <p class="small text-muted mb-0" id="consentHint">Scroll to the end of the privacy notice and portal terms to enable the agreement checkbox.</p>
+                <p class="small text-muted mb-0" id="consentHint">Please read through the privacy notice and portal terms to enable the agreement checkbox.</p>
             </div>
             <div class="modal-body" id="consentDocument" tabindex="0" role="region" aria-label="Privacy notice and portal terms">
                 <h3 class="h5 text-primary-drmc">Data privacy notice</h3>
@@ -438,7 +438,7 @@
                     <label class="form-check-label small" for="regConsent">I agree to the portal terms and consent to the data processing described in the privacy notice.</label>
                 </div>
                 <div class="registration-actions">
-                    <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary" id="leaveRegistration">Leave signup</a>
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-outline-danger" id="leaveRegistration">Leave signup</a>
                     <button type="button" class="btn btn-primary-drmc" id="acceptConsent" disabled>Agree and continue</button>
                 </div>
             </div>
