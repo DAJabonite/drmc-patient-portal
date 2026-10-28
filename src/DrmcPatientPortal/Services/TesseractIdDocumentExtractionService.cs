@@ -213,6 +213,14 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
 
         // 2. Names (Last Name, First Name, Middle Name)
         ExtractNameByLabels(result, text);
+        if (IdDocumentLabels.ReadLtoName(text) is { } name)
+        {
+            result.LastName = ExtractedField<string>.From(CleanNameString(name.LastName));
+            result.FirstName = ExtractedField<string>.From(CleanNameString(name.FirstName));
+            result.MiddleName = name.MiddleName.Length == 0 ? ExtractedField<string>.Empty()
+                : ExtractedField<string>.From(CleanNameString(name.MiddleName));
+            result.NameEvidence = name.ExplicitMiddle ? IdNameEvidence.ExplicitComponents : IdNameEvidence.LtoCombinedRow;
+        }
 
         // 3. Date of Birth
         ExtractDobByLabels(result, text);
@@ -359,8 +367,13 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         result.LastName = ReadName("LastName");
         result.FirstName = ReadName("FirstName");
         result.MiddleName = ReadName("MiddleName");
+        if (result.FirstName.Found || result.LastName.Found || result.MiddleName.Found)
+            result.NameEvidence = IdNameEvidence.ExplicitComponents;
         if (!result.LastName.Found && !result.FirstName.Found && fields.TryGetValue("FullName", out var fullName))
+        {
             SplitAndAssignFullName(result, CleanNameString(fullName, preserveComma: true));
+            result.NameEvidence = IdNameEvidence.FullName;
+        }
 
         ExtractedField<string> ReadName(string field)
         {
@@ -532,6 +545,7 @@ public class TesseractIdDocumentExtractionService : IIdDocumentExtractionService
         // Reject damaged years and incomplete dates rather than letting culture parsing guess.
         if (!Regex.IsMatch(raw, @"^(?:\d{8}|[\p{L}\d\s/,.-]+)$")) return false;
         string clean = Regex.Replace(raw.Replace(",", " "), @"\s+", " ").Trim();
+        clean = Regex.Replace(clean, @"\s*([/.-])\s*", "$1").TrimEnd('.', '-', ' ');
         string[] formats = new[]
         {
             "yyyy/MM/dd", "yyyy-MM-dd", "yyyy.MM.dd",

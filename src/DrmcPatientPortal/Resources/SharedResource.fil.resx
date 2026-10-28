@@ -265,4 +265,53 @@
   <data name="Guide_LastReviewed" xml:space="preserve"><value>Huling sinuri:</value></data>
   <data name="RS_ReplenishmentReminder" xml:space="preserve"><value>Paalala sa muling pagkuha ng gamot</value></data>
   <data name="RS_DateUnverified" xml:space="preserve"><value>Hinihintay ang pagtiyak ng klinika sa petsa ng pagkuha</value></data>
+  <data name="IdCamera_Title" xml:space="preserve"><value>I-scan ang iyong ID</value></data>
+  <data name="IdCamera_FrontHint" xml:space="preserve"><value>Ilagay ang harap ng ID sa loob ng gabay. Ipakita ang lahat ng sulok at iwasan ang silaw.</value></data>
+  <data name="IdCamera_BackHint" xml:space="preserve"><value>Ilagay ang likod ng ID sa loob ng gabay.</value></data>
+  <data name="IdCamera_Opening" xml:space="preserve"><value>Binubuksan ang camera…</value></data>
+  <data name="IdCamera_Ready" xml:space="preserve"><value>Panatilihing hindi gumagalaw ang ID, saka kunan ng larawan.</value></data>
+  <data name="IdCamera_Capture" xml:space="preserve"><value>Kunan ng Larawan</value></data>
+  <data name="IdCamera_Cancel" xml:space="preserve"><value>Kanselahin</value></data>
+  <data name="IdCamera_Close" xml:space="preserve"><value>Isara ang camera</value></data>
+  <data name="IdCamera_Fallback" xml:space="preserve"><value>Gamitin ang camera ng telepono o pumili ng larawan</value></data>
+  <data name="IdCamera_PermissionError" xml:space="preserve"><value>Hindi pinayagan ang camera. Payagan ang access o pumili ng larawan.</value></data>
+  <data name="IdCamera_DeviceError" xml:space="preserve"><value>Hindi mabuksan ang camera. Subukang muli o pumili ng larawan.</value></data>
+  <data name="IdCamera_CaptureError" xml:space="preserve"><value>Hindi makunan ang larawan. Subukang muli o pumili ng larawan.</value></data>
+  <data name="IdCamera_FormatError" xml:space="preserve"><value>Pumili ng malinaw na JPEG, PNG o hindi gumagalaw na WebP.</value></data>
+  <data name="IdCamera_SizeError" xml:space="preserve"><value>Pumili ng larawan ng ID na hanggang 5 MB.</value></data>
+  <data name="IdCamera_SelectType" xml:space="preserve"><value>Piliin muna ang uri ng ID.</value></data>
+  <data name="IdCamera_TurnCard" xml:space="preserve"><value>Nakuha ang harap. Baligtarin ang ID para kunan ang likod, o magpatuloy gamit ang harap lamang.</value></data>
+  <data name="IdCamera_CaptureBack" xml:space="preserve"><value>Kunan ang likod ng ID</value></data>
+  <data name="IdCamera_SkipBack" xml:space="preserve"><value>Magpatuloy gamit ang harap lamang</value></data>
+  <data name="IdCamera_Scan" xml:space="preserve"><value>I-scan ang ID gamit ang Camera</value></data>
+  <data name="IdCamera_SelectFront" xml:space="preserve"><value>Piliin ang larawan ng harap</value></data>
+  <data name="IdCamera_SelectBack" xml:space="preserve"><value>Piliin ang larawan ng likod</value></data>
+  <data name="Ids_AddTitle" xml:space="preserve"><value>Magdagdag ng government ID</value></data>
+  <data name="Ids_AddDescription" xml:space="preserve"><value>Kunan o i-upload ang iyong ID, suriin ang mga detalye, at i-save sa iyong wallet.</value></data>
+  <data name="Ids_IdType" xml:space="preserve"><value>Uri ng government ID</value></data>
+  <data name="Ids_ChooseType" xml:space="preserve"><value>Piliin ang uri ng ID…</value></data>
+  <data name="Ids_FrontPhoto" xml:space="preserve"><value>Harap ng ID</value></data>
+  <data name="Ids_BackPhoto" xml:space="preserve"><value>Likod ng ID (opsyonal)</value></data>
+  <data name="Ids_PhotoHelp" xml:space="preserve"><value>JPEG, PNG o hindi gumagalaw na WebP, hanggang 5 MB bawat isa. Awtomatikong inaayos ang laki ng kuha ng camera.</value></data>
+  <data name="Ids_ScanDetails" xml:space="preserve"><value>Basahin ang mga detalye ng ID</value></data>
+  <data name="Ids_CancelScan" xml:space="preserve"><value>Kanselahin ang pag-scan</value></data>
+  <data name="Ids_ScanWorking" xml:space="preserve"><value>Binabasa ang iyong ID…</value></data>
+  <data name="Ids_ScanFailed" xml:space="preserve"><value>Hindi mabasa ang ID. Suriin ang larawan at ilagay o itama ang mga detalye sa ibaba.</value></data>
+  <data name="Ids_PhotoRequired" xml:space="preserve"><value>Kunan o piliin muna ang harap ng iyong ID.</value></data>
+  <data name="Ids_ReviewHint" xml:space="preserve"><value>Suriin ang bawat detalye bago i-save. Maaaring ilagay nang mano-mano o iwang blangko ang hindi nabasa.</value></data>
+  <data name="Ids_FirstName" xml:space="preserve"><value>Pangalan</value></data>
+  <data name="Ids_MiddleName" xml:space="preserve"><value>Gitnang pangalan (opsyonal)</value></data>
+  <data name="Ids_LastName" xml:space="preserve"><value>Apelyido</value></data>
+  <data name="Ids_Suffix" xml:space="preserve"><value>Suffix (opsyonal)</value></data>
+  <data name="Ids_DateOfBirth" xml:space="preserve"><value>Petsa ng kapanganakan</value></data>
+  <data name="Ids_Address" xml:space="preserve"><value>Tirahan</value></data>
+  <data name="Ids_Sex" xml:space="preserve"><value>Kasarian</value></data>
+  <data name="Ids_BloodType" xml:space="preserve"><value>Uri ng dugo</value></data>
+  <data name="Ids_Save" xml:space="preserve"><value>I-save ang ID</value></data>
+  <data name="Ids_Saving" xml:space="preserve"><value>Sine-save ang ID…</value></data>
+  <data name="Ids_SaveError" xml:space="preserve"><value>Hindi ma-save ang ID. Subukang muli.</value></data>
+  <data name="Ids_UncertainSave" xml:space="preserve"><value>Hindi makumpirma kung na-save ang ID. I-reload ang Aking mga ID bago subukang muli.</value></data>
+  <data name="Ids_Reload" xml:space="preserve"><value>I-reload ang Aking mga ID</value></data>
+  <data name="Ids_ScanComplete" xml:space="preserve"><value>Nabasa ang mga detalye ng ID.</value></data>
+  <data name="Your ID was added to your wallet." xml:space="preserve"><value>Naidagdag ang iyong ID sa wallet.</value></data>
 </root>

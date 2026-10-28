@@ -1,5 +1,7 @@
 namespace DrmcPatientPortal.Services;
 
+internal enum IdNameEvidence { None, FullName, LtoCombinedRow, ExplicitComponents }
+
 public record ExtractedField<T>(
     T? Value,
     bool Found,
@@ -13,6 +15,8 @@ public record ExtractedField<T>(
 
 public class IdExtractionResult
 {
+    // Used only while reconciling readings inside one worker, never returned to clients.
+    internal IdNameEvidence NameEvidence { get; set; }
     public bool Success { get; set; }
     public string IdType { get; set; } = string.Empty;
     public float MeanConfidence { get; set; }

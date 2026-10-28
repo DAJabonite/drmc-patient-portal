@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="~/css/id-camera.css" asp-append-version="true" />
+<dialog id="idCameraModal" class="id-camera-dialog" aria-labelledby="idCameraTitle" aria-describedby="idCameraHint"
+        data-front-hint="@Loc["IdCamera_FrontHint"]" data-back-hint="@Loc["IdCamera_BackHint"]"
+        data-opening="@Loc["IdCamera_Opening"]" data-ready="@Loc["IdCamera_Ready"]"
+        data-permission-error="@Loc["IdCamera_PermissionError"]" data-device-error="@Loc["IdCamera_DeviceError"]"
+        data-capture-error="@Loc["IdCamera_CaptureError"]" data-format-error="@Loc["IdCamera_FormatError"]"
+        data-size-error="@Loc["IdCamera_SizeError"]" data-select-type="@Loc["IdCamera_SelectType"]" data-select-front="@Loc["IdCamera_SelectFront"]">
+    <div class="id-camera-shell">
+        <header class="d-flex align-items-center justify-content-between gap-3 mb-3">
+            <h2 id="idCameraTitle" class="h5 mb-0">@Loc["IdCamera_Title"]</h2>
+            <button type="button" class="btn-close" data-camera-cancel aria-label="@Loc["IdCamera_Close"]"></button>
+        </header>
+        <p id="idCameraHint" class="small mb-3" data-camera-hint>@Loc["IdCamera_FrontHint"]</p>
+        <div class="id-camera-view" data-camera-view>
+            <video autoplay playsinline muted data-camera-video aria-label="@Loc["IdCamera_Title"]"></video>
+            <div class="id-camera-guide" data-camera-guide aria-hidden="true"></div>
+        </div>
+        <p class="small my-3" role="status" aria-live="polite" data-camera-status></p>
+        <div data-camera-prompt hidden>
+            <p>@Loc["IdCamera_TurnCard"]</p>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <button type="button" class="btn btn-primary-drmc" data-camera-next>@Loc["IdCamera_CaptureBack"]</button>
+                <button type="button" class="btn btn-outline-secondary" data-camera-skip>@Loc["IdCamera_SkipBack"]</button>
+            </div>
+        </div>
+        <footer class="d-flex flex-wrap gap-2 justify-content-end">
+            <button type="button" class="btn btn-outline-secondary" data-camera-cancel>@Loc["IdCamera_Cancel"]</button>
+            <button type="button" class="btn btn-outline-drmc" data-camera-fallback hidden>@Loc["IdCamera_Fallback"]</button>
+            <button type="button" class="btn btn-primary-drmc" data-camera-capture disabled>@Loc["IdCamera_Capture"]</button>
+        </footer>
+        <input type="file" accept="image/*" capture="environment" data-camera-native hidden />
+    </div>
+</dialog>

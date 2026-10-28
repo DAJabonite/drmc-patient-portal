@@ -40,7 +40,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
         private readonly ILogger<RegisterModel> _logger;
         private readonly IAccountEmailQueue _emailSender;
         private readonly AccountLinks _links;
-        private readonly IIdDocumentExtractionService _idExtractionService;
+        private readonly IdDocumentScanService _idScans;
         private readonly ApplicationDbContext _db;
         private readonly IPatientDocumentStorage _documentStorage;
         private readonly IAuditLogService _auditLog;
@@ -71,7 +71,8 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             IOptions<PatientRegistrationOptions> registrationOptions,
             FirstAdminSignup firstAdminSignup,
             AccountLinks links,
-            IServiceScopeFactory scopes)
+            IServiceScopeFactory scopes,
+            IdDocumentScanService idScans)
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -79,7 +80,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             _signInManager = signInManager;
             _logger = logger;
             _emailSender = emailSender;
-            _idExtractionService = idExtractionService;
+            _idScans = idScans;
             _db = db;
             _documentStorage = documentStorage;
             _auditLog = auditLog;
@@ -225,88 +226,8 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
         }
 
         // AJAX Handler for Real Local OCR Scan
-        public async Task<IActionResult> OnPostExtractIdAsync(string idType, IFormFile frontPhoto, IFormFile backPhoto)
-        {
-            if (string.IsNullOrWhiteSpace(idType) || frontPhoto == null || frontPhoto.Length == 0)
-            {
-                return new JsonResult(new { success = false, message = "Please select an ID type and provide a clear front photo." });
-            }
-
-            StagedPatientDocument stagedFront = null;
-            StagedPatientDocument stagedBack = null;
-            var uploadSessionId = GetUploadSessionId();
-            var retainStaged = false;
-            try
-            {
-                stagedFront = await _documentStorage.StageAsync(frontPhoto, uploadSessionId, HttpContext.RequestAborted);
-                if (backPhoto != null && backPhoto.Length > 0)
-                {
-                    stagedBack = await _documentStorage.StageAsync(backPhoto, uploadSessionId, HttpContext.RequestAborted);
-                }
-
-                // Execute genuine local OCR extraction
-                await using var scanFrontStream = frontPhoto.OpenReadStream();
-                using var scanBackStream = backPhoto is { Length: > 0 } ? backPhoto.OpenReadStream() : null;
-                var result = await _idExtractionService.ExtractFromStreamsAsync(idType, scanFrontStream, scanBackStream, HttpContext.RequestAborted);
-
-                retainStaged = true;
-                return new JsonResult(new
-                {
-                    success = result.Success,
-                    meanConfidence = result.MeanConfidence,
-                    tempFrontToken = stagedFront.Token,
-                    tempBackToken = stagedBack?.Token,
-                    firstName = result.FirstName.Found ? result.FirstName.Value : "",
-                    middleName = result.MiddleName.Found ? result.MiddleName.Value : "",
-                    lastName = result.LastName.Found ? result.LastName.Value : "",
-                    fullName = result.FullName.Found ? result.FullName.Value : "",
-                    idNumber = result.IdNumber.Found ? result.IdNumber.Value : "",
-                    dateOfBirth = result.DateOfBirth.Found ? result.DateOfBirth.Value.ToString("yyyy-MM-dd") : "",
-                    address = result.Address.Found ? result.Address.Value : "",
-                    sex = result.Sex.Found ? result.Sex.Value : "",
-                    bloodType = result.BloodType.Found ? result.BloodType.Value : "",
-                    foundSummary = result.FoundFieldsSummary
-                });
-            }
-            catch (OcrBusyException ex)
-            {
-                Response.Headers.RetryAfter = "5";
-                return new JsonResult(new { success = false, message = ex.Message }) { StatusCode = 429 };
-            }
-            catch (OcrTimeoutException ex)
-            {
-                return new JsonResult(new { success = false, message = ex.Message }) { StatusCode = 503 };
-            }
-            catch (OperationCanceledException) when (HttpContext.RequestAborted.IsCancellationRequested)
-            {
-                return StatusCode(499);
-            }
-            catch (OcrDependencyUnavailableException ex)
-            {
-                _logger.LogError(ex, "ID scanning dependencies unavailable.");
-                return new JsonResult(new { success = false, message = "ID scanning is temporarily unavailable. Please try again later." }) { StatusCode = 503 };
-            }
-            catch (InvalidDataException ex)
-            {
-                return new JsonResult(new { success = false, message = ex.Message }) { StatusCode = 400 };
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing ID photo extraction for {IdType}", idType);
-                return new JsonResult(new { success = false, message = "Could not read ID photo. You can proceed with manual entry." });
-            }
-            finally
-            {
-                if (!retainStaged)
-                {
-                    foreach (var token in new[] { stagedFront?.Token, stagedBack?.Token })
-                    {
-                        try { await _documentStorage.DiscardStagedAsync(token, uploadSessionId, CancellationToken.None); }
-                        catch (Exception) { _logger.LogWarning("Could not discard a staged ID photo."); }
-                    }
-                }
-            }
-        }
+        public Task<IActionResult> OnPostExtractIdAsync(string idType, IFormFile frontPhoto, IFormFile backPhoto) =>
+            _idScans.ExtractAsync(HttpContext, idType, frontPhoto, backPhoto, GetUploadSessionId());
 
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {

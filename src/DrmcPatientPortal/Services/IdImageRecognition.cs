@@ -60,6 +60,14 @@ internal sealed class IdImageRecognition(TesseractEngine engine, string idType, 
                 readings.Add(local);
                 Add(local, gray.Width);
             }
+            if (NeedsRetry(result, back) && CanRetry)
+            {
+                // Leptonica keeps the original when skew evidence is weak. This is a
+                // single bounded retry; its coordinates are never mixed with the source.
+                using var deskewed = gray.Deskew(out var skew);
+                if (skew.Confidence >= 3 && Math.Abs(skew.Angle) is >= .2f and <= 7.5f && CanRetry)
+                    Add(ReadPage(deskewed, PageSegMode.Auto), deskewed.Width);
+            }
             if (NeedsRetry(result, back))
             {
                 var labels = readings.SelectMany(r => r.Lines)
@@ -221,6 +229,8 @@ internal sealed class IdImageRecognition(TesseractEngine engine, string idType, 
             var residue = text;
             foreach (var label in labels.Reverse()) residue = residue.Remove(label.Start, label.End - label.Start);
             if (Regex.IsMatch(residue, @"[\p{L}\d]")) continue;
+            // The LTO heading describes one name row, not three aligned value columns.
+            if (idType == PhilippineIdTypes.DriversLicense && IdDocumentLabels.IsLtoNameHeader(text)) continue;
             var offsets = new List<(Line Word, int Start, int End)>();
             var offset = 0;
             foreach (var word in words)
@@ -253,6 +263,8 @@ internal sealed class IdImageRecognition(TesseractEngine engine, string idType, 
     private void RefineKnownLayout(Pix original, Pix gray, Pix threshold, IReadOnlyList<Reading> readings, IdExtractionResult fields, bool back)
     {
         var text = string.Join("\n", readings.Select(r => r.Text));
+        if (idType == PhilippineIdTypes.DriversLicense && !back)
+            RefineLtoNameRow(gray, threshold, readings, fields);
         if (idType == PhilippineIdTypes.Passport && CanRetry)
         {
             var mrz = ReadPage(threshold, PageSegMode.SingleBlock, Relative(gray, 0, .68, 1, .32));
@@ -321,6 +333,25 @@ internal sealed class IdImageRecognition(TesseractEngine engine, string idType, 
         }
     }
 
+    private void RefineLtoNameRow(Pix gray, Pix threshold, IReadOnlyList<Reading> readings, IdExtractionResult fields)
+    {
+        foreach (var reading in readings)
+        foreach (var header in reading.Lines.Where(line => IdDocumentLabels.IsLtoNameHeader(line.Text)))
+        {
+            if (!CanRetry) return;
+            var value = reading.Lines.Where(line => line.Bounds.Y1 >= header.Bounds.Y2 - 2 &&
+                line.Bounds.Y1 < header.Bounds.Y2 + Math.Max(90, header.Bounds.Height * 5) &&
+                line.Bounds.X1 >= header.Bounds.X1 - 32 && line.Bounds.X1 < header.Bounds.X2 &&
+                IdDocumentLabels.Find(line.Text).Count == 0 && Regex.IsMatch(line.Text, @"\p{L}{2}"))
+                .OrderBy(line => line.Bounds.Y1).FirstOrDefault();
+            if (value is null) continue;
+            var area = Clamp(gray, Math.Min(header.Bounds.X1, value.Bounds.X1) - 12,
+                value.Bounds.Y1 - 8, gray.Width, value.Bounds.Y2 + 8);
+            ReadField(gray, area, "LtoName", fields, false);
+            if (CanRetry) ReadField(threshold, area, "LtoName", fields, false);
+        }
+    }
+
     private void ReadField(Pix image, Rect region, string field, IdExtractionResult fields, bool back)
     {
         var label = field switch
@@ -332,6 +363,7 @@ internal sealed class IdImageRecognition(TesseractEngine engine, string idType, 
                 PhilippineIdTypes.SssGsis => "SSS No.", PhilippineIdTypes.PrcId => "Registration No.", _ => "ID Number"
             },
             "DateOfBirth" => "Date of Birth", "FirstName" => "First Name",
+            "LtoName" => "Last Name, First Name, Middle Name",
             "LastName" => "Last Name", "MiddleName" => "Middle Name", "FullName" => "Full Name",
             "BloodType" => "Blood Type", _ => field
         };
