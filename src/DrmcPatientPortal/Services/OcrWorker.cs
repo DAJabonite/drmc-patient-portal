@@ -196,9 +196,8 @@ public static class OcrWorker
             IdImageRecognition.Result ReadImage(OcrWorkerImage file, bool back)
             {
                 using var stream = new MemoryStream(file.Bytes, writable: false);
-                if (IdImageValidation.Inspect(stream) != file.Info) throw new InvalidDataException();
+                if (IdImageValidation.InspectIdPhoto(stream) != file.Info) throw new InvalidDataException();
                 using var image = LoadPixels(file);
-                if (image.Width != file.Info.Width || image.Height != file.Info.Height) throw new InvalidDataException();
                 if (recognition is null) return new("", 0, new());
                 return recognition.Read(image, back);
             }
@@ -237,15 +236,60 @@ public static class OcrWorker
 
     private static Pix LoadPixels(OcrWorkerImage file)
     {
-        if (file.Info.ContentType != "image/webp") return Pix.LoadFromMemory(file.Bytes);
-        // The bundled Windows Leptonica lacks WebP. Convert only in the killable worker.
+        // All native decoding, orientation and resizing stay inside the killable worker.
+        using var bitmap = DecodeImage(file);
+        using var png = bitmap.Encode(SKEncodedImageFormat.Png, 100) ?? throw new InvalidDataException();
+        return Pix.LoadFromMemory(png.ToArray());
+    }
+
+    internal static SKBitmap DecodeImage(OcrWorkerImage file)
+    {
         using var source = new MemoryStream(file.Bytes, writable: false);
         using var codec = SKCodec.Create(source) ?? throw new InvalidDataException();
         if (codec.Info.Width != file.Info.Width || codec.Info.Height != file.Info.Height || codec.FrameCount > 1)
             throw new InvalidDataException();
-        using var bitmap = new SKBitmap(new SKImageInfo(file.Info.Width, file.Info.Height, SKColorType.Bgra8888, SKAlphaType.Premul));
-        if (codec.GetPixels(bitmap.Info, bitmap.GetPixels()) != SKCodecResult.Success) throw new InvalidDataException();
-        using var png = bitmap.Encode(SKEncodedImageFormat.Png, 100) ?? throw new InvalidDataException();
-        return Pix.LoadFromMemory(png.ToArray());
+        const int maximumSide = 2048;
+        // JPEG can decode at a reduced resolution. Other codecs remain bounded by the
+        // inspected 32 MP input limit before being drawn onto this smaller OCR surface.
+        var supported = codec.GetScaledDimensions(Math.Min(1f, maximumSide / (float)Math.Max(codec.Info.Width, codec.Info.Height)));
+        if (supported.Width <= 0 || supported.Height <= 0 || supported.Width > file.Info.Width || supported.Height > file.Info.Height)
+            throw new InvalidDataException();
+        using var decoded = new SKBitmap(new SKImageInfo(supported.Width, supported.Height, SKColorType.Bgra8888, SKAlphaType.Premul));
+        if (codec.GetPixels(decoded.Info, decoded.GetPixels()) != SKCodecResult.Success) throw new InvalidDataException();
+
+        var origin = codec.EncodedOrigin;
+        var swapped = origin is SKEncodedOrigin.LeftTop or SKEncodedOrigin.RightTop or SKEncodedOrigin.RightBottom or SKEncodedOrigin.LeftBottom;
+        var width = swapped ? decoded.Height : decoded.Width;
+        var height = swapped ? decoded.Width : decoded.Height;
+        var scale = Math.Min(1f, maximumSide / (float)Math.Max(width, height));
+        var normalized = new SKBitmap(new SKImageInfo(Math.Max(1, (int)Math.Round(width * scale)),
+            Math.Max(1, (int)Math.Round(height * scale)), SKColorType.Bgra8888, SKAlphaType.Premul));
+        try
+        {
+            using var canvas = new SKCanvas(normalized);
+            canvas.Clear(SKColors.White);
+            canvas.Scale(normalized.Width / (float)width, normalized.Height / (float)height);
+            var transform = origin switch
+            {
+                SKEncodedOrigin.TopRight => Matrix(-1, 0, decoded.Width, 0, 1, 0),
+                SKEncodedOrigin.BottomRight => Matrix(-1, 0, decoded.Width, 0, -1, decoded.Height),
+                SKEncodedOrigin.BottomLeft => Matrix(1, 0, 0, 0, -1, decoded.Height),
+                SKEncodedOrigin.LeftTop => Matrix(0, 1, 0, 1, 0, 0),
+                SKEncodedOrigin.RightTop => Matrix(0, -1, decoded.Height, 1, 0, 0),
+                SKEncodedOrigin.RightBottom => Matrix(0, -1, decoded.Height, -1, 0, decoded.Width),
+                SKEncodedOrigin.LeftBottom => Matrix(0, 1, 0, -1, 0, decoded.Width),
+                _ => SKMatrix.CreateIdentity()
+            };
+            canvas.Concat(transform);
+            canvas.DrawBitmap(decoded, new SKRect(0, 0, decoded.Width, decoded.Height),
+                new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.None));
+            return normalized;
+        }
+        catch { normalized.Dispose(); throw; }
+
+        static SKMatrix Matrix(float xx, float xy, float tx, float yx, float yy, float ty) => new()
+        {
+            ScaleX = xx, SkewX = xy, TransX = tx, SkewY = yx, ScaleY = yy, TransY = ty, Persp2 = 1
+        };
     }
 }

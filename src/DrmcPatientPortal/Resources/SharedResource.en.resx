@@ -265,4 +265,53 @@
   <data name="Guide_LastReviewed" xml:space="preserve"><value>Last reviewed:</value></data>
   <data name="RS_ReplenishmentReminder" xml:space="preserve"><value>Medicine replenishment reminder</value></data>
   <data name="RS_DateUnverified" xml:space="preserve"><value>Refill date awaiting clinic verification</value></data>
+  <data name="IdCamera_Title" xml:space="preserve"><value>Scan your ID</value></data>
+  <data name="IdCamera_FrontHint" xml:space="preserve"><value>Fit the front of your ID inside the guide. Keep all corners visible and avoid glare.</value></data>
+  <data name="IdCamera_BackHint" xml:space="preserve"><value>Fit the back of your ID inside the guide.</value></data>
+  <data name="IdCamera_Opening" xml:space="preserve"><value>Opening camera…</value></data>
+  <data name="IdCamera_Ready" xml:space="preserve"><value>Keep the ID steady, then capture the photo.</value></data>
+  <data name="IdCamera_Capture" xml:space="preserve"><value>Capture Photo</value></data>
+  <data name="IdCamera_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="IdCamera_Close" xml:space="preserve"><value>Close camera</value></data>
+  <data name="IdCamera_Fallback" xml:space="preserve"><value>Use phone camera or choose a photo</value></data>
+  <data name="IdCamera_PermissionError" xml:space="preserve"><value>Camera permission was denied. Allow camera access or choose a photo.</value></data>
+  <data name="IdCamera_DeviceError" xml:space="preserve"><value>The camera could not be opened. Try again or choose a photo.</value></data>
+  <data name="IdCamera_CaptureError" xml:space="preserve"><value>The photo could not be captured. Try again or choose a photo.</value></data>
+  <data name="IdCamera_FormatError" xml:space="preserve"><value>Choose a readable JPEG, PNG or static WebP photo.</value></data>
+  <data name="IdCamera_SizeError" xml:space="preserve"><value>Choose an ID photo up to 5 MB.</value></data>
+  <data name="IdCamera_SelectType" xml:space="preserve"><value>Choose an ID type first.</value></data>
+  <data name="IdCamera_TurnCard" xml:space="preserve"><value>Front captured. Turn the card over to capture the back, or continue with the front only.</value></data>
+  <data name="IdCamera_CaptureBack" xml:space="preserve"><value>Capture back of ID</value></data>
+  <data name="IdCamera_SkipBack" xml:space="preserve"><value>Continue with front only</value></data>
+  <data name="IdCamera_Scan" xml:space="preserve"><value>Scan ID with Camera</value></data>
+  <data name="IdCamera_SelectFront" xml:space="preserve"><value>Select front photo</value></data>
+  <data name="IdCamera_SelectBack" xml:space="preserve"><value>Select back photo</value></data>
+  <data name="Ids_AddTitle" xml:space="preserve"><value>Add a government ID</value></data>
+  <data name="Ids_AddDescription" xml:space="preserve"><value>Capture or upload your ID, review the details, then save it to your wallet.</value></data>
+  <data name="Ids_IdType" xml:space="preserve"><value>Government ID type</value></data>
+  <data name="Ids_ChooseType" xml:space="preserve"><value>Choose your ID type…</value></data>
+  <data name="Ids_FrontPhoto" xml:space="preserve"><value>Front of ID</value></data>
+  <data name="Ids_BackPhoto" xml:space="preserve"><value>Back of ID (optional)</value></data>
+  <data name="Ids_PhotoHelp" xml:space="preserve"><value>JPEG, PNG or static WebP, up to 5 MB each. Camera photos are resized automatically.</value></data>
+  <data name="Ids_ScanDetails" xml:space="preserve"><value>Read ID details</value></data>
+  <data name="Ids_CancelScan" xml:space="preserve"><value>Cancel scanning</value></data>
+  <data name="Ids_ScanWorking" xml:space="preserve"><value>Reading your ID…</value></data>
+  <data name="Ids_ScanFailed" xml:space="preserve"><value>We could not read your ID. Check the photo and enter or correct the details below.</value></data>
+  <data name="Ids_PhotoRequired" xml:space="preserve"><value>Capture or select the front of your ID first.</value></data>
+  <data name="Ids_ReviewHint" xml:space="preserve"><value>Check every field before saving. Unread details may be entered manually or left blank.</value></data>
+  <data name="Ids_FirstName" xml:space="preserve"><value>First name</value></data>
+  <data name="Ids_MiddleName" xml:space="preserve"><value>Middle name (optional)</value></data>
+  <data name="Ids_LastName" xml:space="preserve"><value>Last name</value></data>
+  <data name="Ids_Suffix" xml:space="preserve"><value>Suffix (optional)</value></data>
+  <data name="Ids_DateOfBirth" xml:space="preserve"><value>Date of birth</value></data>
+  <data name="Ids_Address" xml:space="preserve"><value>Address</value></data>
+  <data name="Ids_Sex" xml:space="preserve"><value>Sex</value></data>
+  <data name="Ids_BloodType" xml:space="preserve"><value>Blood type</value></data>
+  <data name="Ids_Save" xml:space="preserve"><value>Save ID</value></data>
+  <data name="Ids_Saving" xml:space="preserve"><value>Saving ID…</value></data>
+  <data name="Ids_SaveError" xml:space="preserve"><value>We could not save your ID. Please try again.</value></data>
+  <data name="Ids_UncertainSave" xml:space="preserve"><value>We could not confirm whether your ID was saved. Reload My IDs before trying again.</value></data>
+  <data name="Ids_Reload" xml:space="preserve"><value>Reload My IDs</value></data>
+  <data name="Ids_ScanComplete" xml:space="preserve"><value>ID details read.</value></data>
+  <data name="Your ID was added to your wallet." xml:space="preserve"><value>Your ID was added to your wallet.</value></data>
 </root>

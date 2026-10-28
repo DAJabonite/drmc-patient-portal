@@ -1,0 +1,36 @@
+.id-camera-dialog {
+    width: min(94vw, 780px);
+    max-height: 94dvh;
+    padding: 0;
+    border: 0;
+    border-radius: 1rem;
+    color: #17343b;
+    background: #fff;
+    box-shadow: 0 1rem 4rem #0006;
+}
+.id-camera-dialog::backdrop { background: #071d27d9; }
+.id-camera-shell { padding: clamp(1rem, 3vw, 1.5rem); }
+.id-camera-view {
+    position: relative;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border-radius: .75rem;
+    height: min(55dvh, 430px);
+    background: #071d27;
+}
+.id-camera-view[hidden] { display: none; }
+.id-camera-view video { width: 100%; height: 100%; object-fit: contain; }
+.id-camera-guide {
+    --id-camera-ratio: 1.586;
+    position: absolute;
+    width: min(86%, calc(min(55dvh, 430px) * var(--id-camera-ratio) * .82));
+    aspect-ratio: var(--id-camera-ratio);
+    border: 3px solid #fff;
+    border-radius: .7rem;
+    box-shadow: 0 0 0 100vmax #0005;
+    pointer-events: none;
+}
+.id-camera-dialog button { min-height: 44px; }
+.id-camera-dialog button[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { .id-camera-dialog { scroll-behavior: auto; } }

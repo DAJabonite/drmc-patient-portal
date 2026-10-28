@@ -182,6 +182,7 @@ builder.Services.AddScoped<StaffInvitationActivator>();
 builder.Services.AddScoped<FirstAdminSignup>();
 builder.Services.AddScoped<PatientDocumentStorage>();
 builder.Services.AddScoped<IPatientDocumentStorage>(services => services.GetRequiredService<PatientDocumentStorage>());
+builder.Services.AddScoped<IdDocumentScanService>();
 builder.Services.Configure<LabReportStorageOptions>(builder.Configuration.GetSection("LabReports"));
 builder.Services.AddScoped<ILabReportStorage, LabReportStorage>();
 builder.Services.Configure<RadiologyReportStorageOptions>(builder.Configuration.GetSection("RadiologyReports"));
@@ -349,7 +350,7 @@ app.Use(async (context, next) =>
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
     context.Response.Headers["X-Frame-Options"] = "SAMEORIGIN";
     context.Response.Headers["Referrer-Policy"] = "no-referrer";
-    context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'";
+    context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'";
     await next();
 });
 app.UseRouting();

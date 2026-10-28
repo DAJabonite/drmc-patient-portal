@@ -67,7 +67,9 @@ public sealed class PortalRequestControls(RequestDelegate next)
     public static PortalRequestKind Kind(HttpRequest request)
     {
         var path = (request.Path.Value ?? "").TrimEnd('/');
-        if (HttpMethods.IsPost(request.Method) && path.Equals("/Identity/Account/Register", StringComparison.OrdinalIgnoreCase) &&
+        if (HttpMethods.IsPost(request.Method) &&
+            (path.Equals("/Identity/Account/Register", StringComparison.OrdinalIgnoreCase) ||
+             path.Equals("/Identity/Account/Manage/MyIds", StringComparison.OrdinalIgnoreCase)) &&
             request.Query["handler"].ToString().Equals("ExtractId", StringComparison.OrdinalIgnoreCase)) return PortalRequestKind.Scan;
         if (HttpMethods.IsGet(request.Method) && (path.Equals("/Identity/Account/ConfirmEmail", StringComparison.OrdinalIgnoreCase) ||
             path.Equals("/Identity/Account/ConfirmEmailChange", StringComparison.OrdinalIgnoreCase))) return PortalRequestKind.Authentication;
@@ -96,6 +98,9 @@ public sealed class PortalRequestControls(RequestDelegate next)
         if (ipLease is { IsAcquired: false }) { await Rejected(context, kind, ipLease); return; }
         var registrationPost = HttpMethods.IsPost(context.Request.Method) &&
             (context.Request.Path.Value ?? "").TrimEnd('/').Equals("/Identity/Account/Register", StringComparison.OrdinalIgnoreCase);
+        var walletPost = HttpMethods.IsPost(context.Request.Method) &&
+            (context.Request.Path.Value ?? "").TrimEnd('/').Equals("/Identity/Account/Manage/MyIds", StringComparison.OrdinalIgnoreCase);
+        var idUploadPost = registrationPost || walletPost;
         var action = context.GetEndpoint()?.Metadata.GetMetadata<Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor>();
         var reportUpload = HttpMethods.IsPost(context.Request.Method) && action?.ControllerName is "LabResults" or "RadiologyStudies" &&
             action.RouteValues.TryGetValue("area", out var area) && area == "Admin" && context.Request.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) == true;
@@ -104,15 +109,15 @@ public sealed class PortalRequestControls(RequestDelegate next)
             context.Request.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) == true;
         var importUpload = HttpMethods.IsPost(context.Request.Method) && action?.ActionName == "Upload" &&
             action.ControllerName is "Imports" or "RedStarImports" && action.RouteValues.TryGetValue("area", out var importArea) && importArea == "Admin";
-        var sensitiveMultipart = (registrationPost && context.Request.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) == true) || reportUpload || advisoryUpload || importUpload;
+        var sensitiveMultipart = (idUploadPost && context.Request.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) == true) || reportUpload || advisoryUpload || importUpload;
         using var scanLease = kind == PortalRequestKind.Scan || sensitiveMultipart ? limiter.ScanConcurrency.AttemptAcquire() : null;
         if (scanLease is { IsAcquired: false }) { await Rejected(context, kind, scanLease); return; }
         var userId = context.User.Identity?.IsAuthenticated == true ? context.User.FindFirstValue(ClaimTypes.NameIdentifier) : null;
         using var scanUserLease = kind == PortalRequestKind.Scan && userId is not null ? limiter.AcquireAccount(PortalRequestKind.Scan, userId, address) : null;
         if (scanUserLease is { IsAcquired: false }) { await Rejected(context, kind, scanUserLease); return; }
-        if (registrationPost || reportUpload || advisoryUpload || importUpload)
+        if (idUploadPost || reportUpload || advisoryUpload || importUpload)
         {
-            var maximumRequestBytes = registrationPost ? IdImageValidation.MaximumRequestBytes :
+            var maximumRequestBytes = idUploadPost ? IdImageValidation.MaximumRequestBytes :
                 importUpload ? (action!.ControllerName == "Imports" ? ImportParser.MaxBytes : RedStarRegistryParser.MaxBytes) + 1024 * 1024 :
                 advisoryUpload ? AdvisoryImageStorage.MaximumRequestBytes :
                 LabReportStorage.MaximumBytes + (action!.ActionName == "UploadReport" ? 65536 : 1024 * 1024);
@@ -123,7 +128,7 @@ public sealed class PortalRequestControls(RequestDelegate next)
             context.Request.Body = new LimitedUploadStream(context.Request.Body, maximumRequestBytes);
             context.Features.Set<IFormFeature>(new FormFeature(context.Request, new FormOptions
             {
-                MultipartBodyLengthLimit = registrationPost ? IdImageValidation.MaximumBytes : maximumRequestBytes,
+                MultipartBodyLengthLimit = idUploadPost ? IdImageValidation.MaximumBytes : maximumRequestBytes,
                 BufferBodyLengthLimit = maximumRequestBytes,
                 MemoryBufferThreshold = checked((int)maximumRequestBytes + 1)
             }));
@@ -135,7 +140,7 @@ public sealed class PortalRequestControls(RequestDelegate next)
         }
         catch (InvalidDataException)
         {
-            if (registrationPost) await Invalid(context, kind, "The upload form is invalid. Use ID photos of at most 5 MB each.");
+            if (idUploadPost) await Invalid(context, kind, "The upload form is invalid. Use ID photos of at most 5 MB each.");
             else if (reportUpload) await Invalid(context, kind, "Choose a PDF file no larger than 10 MiB.");
             else if (advisoryUpload) await Invalid(context, kind, AdvisoryImageStorage.InvalidImageMessage);
             else if (importUpload) await Invalid(context, kind, "The import upload is invalid or exceeds its size limit.");
@@ -186,7 +191,9 @@ public sealed class PortalRequestControls(RequestDelegate next)
                 return;
             }
         }
-        var directUpload = registrationPost && kind != PortalRequestKind.Scan && form?.Files.Any(f => f.Length > 0) == true;
+        // Token-only wallet saves commit private files too, so they share the same upload budget.
+        var directUpload = kind != PortalRequestKind.Scan &&
+            (walletPost || (idUploadPost && form?.Files.Any(f => f.Length > 0) == true));
         using var uploadIpLease = directUpload ? limiter.AcquireIp(PortalRequestKind.Scan, address) : null;
         if (uploadIpLease is { IsAcquired: false }) { await Rejected(context, kind, uploadIpLease); return; }
         using var uploadUserLease = directUpload && userId is not null ? limiter.AcquireAccount(PortalRequestKind.Scan, userId, address) : null;
@@ -198,9 +205,14 @@ public sealed class PortalRequestControls(RequestDelegate next)
         string message = "The form contains invalid text. Remove null characters and submit it again.", int statusCode = 400)
     {
         context.Response.StatusCode = statusCode;
-        if (kind == PortalRequestKind.Scan) await context.Response.WriteAsJsonAsync(new { success = false, message });
+        if (kind == PortalRequestKind.Scan || WalletWantsJson(context))
+            await context.Response.WriteAsJsonAsync(new { success = false, message });
         else await context.Response.WriteAsync(message);
     }
+
+    private static bool WalletWantsJson(HttpContext context) =>
+        (context.Request.Path.Value ?? "").TrimEnd('/').Equals("/Identity/Account/Manage/MyIds", StringComparison.OrdinalIgnoreCase) &&
+        context.Request.Headers.Accept.Any(value => value?.Contains("application/json", StringComparison.OrdinalIgnoreCase) == true);
 
     // The explicit counter also enforces the limit for chunked requests and TestServer,
     // where a server max-body-size feature may not be available.
@@ -240,7 +252,8 @@ public sealed class PortalRequestControls(RequestDelegate next)
         context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
         context.Response.Headers.RetryAfter = Math.Max(1, (int)Math.Ceiling(retry)).ToString(CultureInfo.InvariantCulture);
         const string message = "Too many attempts. Wait before trying again.";
-        if (kind == PortalRequestKind.Scan) await context.Response.WriteAsJsonAsync(new { success = false, message });
+        if (kind == PortalRequestKind.Scan || WalletWantsJson(context))
+            await context.Response.WriteAsJsonAsync(new { success = false, message });
         else await context.Response.WriteAsync(message);
     }
 }

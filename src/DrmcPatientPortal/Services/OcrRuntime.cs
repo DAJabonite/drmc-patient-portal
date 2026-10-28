@@ -127,7 +127,7 @@ public sealed class OcrRuntime : IHostedService, IDisposable
             await output.WriteAsync(buffer.AsMemory(0, count), token);
         }
         await output.FlushAsync(token);
-        var info = IdImageValidation.Inspect(output, token);
+        var info = IdImageValidation.InspectIdPhoto(output, token);
         token.ThrowIfCancellationRequested();
         return new(output.ToArray(), info);
     }

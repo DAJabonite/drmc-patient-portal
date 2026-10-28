@@ -124,14 +124,17 @@
                                         <div class="p-3 rounded-circle bg-white shadow-xs d-inline-flex text-primary-drmc mb-2">
                                             <i class="bi bi-camera-fill fs-2"></i>
                                         </div>
-                                        <p class="small text-muted mb-0">JPEG, PNG or static WebP; up to 5 MB, 4096 pixels per side and 16 megapixels.</p>
+                                        <p class="small text-muted mb-0">JPEG, PNG or static WebP; up to 5 MB, 8192 pixels per side and 32 megapixels. Camera photos are resized automatically.</p>
                                     </div>
 
-                                    <div class="mt-auto pt-2">
-                                        <label for="frontPhotoInput" class="btn btn-outline-drmc rounded-pill px-3 fw-semibold w-100" id="frontInputLabel" role="button" tabindex="0" aria-controls="frontPhotoInput">
-                                            <i class="bi bi-camera me-1"></i> Snap / Select Front
+                                    <div class="mt-auto pt-2 d-flex flex-wrap gap-2">
+                                        <button type="button" class="btn btn-primary-drmc rounded-pill px-3 fw-semibold flex-grow-1" id="btnCameraFront" aria-haspopup="dialog" aria-controls="idCameraModal">
+                                            <i class="bi bi-camera me-1" aria-hidden="true"></i> @Loc["IdCamera_Scan"]
+                                        </button>
+                                        <label for="frontPhotoInput" class="btn btn-outline-drmc rounded-pill px-3 fw-semibold flex-grow-1" id="frontInputLabel" role="button" tabindex="0" aria-controls="frontPhotoInput">
+                                            <i class="bi bi-upload me-1" aria-hidden="true"></i> Select front photo
                                         </label>
-                                        <input type="file" id="frontPhotoInput" asp-for="Input.FrontPhoto" accept="image/jpeg,image/png,image/webp" capture="environment" class="visually-hidden" tabindex="-1" />
+                                        <input type="file" id="frontPhotoInput" asp-for="Input.FrontPhoto" accept="image/jpeg,image/png,image/webp" class="visually-hidden" tabindex="-1" />
                                     </div>
                                 </div>
                             </div>
@@ -157,11 +160,14 @@
                                         <p class="small text-muted mb-0">Sex &amp; blood type on back</p>
                                     </div>
 
-                                    <div class="mt-auto pt-2">
-                                        <label for="backPhotoInput" class="btn btn-outline-drmc rounded-pill px-3 fw-semibold w-100" id="backInputLabel" role="button" tabindex="0" aria-controls="backPhotoInput">
-                                            <i class="bi bi-camera me-1"></i> Snap / Select Back
+                                    <div class="mt-auto pt-2 d-flex flex-wrap gap-2">
+                                        <button type="button" class="btn btn-primary-drmc rounded-pill px-3 fw-semibold flex-grow-1" id="btnCameraBack" aria-haspopup="dialog" aria-controls="idCameraModal">
+                                            <i class="bi bi-camera me-1" aria-hidden="true"></i> @Loc["IdCamera_Scan"]
+                                        </button>
+                                        <label for="backPhotoInput" class="btn btn-outline-drmc rounded-pill px-3 fw-semibold flex-grow-1" id="backInputLabel" role="button" tabindex="0" aria-controls="backPhotoInput">
+                                            <i class="bi bi-upload me-1" aria-hidden="true"></i> Select back photo
                                         </label>
-                                        <input type="file" id="backPhotoInput" asp-for="Input.BackPhoto" accept="image/jpeg,image/png,image/webp" capture="environment" class="visually-hidden" tabindex="-1" />
+                                        <input type="file" id="backPhotoInput" asp-for="Input.BackPhoto" accept="image/jpeg,image/png,image/webp" class="visually-hidden" tabindex="-1" />
                                     </div>
                                 </div>
                             </div>
@@ -445,12 +451,14 @@
         </div>
     </div>
 </div>
+<partial name="_IdCameraModal" />
 <noscript><p class="container alert alert-info">Signup requires JavaScript to guide you through the form. You can <a asp-controller="Home" asp-action="Privacy">read the privacy notice and portal terms</a> without JavaScript.</p></noscript>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script src="~/lib/jsqr/jsQR.js" asp-append-version="true"></script>
     <script src="~/js/registration-qr.js" asp-append-version="true"></script>
+    <script src="~/js/id-camera.js" asp-append-version="true"></script>
     <script src="~/js/registration.js" asp-append-version="true"></script>
 
 }

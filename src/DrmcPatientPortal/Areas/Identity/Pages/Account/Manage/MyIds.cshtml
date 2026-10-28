@@ -10,6 +10,104 @@
     <p class="text-muted mb-0">@Loc["Ids_Description"]</p>
 </header>
 
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div class="alert alert-success" role="status">@Loc[Model.StatusMessage]</div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">@Loc[Model.ErrorMessage]</div>
+}
+
+<details class="card rounded-4 p-3 p-md-4 mb-4" open="@(!ViewData.ModelState.IsValid || !string.IsNullOrWhiteSpace(Model.ErrorMessage))">
+    <summary class="h5 fw-bold text-primary-drmc mb-0">@Loc["Ids_AddTitle"]</summary>
+    <form id="walletUploadForm" method="post" asp-page-handler="SaveId" enctype="multipart/form-data" class="mt-3"
+          data-extract-url="@Url.Page("MyIds", "ExtractId")"
+          data-scan-error="@Loc["Ids_ScanFailed"]" data-photo-required="@Loc["Ids_PhotoRequired"]"
+          data-scan-working="@Loc["Ids_ScanWorking"]" data-scan-complete="@Loc["Ids_ScanComplete"]"
+          data-saving="@Loc["Ids_Saving"]" data-select-type="@Loc["IdCamera_SelectType"]"
+          data-save-error="@Loc["Ids_SaveError"]" data-uncertain-save="@Loc["Ids_UncertainSave"]">
+        <p class="text-muted small">@Loc["Ids_AddDescription"]</p>
+        <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+        <input type="hidden" asp-for="Input.TempFrontPhotoToken" id="walletTempFrontToken" />
+        <input type="hidden" asp-for="Input.TempBackPhotoToken" id="walletTempBackToken" />
+        <input type="hidden" asp-for="Input.ScanReceipt" id="walletScanReceipt" />
+
+        <div class="mb-3">
+            <label asp-for="Input.IdType" for="walletIdType" class="form-label fw-semibold">@Loc["Ids_IdType"]</label>
+            <select asp-for="Input.IdType" id="walletIdType" class="form-select" required>
+                <option value="">@Loc["Ids_ChooseType"]</option>
+                @foreach (var id in DrmcPatientPortal.Models.PhilippineIdTypes.All)
+                {
+                    <option value="@id.Name" data-back="@id.NeedsBackPhoto.ToString().ToLowerInvariant()">@id.Name</option>
+                }
+            </select>
+            <span asp-validation-for="Input.IdType" class="text-danger"></span>
+        </div>
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label asp-for="Input.FrontPhoto" for="walletFrontPhoto" class="form-label fw-semibold">@Loc["Ids_FrontPhoto"]</label>
+                <input asp-for="Input.FrontPhoto" id="walletFrontPhoto" type="file" accept="image/jpeg,image/png,image/webp" class="form-control" aria-describedby="walletPhotoHelp" />
+                <button type="button" id="walletFrontCamera" class="btn btn-outline-drmc mt-2"><i class="bi bi-camera me-1" aria-hidden="true"></i>@Loc["IdCamera_Scan"]</button>
+                <img id="walletFrontPreview" alt="@Loc["Ids_FrontPhoto"]" class="img-fluid rounded-3 border mt-2" style="max-height:180px" hidden />
+            </div>
+            <div class="col-md-6" id="walletBackCapture" hidden>
+                <label asp-for="Input.BackPhoto" for="walletBackPhoto" class="form-label fw-semibold">@Loc["Ids_BackPhoto"]</label>
+                <input asp-for="Input.BackPhoto" id="walletBackPhoto" type="file" accept="image/jpeg,image/png,image/webp" class="form-control" aria-describedby="walletPhotoHelp" />
+                <button type="button" id="walletBackCamera" class="btn btn-outline-drmc mt-2"><i class="bi bi-camera me-1" aria-hidden="true"></i>@Loc["IdCamera_Scan"]</button>
+                <img id="walletBackPreview" alt="@Loc["Ids_BackPhoto"]" class="img-fluid rounded-3 border mt-2" style="max-height:180px" hidden />
+            </div>
+        </div>
+        <p id="walletPhotoHelp" class="form-text">@Loc["Ids_PhotoHelp"]</p>
+        <div class="d-flex gap-2 flex-wrap align-items-center mb-2">
+            <button type="button" class="btn btn-outline-drmc" id="walletScanButton" disabled>@Loc["Ids_ScanDetails"]</button>
+            <button type="button" class="btn btn-outline-secondary" id="walletCancelScan" hidden>@Loc["Ids_CancelScan"]</button>
+        </div>
+        <p id="walletScanStatus" class="small" role="status" aria-live="polite"></p>
+        <p class="small text-muted">@Loc["Ids_ReviewHint"]</p>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="Input.LastName" for="walletLastName" class="form-label">@Loc["Ids_LastName"]</label>
+                <input asp-for="Input.LastName" id="walletLastName" class="form-control" maxlength="60" autocomplete="family-name" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.FirstName" for="walletFirstName" class="form-label">@Loc["Ids_FirstName"]</label>
+                <input asp-for="Input.FirstName" id="walletFirstName" class="form-control" maxlength="60" autocomplete="given-name" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.MiddleName" for="walletMiddleName" class="form-label">@Loc["Ids_MiddleName"]</label>
+                <input asp-for="Input.MiddleName" id="walletMiddleName" class="form-control" maxlength="60" autocomplete="additional-name" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.Suffix" for="walletSuffix" class="form-label">@Loc["Ids_Suffix"]</label>
+                <input asp-for="Input.Suffix" id="walletSuffix" class="form-control" maxlength="10" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.DateOfBirth" for="walletDateOfBirth" class="form-label">@Loc["Ids_DateOfBirth"]</label>
+                <input asp-for="Input.DateOfBirth" id="walletDateOfBirth" class="form-control" type="date" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.IdNumber" for="walletIdNumber" class="form-label">@Loc["Ids_IDNumber"]</label>
+                <input asp-for="Input.IdNumber" id="walletIdNumber" class="form-control" maxlength="40" autocomplete="off" />
+            </div>
+            <div class="col-12">
+                <label asp-for="Input.Address" for="walletAddress" class="form-label">@Loc["Ids_Address"]</label>
+                <input asp-for="Input.Address" id="walletAddress" class="form-control" maxlength="200" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.Sex" for="walletSex" class="form-label">@Loc["Ids_Sex"]</label>
+                <input asp-for="Input.Sex" id="walletSex" class="form-control" maxlength="20" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.BloodType" for="walletBloodType" class="form-label">@Loc["Ids_BloodType"]</label>
+                <input asp-for="Input.BloodType" id="walletBloodType" class="form-control" maxlength="10" />
+            </div>
+        </div>
+        <button type="submit" class="btn btn-drmc mt-3" id="walletSaveButton">@Loc["Ids_Save"]</button>
+        <a asp-page="MyIds" class="btn btn-outline-secondary mt-3" id="walletReload" hidden>@Loc["Ids_Reload"]</a>
+    </form>
+</details>
+
 @if (Model.Documents.Count == 0)
 {
     <div class="id-wallet-empty text-center rounded-4 p-4 p-md-5">
@@ -130,6 +228,9 @@ else
     </div>
 </dialog>
 
+<partial name="_IdCameraModal" />
+
 @section Scripts {
+    <script src="~/js/id-camera.js" asp-append-version="true"></script>
     <script src="~/js/id-wallet.js" asp-append-version="true"></script>
 }
