@@ -22,6 +22,12 @@ public class RadiologyStudy
     public DateTime PerformedAt { get; set; }
     public DateTime? ReleasedAt { get; set; }
     public RadiologyStatus Status { get; set; } = RadiologyStatus.InProgress;
+    public string? ReportFileName { get; set; }
+    public string? ReportOriginalFileNameProtected { get; set; }
+    public string? ReportContentType { get; set; }
+    public string? ReportSha256 { get; set; }
+    public long? ReportSize { get; set; }
+    public DateTime? ReportUploadedAtUtc { get; set; }
 
     public string OrderingPhysician { get; set; } = string.Empty; // text snapshot
     public string RadiologistName { get; set; } = string.Empty;   // text snapshot

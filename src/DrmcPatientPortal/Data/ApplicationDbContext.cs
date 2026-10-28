@@ -291,6 +291,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<LabResult>(e =>
         {
             e.Property(x => x.ReportFileName).HasMaxLength(36);
+            e.Property(x => x.ReportContentType).HasMaxLength(100);
+            e.Property(x => x.ReportSha256).HasMaxLength(64);
             e.HasOne(x => x.Patient)
                 .WithMany(u => u.LabResults)
                 .HasForeignKey(x => x.PatientRecordId)
@@ -308,6 +310,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<RadiologyStudy>(e =>
         {
+            e.Property(x => x.ReportFileName).HasMaxLength(36);
+            e.Property(x => x.ReportContentType).HasMaxLength(100);
+            e.Property(x => x.ReportSha256).HasMaxLength(64);
             e.HasOne(x => x.Patient)
                 .WithMany(p => p.RadiologyStudies)
                 .HasForeignKey(x => x.PatientRecordId)

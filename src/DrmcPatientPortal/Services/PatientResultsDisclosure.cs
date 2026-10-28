@@ -15,6 +15,11 @@ public sealed class PatientResultsOptions
 // Server-side release rules for patient pages. Times are Manila wall time, as stored.
 public static class PatientResultsDisclosure
 {
+    public static Expression<Func<RadiologyStudy, bool>> RadiologyPdfEligibility(bool disclosureEnabled, DateTime manilaNow) => result =>
+        disclosureEnabled && result.ReportFileName != null
+        && (result.Status == RadiologyStatus.Final || result.Status == RadiologyStatus.Amended)
+        && result.ReleasedAt.HasValue && result.ReleasedAt.Value <= manilaNow;
+
     public static Expression<Func<LabResult, bool>> PdfEligibility(bool disclosureEnabled, DateTime manilaNow) => result =>
         disclosureEnabled && result.ReportFileName != null && result.Status == "Available"
         && result.ReleasedAt.HasValue && result.ReleasedAt.Value <= manilaNow;

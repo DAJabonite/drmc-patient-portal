@@ -90,26 +90,20 @@
             </div>
 
             <!-- Attribution -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                    <div class="p-3 bg-light rounded-3 border h-100">
-                        <span class="small text-muted d-block">Requesting doctor</span>
-                        <strong class="text-dark">@(string.IsNullOrEmpty(Model.OrderingPhysician) ? "Attending physician" : Model.OrderingPhysician)</strong>
-                    </div>
+            @if (new[] { Model.OrderingPhysician, Model.RadiologistName, Model.PerformingUnit }.Any(value => !string.IsNullOrWhiteSpace(value)))
+            {
+                <div class="row g-3 mb-4">
+                    @foreach (var (label, value) in new[] { ("Requesting doctor", Model.OrderingPhysician), ("Reporting radiologist", Model.RadiologistName), ("Performing unit", Model.PerformingUnit) })
+                    {
+                        @if (!string.IsNullOrWhiteSpace(value))
+                        {
+                            <div class="col-md-4"><div class="p-3 bg-light rounded-3 border h-100">
+                                <span class="small text-muted d-block">@label</span><strong class="text-dark">@value</strong>
+                            </div></div>
+                        }
+                    }
                 </div>
-                <div class="col-md-4">
-                    <div class="p-3 bg-light rounded-3 border h-100">
-                        <span class="small text-muted d-block">Reporting radiologist</span>
-                        <strong class="text-dark">@(string.IsNullOrEmpty(Model.RadiologistName) ? "Shown once the report is released" : Model.RadiologistName)</strong>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="p-3 bg-light rounded-3 border h-100">
-                        <span class="small text-muted d-block">Performing unit</span>
-                        <strong class="text-dark">@(string.IsNullOrEmpty(Model.PerformingUnit) ? dept.Location : Model.PerformingUnit)</strong>
-                    </div>
-                </div>
-            </div>
+            }
 
             @if (report is not null)
             {
@@ -144,6 +138,21 @@
                             <p class="text-dark mb-0 radiology-report-text">@report.PlainLanguageSummary</p>
                         </div>
                     }
+                </section>
+            }
+
+            @if (Model.HasPdfReport)
+            {
+                <section class="mb-4" aria-labelledby="radiologyPdfHeading">
+                    <h3 id="radiologyPdfHeading" class="h6 fw-bold text-primary-drmc">Radiology report PDF</h3>
+                    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+                    <form asp-action="Report" asp-route-id="@Model.Id" method="post">
+                        <label for="reportPassword" class="form-label">Confirm your login password</label>
+                        <input id="reportPassword" name="password" type="password" autocomplete="current-password" required maxlength="1024" class="form-control" aria-describedby="reportPasswordHelp" />
+                        <p id="reportPasswordHelp" class="small text-muted mt-2">Enter your password each time you view or download this report.</p>
+                        <button type="submit" name="intent" value="view" class="btn btn-primary">View PDF</button>
+                        <button type="submit" name="intent" value="download" class="btn btn-outline-primary">Download PDF</button>
+                    </form>
                 </section>
             }
 

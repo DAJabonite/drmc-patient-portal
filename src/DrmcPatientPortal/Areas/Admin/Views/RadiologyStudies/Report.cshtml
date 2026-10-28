@@ -1,0 +1,32 @@
+@model RadiologyReportPage
+@{ ViewData["Title"] = "Review radiology PDF"; }
+<div class="admin-page-header">
+    <div><h1 class="admin-title">Review radiology PDF</h1><p>@Model.StudyName · @Model.AccessionNumber</p></div>
+    <a asp-area="Admin" asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Back to study</a>
+</div>
+@if (TempData["ReportError"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+@if (TempData["ReportSuccess"] is string message) { <div class="alert alert-success" role="status">@message</div> }
+<div class="card p-4">
+    @if (Model.HasReport)
+    {
+        <p>Current report: @Model.Size bytes · uploaded @Model.UploadedAtUtc?.ToString("yyyy-MM-dd HH:mm") UTC</p>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a asp-action="PreviewReport" asp-route-id="@Model.Id" target="_blank" rel="noopener" class="btn btn-outline-primary">Preview PDF</a>
+            <a asp-action="PreviewReport" asp-route-id="@Model.Id" asp-route-download="true" class="btn btn-outline-primary">Download PDF</a>
+        </div>
+        <p>Review the PDF and verify its patient before releasing it. Patient access also requires the hospital's disclosure setting.</p>
+        <form asp-action="ReleaseReport" asp-route-id="@Model.Id" method="post">
+            <input type="hidden" name="rowVersion" value="@Model.RowVersion" />
+            <label for="releasedAt" class="form-label">Release time (Manila)</label>
+            <input id="releasedAt" name="releasedAt" type="datetime-local" value="@Model.ReleaseTime.ToString("yyyy-MM-ddTHH:mm:ss")" step="1" required class="form-control mb-3" />
+            <label for="status" class="form-label">Release status</label>
+            <select asp-for="Status" id="status" name="status" class="form-select mb-3" required>
+                <option value="Final">Final</option><option value="Amended">Amended</option>
+            </select>
+            <label for="amendmentNote" class="form-label">Amendment note (required for Amended)</label>
+            <textarea id="amendmentNote" name="amendmentNote" maxlength="2000" class="form-control mb-3"></textarea>
+            <button type="submit" class="btn btn-primary">Release reviewed PDF</button>
+        </form>
+    }
+    else { <p>No PDF is attached to this study.</p> }
+</div>

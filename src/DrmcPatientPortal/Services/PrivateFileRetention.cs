@@ -35,19 +35,23 @@ public sealed class PrivateFileRetention(IServiceScopeFactory scopes, IWebHostEn
                 if (Convert.ToInt32(await acquire.ExecuteScalarAsync(token)) < 0) return;
                 locked = true;
             }
-            var roots = new[] { new PrivateStorageRoot(environment, documents.Value.RootPath), new PrivateStorageRoot(environment, reports.Value.RootPath) };
-            if (roots[0].Overlaps(roots[1])) throw new InvalidOperationException("Patient and laboratory storage must be separate.");
+            var radiology = scope.ServiceProvider.GetRequiredService<IOptions<RadiologyReportStorageOptions>>();
+            var roots = new[] { new PrivateStorageRoot(environment, documents.Value.RootPath), new PrivateStorageRoot(environment, reports.Value.RootPath),
+                new PrivateStorageRoot(environment, radiology.Value.RootPath) };
+            if (roots.Where((root, i) => roots.Skip(i + 1).Any(root.Overlaps)).Any())
+                throw new InvalidOperationException("Patient, laboratory and radiology storage must be separate.");
             var processed = 0; var removed = 0;
             foreach (var candidate in Candidates(roots))
             {
                 token.ThrowIfCancellationRequested();
                 if (cursor is { } last && Compare(candidate, last) <= 0) continue;
                 var (kind, owner, file) = candidate;
-                var path = kind == 0 ? roots[0].Resolve(owner, file) : roots[1].Resolve(file);
+                var path = kind == 0 ? roots[0].Resolve(owner, file) : roots[kind].Resolve(file);
                 var retirement = await db.PrivateFileRetirements.SingleOrDefaultAsync(x => x.Kind == kind && x.Owner == owner && x.FileName == file, token);
                 var referenced = kind == 0
                     ? await db.PatientIdDocuments.AnyAsync(x => x.PatientUserId == owner && (x.FrontPhotoFileName == file || x.BackPhotoFileName == file), token)
-                    : await db.LabResults.AnyAsync(x => x.ReportFileName == file, token);
+                    : kind == 1 ? await db.LabResults.AnyAsync(x => x.ReportFileName == file, token)
+                    : await db.RadiologyStudies.AnyAsync(x => x.ReportFileName == file, token);
                 if (referenced)
                 {
                     if (retirement is not null) db.PrivateFileRetirements.Remove(retirement);
@@ -73,7 +77,8 @@ public sealed class PrivateFileRetention(IServiceScopeFactory scopes, IWebHostEn
             var obsolete = await db.PrivateFileRetirements.OrderBy(x => x.Id).Take(100).ToListAsync(token);
             foreach (var item in obsolete)
             {
-                var path = item.Kind == 0 ? roots[0].Resolve(item.Owner, item.FileName) : roots[1].Resolve(item.FileName);
+                if (item.Kind is < 0 or > 2) continue;
+                var path = item.Kind == 0 ? roots[0].Resolve(item.Owner, item.FileName) : roots[item.Kind].Resolve(item.FileName);
                 if (!File.Exists(path)) db.PrivateFileRetirements.Remove(item);
             }
             await db.SaveChangesAsync(token);
@@ -111,11 +116,12 @@ public sealed class PrivateFileRetention(IServiceScopeFactory scopes, IWebHostEn
                 if (!Directory.Exists(path) && PatientDocumentStorage.IsSafeFileName(Path.GetFileName(path)))
                     yield return (0, owner, Path.GetFileName(path));
         }
-        foreach (var path in roots[1].Entries().Order(StringComparer.Ordinal))
+        for (var kind = 1; kind < roots.Length; kind++)
+        foreach (var path in roots[kind].Entries().Order(StringComparer.Ordinal))
         {
             var name = Path.GetFileName(path);
             if (!Directory.Exists(path) && (PrivateStorageRoot.IsGuid(name) || name.EndsWith(".pdf", StringComparison.Ordinal) && PrivateStorageRoot.IsGuid(name[..^4])))
-                yield return (1, "", name);
+                yield return (kind, "", name);
         }
     }
 }

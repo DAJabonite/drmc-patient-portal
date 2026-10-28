@@ -33,6 +33,8 @@ public sealed class PortalWorkerHealth(TimeProvider clock, IConfiguration config
         if (configuration.GetValue("Notifications:Outbox:WorkerEnabled", true)) expected["outbound-notifications"] = 2;
         if (configuration.GetValue<bool>("RedStar:WorkerEnabled") && configuration.GetValue<bool>("RedStar:RemindersEnabled")) expected["private-reminders"] = 2;
         if (configuration.GetValue<bool>("PrivateRetention:Enabled")) expected["private-retention"] = 10;
+        if (configuration.GetValue<bool>("ResultStaging:Enabled"))
+            expected["result-staging"] = Math.Max(2, (int)Math.Ceiling(configuration.GetValue("ResultStaging:PollIntervalSeconds", 30) * 3 / 60d));
         return expected.All(x => successful.TryGetValue(x.Key, out var last) && clock.GetUtcNow() - last <= TimeSpan.FromMinutes(x.Value));
     }
     public void Dispose() => meter.Dispose();
@@ -40,6 +42,7 @@ public sealed class PortalWorkerHealth(TimeProvider clock, IConfiguration config
 
 public sealed class PortalReadinessHealthCheck(ApplicationDbContext db, PatientDocumentStorage storage,
     IWebHostEnvironment environment, IConfiguration configuration, IOptions<LabReportStorageOptions> reports,
+    IOptions<RadiologyReportStorageOptions> radiology,
     IOptions<PortalOperationsOptions> options, PortalWorkerHealth workers, OcrRuntime ocr) : IHealthCheck
 {
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
@@ -48,14 +51,21 @@ public sealed class PortalReadinessHealthCheck(ApplicationDbContext db, PatientD
         {
             if (!ocr.IsReady || !await db.Database.CanConnectAsync(cancellationToken)) return HealthCheckResult.Unhealthy();
             await PatientDocumentProtectionUpgrade.VerifyReadyAsync(db, storage, cancellationToken);
-            var paths = new[] { storage.Root, storage.TemporaryRoot, new PrivateStorageRoot(environment, reports.Value.RootPath),
-                new PrivateStorageRoot(environment, configuration["Imports:StagingPath"] ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DRMC", "ImportStaging")) };
+            var paths = new List<PrivateStorageRoot> { storage.Root, storage.TemporaryRoot, new(environment, reports.Value.RootPath),
+                new(environment, radiology.Value.RootPath),
+                new(environment, configuration["Imports:StagingPath"] ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DRMC", "ImportStaging")) };
+            if (paths[2].Overlaps(paths[3])) return HealthCheckResult.Unhealthy();
+            var staging = configuration.GetSection(ResultStagingOptions.SectionName).Get<ResultStagingOptions>() ?? new();
+            if (staging.Enabled)
+                paths.AddRange(new[] { staging.LaboratoryPath, staging.RadiologyPath, staging.QuarantinePath }.Select(p => new PrivateStorageRoot(environment, p)));
             foreach (var root in paths)
             {
                 Directory.CreateDirectory(root.Resolve());
                 var probe = root.Resolve(Guid.NewGuid().ToString("N"));
                 try { await PrivateStorageIO.WriteNewAsync(probe, [0], cancellationToken); }
                 finally { File.Delete(probe); }
+                // UNC accessibility is covered by the write probe; DriveInfo is for local volumes.
+                if (OperatingSystem.IsWindows() && root.Path.StartsWith(@"\\", StringComparison.Ordinal)) continue;
                 var drive = new DriveInfo(Path.GetPathRoot(root.Path)!);
                 if (drive.IsReady)
                 {

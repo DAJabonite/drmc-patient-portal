@@ -9,15 +9,23 @@ public sealed class PrivateStorageRoot
 
     public PrivateStorageRoot(IWebHostEnvironment environment, string configuredPath)
     {
-        if (string.IsNullOrWhiteSpace(configuredPath)) throw new InvalidOperationException("Private storage requires a directory.");
-        var content = System.IO.Path.GetFullPath(environment.ContentRootPath);
-        Path = System.IO.Path.TrimEndingDirectorySeparator(System.IO.Path.GetFullPath(configuredPath, content));
-        var web = System.IO.Path.GetFullPath(environment.WebRootPath ?? System.IO.Path.Combine(content, "wwwroot"));
-        if ((!System.IO.Path.IsPathRooted(configuredPath) && !Contains(content, Path)) ||
-            Contains(web, Path) || Contains(Path, web))
-            throw new InvalidOperationException("Private storage must be outside wwwroot and relative paths must remain inside the content root.");
+        Path = ValidatePath(environment, configuredPath);
+        var web = System.IO.Path.GetFullPath(environment.WebRootPath ?? System.IO.Path.Combine(environment.ContentRootPath, "wwwroot"));
         CheckLinks(web);
         CheckLinks(Path);
+    }
+
+    // Configuration validation must not depend on an SMB share currently being online.
+    public static string ValidatePath(IWebHostEnvironment environment, string configuredPath)
+    {
+        if (string.IsNullOrWhiteSpace(configuredPath)) throw new InvalidOperationException("Private storage requires a directory.");
+        var content = System.IO.Path.GetFullPath(environment.ContentRootPath);
+        var path = System.IO.Path.TrimEndingDirectorySeparator(System.IO.Path.GetFullPath(configuredPath, content));
+        var web = System.IO.Path.GetFullPath(environment.WebRootPath ?? System.IO.Path.Combine(content, "wwwroot"));
+        if ((!System.IO.Path.IsPathRooted(configuredPath) && !Contains(content, path)) ||
+            Contains(web, path) || Contains(path, web))
+            throw new InvalidOperationException("Private storage must be outside wwwroot and relative paths must remain inside the content root.");
+        return path;
     }
 
     public static bool IsLeaf(string? value) => !string.IsNullOrWhiteSpace(value) && value.Length <= 255 &&
@@ -33,7 +41,8 @@ public sealed class PrivateStorageRoot
         return candidate.Equals(normalized, Comparison) || candidate.StartsWith(prefix, Comparison);
     }
 
-    public bool Overlaps(PrivateStorageRoot other) => Contains(Path, other.Path) || Contains(other.Path, Path);
+    public static bool PathsOverlap(string first, string second) => Contains(first, second) || Contains(second, first);
+    public bool Overlaps(PrivateStorageRoot other) => PathsOverlap(Path, other.Path);
 
     public string Resolve(params string[] components)
     {
@@ -71,6 +80,11 @@ public static class PrivateStorageIO
     public static async Task<byte[]> ReadAsync(string path, int limit, CancellationToken token)
     {
         await using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return await ReadBoundedAsync(input, limit, token);
+    }
+
+    public static async Task<byte[]> ReadBoundedAsync(Stream input, int limit, CancellationToken token)
+    {
         await using var output = new MemoryStream();
         var buffer = new byte[81920];
         int count;
