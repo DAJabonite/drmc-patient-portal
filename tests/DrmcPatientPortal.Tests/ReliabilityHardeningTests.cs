@@ -516,7 +516,7 @@ public sealed class ReliabilityHardeningTests(PortalFactory factory)
             for (var i = 0; i < 31; i++)
             {
                 db.Doctors.Add(new() { FullName = prefix + "-" + i.ToString("D2"), Department = "Internal Medicine", IsActive = true });
-                db.PublicAdvisories.Add(new() { Title = prefix + "-" + i.ToString("D2"), Slug = prefix + "-" + i.ToString("D2"), PublishedAt = DateTime.Today });
+                db.PublicAdvisories.Add(new() { Title = prefix + "-" + i.ToString("D2"), Slug = prefix + "-" + i.ToString("D2"), PublishedAt = DateTime.UtcNow.Date });
             }
             return await db.SaveChangesAsync();
         });

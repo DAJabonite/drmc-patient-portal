@@ -62,6 +62,12 @@ public sealed class PortalFactory : WebApplicationFactory<Program>, IAsyncLifeti
         builder.UseSetting("PatientDocuments:RootPath", Path.Combine(_storageRoot, "documents"));
         builder.UseSetting("PatientDocuments:TemporaryPath", Path.Combine(_storageRoot, "uploads"));
         builder.UseSetting("LabReports:RootPath", Path.Combine(_storageRoot, "reports"));
+        builder.UseSetting("RadiologyReports:RootPath", Path.Combine(_storageRoot, "radiology-reports"));
+        builder.UseSetting("ResultStaging:Enabled", "false");
+        builder.UseSetting("ResultStaging:LaboratoryPath", Path.Combine(_storageRoot, "result-staging", "Laboratory"));
+        builder.UseSetting("ResultStaging:RadiologyPath", Path.Combine(_storageRoot, "result-staging", "Radiology"));
+        builder.UseSetting("ResultStaging:QuarantinePath", Path.Combine(_storageRoot, "result-staging", "Quarantine"));
+        builder.UseSetting("AdvisoryImages:RootPath", Path.Combine(_storageRoot, "advisory-images"));
         builder.UseSetting("Imports:StagingPath", Path.Combine(_storageRoot, "imports"));
         builder.UseSetting("AccountEmail:WorkerEnabled", "false");
         builder.UseSetting("Notifications:Outbox:WorkerEnabled", "false");
@@ -111,7 +117,7 @@ public sealed class PortalFactory : WebApplicationFactory<Program>, IAsyncLifeti
             }), provider.GetRequiredService<IDataProtectionProvider>(), null!);
             await PatientDocumentProtectionUpgrade.RunAsync(db, storage, environment);
         }
-        _ = Server;
+        _ = Services;
     }
 
     async Task IAsyncLifetime.DisposeAsync()
