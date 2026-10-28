@@ -748,9 +748,20 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Property<DateTime?>("ReleasedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("ReportContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("ReportFileName")
                         .HasMaxLength(36)
                         .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("ReportOriginalFileNameProtected")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReportSha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.Property<long?>("ReportSize")
                         .HasColumnType("bigint");
@@ -1451,6 +1462,27 @@ namespace DrmcPatientPortal.Data.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.Property<DateTime?>("ReleasedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReportContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ReportFileName")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("ReportOriginalFileNameProtected")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReportSha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<long?>("ReportSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ReportUploadedAtUtc")
                         .HasColumnType("datetime2");
 
                     b.Property<byte[]>("RowVersion")

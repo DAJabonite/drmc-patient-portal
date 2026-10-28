@@ -25,6 +25,18 @@ public static class PatientNames
         }
     }
 
+    // Staged filenames carry first + last only, never the legacy display name or guessed parts.
+    public static bool MatchesStagedFullName(PatientRecord record, string? fullName)
+    {
+        if (string.IsNullOrWhiteSpace(record.FirstName) || string.IsNullOrWhiteSpace(record.LastName)) return false;
+        try
+        {
+            return ComparisonValue(record.FirstName).Length > 0 && ComparisonValue(record.LastName).Length > 0
+                && RequiredMatch(record.FirstName + " " + record.LastName, fullName);
+        }
+        catch (ArgumentException) { return false; }
+    }
+
     private static bool RequiredMatch(string? record, string? submitted)
     {
         var expected = ComparisonValue(record);

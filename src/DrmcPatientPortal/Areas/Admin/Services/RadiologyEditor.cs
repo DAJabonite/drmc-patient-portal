@@ -19,6 +19,7 @@ public sealed class RadiologyEditor : ClinicalEditor<RadiologyStudy, RadiologyIn
 
     // Enum identifiers are never rendered; show display names instead.
     public override IReadOnlyList<RecordField> Fields(ApplicationDbContext db, RadiologyStudy entity) => base.Fields(db, entity)
+        .Where(f => f.Label is not nameof(RadiologyStudy.ReportFileName) and not nameof(RadiologyStudy.ReportOriginalFileNameProtected) and not nameof(RadiologyStudy.ReportSha256))
         .Select(f => f.Label switch
         {
             nameof(RadiologyStudy.Modality) => f with { Value = entity.Modality.DisplayName() },
@@ -46,6 +47,12 @@ public sealed class RadiologyEditor : ClinicalEditor<RadiologyStudy, RadiologyIn
     public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, RadiologyInput input, RadiologyStudy entity, OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
     {
         if (context is null) return WriteResult.Invalid("The patient record no longer exists.");
+        // Only the persisted attachment can satisfy the narrative requirement; no submitted flag is trusted.
+        if (input.Status is RadiologyStatus.Final or RadiologyStatus.Amended && entity.ReportFileName is null)
+        {
+            if (string.IsNullOrWhiteSpace(input.Findings)) return WriteResult.Invalid("A final or amended report needs findings.");
+            if (string.IsNullOrWhiteSpace(input.Impression)) return WriteResult.Invalid("A final or amended report needs an impression.");
+        }
         if (input.ClinicalEncounterId is not null && !await db.ClinicalEncounters.AnyAsync(e => e.Id == input.ClinicalEncounterId && e.PatientRecordId == context.Patient.Id, token))
             return WriteResult.Invalid("Select an existing encounter belonging to this patient.");
         var accession = input.AccessionNumber.Trim().ToUpperInvariant();
