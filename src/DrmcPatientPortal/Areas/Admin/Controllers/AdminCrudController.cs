@@ -193,6 +193,7 @@ public abstract class AdminCrudController<TEntity, TInput>(ApplicationDbContext 
     {
         if (editor.Clinical && context is not null)
             await AdminAudit.ViewAsync(db, User, editor.Name, [context.Patient.Id], action, token);
+        ViewData["RecordId"] = id;
         await editor.ConfigureFormAsync(db, ViewData, input, context, token);
         return View(Shared + action + ".cshtml", new AdminForm(editor.Title, input, "/Areas/Admin/Views/" + editor.Name + "/_Form.cshtml", id, context));
     }

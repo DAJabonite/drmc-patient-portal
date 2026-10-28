@@ -1,4 +1,6 @@
 using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using Microsoft.EntityFrameworkCore;
@@ -16,20 +18,45 @@ public sealed class RadiologyAdminTests(PortalFactory factory)
     }
 
     private Task<int> PrimaryPatientIdAsync() =>
-        Db(db => db.PatientRecords.Where(p => p.PortalUser!.Email == PortalFactory.PrimaryEmail).Select(p => p.Id).SingleAsync());
+        Db(async db =>
+        {
+            var patient = await db.PatientRecords.SingleAsync(p => p.PortalUser!.Email == PortalFactory.PrimaryEmail);
+            if (!patient.HasHospitalNumber)
+            {
+                patient.HospitalNumber = "RAD-FIXTURE-PRIMARY";
+                await db.SaveChangesAsync();
+            }
+            return patient.Id;
+        });
 
-    private static Dictionary<string, string> Study(string accession, string status = "2", string? rowVersion = null, string findings = "Synthetic findings.")
+    private static readonly byte[] Pdf = Encoding.ASCII.GetBytes("%PDF-1.4\nSynthetic radiology report\n%%EOF");
+
+    private static Dictionary<string, string> Study(string status = "2", string? rowVersion = null)
     {
         var form = new Dictionary<string, string>
         {
-            ["AccessionNumber"] = accession, ["StudyName"] = "Synthetic chest X-ray", ["Modality"] = "0", ["BodyRegion"] = "Chest",
-            ["Status"] = status, ["PerformedAt"] = "2026-09-01T09:00", ["ReleasedAt"] = "2026-09-01T15:00",
-            ["PhysicianSource"] = "1", ["HistoricalDoctorName"] = "Dr. Synthetic Orderer",
-            ["Radiologist.PhysicianSource"] = "1", ["Radiologist.HistoricalDoctorName"] = "Dr. Synthetic Reader",
-            ["Findings"] = findings, ["Impression"] = "Synthetic impression.",
+            ["Modality"] = "0", ["Status"] = status,
+            ["PerformedAt"] = "2026-09-01", ["ReleasedAt"] = "2026-09-01T15:00",
         };
         if (rowVersion is not null) form["RowVersion"] = rowVersion;
         return form;
+    }
+
+    private static async Task<HttpResponseMessage> SavePdf(HttpClient client, string path, Dictionary<string, string> fields,
+        byte[]? bytes, string fileName = "report.pdf", string contentType = "application/pdf")
+    {
+        var page = await client.GetStringAsync(path);
+        Assert.Contains("enctype=\"multipart/form-data\"", page);
+        using var body = new MultipartFormDataContent();
+        foreach (var (key, value) in fields) body.Add(new StringContent(value), key);
+        body.Add(new StringContent(StaffAccounts.Token(page)), "__RequestVerificationToken");
+        if (bytes is not null)
+        {
+            var file = new ByteArrayContent(bytes);
+            file.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+            body.Add(file, "Report", fileName);
+        }
+        return await client.PostAsync(path, body);
     }
 
     [Fact]
@@ -51,30 +78,40 @@ public sealed class RadiologyAdminTests(PortalFactory factory)
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/Admin/RadiologyStudies")).StatusCode);
         Assert.Contains($"/Admin/RadiologyStudies/Create/{patient}", await client.GetStringAsync("/Admin/RadiologyStudies/Create"));
 
-        var invalid = await client.PostFormAsync($"/Admin/RadiologyStudies/Create/{patient}", $"/Admin/RadiologyStudies/Create/{patient}", Study("drmc-rad-test-0001", findings: ""));
+        var invalid = await client.PostFormAsync($"/Admin/RadiologyStudies/Create/{patient}", $"/Admin/RadiologyStudies/Create/{patient}", Study());
         Assert.Equal(HttpStatusCode.OK, invalid.StatusCode);
-        Assert.Contains("A final or amended report needs findings.", await invalid.Content.ReadAsStringAsync());
+        Assert.Contains("Choose the radiology report PDF.", await invalid.Content.ReadAsStringAsync());
 
-        var created = await client.PostFormAsync($"/Admin/RadiologyStudies/Create/{patient}", $"/Admin/RadiologyStudies/Create/{patient}", Study("drmc-rad-test-0001"));
+        var before = await Db(db => db.RadiologyStudies.MaxAsync(r => r.Id));
+        var created = await SavePdf(client, $"/Admin/RadiologyStudies/Create/{patient}", Study(), Pdf);
         Assert.Equal(HttpStatusCode.Redirect, created.StatusCode);
-        var study = await Db(db => db.RadiologyStudies.SingleAsync(r => r.AccessionNumber == "DRMC-RAD-TEST-0001"));
+        var study = await Db(db => db.RadiologyStudies.SingleAsync(r => r.Id > before));
         Assert.Equal(patient, study.PatientRecordId);
-
-        var duplicate = await client.PostFormAsync($"/Admin/RadiologyStudies/Create/{patient}", $"/Admin/RadiologyStudies/Create/{patient}", Study("DRMC-rad-TEST-0001"));
-        Assert.Contains("already uses this accession number", await duplicate.Content.ReadAsStringAsync());
+        Assert.StartsWith("PORTAL-RAD-", study.AccessionNumber);
+        Assert.Equal("Radiology report", study.StudyName);
+        Assert.Empty(study.OrderingPhysician);
+        Assert.Empty(study.RadiologistName);
+        Assert.Empty(study.Findings);
+        Assert.NotNull(study.ReportFileName);
 
         var editPage = await client.GetStringAsync($"/Admin/RadiologyStudies/Edit/{study.Id}");
-        Assert.Contains(">X-ray</option>", editPage);
+        Assert.Contains(">XRY</option>", editPage);
+        Assert.Contains("type=\"date\"", editPage);
+        foreach (var field in new[] { "AccessionNumber", "StudyName", "BodyRegion", "HistoricalDoctorName", "Findings", "Impression", "ClinicalEncounterId" })
+            Assert.DoesNotContain($"name=\"{field}\"", editPage);
         var version = System.Text.RegularExpressions.Regex.Match(editPage, "name=\"RowVersion\" value=\"([^\"]+)\"").Groups[1].Value;
         version = WebUtility.HtmlDecode(version);
-        var edited = await client.PostFormAsync($"/Admin/RadiologyStudies/Edit/{study.Id}", $"/Admin/RadiologyStudies/Edit/{study.Id}", Study("DRMC-RAD-TEST-0001", rowVersion: version, findings: "Edited synthetic findings."));
+        var fields = Study(rowVersion: version);
+        fields["Modality"] = "CT";
+        var edited = await SavePdf(client, $"/Admin/RadiologyStudies/Edit/{study.Id}", fields, null);
         Assert.Equal(HttpStatusCode.Redirect, edited.StatusCode);
-        var stale = await client.PostFormAsync($"/Admin/RadiologyStudies/Edit/{study.Id}", $"/Admin/RadiologyStudies/Edit/{study.Id}", Study("DRMC-RAD-TEST-0001", rowVersion: version));
+        Assert.Equal(study.ReportFileName, await Db(db => db.RadiologyStudies.Where(r => r.Id == study.Id).Select(r => r.ReportFileName).SingleAsync()));
+        var stale = await client.PostFormAsync($"/Admin/RadiologyStudies/Edit/{study.Id}", $"/Admin/RadiologyStudies/Edit/{study.Id}", Study(rowVersion: version));
         Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
 
         var audit = await Db(db => db.AdminAuditLogs.Where(a => a.Entity == "RadiologyStudies" && a.RecordKey == study.Id.ToString()).ToListAsync());
         Assert.Contains(audit, a => a.Action == "Create");
-        Assert.Contains(audit, a => a.Action == "Edit" && a.ChangedFields.Contains("Findings"));
+        Assert.Contains(audit, a => a.Action == "Edit" && a.ChangedFields.Contains("Modality"));
         Assert.All(audit, a => { Assert.Null(a.OldValues); Assert.Null(a.NewValues); });
 
         var deletePage = await client.GetStringAsync($"/Admin/RadiologyStudies/Delete/{study.Id}");

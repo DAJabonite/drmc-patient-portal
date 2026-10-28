@@ -9,8 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace DrmcPatientPortal.Controllers;
 
-// Patient view of their own imaging studies. Every query is scoped to the signed-in user's
-// patient record; report text is disclosed only by PatientResultsDisclosure plus D4.
+// Patient PDF metadata is always scoped to the signed-in user and the disclosure/release rules.
 [Authorize]
 [Route("Patient/Radiology")]
 public class RadiologyController : Controller
@@ -55,7 +54,9 @@ public class RadiologyController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
 
-        var owned = _db.RadiologyStudies.Where(s => s.Patient.PortalUserId == user.Id);
+        var owned = _db.RadiologyStudies.AsNoTracking()
+            .Where(PatientResultsDisclosure.RadiologyPdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow))
+            .Where(s => s.Patient.PortalUserId == user.Id);
         var query = owned;
 
         if (modality.HasValue && Enum.IsDefined(modality.Value))
@@ -121,36 +122,21 @@ public class RadiologyController : Controller
                 break;
         }
 
-        var pagination = await PortalPagination.CreateAsync(query, _db, page);
+        var token = HttpContext.RequestAborted;
+        var dateQuery = query.Select(s => s.PerformedAt.Date).Distinct();
+        var pagination = await PortalPagination.CreateAsync(dateQuery, _db, page);
         ViewData["Pagination"] = pagination;
-        var rows = await SqlReadRetry.RunAsync(_db, () => query.AsNoTracking()
+        var dates = await SqlReadRetry.RunAsync(_db, () => dateQuery.OrderByDescending(date => date)
+            .Skip(pagination.Offset).Take(PortalPagination.Size).ToListAsync(token), token);
+        List<RadiologyListItem> studies = dates.Count == 0 ? [] : await SqlReadRetry.RunAsync(_db, () => query
+            .Where(s => dates.Contains(s.PerformedAt.Date))
             .OrderByDescending(s => s.PerformedAt)
             .ThenByDescending(s => s.Id)
-            .Skip(pagination.Offset).Take(PortalPagination.Size)
-            .Select(s => new
+            .Select(s => new RadiologyListItem
             {
-                s.Id, s.AccessionNumber, s.StudyName, s.Modality, s.BodyRegion,
-                s.PerformedAt, s.ReleasedAt, s.Status, s.OrderingPhysician
+                Id = s.Id, Modality = s.Modality, PerformedAt = s.PerformedAt
             })
-            .ToListAsync());
-
-        var now = PatientResultsDisclosure.ManilaNow;
-        var studies = rows.Select(r =>
-        {
-            var ready = PatientResultsDisclosure.IsReleased(r.Status, r.ReleasedAt, now);
-            return new RadiologyListItem
-            {
-                Id = r.Id,
-                AccessionNumber = r.AccessionNumber,
-                StudyName = r.StudyName,
-                Modality = r.Modality,
-                BodyRegion = r.BodyRegion,
-                PerformedAt = r.PerformedAt,
-                ReleasedAt = ready ? r.ReleasedAt : null,
-                OrderingPhysician = r.OrderingPhysician,
-                IsReady = ready
-            };
-        }).ToList();
+            .ToListAsync(token), token);
 
         await _auditLog.LogAsync(user.Id, "VIEW_RADIOLOGY_LIST", "Patient/Radiology", "Viewed owned imaging availability.", HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
         return View(new RadiologyIndexViewModel
@@ -161,8 +147,9 @@ public class RadiologyController : Controller
             SelectedDateRange = dateRange,
             SelectedStartDate = dateRange == "custom" ? startDate : null,
             SelectedEndDate = dateRange == "custom" ? endDate : null,
-            Studies = studies,
-            TotalCount = await SqlReadRetry.RunAsync(_db, () => owned.CountAsync())
+            DateGroups = studies.GroupBy(s => s.PerformedAt.Date)
+                .Select(group => new RadiologyDateGroup(group.Key, group.ToList())).ToList(),
+            TotalCount = await SqlReadRetry.RunAsync(_db, () => owned.CountAsync(token), token)
         });
     }
 
@@ -173,56 +160,20 @@ public class RadiologyController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
 
-        // InternalNotes is intentionally not part of this projection.
-        var study = await SqlReadRetry.RunAsync(_db, () => _db.RadiologyStudies
+        var model = await SqlReadRetry.RunAsync(_db, () => _db.RadiologyStudies.AsNoTracking()
+            .Where(PatientResultsDisclosure.RadiologyPdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow))
             .Where(s => s.Id == id && s.Patient.PortalUserId == user.Id)
-            .Select(s => new
+            .Select(s => new RadiologyDetailsViewModel
             {
-                s.Id, s.AccessionNumber, s.StudyName, s.Modality, s.BodyRegion, s.PerformedAt,
-                s.ReleasedAt, s.Status, s.OrderingPhysician, s.RadiologistName, s.PerformingUnit,
-                s.ClinicalIndication, s.Technique, s.Comparison, s.Findings, s.Impression,
-                s.PlainLanguageSummary, s.AmendmentNote, s.ReportFileName
+                Id = s.Id, Modality = s.Modality, PerformedAt = s.PerformedAt
             })
             .FirstOrDefaultAsync());
 
-        if (study is null) return NotFound();
-
-        var ready = PatientResultsDisclosure.IsReleased(study.Status, study.ReleasedAt, PatientResultsDisclosure.ManilaNow);
-        var disclose = ready && _resultsOptions.CurrentValue.ShowFullResults;
-
-        var model = new RadiologyDetailsViewModel
-        {
-            Id = study.Id,
-            AccessionNumber = study.AccessionNumber,
-            StudyName = study.StudyName,
-            Modality = study.Modality,
-            BodyRegion = study.BodyRegion,
-            PerformedAt = study.PerformedAt,
-            ReleasedAt = ready ? study.ReleasedAt : null,
-            OrderingPhysician = study.OrderingPhysician,
-            RadiologistName = ready ? study.RadiologistName : string.Empty,
-            PerformingUnit = study.PerformingUnit,
-            IsReady = ready,
-            IsAmended = ready && study.Status == RadiologyStatus.Amended,
-            HasPdfReport = disclose && study.ReportFileName is not null,
-            Report = disclose && new[] { study.ClinicalIndication, study.Technique, study.Comparison,
-                study.Findings, study.Impression, study.PlainLanguageSummary, study.AmendmentNote }.Any(s => !string.IsNullOrWhiteSpace(s))
-                ? new RadiologyReportView
-                {
-                    ClinicalIndication = study.ClinicalIndication,
-                    Technique = study.Technique,
-                    Comparison = study.Comparison,
-                    Findings = study.Findings,
-                    Impression = study.Impression,
-                    PlainLanguageSummary = study.PlainLanguageSummary,
-                    AmendmentNote = study.AmendmentNote
-                }
-                : null
-        };
+        if (model is null) return NotFound();
 
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
         await _auditLog.LogAsync(user.Id, "VIEW_RADIOLOGY_REPORT", $"RadiologyStudy/{id}",
-            disclose ? "Viewed released imaging report." : "Viewed imaging study availability and claiming notice.", ip);
+            "Viewed released imaging report.", ip);
 
         return View("Details", model);
     }

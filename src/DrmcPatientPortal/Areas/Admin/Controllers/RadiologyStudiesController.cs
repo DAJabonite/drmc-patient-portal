@@ -11,10 +11,39 @@ using System.Security.Claims;
 
 namespace DrmcPatientPortal.Areas.Admin.Controllers;
 
+[RequestSizeLimit(LabReportStorage.MaximumBytes + 1024 * 1024)]
+[RequestFormLimits(MultipartBodyLengthLimit = LabReportStorage.MaximumBytes + 1024 * 1024)]
 public sealed class RadiologyStudiesController(ApplicationDbContext db, AdminWrites writes,
-    IRadiologyReportStorage storage, IAuditLogService audit, TimeProvider clock) :
+    IRadiologyReportStorage storage, IAuditLogService audit, TimeProvider clock, ILogger<RadiologyStudiesController> logger) :
     AdminCrudController<RadiologyStudy, RadiologyInput>(db, writes, new RadiologyEditor())
 {
+    private string? previousReport;
+
+    protected override async Task<WriteResult> SaveRecordAsync(ApplicationDbContext database, RadiologyInput input, RadiologyStudy entity, CancellationToken token)
+    {
+        // Obtain the generated ID within the same transaction before binding PDF encryption to it.
+        await database.SaveChangesAsync(token);
+        if (input.Report is null) return WriteResult.Success;
+        StoredLabReport stored;
+        try { stored = await storage.StoreAsync(entity.Id, input.Report, token); }
+        catch (InvalidDataException error) { return WriteResult.Invalid(error.Message); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        { return WriteResult.Invalid("The PDF could not be stored. Choose the file again and try saving."); }
+        previousReport = entity.ReportFileName;
+        ReportAttachments.Apply(entity, stored, clock.GetUtcNow().UtcDateTime);
+        await database.SaveChangesAsync(token);
+        return WriteResult.Success;
+    }
+
+    protected override void RecordSaved()
+    {
+        // Keep the old attachment until both the metadata and required audit have committed.
+        if (previousReport is null) return;
+        try { storage.Delete(previousReport); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        { logger.LogWarning("An unreferenced radiology report could not be removed after saving."); }
+    }
+
     [HttpGet, Authorize(Policy = AdminPolicies.Radiology)]
     public async Task<IActionResult> Report(int id, CancellationToken token)
     {

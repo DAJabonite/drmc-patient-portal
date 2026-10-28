@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,18 +16,20 @@ public sealed class PortalTests(PortalFactory factory)
     private WebApplicationFactory<Program>? reportHost;
     private WebApplicationFactory<Program> ReportHost => reportHost ??= factory.WithWebHostBuilder(b => b.UseSetting("PatientResults:ShowFullResults", "true"));
     private HttpClient ReportClient() => ReportHost.CreateClient(new() { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
-    private async Task SeedVisibleLab()
+    private async Task<int> SeedVisibleLab()
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var patient = await db.PatientRecords.SingleAsync(p => p.PortalUser!.Email == PortalFactory.PrimaryEmail);
-        db.LabResults.Add(new LabResult
+        var lab = new LabResult
         {
             PatientRecordId = patient.Id, AccessionNumber = "PORTAL-TEST-" + Guid.NewGuid().ToString("N"),
             TestName = "Synthetic special diagnostics", Category = LabCategory.SpecialDiagnostics, Status = "Available",
-            CollectedAt = DateTime.Today.AddDays(-2), ReleasedAt = DateTime.Today.AddDays(-1), ReportFileName = Guid.NewGuid().ToString("N")
-        });
+            CollectedAt = ClinicalClock.Today.AddDays(-2), ReleasedAt = ClinicalClock.Today.AddDays(-1), ReportFileName = Guid.NewGuid().ToString("N")
+        };
+        db.LabResults.Add(lab);
         await db.SaveChangesAsync();
+        return lab.Id;
     }
     [Theory]
     [InlineData("/")]
@@ -77,11 +80,12 @@ public sealed class PortalTests(PortalFactory factory)
     [Fact]
     public async Task Patient_can_open_own_records_but_another_patient_cannot()
     {
-        await SeedVisibleLab();
+        var labId = await SeedVisibleLab();
         var owner = ReportClient();
         await owner.SignInSuccessfullyAsync(PortalFactory.PrimaryEmail, PortalFactory.Password);
         var visit = PortalClient.Links(await owner.GetStringAsync("/Patient/Visits"), "/Patient/Visits/Details/").First();
-        var lab = PortalClient.Links(await owner.GetStringAsync("/Patient/LabResults"), "/Patient/LabResults/Details/").First();
+        var lab = $"/Patient/LabResults/Details/{labId}";
+        Assert.Contains($"action=\"/Patient/LabResults/Report/{labId}\"", await owner.GetStringAsync("/Patient/LabResults"));
         Assert.Equal(HttpStatusCode.OK, (await owner.GetAsync(visit)).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await owner.GetAsync(lab)).StatusCode);
 
@@ -98,14 +102,13 @@ public sealed class PortalTests(PortalFactory factory)
     [Fact]
     public async Task Lab_results_show_readable_category_names()
     {
-        await SeedVisibleLab();
+        var labId = await SeedVisibleLab();
         var client = ReportClient();
         await client.SignInSuccessfullyAsync(PortalFactory.PrimaryEmail, PortalFactory.Password);
-        var labs = PortalClient.Links(await client.GetStringAsync("/Patient/LabResults"), "/Patient/LabResults/Details/");
-        Assert.NotEmpty(labs);
-        var pages = await Task.WhenAll(labs.Select(client.GetStringAsync));
-        Assert.Contains(pages, html => html.Contains("Special Diagnostics Panel"));
-        Assert.All(pages, html => Assert.DoesNotContain("SpecialDiagnostics Panel", html));
+        var html = await client.GetStringAsync("/Patient/LabResults");
+        Assert.Contains(">Special Diagnostics</option>", html);
+        Assert.DoesNotContain(">SpecialDiagnostics</option>", html);
+        Assert.Contains($"action=\"/Patient/LabResults/Report/{labId}\"", html);
     }
 
     [Fact]

@@ -1,14 +1,11 @@
 using System.ComponentModel.DataAnnotations;
-using DrmcPatientPortal.Models;
 
 namespace DrmcPatientPortal.Areas.Admin.Models;
 
 public sealed class LabUploadInput : AdminInput, IValidatableObject
 {
     [Display(Name = "Lab report PDF")] public IFormFile? Report { get; set; }
-    [Required, StringLength(100000), Display(Name = "Test name")] public string TestName { get; set; } = "";
-    [EnumDataType(typeof(LabCategory))] public LabCategory Category { get; set; }
-    [Required, Display(Name = "Collected at (Manila)")] public DateTime? CollectedAt { get; set; }
+    [Required, Display(Name = "Test date (Manila)")] public DateTime? CollectedAt { get; set; }
     [Required, RegularExpression("^(Available|In progress|Pending Verification)$")]
     public string Status { get; set; } = "Pending Verification";
     [Display(Name = "Released at (Manila)")] public DateTime? ReleasedAt { get; set; }

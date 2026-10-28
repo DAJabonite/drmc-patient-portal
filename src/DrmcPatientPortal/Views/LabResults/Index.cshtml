@@ -108,58 +108,39 @@
 
 <section class="section py-5 bg-light">
     <div class="container">
-        @if (Model.LabResults.Count == 0)
+        @if (Model.DateGroups.Count == 0)
         {
             <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
-                <i class="bi bi-file-earmark-x fs-1 text-muted mb-2"></i>
-                <h3 class="h5 fw-bold text-dark">No laboratory results found</h3>
-                <p class="text-muted small mb-3">No diagnostic records matched your selected criteria.</p>
-                <a asp-action="Index" class="btn btn-primary-drmc btn-sm rounded-pill px-4 fw-semibold mx-auto">
-                    View All Results
-                </a>
+                <i class="bi bi-file-earmark-x fs-1 text-muted mb-2" aria-hidden="true"></i>
+                <h2 class="h5 fw-bold text-dark">No laboratory PDFs found</h2>
+                <p class="text-muted small mb-3">No released PDF reports matched your selected criteria.</p>
+                <a asp-action="Index" class="btn btn-primary-drmc btn-sm rounded-pill px-4 fw-semibold mx-auto">View all results</a>
             </div>
         }
         else
         {
             <div class="d-flex flex-column gap-3">
-                @foreach (var lab in Model.LabResults)
+                @for (var groupIndex = 0; groupIndex < Model.DateGroups.Count; groupIndex++)
                 {
-                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white hover-shadow-sm transition">
-                        <div class="row align-items-center g-3">
-                            <div class="col-md-7">
-                                <div class="record-metadata d-flex flex-wrap align-items-center gap-2 mb-1">
-                                    <span class="badge bg-light text-secondary border rounded-pill small">
-                                        @lab.Category.DisplayName()
-                                    </span>
-                                    <span class="record-reference small text-muted">
-                                        Report reference: <strong>@lab.AccessionNumber</strong>
-                                    </span>
-                                </div>
-
-                                <h2 class="h5 fw-bold text-primary-drmc mb-1">@lab.TestName</h2>
-                                
-                                <div class="small text-muted d-flex flex-wrap gap-3">
-                                    <span><i class="bi bi-calendar3 me-1"></i> Collected: @lab.CollectedAt.ToString("MMM d, yyyy")</span>
-                                    @if (lab.ReleasedAt.HasValue)
-                                    {
-                                        <span><i class="bi bi-check2-circle me-1"></i> Released: @lab.ReleasedAt.Value.ToString("MMM d, yyyy")</span>
-                                    }
-                                    @if (!string.IsNullOrEmpty(lab.OrderingPhysician))
-                                    {
-                                        <span><i class="bi bi-person-badge me-1"></i> Ordered by: @lab.OrderingPhysician</span>
-                                    }
-                                </div>
-                            </div>
-
-                            <div class="col-md-5 text-md-end">
-                                <div class="d-flex gap-2 justify-content-md-end">
-                                    <a asp-action="Details" asp-route-id="@lab.Id" class="btn btn-success rounded-pill px-4 fw-semibold">
-                                        <i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i> View report
-                                    </a>
-                                </div>
-                            </div>
+                    var group = Model.DateGroups[groupIndex];
+                    <details class="card border-0 shadow-sm rounded-4 bg-white"
+                             data-testid="lab-date-group" data-date="@group.Date.ToString("yyyy-MM-dd")" open="@(groupIndex == 0)">
+                        <summary class="p-4 fw-bold text-primary-drmc">
+                            Test date: <time datetime="@group.Date.ToString("yyyy-MM-dd")">@group.Date.ToString("MMM d, yyyy")</time>
+                            <span class="badge bg-light text-secondary border ms-2">@group.Reports.Count @(group.Reports.Count == 1 ? "PDF" : "PDFs")</span>
+                        </summary>
+                        <div class="px-4 pb-4">
+                            @for (var reportIndex = 0; reportIndex < group.Reports.Count; reportIndex++)
+                            {
+                                var report = group.Reports[reportIndex];
+                                var description = $"{report.TestName} on {group.Date:MMM d, yyyy}, PDF {reportIndex + 1}";
+                                <article class="py-3 border-top" data-report-id="@report.Id">
+                                    <h2 class="h6 fw-bold text-dark">@report.TestName</h2>
+                                    <partial name="_PdfReportActions" model='new PdfReportActionsViewModel("LabResults", report.Id, description)' />
+                                </article>
+                            }
                         </div>
-                    </div>
+                    </details>
                 }
             </div>
         }

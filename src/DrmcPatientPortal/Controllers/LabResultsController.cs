@@ -48,11 +48,10 @@ public class LabResultsController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
 
-        var query = _db.LabResults
-            .Include(l => l.Items)
+        var owned = _db.LabResults.AsNoTracking()
             .Where(PatientResultsDisclosure.PdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow))
-            .Where(l => l.Patient.PortalUserId == user.Id)
-            .AsQueryable();
+            .Where(l => l.Patient.PortalUserId == user.Id);
+        var query = owned;
 
         if (category.HasValue)
         {
@@ -105,15 +104,20 @@ public class LabResultsController : Controller
             }
         }
 
-        var allCount = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.Where(PatientResultsDisclosure.PdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow)).CountAsync(l => l.Patient.PortalUserId == user.Id));
-        var pagination = await PortalPagination.CreateAsync(query, _db, page);
+        var token = HttpContext.RequestAborted;
+        var allCount = await SqlReadRetry.RunAsync(_db, () => owned.CountAsync(token), token);
+        // Page distinct clinical dates before fetching their PDFs: a day's reports stay together.
+        var dateQuery = query.Select(l => l.CollectedAt.Date).Distinct();
+        var pagination = await PortalPagination.CreateAsync(dateQuery, _db, page);
         ViewData["Pagination"] = pagination;
-        var available = await SqlReadRetry.RunAsync(_db, () => query.CountAsync(r => r.Status == "Available"));
-
-        var results = await SqlReadRetry.RunAsync(_db, () => query.AsNoTracking()
+        var dates = await SqlReadRetry.RunAsync(_db, () => dateQuery.OrderByDescending(date => date)
+            .Skip(pagination.Offset).Take(PortalPagination.Size).ToListAsync(token), token);
+        List<LabPdfReportViewModel> results = dates.Count == 0 ? [] : await SqlReadRetry.RunAsync(_db, () => query
+            .Where(l => dates.Contains(l.CollectedAt.Date))
             .OrderByDescending(l => l.CollectedAt)
-            .ThenByDescending(l => l.Id).Skip(pagination.Offset).Take(PortalPagination.Size)
-            .ToListAsync());
+            .ThenByDescending(l => l.Id)
+            .Select(l => new LabPdfReportViewModel { Id = l.Id, TestName = l.TestName, CollectedAt = l.CollectedAt })
+            .ToListAsync(token), token);
 
         var model = new LabResultsIndexViewModel
         {
@@ -122,10 +126,9 @@ public class LabResultsController : Controller
             SelectedDateRange = dateRange,
             SelectedStartDate = startDate,
             SelectedEndDate = endDate,
-            LabResults = results,
-            TotalCount = allCount,
-            TotalAvailable = available,
-            TotalInProgress = pagination.Total - available
+            DateGroups = results.GroupBy(l => l.CollectedAt.Date)
+                .Select(group => new LabReportDateGroup(group.Key, group.ToList())).ToList(),
+            TotalCount = allCount
         };
 
         await _auditLog.LogAsync(user.Id, "VIEW_LAB_LIST", "Patient/LabResults", "Viewed owned laboratory availability.", HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
@@ -139,18 +142,16 @@ public class LabResultsController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
 
-        var result = await SqlReadRetry.RunAsync(_db, () => _db.LabResults
-            .Include(l => l.Items)
+        var result = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.AsNoTracking()
             .Where(PatientResultsDisclosure.PdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow))
-            .FirstOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id));
+            .Where(l => l.Id == id && l.Patient.PortalUserId == user.Id)
+            .Select(l => new LabPdfReportViewModel { Id = l.Id, TestName = l.TestName, CollectedAt = l.CollectedAt })
+            .FirstOrDefaultAsync());
 
         if (result is null)
         {
             return NotFound();
         }
-
-        // The query admits only released PDFs with disclosure enabled. Clinical notes remain staff-only.
-        ViewData["ShowFullResults"] = true;
 
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
         await _auditLog.LogAsync(user.Id, "VIEW_LAB_REPORT", $"LabResult/{id}",
@@ -200,17 +201,4 @@ public class LabResultsController : Controller
         ModelState.AddModelError("", message);
         return await Details(id);
     }
-}
-
-public class LabResultsIndexViewModel
-{
-    public LabCategory? SelectedCategory { get; set; }
-    public string? SearchTerm { get; set; }
-    public string? SelectedDateRange { get; set; }
-    public DateTime? SelectedStartDate { get; set; }
-    public DateTime? SelectedEndDate { get; set; }
-    public IReadOnlyList<LabResult> LabResults { get; set; } = Array.Empty<LabResult>();
-    public int TotalCount { get; set; }
-    public int TotalAvailable { get; set; }
-    public int TotalInProgress { get; set; }
 }
