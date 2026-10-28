@@ -113,6 +113,7 @@ $(function () {
     const fields = document.getElementById('registrationFields');
     const consentValue = document.getElementById('privacyConsentValue');
     const consent = document.getElementById('regConsent');
+    const consentToggle = consent?.closest('.form-check');
     const consentElement = document.getElementById('registrationConsent');
     const consentModal = new bootstrap.Modal(consentElement);
     const consentDocument = document.getElementById('consentDocument');
@@ -194,6 +195,15 @@ $(function () {
         if (consentElement.classList.contains('show')) updateConsentGate();
     }).observe(consentDocument);
     consent.addEventListener('change', updateConsentGate);
+    consentToggle?.addEventListener('click', event => {
+        if (readToEnd) return;
+        event.preventDefault();
+        const status = document.getElementById('consentReadStatus');
+        status.classList.remove('consent-read-attention');
+        void status.offsetWidth;
+        status.classList.add('consent-read-attention');
+        window.setTimeout(() => status.classList.remove('consent-read-attention'), 700);
+    });
     consentElement.addEventListener('shown.bs.modal', () => {
         consentDocument.focus();
         updateConsentGate();
