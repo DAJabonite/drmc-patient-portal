@@ -67,6 +67,82 @@ public class IdExtractionTests
         Assert.Equal("Reyes", result.MiddleName.Value);
     }
 
+    [Theory]
+    [InlineData("Last Name, First Name, Middle Name", "DELA CRUZ, JUAN PEDRO GARCIA", "Juan Pedro", "Garcia")]
+    [InlineData("Last Name, First Name, Middle Name", "DELA CRUZ, JUAN PEDRO", "Juan Pedro", "")]
+    [InlineData("Last Name, First Name, Middle Name", "DELA CRUZ, JUAN PEDRO, GARCIA", "Juan Pedro", "Garcia")]
+    [InlineData("Last Name | First Name | Middie Name:", "  DELA CRUZ ; JUAN PEDRO GARCIA . ", "Juan Pedro", "Garcia")]
+    [InlineData("Last Name, First Name, Middle Name", "DELA CRUZ,, JUAN PEDRO GARCIA", "Juan Pedro", "Garcia")]
+    [InlineData("Last Name, First Name, Middle Name", "DELA CRUZ, JUAN PEDRO, G.", "Juan Pedro", "G.")]
+    public void Lto_combined_name_rows_preserve_multiple_given_names(string header, string name, string first, string middle)
+    {
+        var result = Parse(PhilippineIdTypes.DriversLicense,
+            $"{header}\n{name}\nDate of Birth (YYYY/MM/DD)\n1995 / 03 / 08 .\nLicense No. D01-23-456789");
+        Assert.Equal("Dela Cruz", result.LastName.Value);
+        Assert.Equal(first, result.FirstName.Value);
+        Assert.Equal(middle, result.MiddleName.Value ?? "");
+        Assert.Equal(new DateTime(1995, 3, 8), result.DateOfBirth.Value.Date);
+    }
+
+    [Fact]
+    public void Lto_name_heuristic_requires_the_combined_header_and_does_not_change_other_documents()
+    {
+        var unlabelled = Parse(PhilippineIdTypes.DriversLicense, "DELA CRUZ, JUAN PEDRO GARCIA");
+        Assert.False(unlabelled.FirstName.Found);
+        var generic = Parse(PhilippineIdTypes.OtherGovernment, "Full Name: DELA CRUZ, JUAN PEDRO GARCIA");
+        Assert.Equal("Juan Pedro Garcia", generic.FirstName.Value);
+        Assert.False(generic.MiddleName.Found);
+    }
+
+    [Theory]
+    [InlineData("1995/02/30")]
+    [InlineData("19995/03/08")]
+    [InlineData("2095/03/08")]
+    [InlineData("1995/03")]
+    public void Lto_birth_date_annotations_do_not_allow_damaged_or_incomplete_dates(string date)
+    {
+        var result = Parse(PhilippineIdTypes.DriversLicense,
+            $"Date of Birth (YYYY/MM/DD)\n{date}\nExpiration Date: 2030/03/08");
+        Assert.False(result.DateOfBirth.Found);
+    }
+
+    [Fact]
+    public void Structured_lto_name_candidate_takes_priority_over_an_unsplit_full_name()
+    {
+        var result = new IdExtractionResult();
+        IdExtractionCandidates.Merge(result,
+            Parse(PhilippineIdTypes.DriversLicense, "Full Name: DELA CRUZ, JUAN PEDRO GARCIA"), .96f);
+        IdExtractionCandidates.Merge(result,
+            Parse(PhilippineIdTypes.DriversLicense, "Last Name, First Name, Middle Name\nDELA CRUZ, JUAN PEDRO GARCIA"), .72f);
+        Assert.Equal("Dela Cruz", result.LastName.Value);
+        Assert.Equal("Juan Pedro", result.FirstName.Value);
+        Assert.Equal("Garcia", result.MiddleName.Value);
+    }
+
+    [Fact]
+    public void Replacing_a_name_candidate_cannot_keep_a_middle_name_from_a_different_name()
+    {
+        var result = new IdExtractionResult();
+        IdExtractionCandidates.Merge(result,
+            Parse(PhilippineIdTypes.DriversLicense, "Last Name, First Name, Middle Name\nDELA CRUZ, JUAN PEDRO, GARCIA"), .72f);
+        IdExtractionCandidates.Merge(result,
+            Parse(PhilippineIdTypes.DriversLicense, "Last Name: SANTOS\nFirst Name: MARIA CLARA"), .96f);
+        Assert.Equal("Santos", result.LastName.Value);
+        Assert.Equal("Maria Clara", result.FirstName.Value);
+        Assert.False(result.MiddleName.Found);
+    }
+
+    [Fact]
+    public void A_partial_name_retry_cannot_truncate_a_complete_structured_name()
+    {
+        var result = new IdExtractionResult();
+        IdExtractionCandidates.Merge(result,
+            Parse(PhilippineIdTypes.DriversLicense, "Last Name, First Name, Middle Name\nDELA CRUZ, JUAN PEDRO, GARCIA"), .72f);
+        IdExtractionCandidates.Merge(result, Parse(PhilippineIdTypes.DriversLicense, "First Name: JUAN"), .99f);
+        Assert.Equal("Juan Pedro", result.FirstName.Value);
+        Assert.Equal("Garcia", result.MiddleName.Value);
+    }
+
     [Fact]
     public void Address_stops_at_uncollected_fields_and_birthplace_is_not_a_birth_date()
     {

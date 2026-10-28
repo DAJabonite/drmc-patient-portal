@@ -4,6 +4,7 @@ using QRCoder;
 using SkiaSharp;
 using Tesseract;
 using Xunit.Abstractions;
+using System.Buffers.Binary;
 
 namespace DrmcPatientPortal.Tests;
 
@@ -95,6 +96,114 @@ public class IdImageRecognitionTests(ITestOutputHelper output)
             new(bytes[..32], info), null, PhilippineIdTypes.PhilSys), deadline.Token);
         Assert.Equal("invalid", response.Status);
         Assert.Null(response.Extraction);
+    }
+
+    [Theory]
+    [InlineData(1, "RGBY")]
+    [InlineData(2, "GRYB")]
+    [InlineData(3, "YBGR")]
+    [InlineData(4, "BYRG")]
+    [InlineData(5, "RBGY")]
+    [InlineData(6, "BRYG")]
+    [InlineData(7, "YGBR")]
+    [InlineData(8, "GYRB")]
+    public void Phone_jpeg_exif_orientation_is_applied_including_mirrored_images(int orientation, string expectedCorners)
+    {
+        using var source = new SKBitmap(120, 80);
+        using (var canvas = new SKCanvas(source))
+        using (var paint = new SKPaint())
+        {
+            foreach (var (color, rectangle) in new[]
+            {
+                (SKColors.Red, new SKRect(0, 0, 60, 40)), (SKColors.Green, new SKRect(60, 0, 120, 40)),
+                (SKColors.Blue, new SKRect(0, 40, 60, 80)), (SKColors.Yellow, new SKRect(60, 40, 120, 80))
+            }) { paint.Color = color; canvas.DrawRect(rectangle, paint); }
+        }
+        using var jpeg = source.Encode(SKEncodedImageFormat.Jpeg, 100);
+        var bytes = WithExif(jpeg.ToArray(), orientation);
+        using var stream = new MemoryStream(bytes);
+        using var normalized = OcrWorker.DecodeImage(new(bytes, IdImageValidation.InspectIdPhoto(stream)));
+        Assert.Equal(orientation >= 5 ? 80 : 120, normalized.Width);
+        Assert.Equal(orientation >= 5 ? 120 : 80, normalized.Height);
+        var colors = new Dictionary<char, SKColor> { ['R'] = SKColors.Red, ['G'] = SKColors.Green, ['B'] = SKColors.Blue, ['Y'] = SKColors.Yellow };
+        var corners = new[] { (.25f, .25f), (.75f, .25f), (.25f, .75f), (.75f, .75f) };
+        for (var i = 0; i < corners.Length; i++)
+        {
+            var expected = colors[expectedCorners[i]];
+            var actual = normalized.GetPixel((int)(normalized.Width * corners[i].Item1), (int)(normalized.Height * corners[i].Item2));
+            Assert.InRange(Math.Abs(actual.Red - expected.Red), 0, 15);
+            Assert.InRange(Math.Abs(actual.Green - expected.Green), 0, 15);
+            Assert.InRange(Math.Abs(actual.Blue - expected.Blue), 0, 15);
+        }
+    }
+
+    [Fact]
+    public void Large_phone_photos_are_decoded_to_a_bounded_ocr_image()
+    {
+        using var bitmap = new SKBitmap(5000, 3500);
+        using (var canvas = new SKCanvas(bitmap)) canvas.Clear(SKColors.White);
+        using var jpeg = bitmap.Encode(SKEncodedImageFormat.Jpeg, 85);
+        var bytes = jpeg.ToArray();
+        using var stream = new MemoryStream(bytes);
+        using var normalized = OcrWorker.DecodeImage(new(bytes, IdImageValidation.InspectIdPhoto(stream)));
+        Assert.InRange(Math.Max(normalized.Width, normalized.Height), 1, 2048);
+        Assert.InRange(normalized.Width / (double)normalized.Height, 5000d / 3500 - .01, 5000d / 3500 + .01);
+    }
+
+    [Theory]
+    [InlineData(3f, false)]
+    [InlineData(-3f, true)]
+    public async Task Lto_phone_capture_with_mild_skew_and_indoor_lighting_recovers_structured_fields(float angle, bool lowContrast)
+    {
+        using var bitmap = new SKBitmap(1200, 800);
+        using var canvas = new SKCanvas(bitmap);
+        using var background = new SKPaint
+        {
+            Shader = SKShader.CreateLinearGradient(new SKPoint(0, 0), new SKPoint(1200, 800),
+                [new SKColor(245, 245, 235), new SKColor(190, 190, 180)], null, SKShaderTileMode.Clamp)
+        };
+        canvas.DrawRect(new SKRect(0, 0, 1200, 800), background);
+        canvas.Translate(600, 400);
+        canvas.RotateDegrees(angle);
+        canvas.Skew(.02f, 0);
+        canvas.Translate(-600, -400);
+        using var typeface = FixtureTypeface();
+        using var font = new SKFont(typeface, 26);
+        using var paint = new SKPaint { Color = lowContrast ? new SKColor(90, 90, 85) : SKColors.Black, IsAntialias = true };
+        void Text(string text, float y, float size = 26) { font.Size = size; canvas.DrawText(text, 95, y, SKTextAlign.Left, font, paint); }
+        Text("REPUBLIC OF THE PHILIPPINES", 80);
+        Text("LAND TRANSPORTATION OFFICE", 125);
+        Text("DRIVER'S LICENSE", 170, 30);
+        Text("Last Name, First Name, Middle Name", 245, 22);
+        Text("DELA CRUZ, JUAN PEDRO GARCIA", 295, 32);
+        Text("Date of Birth (YYYY/MM/DD)", 365, 22);
+        Text("1995/03/08", 410, 30);
+        Text("License No: D01-23-456789", 475);
+        Text("Address: 12 SAMPLE STREET SAMPLE CITY", 540, 24);
+        Text("Sex: M", 600);
+        using var jpeg = bitmap.Encode(SKEncodedImageFormat.Jpeg, 90);
+        var result = await Recognize(jpeg.ToArray(), PhilippineIdTypes.DriversLicense);
+        Assert.Equal("ok", result.Status);
+        Assert.Equal("Dela Cruz", result.Extraction!.LastName.Value);
+        Assert.Equal("Juan Pedro", result.Extraction.FirstName.Value);
+        Assert.Equal("Garcia", result.Extraction.MiddleName.Value);
+        Assert.Equal(new DateTime(1995, 3, 8), result.Extraction.DateOfBirth.Value.Date);
+    }
+
+    private static byte[] WithExif(byte[] jpeg, int orientation)
+    {
+        var payload = new byte[32];
+        "Exif\0\0"u8.CopyTo(payload);
+        var tiff = payload.AsSpan(6);
+        tiff[0] = tiff[1] = (byte)'I';
+        BinaryPrimitives.WriteUInt16LittleEndian(tiff[2..], 42);
+        BinaryPrimitives.WriteUInt32LittleEndian(tiff[4..], 8);
+        BinaryPrimitives.WriteUInt16LittleEndian(tiff[8..], 1);
+        BinaryPrimitives.WriteUInt16LittleEndian(tiff[10..], 0x112);
+        BinaryPrimitives.WriteUInt16LittleEndian(tiff[12..], 3);
+        BinaryPrimitives.WriteUInt32LittleEndian(tiff[14..], 1);
+        BinaryPrimitives.WriteUInt16LittleEndian(tiff[18..], (ushort)orientation);
+        return [0xff, 0xd8, 0xff, 0xe1, 0, 34, .. payload, .. jpeg[2..]];
     }
 
     internal static byte[] Card(int width, bool lowContrast)

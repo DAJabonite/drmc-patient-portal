@@ -1,14 +1,22 @@
 using System.Collections.Concurrent;
 using System.Text;
+using System.Security.Claims;
+using DrmcPatientPortal.Areas.Admin.Controllers;
+using DrmcPatientPortal.Areas.Admin.Models;
+using DrmcPatientPortal.Areas.Admin.Services;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -18,6 +26,19 @@ namespace DrmcPatientPortal.Tests;
 
 public sealed class RedStarReminderTests
 {
+    [Theory]
+    [InlineData(-35, RedStarRefillUrgency.Overdue)]
+    [InlineData(-1, RedStarRefillUrgency.Overdue)]
+    [InlineData(0, RedStarRefillUrgency.DueToday)]
+    [InlineData(1, RedStarRefillUrgency.DueSoon)]
+    [InlineData(7, RedStarRefillUrgency.DueSoon)]
+    [InlineData(8, RedStarRefillUrgency.Scheduled)]
+    public void Refill_urgency_uses_clinical_dates_and_the_inclusive_reminder_window(int offset, RedStarRefillUrgency expected)
+    {
+        var today = new DateTime(2026, 10, 27, 23, 59, 0);
+        Assert.Equal(expected, RedStarReminderService.ClassifyRefill(today.Date.AddDays(offset), today));
+    }
+
     [Theory]
     [InlineData("2026-01-31", "2026-01-23", null)]
     [InlineData("2026-01-31", "2026-01-24", "SevenDaysBefore")]
@@ -503,5 +524,282 @@ public sealed class RedStarReminderIntegrationTests(PortalFactory factory)
         Assert.Equal(1, await Db(db => db.RedStarAudits.CountAsync(a => a.Subject == auditFailure.Subject && a.Action == "ReminderDelivered")));
         // SMTP cannot be rolled back when an acknowledgement or audit commit is interrupted.
         Assert.Equal(2, sender.Sent.Count(m => m.Recipient == item.Email));
+    }
+}
+
+
+[Collection(PortalCollection.Name)]
+public sealed class RedStarDemoTests(PortalFactory factory)
+{
+    private static string[] DemoIndexes(ApplicationDbContext db) => Enumerable.Range(1, 24)
+        .Select(i => db.Phi.PatientCodeIndex($"RS-DEMO-{i:D3}")).ToArray();
+
+    private static Task<List<RedStarEnrollment>> DemoEnrollments(ApplicationDbContext db)
+    {
+        var indexes = DemoIndexes(db);
+        return db.RedStarEnrollments.AsNoTracking().Include(e => e.Patient).Include(e => e.Appointments).Include(e => e.Dispenses)
+            .Where(e => indexes.Contains(e.Patient.PatientCodeBlindIndex!)).ToListAsync();
+    }
+
+    private static RedStarController Controller(ApplicationDbContext db, IServiceProvider services) =>
+        new(db, services.GetRequiredService<AdminWrites>())
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "demo-test-staff")], "Test"))
+                }
+            }
+        };
+
+    [Fact]
+    public async Task Fresh_demo_contains_all_refill_states_and_encrypted_private_fields()
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var enrollments = await DemoEnrollments(db);
+        Assert.Equal(24, enrollments.Count);
+        Assert.Equal(16, enrollments.Count(e => e.Status == RedStarStatus.Active));
+        Assert.Equal(8, enrollments.Count(e => e.Status == RedStarStatus.Deceased));
+        var today = ClinicalClock.Today;
+        Assert.Equal(5, enrollments.Count(e => e.Status == RedStarStatus.Deceased && e.StatusDate!.Value.Year == today.Year && e.StatusDate.Value.Month == today.Month));
+        var scheduled = enrollments.SelectMany(e => e.Appointments).Where(a => a.State == RedStarAppointmentState.Scheduled).ToList();
+        Assert.Equal(16, scheduled.Count);
+        Assert.Equal(4, scheduled.Count(a => RedStarReminderService.ClassifyRefill(a.DueDate, today) == RedStarRefillUrgency.Overdue));
+        Assert.Equal(2, scheduled.Count(a => RedStarReminderService.ClassifyRefill(a.DueDate, today) == RedStarRefillUrgency.DueToday));
+        Assert.Equal(4, scheduled.Count(a => RedStarReminderService.ClassifyRefill(a.DueDate, today) == RedStarRefillUrgency.DueSoon));
+        Assert.Equal(6, scheduled.Count(a => RedStarReminderService.ClassifyRefill(a.DueDate, today) == RedStarRefillUrgency.Scheduled));
+        Assert.All(enrollments, enrollment =>
+        {
+            Assert.Equal(RedStarProgram.ART, enrollment.Program);
+            Assert.True(enrollment.EnrolledDate <= enrollment.StartDate);
+            var dispense = Assert.Single(enrollment.Dispenses);
+            Assert.True(enrollment.StartDate <= dispense.DispensedDate);
+            Assert.Equal(dispense.DispensedDate.AddDays(dispense.DaysSupplied!.Value), dispense.EstimatedSupplyEnd);
+            Assert.Contains(enrollment.Appointments, a => a.Id == dispense.AppointmentId && a.State == RedStarAppointmentState.PickedUp);
+            Assert.False(enrollment.Patient.EmailRemindersEnabled);
+            if (enrollment.Status == RedStarStatus.Deceased)
+            {
+                Assert.DoesNotContain(enrollment.Appointments, a => a.State == RedStarAppointmentState.Scheduled);
+                Assert.True(dispense.DispensedDate < enrollment.StatusDate);
+                Assert.True(enrollment.StatusDate <= today);
+            }
+            else Assert.Equal(dispense.EstimatedSupplyEnd, Assert.Single(enrollment.Appointments, a => a.State == RedStarAppointmentState.Scheduled).DueDate);
+        });
+        var primary = Assert.Single(enrollments, e => e.Patient.PortalUserId != null);
+        Assert.Equal("drmc-development-patient", primary.Patient.PortalUserId);
+        Assert.Equal("RS-DEMO-001", primary.Patient.PatientCode);
+        Assert.Equal(db.Phi.AccountIndex(primary.Patient.PortalUserId), primary.Patient.PortalUserIdBlindIndex);
+        Assert.All(enrollments, e => Assert.Equal(db.Phi.PatientCodeIndex(e.Patient.PatientCode), e.Patient.PatientCodeBlindIndex));
+
+        await db.Database.OpenConnectionAsync();
+        await using var command = db.Database.GetDbConnection().CreateCommand();
+        command.CommandText = "SELECT p.PatientCode, p.FullName, p.PortalUserId, e.Medicines, d.Medicines, p.PhiProtectionVersion, e.PhiProtectionVersion, d.PhiProtectionVersion FROM RedStarPatients p JOIN RedStarEnrollments e ON e.PatientId=p.Id JOIN RedStarDispenses d ON d.EnrollmentId=e.Id WHERE p.Id=@id";
+        var parameter = command.CreateParameter(); parameter.ParameterName = "@id"; parameter.Value = primary.PatientId; command.Parameters.Add(parameter);
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        var expected = new[] { (nameof(RedStarPatient), "PatientCode", primary.Patient.PatientCode),
+            (nameof(RedStarPatient), "FullName", primary.Patient.FullName),
+            (nameof(RedStarPatient), "PortalUserId", primary.Patient.PortalUserId!),
+            (nameof(RedStarEnrollment), "Medicines", primary.Medicines),
+            (nameof(RedStarDispense), "Medicines", primary.Medicines) };
+        for (var i = 0; i < expected.Length; i++)
+        {
+            var encrypted = reader.GetString(i);
+            Assert.StartsWith(RedStarPhiProtection.Envelope, encrypted);
+            Assert.Equal(expected[i].Item3, db.Phi.Unprotect(expected[i].Item1, expected[i].Item2, encrypted));
+        }
+        for (var i = 5; i < 8; i++) Assert.Equal(1, reader.GetInt32(i));
+    }
+
+    [Theory]
+    [InlineData("2025-12-31T16:01:00Z")]
+    [InlineData("2024-02-29T15:59:00Z")]
+    [InlineData("2026-04-30T16:01:00Z")]
+    public async Task Backfill_respects_clinical_month_boundaries_opt_out_and_staff_edits(string instant)
+    {
+        // Each case owns its database: deletion here simulates an older demo without Red Star fixtures.
+        var isolated = new PortalFactory();
+        try
+        {
+            await isolated.InitializeAsync();
+            await using var scope = isolated.Services.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+            var original = await DemoEnrollments(db);
+            Assert.Equal(24, original.Count);
+            var ids = original.Select(e => e.PatientId).ToArray();
+            await db.RedStarDispenses.Where(d => ids.Contains(d.Enrollment.PatientId)).ExecuteDeleteAsync();
+            await db.RedStarAppointments.Where(a => ids.Contains(a.Enrollment.PatientId)).ExecuteDeleteAsync();
+            await db.RedStarEnrollments.Where(e => ids.Contains(e.PatientId)).ExecuteDeleteAsync();
+            await db.RedStarPatients.Where(p => ids.Contains(p.Id)).ExecuteDeleteAsync();
+            db.ChangeTracker.Clear();
+            var generalCount = await db.PatientRecords.CountAsync();
+            var doctorCount = await db.Doctors.CountAsync();
+            var passwordHash = await db.Users.Where(u => u.Id == "drmc-development-patient").Select(u => u.PasswordHash).SingleAsync();
+            var clock = new TestClock(DateTimeOffset.Parse(instant));
+            var disabled = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["DevelopmentFixtures:Enabled"] = "false" }).Build();
+            DbInitializer.Initialize(db, users, disabled, clock);
+            Assert.Empty(await DemoEnrollments(db));
+            DbInitializer.Initialize(db, users, configuration, clock);
+            var seeded = await DemoEnrollments(db);
+            Assert.Equal(24, seeded.Count);
+            var today = ClinicalClock.WallTime(clock.Now).Date;
+            var monthStart = new DateTime(today.Year, today.Month, 1);
+            Assert.Equal(5, seeded.Count(e => e.Status == RedStarStatus.Deceased && e.StatusDate >= monthStart && e.StatusDate <= today));
+            Assert.Equal(3, seeded.Count(e => e.Status == RedStarStatus.Deceased && e.StatusDate < monthStart));
+            Assert.All(seeded, e => Assert.True(e.StatusDate <= today));
+            var edited = seeded.Single(e => e.Patient.PatientCode == "RS-DEMO-002");
+            var tracked = await db.RedStarPatients.SingleAsync(p => p.Id == edited.PatientId);
+            tracked.FullName = "Staff-maintained demo name";
+            await db.SaveChangesAsync();
+            var preservedVersion = tracked.RowVersion.ToArray();
+            await db.RedStarAppointments.Where(a => a.EnrollmentId == edited.Id && a.State == RedStarAppointmentState.Scheduled).ExecuteDeleteAsync();
+            var missing = seeded.Single(e => e.Patient.PatientCode == "RS-DEMO-024");
+            await db.RedStarDispenses.Where(d => d.EnrollmentId == missing.Id).ExecuteDeleteAsync();
+            await db.RedStarAppointments.Where(a => a.EnrollmentId == missing.Id).ExecuteDeleteAsync();
+            await db.RedStarEnrollments.Where(e => e.Id == missing.Id).ExecuteDeleteAsync();
+            await db.RedStarPatients.Where(p => p.Id == missing.PatientId).ExecuteDeleteAsync();
+            db.ChangeTracker.Clear();
+            clock.Now = clock.Now.AddMonths(2);
+            DbInitializer.Initialize(db, users, configuration, clock);
+            clock.Now = clock.Now.AddMonths(1);
+            DbInitializer.Initialize(db, users, configuration, clock);
+            var backfilled = await DemoEnrollments(db);
+            Assert.Equal(24, backfilled.Count);
+            var preserved = backfilled.Single(e => e.Id == edited.Id);
+            Assert.Equal("Staff-maintained demo name", preserved.Patient.FullName);
+            Assert.Equal(preservedVersion, preserved.Patient.RowVersion);
+            Assert.DoesNotContain(preserved.Appointments, a => a.State == RedStarAppointmentState.Scheduled);
+            Assert.All(seeded.Where(e => e.Id != missing.Id), before => Assert.Equal(before.StatusDate, backfilled.Single(e => e.Id == before.Id).StatusDate));
+            Assert.Equal(generalCount, await db.PatientRecords.CountAsync());
+            Assert.Equal(doctorCount, await db.Doctors.CountAsync());
+            Assert.Equal(passwordHash, await db.Users.Where(u => u.Id == "drmc-development-patient").Select(u => u.PasswordHash).SingleAsync());
+        }
+        finally { await ((IAsyncLifetime)isolated).DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task Seeded_patient_and_staff_pages_show_due_warnings_with_workers_disabled_and_filter_expired_months()
+    {
+        Assert.False(factory.Services.GetRequiredService<IOptions<RedStarOptions>>().Value.WorkerEnabled);
+        Assert.False(factory.Services.GetRequiredService<IOptions<RedStarOptions>>().Value.RemindersEnabled);
+        var clinic = await StaffAccounts.SignInAsync(factory, "redstar.demo@fixtures.test", "RedStarStaff");
+        var registry = await clinic.GetStringAsync("/Admin/RedStar?search=RS-DEMO");
+        foreach (var text in new[] { "Overdue replenishment", "Replenishment due today", "Replenishment due soon", "Refill scheduled", "Current Active / LIVING" })
+            Assert.Contains(text, registry);
+        var deliveries = await clinic.GetStringAsync("/Admin/RedStar/Deliveries");
+        Assert.Contains("Current medicine replenishment", deliveries);
+        Assert.Contains("Overdue replenishment", deliveries);
+        var patient = factory.CreatePortalClient();
+        await patient.SignInSuccessfullyAsync(PortalFactory.PrimaryEmail, PortalFactory.Password);
+        var medications = await patient.GetStringAsync("/Patient/Medications");
+        Assert.Contains("Medicine replenishment reminder", medications);
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var seeded = await DemoEnrollments(db);
+        var primary = seeded.Single(e => e.Patient.PatientCode == "RS-DEMO-001");
+        var due = primary.Appointments.Single(a => a.State == RedStarAppointmentState.Scheduled).DueDate;
+        Assert.Contains(due.ToString("MMMM d, yyyy"), medications);
+        Assert.Contains(primary.Medicines, medications);
+        var empty = factory.CreatePortalClient();
+        await empty.SignInSuccessfullyAsync(PortalFactory.EmptyEmail, PortalFactory.Password);
+        Assert.DoesNotContain("Medicine replenishment reminder", await empty.GetStringAsync("/Patient/Medications"));
+        var month = ClinicalClock.Today.ToString("yyyy-MM");
+        var expired = await clinic.GetStringAsync("/Admin/RedStar?worklist=expired&search=RS-DEMO&month=" + month);
+        foreach (var enrollment in seeded.Where(e => e.Status == RedStarStatus.Deceased))
+        {
+            if (enrollment.StatusDate!.Value.ToString("yyyy-MM") == month) Assert.Contains(enrollment.Patient.PatientCode, expired);
+            else Assert.DoesNotContain(enrollment.Patient.PatientCode, expired);
+        }
+        var prior = seeded.Where(e => e.Status == RedStarStatus.Deceased).Min(e => e.StatusDate)!.Value.ToString("yyyy-MM");
+        var previous = await clinic.GetStringAsync("/Admin/RedStar?worklist=expired&search=RS-DEMO&month=" + prior);
+        Assert.Contains(seeded.Single(e => e.StatusDate?.ToString("yyyy-MM") == prior).Patient.PatientCode, previous);
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, (await clinic.GetAsync("/Admin/RedStar?month=2026-13")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Refill_worklists_ignore_other_care_dates_and_closed_schedules_and_identify_unverified_dates()
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var controller = Controller(db, scope.ServiceProvider);
+        var baseline = Assert.IsType<RedStarRegistryPage>(Assert.IsType<ViewResult>(await controller.Index(search: null)).Model);
+        var before = Assert.IsType<RedStarDeliveriesPage>(Assert.IsType<ViewResult>(await controller.Deliveries()).Model);
+        var prefix = "REFILL-VIS-" + Guid.NewGuid().ToString("N");
+        var today = ClinicalClock.Today;
+        var scenarios = new[] {
+            (RedStarAppointmentKind.Lab, RedStarAppointmentState.Scheduled, RedStarStatus.Active, RedStarProgram.ART, 0, true),
+            (RedStarAppointmentKind.Consultation, RedStarAppointmentState.Scheduled, RedStarStatus.Active, RedStarProgram.ART, 0, true),
+            (RedStarAppointmentKind.Refill, RedStarAppointmentState.PickedUp, RedStarStatus.Active, RedStarProgram.ART, 0, true),
+            (RedStarAppointmentKind.Refill, RedStarAppointmentState.Cancelled, RedStarStatus.Active, RedStarProgram.ART, 0, true),
+            (RedStarAppointmentKind.Refill, RedStarAppointmentState.Scheduled, RedStarStatus.Deceased, RedStarProgram.ART, 0, true),
+            (RedStarAppointmentKind.Refill, RedStarAppointmentState.Scheduled, RedStarStatus.Discontinued, RedStarProgram.ART, 0, true),
+            (RedStarAppointmentKind.Refill, RedStarAppointmentState.Scheduled, RedStarStatus.Active, RedStarProgram.Unverified, 0, true),
+            (RedStarAppointmentKind.Refill, RedStarAppointmentState.Scheduled, RedStarStatus.Active, RedStarProgram.ART, 1, false),
+            (RedStarAppointmentKind.Refill, RedStarAppointmentState.Scheduled, RedStarStatus.Active, RedStarProgram.ART, -1, true)
+        };
+        var number = 0;
+        foreach (var (kind, state, status, program, offset, verified) in scenarios)
+            db.RedStarAppointments.Add(new RedStarAppointment
+            {
+                Enrollment = new RedStarEnrollment
+                {
+                    Patient = new RedStarPatient { PatientCode = prefix + (++number), FullName = "Synthetic reminder visibility" },
+                    Program = program, Status = status, StatusDate = today
+                },
+                Kind = kind, State = state, DueDate = today.AddDays(offset), RemindersVerified = verified
+            });
+        await db.SaveChangesAsync();
+        var dueToday = Assert.IsType<RedStarRegistryPage>(Assert.IsType<ViewResult>(await controller.Index(search: prefix, worklist: "today")).Model);
+        Assert.Empty(dueToday.Rows);
+        Assert.Equal(baseline.Counts["today"], dueToday.Counts["today"]);
+        Assert.Equal(baseline.Counts["week"] + 1, dueToday.Counts["week"]);
+        Assert.Equal(baseline.Counts["overdue"] + 1, dueToday.Counts["overdue"]);
+        var soon = Assert.IsType<RedStarRegistryPage>(Assert.IsType<ViewResult>(await controller.Index(search: prefix, worklist: "week")).Model);
+        Assert.False(Assert.Single(soon.Rows).NextRefillVerified);
+        var after = Assert.IsType<RedStarDeliveriesPage>(Assert.IsType<ViewResult>(await controller.Deliveries(refillPage: int.MaxValue)).Model);
+        Assert.Equal(before.RefillTotal + 2, after.RefillTotal);
+        Assert.InRange(after.RefillPage, 1, Math.Max(1, (after.RefillTotal + 24) / 25));
+        var clinic = await StaffAccounts.SignInAsync(factory, "redstar.demo@fixtures.test", "RedStarStaff");
+        var html = await clinic.GetStringAsync("/Admin/RedStar?search=" + prefix + "&worklist=week");
+        Assert.Contains("Needs verification", html);
+        Assert.Contains("Replenishment due soon", html);
+    }
+
+    [Fact]
+    public async Task Expired_report_uses_month_boundaries_and_preserves_month_in_pagination()
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var controller = Controller(db, scope.ServiceProvider);
+        var date = ClinicalClock.Today.AddMonths(-2);
+        var start = new DateTime(date.Year, date.Month, 1);
+        var month = start.ToString("yyyy-MM");
+        var prefix = "MONTH-" + Guid.NewGuid().ToString("N") + "-";
+        var before = Assert.IsType<RedStarRegistryPage>(Assert.IsType<ViewResult>(await controller.Index(search: prefix, worklist: "expired", month: month)).Model);
+        for (var i = 1; i <= 28; i++)
+            db.RedStarEnrollments.Add(new RedStarEnrollment
+            {
+                Patient = new RedStarPatient { PatientCode = prefix + i.ToString("D2"), FullName = "Synthetic monthly report patient" },
+                Program = RedStarProgram.ART, Status = RedStarStatus.Deceased,
+                StatusDate = i == 27 ? start.AddDays(-1) : i == 28 ? start.AddMonths(1) : start.AddDays(i - 1)
+            });
+        await db.SaveChangesAsync();
+        var report = Assert.IsType<RedStarRegistryPage>(Assert.IsType<ViewResult>(await controller.Index(search: prefix, worklist: "expired", page: 2, month: month)).Model);
+        Assert.Equal(26, report.Total);
+        Assert.Equal(2, report.Page);
+        Assert.Equal(before.Counts["expired"] + 26, report.Counts["expired"]);
+        Assert.Equal(before.Counts["living"], report.Counts["living"]);
+        Assert.Equal(prefix + "26", Assert.Single(report.Rows).PatientCode);
+        var clinic = await StaffAccounts.SignInAsync(factory, "redstar.demo@fixtures.test", "RedStarStaff");
+        var html = await clinic.GetStringAsync("/Admin/RedStar?search=" + prefix + "&worklist=expired&month=" + month);
+        Assert.Contains("page=2", html);
+        Assert.Contains("month=" + month, html);
+        Assert.DoesNotContain(prefix + "27", html);
+        Assert.DoesNotContain(prefix + "28", html);
+        Assert.Contains("Expired " + start.ToString("dd MMM yyyy"), html);
     }
 }

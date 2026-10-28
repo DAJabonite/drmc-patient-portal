@@ -1,9 +1,21 @@
 using System.Net;
+using System.Globalization;
+using System.IO.Compression;
+using System.Security.Claims;
+using System.Xml.Linq;
+using DrmcPatientPortal.Areas.Admin.Controllers;
+using DrmcPatientPortal.Areas.Admin.Models;
+using DrmcPatientPortal.Areas.Admin.Services;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
+using ExcelDataReader;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DrmcPatientPortal.Tests;
@@ -13,6 +25,359 @@ public sealed class RedStarStaffTests(PortalFactory factory)
 {
     private sealed record Fixture(int PatientId, int EnrollmentId, int AppointmentId, string UserId, string Email, string Code);
     private Task<HttpClient> Clinic() => StaffAccounts.SignInAsync(factory, "redstar.operations@fixtures.test", "RedStarStaff");
+
+    private static RedStarController ReportController(ApplicationDbContext db, IServiceProvider services) => new(db, services.GetRequiredService<AdminWrites>())
+    {
+        ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "synthetic-report-staff")], "Test"))
+            }
+        }
+    };
+
+    private static RedStarEnrollment ReportEnrollment(string code, RedStarProgram program, RedStarStatus status, DateTime? statusDate = null) => new()
+    {
+        Patient = new RedStarPatient { PatientCode = code, CodeName = "Synthetic report code", FullName = "Private synthetic report patient" },
+        Program = program, Status = status, StatusDate = statusDate, EnrolledDate = new DateTime(2020, 1, 1)
+    };
+
+    private static RedStarRegistryPage RegistryPage(IActionResult result) => Assert.IsType<RedStarRegistryPage>(Assert.IsType<ViewResult>(result).Model);
+
+    [Fact]
+    public async Task Monthly_summary_distinguishes_active_programs_from_living_ART_and_stays_registry_wide()
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var controller = ReportController(db, scope.ServiceProvider);
+        var prefix = "SUMMARY-" + Guid.NewGuid().ToString("N") + "-";
+        var before = RegistryPage(await controller.Index(search: prefix, month: "2024-02"));
+        foreach (var program in new[] { RedStarProgram.ART, RedStarProgram.PrEP, RedStarProgram.PEP, RedStarProgram.NewbornProphylaxis })
+            db.RedStarEnrollments.Add(ReportEnrollment(prefix + program, program, RedStarStatus.Active));
+        foreach (var status in new[] { RedStarStatus.AwaitingVerification, RedStarStatus.TransferredOut, RedStarStatus.Discontinued, RedStarStatus.Completed })
+            db.RedStarEnrollments.Add(ReportEnrollment(prefix + status, RedStarProgram.ART, status));
+        db.RedStarEnrollments.Add(ReportEnrollment(prefix + "expired", RedStarProgram.ART, RedStarStatus.Deceased, new DateTime(2024, 2, 29)));
+        db.RedStarEnrollments.Add(ReportEnrollment(prefix + "undated", RedStarProgram.ART, RedStarStatus.Deceased));
+        await db.SaveChangesAsync();
+
+        var active = RegistryPage(await controller.Index(search: prefix, status: RedStarRegistryStatusFilter.Active, month: "2024-02"));
+        Assert.Equal(4, active.Total);
+        Assert.All(active.Rows, row => Assert.Equal(RedStarStatus.Active, row.Status));
+        Assert.Equal(before.Summary.ActiveCount + 4, active.Summary.ActiveCount);
+        Assert.Equal(before.Summary.LivingCount + 1, active.Summary.LivingCount);
+        Assert.Equal(before.Summary.ExpiredThisMonthCount + 1, active.Summary.ExpiredThisMonthCount);
+        var living = RegistryPage(await controller.Index(search: prefix, program: RedStarProgram.ART, status: RedStarRegistryStatusFilter.Living, month: "2", year: 2024));
+        Assert.Equal(RedStarProgram.ART, Assert.Single(living.Rows).Program);
+        Assert.Equal(active.Summary, living.Summary);
+        Assert.Equal("2024-02", living.Month);
+        Assert.Equal(living.Summary.LivingCount, living.Counts["living"]);
+        Assert.Equal(living.Summary.ExpiredThisMonthCount, living.Counts["expired"]);
+        var expired = RegistryPage(await controller.Index(search: prefix, status: RedStarRegistryStatusFilter.Expired, month: "2024-02"));
+        Assert.Equal(prefix + "expired", Assert.Single(expired.Rows).PatientCode);
+        var alias = RegistryPage(await controller.Index(search: prefix, status: RedStarRegistryStatusFilter.Deceased, month: "2024-02"));
+        Assert.Equal(expired.Rows.Select(row => row.EnrollmentId), alias.Rows.Select(row => row.EnrollmentId));
+        foreach (var status in new[] { RedStarStatus.AwaitingVerification, RedStarStatus.TransferredOut, RedStarStatus.Discontinued, RedStarStatus.Completed })
+        {
+            var lifecycle = RegistryPage(await controller.Index(search: prefix, status: Enum.Parse<RedStarRegistryStatusFilter>(status.ToString()), month: "2024-02"));
+            Assert.Equal(status, Assert.Single(lifecycle.Rows).Status);
+            Assert.Equal(active.Summary, lifecycle.Summary);
+        }
+        var emptyWorklist = RegistryPage(await controller.Index(search: prefix, worklist: "today", program: RedStarProgram.PrEP, month: "2024-02"));
+        Assert.Empty(emptyWorklist.Rows);
+        Assert.Equal(active.Summary, emptyWorklist.Summary);
+    }
+
+    [Theory]
+    [InlineData(2024, 2)]
+    [InlineData(2025, 12)]
+    [InlineData(2025, 1)]
+    public async Task Monthly_expired_selection_uses_inclusive_start_exclusive_end_and_ignores_missing_dates(int year, int month)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var controller = ReportController(db, scope.ServiceProvider);
+        var prefix = "BOUNDARY-" + Guid.NewGuid().ToString("N") + "-";
+        var start = new DateTime(year, month, 1); var end = start.AddMonths(1);
+        var period = start.ToString("yyyy-MM", CultureInfo.InvariantCulture);
+        var before = RegistryPage(await controller.Index(search: prefix, month: period));
+        var dates = new DateTime?[] { start, end.AddDays(-1), start.AddDays(-1), end, null };
+        for (var i = 0; i < dates.Length; i++)
+            db.RedStarEnrollments.Add(ReportEnrollment(prefix + i, RedStarProgram.ART, RedStarStatus.Deceased, dates[i]));
+        await db.SaveChangesAsync();
+        var result = RegistryPage(await controller.Index(search: prefix, status: RedStarRegistryStatusFilter.Expired, month: month.ToString(), year: year));
+        Assert.Equal(new[] { prefix + "0", prefix + "1" }, result.Rows.Select(row => row.PatientCode));
+        Assert.Equal(before.Summary.ExpiredThisMonthCount + 2, result.Summary.ExpiredThisMonthCount);
+        Assert.Equal(start, result.Summary.MonthStart);
+        var legacy = RegistryPage(await controller.Index(search: prefix, worklist: "expired", month: period));
+        Assert.Equal(result.Rows.Select(row => row.EnrollmentId), legacy.Rows.Select(row => row.EnrollmentId));
+    }
+
+    [Fact]
+    public async Task Report_period_defaults_omitted_components_to_the_clinical_calendar()
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var controller = ReportController(db, scope.ServiceProvider); var today = ClinicalClock.Today;
+        Assert.Equal(new DateTime(today.Year, today.Month, 1), RegistryPage(await controller.Index(search: null)).Summary.MonthStart);
+        Assert.Equal(new DateTime(2024, today.Month, 1), RegistryPage(await controller.Index(search: null, year: 2024)).Summary.MonthStart);
+        Assert.Equal(new DateTime(today.Year, 2, 1), RegistryPage(await controller.Index(search: null, month: "2")).Summary.MonthStart);
+        Assert.Equal(new DateTime(2024, 2, 1), RegistryPage(await controller.Index(search: null, month: "2024-02", year: 2024)).Summary.MonthStart);
+        Assert.Equal(new DateTime(1900, 1, 1), RegistryPage(await controller.Index(search: null, month: "1900-01")).Summary.MonthStart);
+        Assert.Equal(new DateTime(2200, 12, 1), RegistryPage(await controller.Index(search: null, month: "2200-12")).Summary.MonthStart);
+    }
+
+    [Theory]
+    [InlineData("month", "2024-13", null, null)]
+    [InlineData("month", "0", null, null)]
+    [InlineData("month", "13", null, null)]
+    [InlineData("month", "invalid", null, null)]
+    [InlineData("month", "2024-02", "year", "2025")]
+    [InlineData("year", "1899", null, null)]
+    [InlineData("year", "2201", null, null)]
+    [InlineData("year", "invalid", null, null)]
+    [InlineData("status", "Unknown", null, null)]
+    [InlineData("status", "999", null, null)]
+    [InlineData("program", "999", null, null)]
+    [InlineData("worklist", "Unknown", null, null)]
+    public async Task Registry_and_formatted_report_reject_invalid_filters_consistently(string key, string value, string? otherKey, string? otherValue)
+    {
+        var clinic = await Clinic(); var fields = new Dictionary<string, string> { [key] = value };
+        if (otherKey is not null) fields[otherKey] = otherValue!;
+        var query = string.Join("&", fields.Select(field => Uri.EscapeDataString(field.Key) + "=" + Uri.EscapeDataString(field.Value)));
+        Assert.Equal(HttpStatusCode.BadRequest, (await clinic.GetAsync("/Admin/RedStar?" + query)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await clinic.PostFormAsync("/Admin/RedStar/Create", "/Admin/RedStar/Export", fields)).StatusCode);
+    }
+
+    [Fact]
+    public async Task Dashboard_preserves_period_and_filters_in_pagination_and_download()
+    {
+        var prefix = "REPORT-UI-" + Guid.NewGuid().ToString("N") + "-";
+        await Db(async db =>
+        {
+            for (var i = 0; i < 26; i++) db.RedStarEnrollments.Add(ReportEnrollment(prefix + i.ToString("D2"), RedStarProgram.ART, RedStarStatus.Active));
+            await db.SaveChangesAsync(); return true;
+        });
+        var html = WebUtility.HtmlDecode(await (await Clinic()).GetStringAsync("/Admin/RedStar?search=" + prefix + "&program=ART&status=Living&month=2024-02"));
+        Assert.Contains("Download Formatted Report", html);
+        Assert.Contains("action=\"/Admin/RedStar/Export\"", html);
+        Assert.Contains("value=\"Living\"", html);
+        Assert.Contains("value=\"2024-02\"", html);
+        Assert.Contains("page=2", html);
+        Assert.Contains("status=Living", html);
+        Assert.Contains("month=2024-02", html);
+        Assert.Contains("search=" + prefix, html);
+        Assert.Contains("program=ART", html);
+    }
+
+    private static XDocument WorkbookXml(ZipArchive zip, string path)
+    {
+        using var stream = Assert.IsType<ZipArchiveEntry>(zip.GetEntry(path)).Open();
+        return XDocument.Load(stream);
+    }
+    private static string CellText(XElement cell) => string.Concat(cell.Descendants().Where(element => element.Name.LocalName is "t" or "v").Select(element => element.Value));
+    private static string ReportField(XDocument sheet, string label)
+    {
+        var cell = Assert.Single(sheet.Descendants(), element => element.Name.LocalName == "c" && CellText(element) == label);
+        return CellText(cell.ElementsAfterSelf().First(element => element.Name.LocalName == "c"));
+    }
+
+    [Fact]
+    public async Task Formatted_report_exports_all_filtered_rows_in_registry_order_with_print_ready_summary()
+    {
+        var prefix = "XLSX-" + Guid.NewGuid().ToString("N") + "-";
+        var cjkCodeName = string.Concat(Enumerable.Repeat("測試", 60));
+        var wideCodeName = new string('W', 120);
+        await Db(async db =>
+        {
+            for (var i = 26; i >= 0; i--)
+            {
+                var enrollment = ReportEnrollment(prefix + i.ToString("D2"), RedStarProgram.ART, RedStarStatus.Active);
+                if (i == 0) enrollment.Patient.CodeName = "=1+1";
+                if (i == 1) enrollment.Patient.CodeName = cjkCodeName;
+                if (i == 2) enrollment.Patient.CodeName = wideCodeName;
+                db.RedStarEnrollments.Add(enrollment);
+            }
+            db.RedStarEnrollments.Add(ReportEnrollment(prefix + "other-program", RedStarProgram.PrEP, RedStarStatus.Active));
+            db.RedStarEnrollments.Add(ReportEnrollment(prefix + "expired", RedStarProgram.ART, RedStarStatus.Deceased, new DateTime(2024, 2, 29)));
+            await db.SaveChangesAsync(); return true;
+        });
+        var expected = await Db(async db => new
+        {
+            ActiveCount = await db.RedStarEnrollments.CountAsync(enrollment => enrollment.Status == RedStarStatus.Active),
+            LivingCount = await db.RedStarEnrollments.CountAsync(enrollment => enrollment.Status == RedStarStatus.Active && enrollment.Program == RedStarProgram.ART),
+            ExpiredThisMonthCount = await db.RedStarEnrollments.CountAsync(enrollment => enrollment.Status == RedStarStatus.Deceased &&
+                enrollment.StatusDate >= new DateTime(2024, 2, 1) && enrollment.StatusDate < new DateTime(2024, 3, 1))
+        });
+        var clinic = await Clinic();
+        var response = await clinic.PostFormAsync("/Admin/RedStar", "/Admin/RedStar/Export", new Dictionary<string, string>
+        { ["search"] = prefix, ["program"] = "ART", ["status"] = "Living", ["month"] = "2", ["year"] = "2024", ["page"] = "2" });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", response.Content.Headers.ContentType?.MediaType);
+        Assert.Contains("RedStar-report-2024-02.xlsx", response.Content.Headers.ContentDisposition?.ToString());
+        Assert.True(response.Headers.CacheControl?.NoStore);
+        var bytes = await response.Content.ReadAsByteArrayAsync();
+        using var zip = new ZipArchive(new MemoryStream(bytes));
+        var sheet = WorkbookXml(zip, "xl/worksheets/sheet1.xml");
+        Assert.Equal(expected.ActiveCount.ToString(CultureInfo.InvariantCulture), ReportField(sheet, "Total Active"));
+        Assert.Equal(expected.LivingCount.ToString(CultureInfo.InvariantCulture), ReportField(sheet, "Total Living"));
+        Assert.Equal(expected.ExpiredThisMonthCount.ToString(CultureInfo.InvariantCulture), ReportField(sheet, "Total Expired for the Month"));
+        Assert.Contains("2024", ReportField(sheet, "Report Period"));
+        Assert.Contains(ClinicalClock.Today.ToString("dd MMM yyyy", CultureInfo.InvariantCulture), ReportField(sheet, "Generated Date"));
+        Assert.Equal("27", ReportField(sheet, "Matching rows"));
+        Assert.Contains(prefix, ReportField(sheet, "Applied filters"));
+        var rows = sheet.Descendants().Where(element => element.Name.LocalName == "row").ToList();
+        var headers = rows.Single(row => (string?)row.Attribute("r") == "10").Elements().Select(CellText).ToArray();
+        Assert.Equal(new[] { "Patient code", "Code name", "Program", "Status", "Next refill", "Follow-up", "Requests" }, headers);
+        var data = rows.Where(row => int.Parse((string)row.Attribute("r")!, CultureInfo.InvariantCulture) > 10).ToList();
+        Assert.Equal(27, data.Count);
+        Assert.Equal(Enumerable.Range(0, 27).Select(i => prefix + i.ToString("D2")), data.Select(row => CellText(row.Elements().First())));
+        Assert.Equal(cjkCodeName, CellText(data[1].Elements().ElementAt(1)));
+        Assert.Equal(wideCodeName, CellText(data[2].Elements().ElementAt(1)));
+        // Native Excel AutoFit needs 158.4pt for this CJK label and 144pt for the wide Latin label.
+        Assert.True(double.Parse((string)data[1].Attribute("ht")!, CultureInfo.InvariantCulture) >= 159);
+        Assert.True(double.Parse((string)data[2].Attribute("ht")!, CultureInfo.InvariantCulture) >= 144);
+        Assert.DoesNotContain(sheet.Descendants(), element => element.Name.LocalName == "f");
+        Assert.Contains(sheet.Descendants(), element => element.Name.LocalName == "c" && CellText(element) == "=1+1" && (string?)element.Attribute("t") == "inlineStr");
+        Assert.DoesNotContain("PortalUserId", sheet.ToString());
+        Assert.DoesNotContain("FullName", sheet.ToString());
+        var setup = Assert.Single(sheet.Descendants(), element => element.Name.LocalName == "pageSetup");
+        Assert.Equal("landscape", (string?)setup.Attribute("orientation"));
+        Assert.Equal("9", (string?)setup.Attribute("paperSize"));
+        Assert.Equal("1", (string?)setup.Attribute("fitToWidth"));
+        Assert.Equal("0", (string?)setup.Attribute("fitToHeight"));
+        Assert.Contains(WorkbookXml(zip, "xl/styles.xml").Descendants(), element => element.Name.LocalName == "xf");
+        Assert.Contains(WorkbookXml(zip, "xl/_rels/workbook.xml.rels").Descendants(), element => ((string?)element.Attribute("Type"))?.EndsWith("/styles", StringComparison.Ordinal) == true);
+        var names = WorkbookXml(zip, "xl/workbook.xml").Descendants().Where(element => element.Name.LocalName == "definedName").ToList();
+        Assert.Contains(names, element => (string?)element.Attribute("name") == "_xlnm.Print_Titles" && element.Value.Contains("$10:$10", StringComparison.Ordinal));
+        Assert.Contains(names, element => (string?)element.Attribute("name") == "_xlnm.Print_Area" && element.Value.Contains("$G$37", StringComparison.Ordinal));
+        using var reader = ExcelReaderFactory.CreateOpenXmlReader(new MemoryStream(bytes));
+        Assert.Equal("Registry", reader.Name);
+        var found = new List<string>();
+        while (reader.Read()) if (reader.GetValue(0)?.ToString()?.StartsWith(prefix, StringComparison.Ordinal) == true) found.Add(reader.GetValue(0)!.ToString()!);
+        Assert.Equal(27, found.Count);
+        Assert.True(await Db(db => db.RedStarAudits.AnyAsync(a => a.Action == "FormattedReportExport" && a.Subject == "PrivateRegistry")));
+    }
+
+    [Fact]
+    public async Task Formatted_expired_report_applies_month_and_empty_report_retains_headers()
+    {
+        var prefix = "EMPTY-XLSX-" + Guid.NewGuid().ToString("N");
+        await Db(async db =>
+        {
+            db.RedStarEnrollments.Add(ReportEnrollment(prefix + "-inside", RedStarProgram.ART, RedStarStatus.Deceased, new DateTime(2024, 2, 29)));
+            db.RedStarEnrollments.Add(ReportEnrollment(prefix + "-outside", RedStarProgram.ART, RedStarStatus.Deceased, new DateTime(2024, 3, 1)));
+            await db.SaveChangesAsync(); return true;
+        });
+        var clinic = await Clinic();
+        var legacy = await clinic.GetStringAsync("/Admin/RedStar?search=" + prefix + "&status=5&month=2024-02");
+        Assert.Contains(prefix + "-inside", legacy);
+        Assert.DoesNotContain(prefix + "-outside", legacy);
+        foreach (var filter in new[] { "Expired", "Deceased", "5" })
+        {
+            var response = await clinic.PostFormAsync("/Admin/RedStar", "/Admin/RedStar/Export", new Dictionary<string, string>
+            { ["search"] = prefix, ["status"] = filter, ["month"] = "2024-02" });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using var zip = new ZipArchive(new MemoryStream(await response.Content.ReadAsByteArrayAsync()));
+            var sheet = WorkbookXml(zip, "xl/worksheets/sheet1.xml");
+            Assert.Equal("1", ReportField(sheet, "Matching rows"));
+            Assert.Contains(prefix + "-inside", sheet.ToString());
+            Assert.DoesNotContain(prefix + "-outside", sheet.ToString());
+            Assert.Contains("29 Feb 2024", sheet.ToString());
+        }
+        var empty = await clinic.PostFormAsync("/Admin/RedStar", "/Admin/RedStar/Export", new Dictionary<string, string>
+        { ["search"] = prefix + "-missing", ["status"] = "Expired", ["month"] = "2024-02" });
+        Assert.Equal(HttpStatusCode.OK, empty.StatusCode);
+        using var emptyZip = new ZipArchive(new MemoryStream(await empty.Content.ReadAsByteArrayAsync()));
+        var emptySheet = WorkbookXml(emptyZip, "xl/worksheets/sheet1.xml");
+        Assert.Equal("0", ReportField(emptySheet, "Matching rows"));
+        Assert.Contains("Patient code", emptySheet.ToString());
+        Assert.Contains("Total Living", emptySheet.ToString());
+    }
+
+    [Fact]
+    public async Task Formatted_report_requires_clinic_access_and_antiforgery_token()
+    {
+        var clinic = await Clinic();
+        Assert.Equal(HttpStatusCode.BadRequest, (await clinic.PostAsync("/Admin/RedStar/Export", new FormUrlEncodedContent([]))).StatusCode);
+        var other = await StaffAccounts.PatientServicesAsync(factory);
+        Assert.Equal(HttpStatusCode.Forbidden, (await other.PostAsync("/Admin/RedStar/Export", new FormUrlEncodedContent([]))).StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, (await factory.CreatePortalClient().PostAsync("/Admin/RedStar/Export", new FormUrlEncodedContent([]))).StatusCode);
+    }
+
+    [Fact]
+    public async Task Formatted_report_audit_failure_blocks_workbook_and_patient_disclosure()
+    {
+        var item = await Seed(); var interceptor = new RejectFormattedReportAudit();
+        using var host = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+            services.AddDbContext<ApplicationDbContext>(options => options.AddInterceptors(interceptor))));
+        var clinic = await StaffAccounts.SignInAsync(host, "report-audit." + Guid.NewGuid().ToString("N") + "@fixtures.test", "RedStarStaff");
+        var page = "/Admin/RedStar?search=" + Uri.EscapeDataString(item.Code);
+        Assert.Contains(item.Code, await clinic.GetStringAsync(page));
+        var response = await clinic.PostFormAsync(page, "/Admin/RedStar/Export", new Dictionary<string, string> { ["search"] = item.Code });
+        Assert.True(interceptor.Rejected);
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("/Home/ServiceUnavailable", response.Headers.Location?.OriginalString);
+        Assert.Null(response.Content.Headers.ContentDisposition);
+        Assert.NotEqual("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", response.Content.Headers.ContentType?.MediaType);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.DoesNotContain(item.Code, body);
+        Assert.DoesNotContain("Private synthetic patient", body);
+    }
+
+    private sealed class RejectFormattedReportAudit : SaveChangesInterceptor
+    {
+        public bool Rejected { get; private set; }
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            if (eventData.Context?.ChangeTracker.Entries<RedStarAudit>().Any(entry =>
+                entry.State == EntityState.Added && entry.Entity.Action == "FormattedReportExport") == true)
+            {
+                Rejected = true;
+                throw new IOException("Synthetic formatted report audit failure.");
+            }
+            return ValueTask.FromResult(result);
+        }
+    }
+
+    [Fact]
+    public async Task Formatted_report_limit_applies_after_private_search_and_returns_to_the_same_filters()
+    {
+        var prefix = "LIMIT-XLSX-" + Guid.NewGuid().ToString("N") + "-";
+        var patientIds = await Db(async db =>
+        {
+            var enrollments = Enumerable.Range(0, RedStarRegistryParser.MaxRows + 1)
+                .Select(i => ReportEnrollment(prefix + i.ToString("D4"), RedStarProgram.ART, RedStarStatus.Active)).ToArray();
+            db.RedStarEnrollments.AddRange(enrollments); await db.SaveChangesAsync();
+            return enrollments.Select(enrollment => enrollment.PatientId).ToArray();
+        });
+        try
+        {
+            var clinic = await Clinic();
+            var fields = new Dictionary<string, string> { ["search"] = prefix, ["status"] = "Living", ["program"] = "ART", ["month"] = "2024-02" };
+            var rejected = await clinic.PostFormAsync("/Admin/RedStar/Create", "/Admin/RedStar/Export", fields);
+            Assert.Equal(HttpStatusCode.Redirect, rejected.StatusCode);
+            var location = WebUtility.UrlDecode(rejected.Headers.Location!.OriginalString);
+            Assert.Contains("search=" + prefix, location); Assert.Contains("status=Living", location);
+            Assert.Contains("program=ART", location); Assert.Contains("month=2024-02", location);
+            Assert.Contains("5,000", await clinic.GetStringAsync(rejected.Headers.Location));
+            fields["search"] = prefix + "000";
+            var limited = await clinic.PostFormAsync("/Admin/RedStar/Create", "/Admin/RedStar/Export", fields);
+            Assert.Equal(HttpStatusCode.OK, limited.StatusCode);
+            using var zip = new ZipArchive(new MemoryStream(await limited.Content.ReadAsByteArrayAsync()));
+            Assert.Equal("10", ReportField(WorkbookXml(zip, "xl/worksheets/sheet1.xml"), "Matching rows"));
+        }
+        finally
+        {
+            await Db(async db =>
+            {
+                await db.RedStarEnrollments.Where(enrollment => patientIds.Contains(enrollment.PatientId)).ExecuteDeleteAsync();
+                await db.RedStarPatients.Where(patient => patientIds.Contains(patient.Id)).ExecuteDeleteAsync();
+                return true;
+            });
+        }
+    }
 
     [Fact]
     public async Task Enrollment_fields_follow_the_supported_living_registry_columns()
