@@ -1,17 +1,30 @@
 @model LabUploadInput
-@{ var creating = ViewContext.RouteData.Values["action"]?.ToString() == "Create"; }
+@{
+    var creating = ViewContext.RouteData.Values["action"]?.ToString() == "Create";
+    var recordId = ViewData["RecordId"] as int?;
+}
 <input asp-for="RowVersion" type="hidden" />
 <fieldset class="border rounded-3 p-3 mb-3">
     <legend class="h6 float-none w-auto px-2">Official lab report</legend>
+    @if (!creating)
+    {
+        if (ViewData["HasReport"] is true)
+        {
+            <p class="small">Current PDF: @ViewData["ReportSize"] bytes · uploaded @(((DateTime?)ViewData["ReportUploadedAtUtc"])?.ToString("yyyy-MM-dd HH:mm")) UTC</p>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <a asp-action="PreviewReport" asp-route-id="@recordId" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm">View PDF</a>
+                <a asp-action="PreviewReport" asp-route-id="@recordId" asp-route-download="true" class="btn btn-outline-primary btn-sm">Download PDF</a>
+            </div>
+        }
+        else { <p class="small">No PDF attached.</p> }
+    }
     <label asp-for="Report" class="form-label"></label>
     <input asp-for="Report" type="file" accept=".pdf,application/pdf" class="form-control" aria-describedby="labReportHelp" required="@creating" />
     <span asp-validation-for="Report" class="text-danger"></span>
     <p id="labReportHelp" class="small text-muted mt-2 mb-0">PDF only, up to 10 MiB.@if (!creating) { <text> Leave blank to keep the current report.</text> }</p>
 </fieldset>
 <div class="row g-3">
-    <div class="col-md-6"><label asp-for="TestName" class="form-label"></label><input asp-for="TestName" class="form-control" /><span asp-validation-for="TestName" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="Category" class="form-label"></label><select asp-for="Category" asp-items="Html.GetEnumSelectList<LabCategory>()" class="form-select"></select><span asp-validation-for="Category" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="CollectedAt" class="form-label"></label><input asp-for="CollectedAt" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="CollectedAt" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="CollectedAt" class="form-label"></label><input asp-for="CollectedAt" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" /><span asp-validation-for="CollectedAt" class="text-danger"></span></div>
     <div class="col-md-6"><label asp-for="Status" class="form-label"></label><select asp-for="Status" class="form-select"><option>Pending Verification</option><option>In progress</option><option>Available</option></select><span asp-validation-for="Status" class="text-danger"></span></div>
     <div class="col-md-6"><label asp-for="ReleasedAt" class="form-label"></label><input asp-for="ReleasedAt" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="ReleasedAt" class="text-danger"></span></div>
 </div>

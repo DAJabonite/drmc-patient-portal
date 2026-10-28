@@ -1,6 +1,8 @@
 using DrmcPatientPortal.Areas.Admin.Models;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
 
 namespace DrmcPatientPortal.Areas.Admin.Services;
@@ -22,9 +24,20 @@ public sealed class LabUploadEditor : ClinicalEditor<LabResult, LabUploadInput>
             .Select(f => f.Label == nameof(LabResult.AccessionNumber) ? f with { Label = "Report reference" } : f).ToArray();
     public override LabUploadInput Input(ApplicationDbContext db, LabResult entity) => new()
     {
-        TestName = entity.TestName, Category = entity.Category, CollectedAt = entity.CollectedAt,
+        CollectedAt = entity.CollectedAt.Date,
         ReleasedAt = entity.ReleasedAt, Status = entity.Status
     };
+    public override async Task ConfigureFormAsync(ApplicationDbContext db, ViewDataDictionary viewData,
+        LabUploadInput input, OwnershipContext? context, CancellationToken token)
+    {
+        var id = viewData["RecordId"] as int?;
+        var report = id.HasValue ? await SqlReadRetry.RunAsync(db, () => db.LabResults.AsNoTracking()
+            .Where(l => l.Id == id.Value).Select(l => new { HasReport = l.ReportFileName != null, l.ReportSize, l.ReportUploadedAtUtc })
+            .SingleOrDefaultAsync(token), token) : null;
+        viewData["HasReport"] = report?.HasReport == true;
+        viewData["ReportSize"] = report?.ReportSize;
+        viewData["ReportUploadedAtUtc"] = report?.ReportUploadedAtUtc;
+    }
     public override async Task<IReadOnlyDictionary<string, int>> DependentsAsync(ApplicationDbContext db, LabResult entity, CancellationToken token) =>
         new Dictionary<string, int> { ["Lab items"] = await db.LabResultItems.CountAsync(i => i.LabResultId == entity.Id, token) };
     public override Task<WriteResult> ApplyAsync(ApplicationDbContext db, LabUploadInput input, LabResult entity,
@@ -34,15 +47,23 @@ public sealed class LabUploadEditor : ClinicalEditor<LabResult, LabUploadInput>
         if (input.Report is not null && !context.Patient.HasHospitalNumber)
             return Task.FromResult(WriteResult.Invalid(MissingHospitalNumberError));
         if (create && input.Report is null) return Task.FromResult(WriteResult.Invalid("Choose the lab report PDF."));
+        var collectedAt = !create && entity.CollectedAt.Date == input.CollectedAt!.Value.Date
+            ? entity.CollectedAt : WallTime(input.CollectedAt!.Value.Date);
+        var releasedAt = input.ReleasedAt is null ? (DateTime?)null : WallTime(input.ReleasedAt.Value, create ? null : entity.ReleasedAt);
+        if (releasedAt < collectedAt) return Task.FromResult(WriteResult.Invalid("Release cannot precede collection."));
+        if (input.Status == "Available" && input.Report is null && entity.ReportFileName is null)
+            return Task.FromResult(WriteResult.Invalid("An attached PDF is required for PDF release."));
         if (create)
         {
             entity.PatientRecordId = context.Patient.Id;
             entity.AccessionNumber = "PORTAL-LAB-" + Guid.NewGuid().ToString("N").ToUpperInvariant();
+            entity.TestName = "Laboratory report";
+            entity.Category = LabCategory.SpecialDiagnostics;
             entity.PerformingUnit = "";
         }
-        entity.TestName = input.TestName.Trim(); entity.Category = input.Category; entity.Status = input.Status;
-        entity.CollectedAt = WallTime(input.CollectedAt!.Value, create ? null : entity.CollectedAt);
-        entity.ReleasedAt = input.ReleasedAt is null ? null : WallTime(input.ReleasedAt.Value, create ? null : entity.ReleasedAt);
+        entity.Status = input.Status;
+        entity.CollectedAt = collectedAt;
+        entity.ReleasedAt = releasedAt;
         return Task.FromResult(WriteResult.Success);
     }
 }

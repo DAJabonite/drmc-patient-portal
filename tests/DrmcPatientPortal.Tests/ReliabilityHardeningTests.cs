@@ -462,8 +462,8 @@ public sealed class ReliabilityHardeningTests(PortalFactory factory)
             for (var i = 0; i < 31; i++)
             {
                 db.ClinicalEncounters.Add(new() { PatientRecordId = patient.Id, EncounterDate = DateTime.Today, EncounterReference = $"PAGE-{patient.Id}-{i:D2}" });
-                db.LabResults.Add(new() { PatientRecordId = patient.Id, CollectedAt = DateTime.Today, AccessionNumber = $"PAGE-{patient.Id}-{i:D2}", TestName = "Paging lab", Status = "Available", ReleasedAt = DateTime.Today, ReportFileName = Guid.NewGuid().ToString("N") });
-                db.RadiologyStudies.Add(new() { PatientRecordId = patient.Id, PerformedAt = DateTime.Today, AccessionNumber = $"PAGE-{patient.Id}-{i:D2}", StudyName = "Paging radiology" });
+                db.LabResults.Add(new() { PatientRecordId = patient.Id, CollectedAt = ClinicalClock.Today.AddDays(-i), AccessionNumber = $"PAGE-{patient.Id}-{i:D2}", TestName = "Paging lab", Status = "Available", ReleasedAt = ClinicalClock.Today, ReportFileName = Guid.NewGuid().ToString("N") });
+                db.RadiologyStudies.Add(new() { PatientRecordId = patient.Id, PerformedAt = ClinicalClock.Today.AddDays(-i), AccessionNumber = $"PAGE-{patient.Id}-{i:D2}", StudyName = "Paging radiology", Status = RadiologyStatus.Final, ReleasedAt = ClinicalClock.Today, ReportFileName = Guid.NewGuid().ToString("N") });
                 db.PatientIdDocuments.Add(new() { PatientUserId = account.Id, IdType = "Passport", IdNumber = $"ID{i:D2}", IsManualEntry = true });
                 db.PatientAllergies.Add(new() { PatientRecordId = patient.Id, Allergen = $"Allergen{i:D2}" });
                 db.Prescriptions.Add(new() { PatientRecordId = patient.Id, RxNumber = $"PAGE-{patient.Id}-{i:D2}", GenericName = $"Medication{i:D2}", PrescribedAt = DateTime.Today, ValidUntil = DateTime.Today.AddDays(30),
@@ -480,7 +480,15 @@ public sealed class ReliabilityHardeningTests(PortalFactory factory)
             var parameter = path.Contains("MyIds", StringComparison.Ordinal) ? "idPage" : "page";
             var second = await client.GetStringAsync(path + "?" + parameter + "=2"); Assert.Contains("Page 2 of 2", second);
             Assert.Contains(parameter + "=1", second);
-            if (!path.Contains("MyIds", StringComparison.Ordinal))
+            if (path is "/Patient/LabResults" or "/Patient/Radiology")
+            {
+                var group = path.EndsWith("LabResults", StringComparison.Ordinal) ? "lab-date-group" : "radiology-date-group";
+                Assert.Equal(25, System.Text.RegularExpressions.Regex.Matches(first, $"data-testid=\"{group}\"").Count);
+                Assert.Equal(6, System.Text.RegularExpressions.Regex.Matches(second, $"data-testid=\"{group}\"").Count);
+                Assert.Equal(25, System.Text.RegularExpressions.Regex.Matches(first, $"action=\"{path}/Report/\\d+\"").Count);
+                Assert.Equal(6, System.Text.RegularExpressions.Regex.Matches(second, $"action=\"{path}/Report/\\d+\"").Count);
+            }
+            else if (!path.Contains("MyIds", StringComparison.Ordinal))
             {
                 Assert.Equal(25, PortalClient.Links(first, path + "/Details/").Count);
                 Assert.Equal(6, PortalClient.Links(second, path + "/Details/").Count);

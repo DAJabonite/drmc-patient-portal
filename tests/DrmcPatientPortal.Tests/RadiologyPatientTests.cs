@@ -40,6 +40,38 @@ public sealed class RadiologyPatientTests(PortalFactory factory)
     private Task<RadiologyStudy> StudyAsync(string accession) =>
         Db(db => db.RadiologyStudies.AsNoTracking().SingleAsync(s => s.AccessionNumber == accession));
 
+    private async Task WithFixtureReports(Func<Task> assertion)
+    {
+        var originals = await Db(async db =>
+        {
+            var studies = await db.RadiologyStudies.Where(s => new[] { Released, Amended, Held, Draft, Pending }.Contains(s.AccessionNumber)).ToListAsync();
+            var previous = studies.ToDictionary(s => s.Id, s => s.ReportFileName);
+            foreach (var study in studies) study.ReportFileName = Guid.NewGuid().ToString("N");
+            await db.SaveChangesAsync();
+            return previous;
+        });
+        try { await assertion(); }
+        finally
+        {
+            await Db(async db =>
+            {
+                foreach (var study in await db.RadiologyStudies.Where(s => originals.Keys.Contains(s.Id)).ToListAsync())
+                    study.ReportFileName = originals[study.Id];
+                await db.SaveChangesAsync(); return true;
+            });
+        }
+    }
+
+    private static void AssertNoClinicalText(RadiologyStudy study, string html)
+    {
+        foreach (var text in new[] { study.Findings, study.Impression, study.PlainLanguageSummary,
+                     study.InternalNotes, study.AmendmentNote, study.ClinicalIndication, study.Technique,
+                     study.Comparison, study.OrderingPhysician, study.RadiologistName, study.PerformingUnit })
+            if (!string.IsNullOrWhiteSpace(text)) Assert.DoesNotContain(WebUtility.HtmlEncode(text), html);
+        Assert.DoesNotContain("data-testid=\"radiology-report\"", html);
+        Assert.DoesNotContain("data-testid=\"radiology-plain-summary\"", html);
+    }
+
     private static string Section(string html, string startMarker)
     {
         var start = html.IndexOf(startMarker, StringComparison.Ordinal);
@@ -96,33 +128,38 @@ public sealed class RadiologyPatientTests(PortalFactory factory)
     }
 
     [Fact]
-    public async Task Patient_list_shows_own_studies_statuses_and_filters()
+    public async Task Patient_list_shows_owned_released_pdf_actions_and_retains_filters_and_preparation_guide()
     {
-        var client = await PatientAsync(factory, PortalFactory.PrimaryEmail);
-        var html = await client.GetStringAsync("/Patient/Radiology");
-        foreach (var accession in new[] { Released, Amended, Held, Draft, Pending }) Assert.Contains(accession, html);
-        Assert.Contains("data-testid=\"radiology-summary\"", html);
-        Assert.Matches(@"<strong>2</strong> ready for claiming", html);
-        Assert.Contains("data-testid=\"radiology-prep-guide\"", html);
-        Assert.Contains("href=\"/Directory/Department/Radiology\"", html);
-        foreach (var guide in RadiologyPreparation.Guides) Assert.Contains(guide.Title, html);
+        await WithFixtureReports(async () =>
+        {
+            var client = await PatientAsync(On, PortalFactory.PrimaryEmail);
+            var html = await client.GetStringAsync("/Patient/Radiology");
+            foreach (var accession in new[] { Released, Amended })
+            {
+                var study = await StudyAsync(accession);
+                Assert.Contains($"action=\"/Patient/Radiology/Report/{study.Id}\"", html);
+                AssertNoClinicalText(study, html);
+            }
+            foreach (var accession in new[] { Held, Draft, Pending })
+                Assert.DoesNotContain($"action=\"/Patient/Radiology/Report/{(await StudyAsync(accession)).Id}\"", html);
+            Assert.Contains("data-testid=\"radiology-date-group\"", html);
+            Assert.Contains("data-testid=\"radiology-prep-guide\"", html);
+            Assert.Contains("href=\"/Directory/Department/Radiology\"", html);
+            foreach (var guide in RadiologyPreparation.Guides) Assert.Contains(guide.Title, html);
 
-        var mri = await client.GetStringAsync("/Patient/Radiology?modality=MRI");
-        Assert.Contains(Held, mri);
-        Assert.DoesNotContain(Released, mri);
+            var mri = await client.GetStringAsync("/Patient/Radiology?modality=MRI");
+            Assert.DoesNotContain("action=\"/Patient/Radiology/Report/", mri);
+            var search = await client.GetStringAsync("/Patient/Radiology?search=ABDOMEN");
+            Assert.Contains($"action=\"/Patient/Radiology/Report/{(await StudyAsync(Amended)).Id}\"", search);
+            Assert.DoesNotContain($"action=\"/Patient/Radiology/Report/{(await StudyAsync(Released)).Id}\"", search);
+            var noMatch = await client.GetStringAsync("/Patient/Radiology?search=" + new string('z', 500));
+            Assert.Contains("data-testid=\"radiology-no-match\"", noMatch);
+            var badRange = await client.GetStringAsync("/Patient/Radiology?dateRange=custom&startDate=2026-02-01&endDate=2026-01-01");
+            Assert.Contains("The start date must be on or before the end date.", badRange);
 
-        var search = await client.GetStringAsync("/Patient/Radiology?search=ABDOMEN");
-        Assert.Contains(Amended, search);
-        Assert.DoesNotContain(Released, search);
-
-        var noMatch = await client.GetStringAsync("/Patient/Radiology?search=" + new string('z', 500));
-        Assert.Contains("data-testid=\"radiology-no-match\"", noMatch);
-
-        var badRange = await client.GetStringAsync("/Patient/Radiology?dateRange=custom&startDate=2026-02-01&endDate=2026-01-01");
-        Assert.Contains("The start date must be on or before the end date.", badRange);
-
-        var empty = await PatientAsync(factory, PortalFactory.EmptyEmail);
-        Assert.Contains("data-testid=\"radiology-empty\"", await empty.GetStringAsync("/Patient/Radiology"));
+            var empty = await PatientAsync(On, PortalFactory.EmptyEmail);
+            Assert.Contains("data-testid=\"radiology-empty\"", await empty.GetStringAsync("/Patient/Radiology"));
+        });
     }
 
     [Fact]
@@ -133,7 +170,7 @@ public sealed class RadiologyPatientTests(PortalFactory factory)
         foreach (var host in new WebApplicationFactory<Program>[] { factory, On })
         {
             var other = await PatientAsync(host, PortalFactory.EmptyEmail);
-            Assert.DoesNotContain("/Patient/Radiology/Details/", await other.GetStringAsync("/Patient/Radiology"));
+            Assert.DoesNotContain("action=\"/Patient/Radiology/Report/", await other.GetStringAsync("/Patient/Radiology"));
             foreach (var id in ids)
             {
                 var response = await other.GetAsync($"/Patient/Radiology/Details/{id}");
@@ -151,84 +188,63 @@ public sealed class RadiologyPatientTests(PortalFactory factory)
     }
 
     [Fact]
-    public async Task With_switch_off_details_show_availability_only()
+    public async Task With_switch_off_lists_offer_no_pdf_actions_and_details_are_not_found()
     {
         var client = await PatientAsync(factory, PortalFactory.PrimaryEmail);
+        var list = await client.GetStringAsync("/Patient/Radiology");
+        Assert.DoesNotContain("action=\"/Patient/Radiology/Report/", list);
         foreach (var accession in new[] { Released, Amended, Held, Draft, Pending })
         {
             var study = await StudyAsync(accession);
-            var html = await client.GetStringAsync($"/Patient/Radiology/Details/{study.Id}");
-            Assert.Contains(accession, html);
-            Assert.DoesNotContain("data-testid=\"radiology-report\"", html);
-            Assert.DoesNotContain("Summary in plain language", html);
-            Assert.DoesNotContain("FIXTURE-", html);
-            foreach (var text in new[] { study.Findings, study.Impression, study.PlainLanguageSummary, study.InternalNotes, study.AmendmentNote, study.ClinicalIndication })
-                if (!string.IsNullOrWhiteSpace(text)) Assert.DoesNotContain(text, html);
-            Assert.Contains("Questions about your report", html);
-            Assert.Contains("The patient portal does not show imaging pictures.", html);
-            Assert.Contains(ClinicalDepartments.Radiology.LocalExtension, html);
-            var ready = accession is Released or Amended;
-            Assert.Equal(ready, html.Contains("data-testid=\"radiology-status-ready\""));
-            Assert.Equal(!ready, html.Contains("data-testid=\"radiology-status-pending\""));
-            Assert.Equal(accession == Amended, html.Contains("data-testid=\"radiology-amended\""));
+            var response = await client.GetAsync($"/Patient/Radiology/Details/{study.Id}");
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+            AssertNoClinicalText(study, list + await response.Content.ReadAsStringAsync());
         }
     }
 
     [Fact]
-    public async Task With_switch_on_only_released_reports_are_shown_and_internal_notes_never()
+    public async Task With_switch_on_only_released_pdfs_are_shown_and_clinical_text_never()
     {
-        var client = await PatientAsync(On, PortalFactory.PrimaryEmail);
-
-        var released = await StudyAsync(Released);
-        var html = await client.GetStringAsync($"/Patient/Radiology/Details/{released.Id}");
-        var report = html[html.IndexOf("data-testid=\"radiology-report\"", StringComparison.Ordinal)..];
-        var order = new[] { "Clinical indication", "Technique", "Comparison", "Findings", "Impression", "Summary in plain language" }
-            .Select(h => report.IndexOf(h, StringComparison.Ordinal)).ToList();
-        Assert.All(order, i => Assert.True(i >= 0));
-        Assert.Equal(order.OrderBy(i => i), order);
-        Assert.Contains(released.Findings, html);
-        Assert.Contains(released.Impression, html);
-        Assert.Contains(released.PlainLanguageSummary, html);
-        Assert.Contains("written for your doctor", html);
-
-        var amended = await StudyAsync(Amended);
-        html = await client.GetStringAsync($"/Patient/Radiology/Details/{amended.Id}");
-        Assert.Contains(amended.Findings, html);
-        Assert.Contains(amended.AmendmentNote, html);
-        Assert.Contains("data-testid=\"radiology-amended\"", html);
-        Assert.DoesNotContain("Summary in plain language", html);
-
-        foreach (var accession in new[] { Held, Draft, Pending })
+        await WithFixtureReports(async () =>
         {
-            var study = await StudyAsync(accession);
-            html = await client.GetStringAsync($"/Patient/Radiology/Details/{study.Id}");
-            Assert.DoesNotContain("data-testid=\"radiology-report\"", html);
-            Assert.DoesNotContain("FIXTURE-", html);
-            Assert.Contains("data-testid=\"radiology-status-pending\"", html);
-        }
-
-        var list = await client.GetStringAsync("/Patient/Radiology");
-        Assert.DoesNotContain("FIXTURE-", list);
-        foreach (var accession in new[] { Released, Amended, Held, Draft, Pending })
-        {
-            var notes = (await StudyAsync(accession)).InternalNotes;
-            if (notes.Length > 0) Assert.DoesNotContain(notes, html + list);
-        }
+            var client = await PatientAsync(On, PortalFactory.PrimaryEmail);
+            var list = await client.GetStringAsync("/Patient/Radiology");
+            foreach (var accession in new[] { Released, Amended })
+            {
+                var study = await StudyAsync(accession);
+                var html = await client.GetStringAsync($"/Patient/Radiology/Details/{study.Id}");
+                Assert.Contains($"action=\"/Patient/Radiology/Report/{study.Id}\"", html);
+                Assert.Contains("name=\"password\"", html);
+                Assert.Contains("View PDF", html);
+                Assert.Contains("Download PDF", html);
+                AssertNoClinicalText(study, html + list);
+            }
+            foreach (var accession in new[] { Held, Draft, Pending })
+            {
+                var study = await StudyAsync(accession);
+                var response = await client.GetAsync($"/Patient/Radiology/Details/{study.Id}");
+                Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+                AssertNoClinicalText(study, list + await response.Content.ReadAsStringAsync());
+            }
+        });
     }
 
     [Fact]
     public async Task Viewing_a_study_is_audited()
     {
-        var study = await StudyAsync(Released);
-        var before = await Db(db => db.AuditLogs.CountAsync(a => a.Action == "VIEW_RADIOLOGY_REPORT" && a.Resource == $"RadiologyStudy/{study.Id}"));
-        var client = await PatientAsync(factory, PortalFactory.PrimaryEmail);
-        await client.GetStringAsync($"/Patient/Radiology/Details/{study.Id}");
-        var after = await Db(db => db.AuditLogs.CountAsync(a => a.Action == "VIEW_RADIOLOGY_REPORT" && a.Resource == $"RadiologyStudy/{study.Id}"));
-        Assert.Equal(before + 1, after);
+        await WithFixtureReports(async () =>
+        {
+            var study = await StudyAsync(Released);
+            var before = await Db(db => db.AuditLogs.CountAsync(a => a.Action == "VIEW_RADIOLOGY_REPORT" && a.Resource == $"RadiologyStudy/{study.Id}"));
+            var client = await PatientAsync(On, PortalFactory.PrimaryEmail);
+            await client.GetStringAsync($"/Patient/Radiology/Details/{study.Id}");
+            var after = await Db(db => db.AuditLogs.CountAsync(a => a.Action == "VIEW_RADIOLOGY_REPORT" && a.Resource == $"RadiologyStudy/{study.Id}"));
+            Assert.Equal(before + 1, after);
+        });
     }
 
     [Fact]
-    public async Task Lab_values_follow_the_switch_and_clinical_notes_stay_staff_only()
+    public async Task Laboratory_clinical_values_and_notes_are_absent_even_when_pdf_disclosure_is_enabled()
     {
         var labs = await Db(db => db.LabResults.AsNoTracking().Include(l => l.Items)
             .Where(l => l.Patient.PortalUser!.Email == PortalFactory.PrimaryEmail).ToListAsync());
@@ -240,25 +256,40 @@ public sealed class RadiologyPatientTests(PortalFactory factory)
             (await db.LabResults.SingleAsync(l => l.Id == released.Id)).ReportFileName = Guid.NewGuid().ToString("N");
             await db.SaveChangesAsync(); return true;
         });
-        var off = await PatientAsync(factory, PortalFactory.PrimaryEmail);
-        var on = await PatientAsync(On, PortalFactory.PrimaryEmail);
-        Assert.Equal(HttpStatusCode.NotFound, (await off.GetAsync($"/Patient/LabResults/Details/{released.Id}")).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await on.GetAsync($"/Patient/LabResults/Details/{unreleased.Id}")).StatusCode);
-        var html = await on.GetStringAsync($"/Patient/LabResults/Details/{released.Id}");
-        Assert.Contains("data-testid=\"lab-result-values\"", html);
-        Assert.Contains(released.ResultSummary, html);
-        foreach (var item in released.Items)
+        try
         {
-            Assert.Matches(Regex.Escape(item.ParameterName) + @"</th>\s*<td[^>]*>" + Regex.Escape(item.Value) + "</td>", html);
-            Assert.Contains(item.ReferenceRange, html);
+            var off = await PatientAsync(factory, PortalFactory.PrimaryEmail);
+            var on = await PatientAsync(On, PortalFactory.PrimaryEmail);
+            Assert.Equal(HttpStatusCode.NotFound, (await off.GetAsync($"/Patient/LabResults/Details/{released.Id}")).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await on.GetAsync($"/Patient/LabResults/Details/{unreleased.Id}")).StatusCode);
+            var html = await on.GetStringAsync($"/Patient/LabResults/Details/{released.Id}");
+            Assert.Contains("name=\"password\"", html);
+            Assert.DoesNotContain("data-testid=\"lab-result-values\"", html);
+            Assert.DoesNotContain("<table", html);
+            Assert.DoesNotContain(released.ResultSummary, html);
+            foreach (var item in released.Items)
+            {
+                // A PDF's legitimate title can include an analyte name, such as Platelet Count.
+                Assert.DoesNotMatch("<th[^>]*>\\s*" + Regex.Escape(WebUtility.HtmlEncode(item.ParameterName)) + "\\s*</th>", html);
+                Assert.DoesNotContain(WebUtility.HtmlEncode(item.ReferenceRange), html);
+            }
+            if (!string.IsNullOrWhiteSpace(released.OrderingPhysician)) Assert.DoesNotContain(released.OrderingPhysician, html);
+            if (!string.IsNullOrWhiteSpace(released.PathologistName)) Assert.DoesNotContain(released.PathologistName, html);
+            foreach (var lab in labs.Where(l => l.ClinicalNotes.Length > 0))
+            {
+                var response = await on.GetAsync($"/Patient/LabResults/Details/{lab.Id}");
+                Assert.DoesNotContain(lab.ClinicalNotes, await response.Content.ReadAsStringAsync());
+                var denied = await off.GetAsync($"/Patient/LabResults/Details/{lab.Id}");
+                Assert.DoesNotContain(lab.ClinicalNotes, await denied.Content.ReadAsStringAsync());
+            }
         }
-        Assert.Contains(released.Items.First().Flag.ToString(), html);
-        foreach (var lab in labs.Where(l => l.ClinicalNotes.Length > 0))
+        finally
         {
-            var response = await on.GetAsync($"/Patient/LabResults/Details/{lab.Id}");
-            Assert.DoesNotContain(lab.ClinicalNotes, await response.Content.ReadAsStringAsync());
-            var denied = await off.GetAsync($"/Patient/LabResults/Details/{lab.Id}");
-            Assert.DoesNotContain(lab.ClinicalNotes, await denied.Content.ReadAsStringAsync());
+            await Db(async db =>
+            {
+                (await db.LabResults.SingleAsync(l => l.Id == released.Id)).ReportFileName = released.ReportFileName;
+                await db.SaveChangesAsync(); return true;
+            });
         }
     }
 

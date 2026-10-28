@@ -1,7 +1,7 @@
 using DrmcPatientPortal.Areas.Admin.Models;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
-using Microsoft.AspNetCore.Mvc.Rendering;
+using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,50 +29,44 @@ public sealed class RadiologyEditor : ClinicalEditor<RadiologyStudy, RadiologyIn
 
     public override async Task ConfigureFormAsync(ApplicationDbContext db, ViewDataDictionary viewData, RadiologyInput input, OwnershipContext? context, CancellationToken token)
     {
-        viewData["Doctors"] = await PhysicianNames.OptionsAsync(db, token);
-        viewData["Encounters"] = await db.ClinicalEncounters.Where(e => e.PatientRecordId == context!.Patient.Id)
-            .OrderByDescending(e => e.EncounterDate).ThenBy(e => e.Id).Select(e => new SelectListItem(e.EncounterReference, e.Id.ToString())).ToListAsync(token);
+        var id = viewData["RecordId"] as int?;
+        var report = id.HasValue ? await SqlReadRetry.RunAsync(db, () => db.RadiologyStudies.AsNoTracking()
+            .Where(s => s.Id == id.Value).Select(s => new { HasReport = s.ReportFileName != null, s.ReportSize, s.ReportUploadedAtUtc })
+            .SingleOrDefaultAsync(token), token) : null;
+        viewData["HasReport"] = report?.HasReport == true;
+        viewData["ReportSize"] = report?.ReportSize;
+        viewData["ReportUploadedAtUtc"] = report?.ReportUploadedAtUtc;
     }
 
     public override RadiologyInput Input(ApplicationDbContext db, RadiologyStudy entity) => new()
     {
-        AccessionNumber = entity.AccessionNumber, StudyName = entity.StudyName, Modality = entity.Modality, BodyRegion = entity.BodyRegion,
-        PerformedAt = entity.PerformedAt, ReleasedAt = entity.ReleasedAt, Status = entity.Status, ClinicalEncounterId = entity.ClinicalEncounterId,
-        HistoricalDoctorName = entity.OrderingPhysician, Radiologist = new() { HistoricalDoctorName = entity.RadiologistName },
-        PerformingUnit = entity.PerformingUnit, ClinicalIndication = entity.ClinicalIndication, Technique = entity.Technique,
-        Comparison = entity.Comparison, Findings = entity.Findings, Impression = entity.Impression,
-        PlainLanguageSummary = entity.PlainLanguageSummary, AmendmentNote = entity.AmendmentNote, InternalNotes = entity.InternalNotes
+        Modality = entity.Modality, PerformedAt = entity.PerformedAt.Date, ReleasedAt = entity.ReleasedAt,
+        Status = entity.Status, AmendmentNote = entity.AmendmentNote
     };
 
-    public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, RadiologyInput input, RadiologyStudy entity, OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
+    public override Task<WriteResult> ApplyAsync(ApplicationDbContext db, RadiologyInput input, RadiologyStudy entity, OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
     {
-        if (context is null) return WriteResult.Invalid("The patient record no longer exists.");
-        // Only the persisted attachment can satisfy the narrative requirement; no submitted flag is trusted.
-        if (input.Status is RadiologyStatus.Final or RadiologyStatus.Amended && entity.ReportFileName is null)
+        if (context is null) return Task.FromResult(WriteResult.Invalid("The patient record no longer exists."));
+        if (input.Report is not null && !context.Patient.HasHospitalNumber)
+            return Task.FromResult(WriteResult.Invalid(LabUploadEditor.MissingHospitalNumberError));
+        if (create && input.Report is null) return Task.FromResult(WriteResult.Invalid("Choose the radiology report PDF."));
+        if (input.Status is RadiologyStatus.Final or RadiologyStatus.Amended && entity.ReportFileName is null && input.Report is null)
+            return Task.FromResult(WriteResult.Invalid("An attached PDF is required for PDF release."));
+        var performedAt = !create && entity.PerformedAt.Date == input.PerformedAt!.Value.Date
+            ? entity.PerformedAt : WallTime(input.PerformedAt!.Value.Date);
+        var releasedAt = input.ReleasedAt is null ? (DateTime?)null : WallTime(input.ReleasedAt.Value, create ? null : entity.ReleasedAt);
+        if (releasedAt < performedAt) return Task.FromResult(WriteResult.Invalid("Release cannot precede the exam."));
+        if (create)
         {
-            if (string.IsNullOrWhiteSpace(input.Findings)) return WriteResult.Invalid("A final or amended report needs findings.");
-            if (string.IsNullOrWhiteSpace(input.Impression)) return WriteResult.Invalid("A final or amended report needs an impression.");
+            entity.PatientRecordId = context.Patient.Id;
+            entity.AccessionNumber = "PORTAL-RAD-" + Guid.NewGuid().ToString("N").ToUpperInvariant();
+            entity.StudyName = "Radiology report";
         }
-        if (input.ClinicalEncounterId is not null && !await db.ClinicalEncounters.AnyAsync(e => e.Id == input.ClinicalEncounterId && e.PatientRecordId == context.Patient.Id, token))
-            return WriteResult.Invalid("Select an existing encounter belonging to this patient.");
-        var accession = input.AccessionNumber.Trim().ToUpperInvariant();
-        if (accession.Length == 0) return WriteResult.Invalid("An accession number is required.");
-        if (await db.RadiologyStudies.AnyAsync(r => r.Id != entity.Id && EF.Functions.Collate(r.AccessionNumber, "Latin1_General_100_CI_AS") == accession, token))
-            return WriteResult.Invalid("A radiology study already uses this accession number.");
-        var ordering = await PhysicianNames.ResolveAsync(db, input, token); var radiologist = await PhysicianNames.ResolveAsync(db, input.Radiologist, token);
-        if (ordering is null || radiologist is null) return WriteResult.Invalid("Select existing directory physicians or enter explicit historical names.");
-        if (ordering.Length > RadiologyStudy.NameLength || radiologist.Length > RadiologyStudy.NameLength)
-            return WriteResult.Invalid($"Physician names must be at most {RadiologyStudy.NameLength} characters.");
-        if (create) entity.PatientRecordId = context.Patient.Id;
-        entity.AccessionNumber = accession; entity.StudyName = input.StudyName.Trim(); entity.Modality = input.Modality; entity.BodyRegion = input.BodyRegion.Trim();
-        entity.PerformedAt = WallTime(input.PerformedAt!.Value, create ? null : entity.PerformedAt);
-        entity.ReleasedAt = input.ReleasedAt is null ? null : WallTime(input.ReleasedAt.Value, create ? null : entity.ReleasedAt);
-        entity.Status = input.Status; entity.ClinicalEncounterId = input.ClinicalEncounterId;
-        entity.OrderingPhysician = ordering; entity.RadiologistName = radiologist; entity.PerformingUnit = input.PerformingUnit?.Trim() ?? "";
-        entity.ClinicalIndication = input.ClinicalIndication?.Trim() ?? ""; entity.Technique = input.Technique?.Trim() ?? "";
-        entity.Comparison = input.Comparison?.Trim() ?? ""; entity.Findings = input.Findings?.Trim() ?? ""; entity.Impression = input.Impression?.Trim() ?? "";
-        entity.PlainLanguageSummary = input.PlainLanguageSummary?.Trim() ?? ""; entity.AmendmentNote = input.AmendmentNote?.Trim() ?? "";
-        entity.InternalNotes = input.InternalNotes?.Trim() ?? "";
-        return WriteResult.Success;
+        entity.Modality = input.Modality;
+        entity.PerformedAt = performedAt;
+        entity.ReleasedAt = releasedAt;
+        entity.Status = input.Status;
+        if (input.Status == RadiologyStatus.Amended) entity.AmendmentNote = input.AmendmentNote!.Trim();
+        return Task.FromResult(WriteResult.Success);
     }
 }

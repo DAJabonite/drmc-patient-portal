@@ -26,6 +26,13 @@ public static class CategoryDisplayNames
         _ => "Imaging"
     };
 
+    public static string PdfDisplayName(this RadiologyModality modality) => modality switch
+    {
+        RadiologyModality.XRay => "XRY",
+        RadiologyModality.CT => "CT",
+        _ => modality.DisplayName()
+    };
+
     public static string DisplayName(this RadiologyStatus status) => status switch
     {
         RadiologyStatus.InProgress => "In progress",

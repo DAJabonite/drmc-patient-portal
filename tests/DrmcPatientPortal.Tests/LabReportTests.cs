@@ -38,14 +38,11 @@ public sealed class LabReportTests(PortalFactory factory)
         return patient.Id;
     });
 
-    private static Dictionary<string, string> Fields(string accession, string? version = null) => new()
+    private static Dictionary<string, string> Fields(string? version = null) => new()
     {
-        ["AccessionNumber"] = accession, ["TestName"] = "Synthetic PDF laboratory result " + accession,
-        ["Category"] = "Hematology", ["Status"] = "Available",
-        ["CollectedAt"] = PatientResultsDisclosure.ManilaNow.AddDays(-2).ToString("yyyy-MM-ddTHH:mm:ss"),
+        ["Status"] = "Available",
+        ["CollectedAt"] = ClinicalClock.Today.AddDays(-2).ToString("yyyy-MM-dd"),
         ["ReleasedAt"] = PatientResultsDisclosure.ManilaNow.AddDays(-1).ToString("yyyy-MM-ddTHH:mm:ss"),
-        ["PhysicianSource"] = "HistoricalName", ["HistoricalDoctorName"] = "Synthetic ordering physician",
-        ["Pathologist.PhysicianSource"] = "HistoricalName", ["Pathologist.HistoricalDoctorName"] = "Synthetic pathologist",
         ["RowVersion"] = version ?? ""
     };
 
@@ -69,11 +66,12 @@ public sealed class LabReportTests(PortalFactory factory)
 
     private async Task<LabResult> CreateReport()
     {
-        var accession = "PDF-" + Guid.NewGuid().ToString("N").ToUpperInvariant();
+        var patientId = await PatientId();
+        var before = await Db(db => db.LabResults.MaxAsync(l => l.Id));
         var admin = await StaffAccounts.AdminAsync(factory);
-        var response = await Save(admin, $"/Admin/LabResults/Create/{await PatientId()}", Fields(accession), Pdf);
+        var response = await Save(admin, $"/Admin/LabResults/Create/{patientId}", Fields(), Pdf);
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        return await Db(db => db.LabResults.AsNoTracking().SingleAsync(l => l.TestName == "Synthetic PDF laboratory result " + accession));
+        return await Db(db => db.LabResults.AsNoTracking().SingleAsync(l => l.Id > before && l.PatientRecordId == patientId));
     }
 
     private Task<string> Version(int id) => Db(async db => Convert.ToBase64String(
@@ -111,9 +109,9 @@ public sealed class LabReportTests(PortalFactory factory)
         });
         var patient = await Patient(disclosure ? Enabled : factory, PortalFactory.PrimaryEmail);
         var index = await patient.GetStringAsync("/Patient/LabResults");
-        var action = Regex.Match(index, $"<a(?=[^>]*href=\"/Patient/LabResults/Details/{id}\")[^>]*>[\\s\\S]*?</a>").Value;
+        var action = Regex.Match(index, $"<form(?=[^>]*action=\"/Patient/LabResults/Report/{id}\")[^>]*>[\\s\\S]*?</form>").Value;
         Assert.Equal(available, !string.IsNullOrEmpty(action));
-        if (available) Assert.Contains("View report", action);
+        if (available) Assert.Contains("View PDF", action);
         Assert.DoesNotContain("Report unavailable", index);
         Assert.DoesNotContain("Report available", index);
         Assert.DoesNotContain("Check Status &amp; Location", index);
@@ -139,13 +137,13 @@ public sealed class LabReportTests(PortalFactory factory)
         Assert.False(encrypted.AsSpan().StartsWith("%PDF-"u8));
         var admin = await StaffAccounts.AdminAsync(factory);
         var replacement = Encoding.ASCII.GetBytes("%PDF-1.4\nReplacement synthetic report\n%%EOF");
-        var response = await Save(admin, $"/Admin/LabResults/Edit/{lab.Id}", Fields(lab.AccessionNumber, await Version(lab.Id)), replacement);
+        var response = await Save(admin, $"/Admin/LabResults/Edit/{lab.Id}", Fields(await Version(lab.Id)), replacement);
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         var updated = await Db(db => db.LabResults.AsNoTracking().SingleAsync(l => l.Id == lab.Id));
         Assert.NotEqual(lab.ReportFileName, updated.ReportFileName);
         Assert.Equal(replacement, await storage.ReadAsync(lab.Id, updated.ReportFileName!, default));
         await Assert.ThrowsAnyAsync<IOException>(() => storage.ReadAsync(lab.Id, lab.ReportFileName!, default));
-        response = await Save(admin, $"/Admin/LabResults/Edit/{lab.Id}", Fields(lab.AccessionNumber, await Version(lab.Id)), null);
+        response = await Save(admin, $"/Admin/LabResults/Edit/{lab.Id}", Fields(await Version(lab.Id)), null);
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         var retained = await Db(db => db.LabResults.AsNoTracking().SingleAsync(l => l.Id == lab.Id));
         Assert.Equal(updated.ReportFileName, retained.ReportFileName);
@@ -162,14 +160,14 @@ public sealed class LabReportTests(PortalFactory factory)
     {
         var lab = await CreateReport();
         var admin = await StaffAccounts.AdminAsync(factory);
-        var fields = Fields(lab.AccessionNumber, await Version(lab.Id));
-        fields["TestName"] = "This rejected edit must not persist";
+        var fields = Fields(await Version(lab.Id));
+        fields["Status"] = "Pending Verification";
         var bytes = invalid == "signature" ? Encoding.ASCII.GetBytes("not a PDF")
             : invalid == "size" ? new byte[LabReportStorage.MaximumBytes + 1] : Pdf;
         var response = await Save(admin, $"/Admin/LabResults/Edit/{lab.Id}", fields, bytes, invalid == "extension" ? "report.txt" : "report.pdf");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var current = await Db(db => db.LabResults.AsNoTracking().SingleAsync(l => l.Id == lab.Id));
-        Assert.Equal(lab.TestName, current.TestName);
+        Assert.Equal(lab.Status, current.Status);
         Assert.Equal(lab.ReportFileName, current.ReportFileName);
         using var scope = factory.Services.CreateScope();
         Assert.Equal(Pdf, await scope.ServiceProvider.GetRequiredService<ILabReportStorage>().ReadAsync(lab.Id, lab.ReportFileName!, default));
@@ -178,11 +176,12 @@ public sealed class LabReportTests(PortalFactory factory)
     [Fact]
     public async Task Invalid_pdf_does_not_create_a_partial_lab_record()
     {
-        var accession = "REJECT-" + Guid.NewGuid().ToString("N").ToUpperInvariant();
+        var patientId = await PatientId();
+        var before = await Db(db => db.LabResults.CountAsync(l => l.PatientRecordId == patientId));
         var admin = await StaffAccounts.AdminAsync(factory);
-        var response = await Save(admin, $"/Admin/LabResults/Create/{await PatientId()}", Fields(accession), Encoding.ASCII.GetBytes("not a PDF"));
+        var response = await Save(admin, $"/Admin/LabResults/Create/{patientId}", Fields(), Encoding.ASCII.GetBytes("not a PDF"));
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.False(await Db(db => db.LabResults.AnyAsync(l => l.AccessionNumber == accession)));
+        Assert.Equal(before, await Db(db => db.LabResults.CountAsync(l => l.PatientRecordId == patientId)));
     }
 
     [Fact]

@@ -1,146 +1,28 @@
-@model LabResult
+@model LabPdfReportViewModel
 @{
-    ViewData["Title"] = $"{Model.TestName} — Laboratory Report";
+    ViewData["Title"] = "Laboratory report PDF";
 }
 
 <section class="page-header">
     <div class="container">
-        <div class="d-flex align-items-center gap-2 mb-2">
-            <a asp-action="Index" class="text-white text-opacity-75 text-decoration-none small">
-                <i class="bi bi-arrow-left"></i> All Lab Results
-            </a>
-            <span class="text-white text-opacity-50">/</span>
-            <span class="small text-white text-opacity-75">@Model.Category.DisplayName()</span>
-        </div>
-        <h1 class="display-6 fw-bold mb-1">Laboratory Report</h1>
-        <p class="text-white text-opacity-90 mb-0">Report reference: <strong>@Model.AccessionNumber</strong> &middot; Davao Regional Medical Center</p>
+        <a asp-action="Index" class="text-white text-opacity-75 text-decoration-none small">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>All laboratory PDFs
+        </a>
+        <h1 class="display-6 fw-bold mt-2 mb-0">Laboratory report PDF</h1>
     </div>
 </section>
 
 <section class="section py-5 bg-light">
-    <div class="container" style="max-width: 920px;">
-        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
-            <!-- Test Order Metadata Header -->
-            <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 pb-3 mb-4 border-bottom">
-                <div>
-                    <span class="badge bg-primary-subtle text-primary-drmc px-3 py-1 rounded-pill small fw-semibold mb-2">
-                        @Model.Category.DisplayName() Panel
-                    </span>
-                    <h2 class="h4 fw-bold text-dark mb-1">@Model.TestName</h2>
-                </div>
-
-                <div class="text-md-end">
-                    <div class="small text-muted">
-                        <i class="bi bi-calendar3 me-1"></i> Collected: <strong>@Model.CollectedAt.ToString("MMM d, yyyy h:mm tt")</strong>
-                    </div>
-                    @if (Model.ReleasedAt.HasValue)
-                    {
-                        <div class="small text-muted mt-1">
-                            <i class="bi bi-check2-circle me-1 text-success"></i> Released: <strong>@Model.ReleasedAt.Value.ToString("MMM d, yyyy h:mm tt")</strong>
-                        </div>
-                    }
-                </div>
-            </div>
-
-            @if (!string.IsNullOrWhiteSpace(Model.OrderingPhysician) || !string.IsNullOrWhiteSpace(Model.PerformingUnit))
-            {
-                <div class="row g-3 mb-4">
-                    @if (!string.IsNullOrWhiteSpace(Model.OrderingPhysician))
-                    {
-                        <div class="col-md-6"><div class="p-3 bg-light rounded-3 border">
-                            <span class="small text-muted d-block">Ordering physician</span>
-                            <strong class="text-dark">@Model.OrderingPhysician</strong>
-                        </div></div>
-                    }
-                    @if (!string.IsNullOrWhiteSpace(Model.PerformingUnit))
-                    {
-                        <div class="col-md-6"><div class="p-3 bg-light rounded-3 border">
-                            <span class="small text-muted d-block">Performing facility</span>
-                            <strong class="text-dark">@Model.PerformingUnit</strong>
-                        </div></div>
-                    }
-                </div>
-            }
-
-            @if (ViewData["ShowFullResults"] is true && (!string.IsNullOrWhiteSpace(Model.ResultSummary) || Model.Items.Count > 0))
-            {
-                <section class="mb-4" aria-labelledby="labValuesHeading" data-testid="lab-result-values">
-                    <h3 id="labValuesHeading" class="h5 fw-bold text-primary-drmc mb-2">
-                        <i class="bi bi-clipboard2-pulse me-1" aria-hidden="true"></i> Released result values
-                    </h3>
-                    <p class="small text-muted mb-3">These results are written for your doctor. Please discuss what they mean for you with your doctor.</p>
-                    @if (!string.IsNullOrWhiteSpace(Model.ResultSummary))
-                    {
-                        <div class="p-3 mb-3 bg-light rounded-3">
-                            <h4 class="small fw-bold text-dark mb-1">Result summary</h4>
-                            <p class="text-dark mb-0">@Model.ResultSummary</p>
-                        </div>
-                    }
-                    @if (Model.Items.Count > 0)
-                    {
-                        <div class="table-responsive" role="region" aria-label="Laboratory result values" tabindex="0">
-                            <table class="table table-sm align-middle mb-0 lab-values-table">
-                                <caption class="visually-hidden">Laboratory result values for @Model.TestName</caption>
-                                <thead>
-                                    <tr class="text-nowrap">
-                                        <th scope="col">Test</th>
-                                        <th scope="col">Result</th>
-                                        <th scope="col">Unit</th>
-                                        <th scope="col">Reference range</th>
-                                        <th scope="col">Flag</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var item in Model.Items.OrderBy(i => i.Id))
-                                    {
-                                        <tr>
-                                            <th scope="row" class="fw-semibold">@item.ParameterName</th>
-                                            <td class="text-nowrap">@item.Value</td>
-                                            <td class="text-nowrap">@item.Unit</td>
-                                            <td class="text-nowrap">@item.ReferenceRange</td>
-                                            <td class="text-nowrap">
-                                                <span class="@(item.Flag == LabFlag.Normal ? "text-muted" : item.Flag == LabFlag.Critical ? "text-danger fw-bold" : "text-warning-emphasis fw-semibold")">@item.Flag</span>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                </section>
-            }
-            <section class="mb-4" aria-labelledby="labReportHeading">
-                <h3 id="labReportHeading" class="h5 fw-bold text-primary-drmc mb-3">
-                    <i class="bi bi-file-earmark-lock me-1" aria-hidden="true"></i> Official Lab Report (PDF)
-                </h3>
-                <div class="border rounded-3 p-3 p-md-4 bg-light">
-                    <p class="small text-muted mb-3">Your report is protected by your account password.</p>
-                    <form asp-action="Report" asp-route-id="@Model.Id" method="post" autocomplete="off">
-                        <div asp-validation-summary="All" class="text-danger" role="alert"></div>
-                        <label for="reportPassword" class="form-label">Account password</label>
-                        <input id="reportPassword" name="password" type="password" autocomplete="current-password" maxlength="1024" required class="form-control" aria-describedby="passwordHelp" />
-                        <p id="passwordHelp" class="small text-muted mt-2">Enter your current account password for each view or download.</p>
-                        <div class="d-flex flex-wrap gap-2">
-                            <button name="intent" value="view" type="submit" class="btn btn-success"><i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>View lab report</button>
-                            <button name="intent" value="download" type="submit" class="btn btn-outline-success"><i class="bi bi-download me-1" aria-hidden="true"></i>Download lab report</button>
-                        </div>
-                    </form>
-                </div>
-            </section>
-
-            <!-- Footer Actions -->
-            <nav class="lab-result-actions pt-3 border-top" aria-label="Result actions">
-                <a asp-action="Index" class="btn btn-outline-secondary fw-semibold">
-                    <i class="bi bi-arrow-left me-1"></i> Back to Results
-                </a>
-                <a asp-controller="Home" asp-action="OpdGuide" class="btn btn-outline-drmc fw-semibold">
-                    <i class="bi bi-signpost-split me-1"></i> OPD Wayfinding Guide
-                </a>
-                <a asp-controller="Directory" asp-action="Index" class="btn btn-outline-drmc fw-semibold">
-                    <i class="bi bi-person-badge me-1"></i> Doctor Directory
-                </a>
+    <div class="container" style="max-width: 720px;">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <p class="small text-muted mb-1">
+                Test date: <time datetime="@Model.CollectedAt.ToString("yyyy-MM-dd")">@Model.CollectedAt.ToString("MMM d, yyyy")</time>
+            </p>
+            <h2 class="h5 fw-bold text-primary-drmc">@Model.TestName</h2>
+            <partial name="_PdfReportActions" model='new PdfReportActionsViewModel("LabResults", Model.Id, Model.TestName)' />
+            <nav class="pt-3 mt-3 border-top" aria-label="Report actions">
+                <a asp-action="Index" class="btn btn-outline-secondary">Back to results</a>
             </nav>
-
         </div>
     </div>
 </section>
