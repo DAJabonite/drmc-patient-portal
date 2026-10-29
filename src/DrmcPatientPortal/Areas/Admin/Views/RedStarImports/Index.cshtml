@@ -3,24 +3,18 @@
 <div class="admin-page-header"><div><h1 class="admin-title">Registry imports</h1><p class="admin-subtitle">Upload the registry, reconcile included rows, then approve the private import.</p></div><a asp-controller="RedStar" asp-action="Index" class="btn btn-outline-primary">Back to registry</a></div>
 @if (TempData["RedStarImportMessage"] is string message) { <div class="alert alert-info" role="status">@message</div> }
 <div class="admin-card mb-3">
-    <div class="admin-card-header"><h2 class="admin-card-title">Copy legacy records into a flat CSV</h2><a asp-action="DownloadTemplate" class="btn btn-primary">Download Sample CSV Template</a></div>
-    <div class="admin-card-body">
-        <ol class="mb-2">
-            <li>Open the template and delete its two fictional sample rows. Keep the column headers.</li>
-            <li>Format patient codes, HRNs and contact numbers as text before pasting. Copy legacy values into the matching columns. When combining tabs, fill Program (ART, PrEP, PEP, NewbornProphylaxis or Unverified) and Status for every row.</li>
-            <li>Use dates such as 2026-10-31 and save as CSV UTF-8 (comma delimited). Upload below, reconcile the preview, then approve included rows.</li>
-        </ol>
-        <p class="small text-muted mb-0">Status accepts Active, Living, Expired, Deceased, TransferredOut, Discontinued, Completed or AwaitingVerification. Expired, transferred, discontinued and completed records need a Status Date; transfers also need a Receiving Hub. You can also upload the original .xlsx: recognized patient tabs are combined, unrelated tabs are listed as skipped, and Excel comments and notes are ignored.</p>
-    </div>
-</div>
-<div class="admin-card mb-3">
-    <div class="admin-card-header"><h2 class="admin-card-title">Upload spreadsheet</h2></div>
+    <div class="admin-card-header"><h2 class="admin-card-title">Upload registry</h2></div>
     <form asp-action="Upload" method="post" enctype="multipart/form-data" class="admin-form">
-        <div class="admin-card-body"><label for="registry-file" class="form-label">Red Star registry (.xlsx or .csv)</label><input id="registry-file" name="file" type="file" accept=".xlsx,.csv" class="form-control" required aria-describedby="registry-upload-help" /><p id="registry-upload-help" class="small text-muted mt-2">Maximum 10 MB and 5,000 patient rows across all tabs. CSV files must use UTF-8 and commas. Blank Program or Status in a CSV requires reconciliation. The original source and preview are encrypted. Every row requires an explicit include decision; names never link portal accounts. Imported schedules require staff verification.</p></div>
+        <div class="admin-card-body">
+            <label for="registry-file" class="form-label">Red Star registry (.xlsx or .csv)</label>
+            <input id="registry-file" name="file" type="file" accept=".xlsx,.csv" class="form-control" required aria-describedby="registry-upload-help" />
+            <p id="registry-upload-help" class="small text-muted mt-2">Upload XLSX or UTF-8 CSV (comma-separated), up to 10 MB and 5,000 rows total. Review and approve before import. Verify schedules before enabling reminders.</p>
+            <p class="small mb-0"><a asp-action="DownloadTemplate">Download CSV template</a> <span class="text-muted">Delete the two sample rows before uploading.</span></p>
+        </div>
         <div class="admin-form-actions"><button type="submit" class="btn btn-primary">Upload and preview</button></div>
     </form>
 </div>
-<div class="admin-card mb-3"><div class="admin-card-header"><h2 class="admin-card-title">Export core registry</h2></div><div class="admin-card-body"><p class="small text-muted">Download the private clinic registry with the staff workbook's headers and column positions, including spacer columns. Saved portal values fill the matching columns; fields the portal does not store, such as UIC, CD4 and viral-load results, remain blank. Other saved portal fields follow the staff columns. The name-only RHIVDA tab has a NAME header for reimport. Empty tabs retain their headers. Portal accounts and email addresses are excluded.</p><form asp-action="Export" method="post"><button type="submit" class="btn btn-outline-primary">Download XLSX</button></form></div></div>
+<div class="admin-card mb-3"><div class="admin-card-header"><h2 class="admin-card-title">Export core registry</h2></div><div class="admin-card-body"><p class="small text-muted">Download saved registry data in the staff workbook format. Fields the portal does not store stay blank. Portal accounts and emails are excluded.</p><form asp-action="Export" method="post"><button type="submit" class="btn btn-outline-primary">Download XLSX</button></form></div></div>
 <div class="admin-card"><div class="admin-card-header"><h2 class="admin-card-title">Private batches</h2><span class="admin-result-count">@Model.Total total</span></div>
     <div class="table-responsive" tabindex="0" role="region" aria-label="Scrollable Red Star import history table"><table class="table admin-table"><thead><tr><th scope="col">Created (UTC)</th><th scope="col">Batch</th><th scope="col">Status</th></tr></thead><tbody>
     @foreach (var batch in Model.Batches) { <tr><td data-label="Created (UTC)">@batch.CreatedUtc.ToString("yyyy-MM-dd HH:mm")</td><td data-label="Batch"><a asp-action="Reconcile" asp-route-id="@batch.Id">@batch.Id.ToString("N")[..12]</a></td><td data-label="Status">@(batch.ApprovedUtc.HasValue ? "Approved" : "Awaiting review")</td></tr> }

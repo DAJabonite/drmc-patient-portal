@@ -651,7 +651,7 @@ public sealed class RedStarImportWorkflowTests(PortalFactory factory)
     {
         var clinic = await Clinic();
         var page = await clinic.GetStringAsync("/Admin/RedStarImports");
-        Assert.Contains("Download Sample CSV Template", page);
+        Assert.Contains("Download CSV template", page);
         Assert.Contains("href=\"/Admin/RedStarImports/DownloadTemplate\"", page);
         Assert.Contains("accept=\".xlsx,.csv\"", page);
         var response = await clinic.GetAsync("/Admin/RedStarImports/DownloadTemplate");
