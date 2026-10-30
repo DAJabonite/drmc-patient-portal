@@ -338,7 +338,7 @@ public sealed partial class HospitalRecordCodeTests(PortalFactory factory)
         var html = await factory.CreatePortalClient().GetStringAsync("/Identity/Account/Register");
         Assert.Contains("id=\"hospitalRecordCode\"", html);
         Assert.Contains("No code yet? Visit the PACD", html);
-        Assert.Contains("Enter your PACD/Clinic code or scan its QR.", html);
+        Assert.Contains("id=\"btnScanRecordCode\"", html);
         Assert.DoesNotMatch("<script(?![^>]*src=)[^>]*>", html);
     }
 

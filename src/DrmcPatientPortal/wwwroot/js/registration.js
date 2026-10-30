@@ -27,10 +27,6 @@ $(function () {
     const selectIdType = document.getElementById('selectIdType');
     const otherIdFields = document.getElementById('otherGovernmentIdFields');
     const otherIdName = document.getElementById('Input_OtherGovernmentIdName');
-    const idGuidanceCard = document.getElementById('idGuidanceCard');
-    const guidanceTitle = document.getElementById('guidanceTitle');
-    const guidanceText = document.getElementById('guidanceText');
-    const guidanceSupports = document.getElementById('guidanceSupports');
     const btnGoToCapture = document.getElementById('btnGoToCapture');
     const displaySelectedId = document.getElementById('displaySelectedId');
 
@@ -70,42 +66,6 @@ $(function () {
     }
 
     const isManualEntryInput = document.getElementById('isManualEntry');
-
-    // ID guidance mapping
-    const idGuidanceMap = {
-        "Philippine National ID (PhilSys)": {
-            desc: "Position the front of your PhilSys National ID within the frame. You will also be prompted for the back of the card.",
-            supports: "Extracts: Name, ID number, Date of Birth, Address, Sex (back), Blood type (back)."
-        },
-        "Driver's License": {
-            desc: "Position your LTO Driver's License within the frame. Ensure printed text is glare-free and legible.",
-            supports: "Extracts: Name, License number, Date of Birth, Address, Sex, Blood type."
-        },
-        "Philippine Passport": {
-            desc: "Position the passport biodata page within the frame, ensuring the 2-line Machine Readable Zone (MRZ) at the bottom is clear.",
-            supports: "Extracts: Full Name, Passport number, Date of Birth, Sex."
-        },
-        "UMID": {
-            desc: "Position the front of your UMID card within the frame, ensuring the CRN and full name are visible.",
-            supports: "Extracts: Name, CRN, Date of Birth, Address, Sex."
-        },
-        "Postal ID": {
-            desc: "Position the front of your PHLPost Postal ID within the frame with all details sharply in focus.",
-            supports: "Extracts: Name, Postal ID number, Date of Birth, Address."
-        },
-        "PhilHealth ID": {
-            desc: "Position your PhilHealth Identification Card within the frame, keeping your 12-digit number clear.",
-            supports: "Extracts: Member Name and 12-digit PhilHealth PIN."
-        },
-        "SSS / GSIS ID": {
-            desc: "Position your SSS or GSIS member card within the frame with card number clearly legible.",
-            supports: "Extracts: Member Name and identification number."
-        },
-        "PRC ID": {
-            desc: "Position your PRC Professional ID within the frame with registration number clearly visible.",
-            supports: "Extracts: Full Name and PRC registration number."
-        }
-    };
 
     const form = document.getElementById('registerForm');
     $.validator.unobtrusive.parse(form);
@@ -252,19 +212,11 @@ $(function () {
         otherIdName.disabled = otherIdFields.hidden;
         otherIdName.required = !otherIdFields.hidden;
         if (!val) {
-            idGuidanceCard.classList.add('d-none');
             btnGoToCapture.disabled = true;
             return;
         }
 
         btnGoToCapture.disabled = false;
-        idGuidanceCard.classList.remove('d-none');
-        guidanceTitle.textContent = val;
-
-        const info = idGuidanceMap[val] || { desc: "Capture the side or page with your name and ID number.", supports: "Review all details. You can enter missing information manually if this ID cannot be read." };
-        guidanceText.textContent = info.desc;
-        guidanceSupports.textContent = info.supports;
-
         const selectedOption = selectIdType.options[selectIdType.selectedIndex];
         const needsBack = selectedOption.getAttribute('data-back') === 'true';
         if (needsBack) {

@@ -42,7 +42,8 @@
                         <h2 class="h5 fw-bold text-dark mb-1">Select your government-issued ID</h2>
 
                         <div class="mb-3">
-                            <label asp-for="Input.IdType" for="selectIdType" class="form-label fw-semibold">Valid government ID</label>
+                            @* Preserve the label's space and accessible name without displaying it. *@
+                            <label asp-for="Input.IdType" for="selectIdType" class="form-label fw-semibold opacity-0">Valid government ID</label>
                             <select asp-for="Input.IdType" id="selectIdType" class="form-select form-select-lg">
                                 <option value="">Choose your ID type...</option>
                                 @foreach (var id in DrmcPatientPortal.Models.PhilippineIdTypes.All)
@@ -61,20 +62,6 @@
                             <input asp-for="Input.OtherGovernmentIdName" class="form-control" maxlength="120" aria-describedby="otherIdHelp" />
                             <p class="form-text" id="otherIdHelp">For example: Voter's ID — COMELEC, or a government employee ID and its issuing agency.</p>
                             <span asp-validation-for="Input.OtherGovernmentIdName" class="field-validation-error"></span>
-                        </div>
-
-                        <!-- Dynamic ID Guidance Notice Card -->
-                        <div id="idGuidanceCard" class="card border-0 bg-light rounded-3 p-3 mb-4 d-none">
-                            <div class="d-flex align-items-start gap-3">
-                                <div class="p-2 rounded-circle bg-primary-subtle text-primary-drmc d-inline-flex" style="flex-shrink:0;">
-                                    <i class="bi bi-card-heading fs-4"></i>
-                                </div>
-                                <div>
-                                    <h3 class="h6 fw-bold text-dark mb-1" id="guidanceTitle">ID Guidance</h3>
-                                    <p class="small text-muted mb-1" id="guidanceText">Framing advice will appear here.</p>
-                                    <div class="small text-primary-drmc fw-semibold" id="guidanceSupports"></div>
-                                </div>
-                            </div>
                         </div>
 
                         <div class="registration-actions pt-3 border-top">
@@ -124,7 +111,7 @@
                                         <div class="p-3 rounded-circle bg-white shadow-xs d-inline-flex text-primary-drmc mb-2">
                                             <i class="bi bi-camera-fill fs-2"></i>
                                         </div>
-                                        <p class="small text-muted mb-0">JPEG, PNG or static WebP; up to 5 MB, 8192 pixels per side and 32 megapixels. Camera photos are resized automatically.</p>
+                                        <p class="small text-muted mb-0">JPG, PNG or WebP &middot; Max. 5 MB</p>
                                     </div>
 
                                     <div class="mt-auto pt-2 d-flex flex-wrap gap-2">
@@ -324,13 +311,13 @@
                             <div class="col-md-6">
                                 <label asp-for="Input.Password" for="regPassword" class="form-label fw-semibold">Password</label>
                                 <div class="input-group">
-                                    <input asp-for="Input.Password" class="form-control" type="password" id="regPassword" autocomplete="new-password" placeholder="At least 8 characters" />
+                                    <input asp-for="Input.Password" class="form-control" type="password" id="regPassword" autocomplete="new-password" placeholder="At least 8 characters" aria-describedby="passwordRequirements" />
                                     <button class="btn btn-outline-secondary pw-toggle" type="button" aria-controls="regPassword" aria-pressed="false" aria-label="Show password">
                                         <i class="bi bi-eye" aria-hidden="true"></i>
                                     </button>
                                 </div>
                                 <span asp-validation-for="Input.Password" class="field-validation-error"></span>
-                                <div class="form-text small text-muted">Must include uppercase, lowercase, number, and symbol.</div>
+                                <div class="form-text text-muted registration-password-hint" id="passwordRequirements">Must include uppercase, lowercase, number, and symbol.</div>
                             </div>
                             <div class="col-md-6">
                                 <label asp-for="Input.ConfirmPassword" for="regConfirmPassword" class="form-label fw-semibold">Confirm password</label>
@@ -347,18 +334,16 @@
                             <div class="col-12 mt-3">
                                 <div class="registration-record-code p-3 rounded-3 border @(Model.StaffInvitationMode ? "d-none" : "")" id="hospitalRecordCodePanel" data-code-required="@((Model.RequireHospitalRecordCode && !Model.FirstAdminSetupOpen) ? "true" : "false")" data-code-error="@RegisterModel.HospitalRecordCodeError">
                                     <div class="d-flex gap-3 align-items-start">
-                                        <span class="registration-record-code-icon" aria-hidden="true"><i class="bi bi-hospital"></i></span>
                                         <div class="flex-grow-1 registration-record-code-body">
                                             <label asp-for="Input.HospitalRecordCode" for="hospitalRecordCode" class="form-label fw-semibold mb-1">Hospital record code @if (!Model.RequireHospitalRecordCode) { <span class="registration-optional">(Optional)</span> }</label>
-                                            <p class="small text-muted mb-2" id="hospitalRecordCodeHelp">Enter your PACD/Clinic code or scan its QR. Your name and birth date must match your hospital record.</p>
                                             <div class="registration-code-entry">
                                                 @if (Model.RequireCodeInBrowser)
                                                 {
-                                                    <input asp-for="Input.HospitalRecordCode" id="hospitalRecordCode" class="form-control registration-code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" aria-describedby="hospitalRecordCodeHelp hospitalRecordCodeStatus" data-val-required="@RegisterModel.HospitalRecordCodeError" required />
+                                                    <input asp-for="Input.HospitalRecordCode" id="hospitalRecordCode" class="form-control registration-code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" aria-describedby="hospitalRecordCodeStatus" data-val-required="@RegisterModel.HospitalRecordCodeError" required />
                                                 }
                                                 else
                                                 {
-                                                    <input asp-for="Input.HospitalRecordCode" id="hospitalRecordCode" class="form-control registration-code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" aria-describedby="hospitalRecordCodeHelp hospitalRecordCodeStatus" />
+                                                    <input asp-for="Input.HospitalRecordCode" id="hospitalRecordCode" class="form-control registration-code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" aria-describedby="hospitalRecordCodeStatus" />
                                                 }
                                                 <button type="button" class="btn btn-outline-secondary" id="btnScanRecordCode" aria-controls="recordCodeScanner" aria-expanded="false">
                                                     <i class="bi bi-qr-code-scan me-1" aria-hidden="true"></i> Scan QR

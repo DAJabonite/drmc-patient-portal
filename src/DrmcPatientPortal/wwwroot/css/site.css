@@ -1787,6 +1787,7 @@ code,
 .registration-action-group { display: flex; flex-wrap: wrap; gap: .75rem; }
 .registration-page fieldset { min-width: 0; }
 .registration-page .wizard-step h2 { scroll-margin-top: 6rem; }
+.registration-password-hint { font-size: .75rem; }
 .registration-page .btn:disabled,
 .registration-consent .btn:disabled { opacity: 1; background: #edf1f5 !important; color: #536273 !important; border-color: #bdc9d5 !important; box-shadow: none !important; }
 .registration-page .input-validation-error { border: 2px solid #a51d2d; }

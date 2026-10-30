@@ -177,7 +177,11 @@ public sealed partial class RecoveryCodeTests(PortalFactory factory)
                 else
                 {
                     Assert.Equal(HttpStatusCode.OK, recovered.StatusCode);
-                    Assert.Contains("Invalid recovery code", await recovered.Content.ReadAsStringAsync());
+                    var retryPage = await recovered.Content.ReadAsStringAsync();
+                    Assert.Contains("Invalid recovery code", retryPage);
+                    var retryAction = Regex.Match(retryPage, "<form[^>]*method=\"post\"[^>]*action=\"([^\"]*LoginWithRecoveryCode[^\"]*)\"");
+                    Assert.True(retryAction.Success, "Recovery-code retries must post to the recovery page.");
+                    Assert.Contains("returnUrl=%2FAdmin", WebUtility.HtmlDecode(retryAction.Groups[1].Value));
                     Assert.Equal(HttpStatusCode.Redirect, (await login.GetAsync("/Admin")).StatusCode);
                 }
             }
@@ -209,6 +213,7 @@ public sealed partial class RecoveryCodeTests(PortalFactory factory)
     [Theory]
     [InlineData(Generate)]
     [InlineData(Show)]
+    [InlineData("/Identity/Account/LoginWithRecoveryCode")]
     public async Task Recovery_pages_require_signin(string path)
     {
         using var client = factory.CreatePortalClient();
