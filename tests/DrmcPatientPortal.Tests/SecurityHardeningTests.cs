@@ -84,6 +84,9 @@ public sealed class SecurityConfigurationTests
     [InlineData("Password", "")]
     [InlineData("Password", " \t\n ")]
     [InlineData("FromAddress", "invalid-address")]
+    [InlineData("FromName", "DRMC\r\nBcc: recipient@fixtures.test")]
+    [InlineData("FromName", "DRMC\nPatient Portal")]
+    [InlineData("FromName", "DRMC\u2028Patient Portal")]
     [InlineData("UseSsl", "false")]
     public void Incomplete_smtp_configuration_is_rejected_in_development_and_production(string key, string value)
     {
@@ -116,17 +119,26 @@ public sealed class SecurityConfigurationTests
     }
 
     [Fact]
-    public async Task Smtp_message_has_real_plain_text_and_html_mime_alternatives_without_attachments()
+    public async Task Smtp_message_has_plain_text_html_and_an_inline_seal_without_attachments()
     {
         const string text = "Invitation code: ABCDE-FGHIJ-KLMNO-PQRST\nKumpirmaha ang imong email.";
-        const string html = "<p>Invitation code: ABCDE-FGHIJ-KLMNO-PQRST</p><p>Kumpirmaha ang imong email.</p>";
+        var html = $"<img src=\"cid:{PortalEmailRenderer.SealContentId}\" alt=\"DRMC seal\"><p>Invitation code: ABCDE-FGHIJ-KLMNO-PQRST</p><p>Kumpirmaha ang imong email.</p>";
         var sender = new SmtpEmailSender(Options.Create(SmtpOptions()));
         using var message = sender.CreateMessage("recipient@fixtures.test", "Imbitasyon", html, text);
+        Assert.Equal("DRMC Patient Portal", message.From!.DisplayName);
+        Assert.Equal("portal@fixtures.test", message.From.Address);
         Assert.False(message.IsBodyHtml);
         Assert.Equal(text, message.Body);
         Assert.Empty(message.Attachments);
         var alternative = Assert.Single(message.AlternateViews);
         Assert.Equal("text/html", alternative.ContentType.MediaType);
+        var seal = Assert.Single(alternative.LinkedResources);
+        Assert.Equal(PortalEmailRenderer.SealContentId, seal.ContentId);
+        Assert.Equal("image/png", seal.ContentType.MediaType);
+        var signature = new byte[8];
+        Assert.Equal(signature.Length, await seal.ContentStream.ReadAsync(signature));
+        Assert.Equal(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }, signature);
+        seal.ContentStream.Position = 0;
         using (var reader = new StreamReader(alternative.ContentStream, Encoding.UTF8, leaveOpen: true))
             Assert.Equal(html, await reader.ReadToEndAsync());
         alternative.ContentStream.Position = 0;
@@ -142,14 +154,61 @@ public sealed class SecurityConfigurationTests
             Assert.Contains("Content-Type: multipart/alternative", raw, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("Content-Type: text/plain", raw, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("Content-Type: text/html", raw, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Content-Type: multipart/related", raw, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Content-Type: image/png", raw, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains($"Content-ID: <{PortalEmailRenderer.SealContentId}>", raw, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("Content-Disposition: attachment", raw, StringComparison.OrdinalIgnoreCase);
         }
         finally { Directory.Delete(directory, recursive: true); }
 
-        using var legacy = sender.CreateMessage("recipient@fixtures.test", "Existing email", html, null);
+        const string legacyHtml = "<p>Existing queued email</p>";
+        using var legacy = sender.CreateMessage("recipient@fixtures.test", "Existing email", legacyHtml, null);
         Assert.True(legacy.IsBodyHtml);
-        Assert.Equal(html, legacy.Body);
+        Assert.Equal(legacyHtml, legacy.Body);
         Assert.Empty(legacy.AlternateViews);
+    }
+
+    [Theory]
+    [InlineData(null, "DRMC Patient Portal")]
+    [InlineData("", "DRMC Patient Portal")]
+    [InlineData("  ", "DRMC Patient Portal")]
+    [InlineData("DRMC Pasyentë – José", "DRMC Pasyentë – José")]
+    public async Task Smtp_sender_name_uses_utf8_without_changing_the_mailbox(string? configured, string expected)
+    {
+        var options = SmtpOptions();
+        options.FromName = configured;
+        var sender = new SmtpEmailSender(Options.Create(options));
+        using var message = sender.CreateMessage("recipient@fixtures.test", "Synthetic subject", "<p>Synthetic content</p>", "Synthetic content");
+        Assert.Equal(expected, message.From!.DisplayName);
+        Assert.Equal(options.FromAddress, message.From.Address);
+        var directory = Path.Combine(Path.GetTempPath(), "drmc-email-header-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            using var pickup = new SmtpClient { DeliveryMethod = SmtpDeliveryMethod.SpecifiedPickupDirectory, PickupDirectoryLocation = directory };
+            await pickup.SendMailAsync(message);
+            var raw = await File.ReadAllTextAsync(Assert.Single(Directory.GetFiles(directory)));
+            var header = Regex.Match(raw, @"^From:.*(?:\r?\n[ \t].*)*", RegexOptions.Multiline).Value;
+            Assert.Contains("<portal@fixtures.test>", header);
+            if (expected.Any(c => c > 127)) Assert.Contains("=?utf-8?", header, StringComparison.OrdinalIgnoreCase);
+            else Assert.Contains(expected, header);
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Theory]
+    [InlineData("DRMC\r\nBcc: recipient@fixtures.test")]
+    [InlineData("DRMC\nPatient Portal")]
+    [InlineData("DRMC\u0085Patient Portal")]
+    [InlineData("DRMC\u2028Patient Portal")]
+    [InlineData("DRMC\u2029Patient Portal")]
+    public void Multiline_sender_names_are_rejected_by_validation_and_message_creation(string name)
+    {
+        var options = SmtpOptions();
+        options.FromName = name;
+        Assert.True(new EmailDeliveryOptionsValidator(new TestEnvironment()).Validate(null, options).Failed);
+        var sender = new SmtpEmailSender(Options.Create(options));
+        Assert.Throws<ArgumentException>(() => sender.CreateMessage("recipient@fixtures.test", "Subject", "<p>Body</p>", "Body"));
     }
 
     [Fact]
@@ -589,6 +648,13 @@ public sealed class SecurityHardeningTests(PortalFactory factory)
         var watch = Stopwatch.StartNew(); var response = await client.PostFormAsync("/Identity/Account/ForgotPassword", "/Identity/Account/ForgotPassword", fields);
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode); Assert.True(watch.ElapsedMilliseconds >= 245);
         Assert.Equal("/Identity/Account/ForgotPasswordConfirmation", response.Headers.Location?.OriginalString);
+        var confirmation = await client.GetAsync(response.Headers.Location!);
+        var confirmationHtml = WebUtility.HtmlDecode(await confirmation.Content.ReadAsStringAsync());
+        Assert.Equal(HttpStatusCode.OK, confirmation.StatusCode);
+        Assert.True(confirmation.Headers.CacheControl?.NoStore);
+        Assert.Contains("If this email address belongs to a confirmed account, we’ll send a password-reset link.", confirmationHtml);
+        Assert.DoesNotContain(fields["Input.Email"], confirmationHtml);
+        Assert.DoesNotContain("is-success", confirmationHtml);
         client.DefaultRequestHeaders.Remove("X-Forwarded-For"); client.DefaultRequestHeaders.Add("X-Forwarded-For", "198.51.100.2");
         var limited = await client.PostFormAsync("/Identity/Account/ForgotPassword", "/Identity/Account/ForgotPassword", fields);
         Assert.Equal(HttpStatusCode.TooManyRequests, limited.StatusCode); Assert.NotNull(limited.Headers.RetryAfter);

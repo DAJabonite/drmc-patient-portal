@@ -322,4 +322,25 @@
   <data name="Ids_Reload" xml:space="preserve"><value>Reload My IDs</value></data>
   <data name="Ids_ScanComplete" xml:space="preserve"><value>ID details read.</value></data>
   <data name="Your ID was added to your wallet." xml:space="preserve"><value>Your ID was added to your wallet.</value></data>
+  <data name="PortalEmail_Fallback" xml:space="preserve"><value>If the button does not work, open this link:</value></data>
+  <data name="PortalEmail_InvitationUnexpected" xml:space="preserve"><value>If you were not expecting this invitation, do not use the code or link. Contact your portal Admin if you need help.</value></data>
+  <data name="StaffInvite_EmailPreview" xml:space="preserve"><value>Your staff invitation includes your assigned role and a secure signup link.</value></data>
+  <data name="Verification_EmailPreview" xml:space="preserve"><value>Confirm your email address to finish setting up your DRMC Patient Portal account.</value></data>
+  <data name="Verification_EmailInstructions" xml:space="preserve"><value>Open the link to confirm this email address, then sign in to the portal. If the link has expired, request a new confirmation email.</value></data>
+  <data name="Verification_EmailUnexpected" xml:space="preserve"><value>If you did not create an account or request verification, you can ignore this email.</value></data>
+  <data name="AccountEmail_ResetSubject" xml:space="preserve"><value>Reset your DRMC Patient Portal password</value></data>
+  <data name="AccountEmail_ResetAction" xml:space="preserve"><value>Reset your password</value></data>
+  <data name="AccountEmail_ResetPreview" xml:space="preserve"><value>Use this secure link to choose a new portal password.</value></data>
+  <data name="AccountEmail_ResetIntro" xml:space="preserve"><value>We received a request to reset the password for your DRMC Patient Portal account.</value></data>
+  <data name="AccountEmail_ResetInstructions" xml:space="preserve"><value>Open the link and choose a new password. If the link has expired, request another password reset from the portal.</value></data>
+  <data name="AccountEmail_ResetUnexpected" xml:space="preserve"><value>If you did not request a password reset, ignore this email. Your password will stay the same.</value></data>
+  <data name="AccountEmail_ChangeSubject" xml:space="preserve"><value>Confirm your new DRMC Patient Portal email address</value></data>
+  <data name="AccountEmail_ChangeAction" xml:space="preserve"><value>Confirm new email address</value></data>
+  <data name="AccountEmail_ChangePreview" xml:space="preserve"><value>Confirm this address to update your portal sign-in email.</value></data>
+  <data name="AccountEmail_ChangeIntro" xml:space="preserve"><value>You asked to use this email address for your DRMC Patient Portal account.</value></data>
+  <data name="AccountEmail_ChangeInstructions" xml:space="preserve"><value>Open the link to confirm the change. After confirmation, use this new email address to sign in.</value></data>
+  <data name="AccountEmail_ChangeUnexpected" xml:space="preserve"><value>If you did not request this change, do not open the link. Contact the portal staff if you need help.</value></data>
+  <data name="PasswordReset_RequestReceivedBody" xml:space="preserve"><value>If this email address belongs to a confirmed account, we’ll send a password-reset link.</value></data>
+  <data name="PasswordReset_InboxHelp" xml:space="preserve"><value>Check your inbox and spam or junk folder. Open the reset link and choose a new password.</value></data>
+  <data name="PasswordReset_RequestAnotherLink" xml:space="preserve"><value>Request another reset link</value></data>
 </root>

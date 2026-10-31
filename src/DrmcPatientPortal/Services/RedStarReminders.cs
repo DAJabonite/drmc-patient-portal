@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Net;
 using System.Text.Json;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
@@ -227,15 +226,15 @@ public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataPro
                         LogTerminalFailure(id, reminder.Attempts, "DevelopmentTransportUnavailable");
                     continue;
                 }
-                var content = EmailContent(payload.DueDate, PortalUrl());
+                var content = RenderEmail(payload.DueDate, PortalUrl());
                 using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(30), clock);
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token, deadline.Token);
                 // A process can stop after SMTP accepted a message but before the lease is completed.
                 // Reclaiming that lease gives at-least-once delivery, not an exactly-once SMTP guarantee.
                 if (sender is SmtpEmailSender smtp)
-                    await smtp.SendEmailAsync(payload.Recipient, content.Subject, content.Body, timeout.Token);
+                    await smtp.SendEmailAsync(payload.Recipient, content.Subject, content.HtmlBody, content.PlainTextBody, timeout.Token);
                 else
-                    await sender.SendEmailAsync(payload.Recipient, content.Subject, content.Body).WaitAsync(timeout.Token);
+                    await sender.SendEmailAsync(payload.Recipient, content.Subject, content.HtmlBody).WaitAsync(timeout.Token);
                 await CompleteAsync(db, id, owner, RedStarDeliveryState.Delivered, token);
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
@@ -301,10 +300,22 @@ public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataPro
 
     public static (string Subject, string Body) EmailContent(DateTime due, string portalUrl)
     {
+        var email = RenderEmail(due, portalUrl);
+        return (email.Subject, email.HtmlBody);
+    }
+
+    public static RenderedPortalEmail RenderEmail(DateTime due, string portalUrl)
+    {
         var date = due.ToString("MMMM d, yyyy", CultureInfo.GetCultureInfo("en-US"));
-        return ("DRMC appointment reminder", $"<p>DRMC reminder: you have a scheduled appointment on {WebUtility.HtmlEncode(date)}.</p>" +
-            $"<p>Sign in to your patient portal for details: <a href=\"{WebUtility.HtmlEncode(portalUrl)}\">Open patient portal</a>.</p>" +
-            "<p>If you have already attended or need to change the schedule, contact the clinic.</p>");
+        return PortalEmailRenderer.Render(new(
+            Subject: "DRMC appointment reminder",
+            Heading: "Your appointment reminder",
+            Preview: "Sign in to your patient portal for appointment details.",
+            Introduction: $"DRMC reminder: you have a scheduled appointment on {date}.",
+            ActionText: "Open patient portal",
+            ActionUrl: portalUrl,
+            Instructions: "Sign in to your patient portal for details. If you have already attended or need to change the schedule, contact the clinic.",
+            UnexpectedGuidance: "If you were not expecting this reminder, contact the clinic. You can manage email reminders in your patient portal."));
     }
 }
 

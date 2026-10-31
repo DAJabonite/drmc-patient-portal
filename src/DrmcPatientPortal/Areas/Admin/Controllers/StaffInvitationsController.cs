@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.Encodings.Web;
 using DrmcPatientPortal.Areas.Admin.Models;
 using DrmcPatientPortal.Areas.Admin.Security;
 using DrmcPatientPortal.Areas.Admin.Services;
@@ -120,12 +119,19 @@ public sealed class StaffInvitationsController(ApplicationDbContext db, AdminWri
         var invitationCode = localizer["StaffInvite_EmailCode", code].Value;
         var expiry = localizer["StaffInvite_EmailExpiry", Local(expires).ToString("MMMM d, yyyy h:mm tt", CultureInfo.CurrentCulture)].Value;
         var setup = localizer["StaffInvite_EmailSetup"].Value;
-        string Encode(string value) => HtmlEncoder.Default.Encode(value);
-        var html = $"<p>{Encode(intro)}</p><p>{Encode(assignedRole)}</p><p>{Encode(address)}</p>" +
-            $"<p><a href='{Encode(signupUrl)}'>{Encode(linkText)}</a></p>" +
-            $"<p>{Encode(invitationCode)}</p><p>{Encode(expiry)}</p><p>{Encode(setup)}</p>";
-        var text = string.Join("\n\n", intro, assignedRole, address, $"{linkText}: {signupUrl}", invitationCode, expiry, setup);
-        return new(email, localizer["StaffInvite_EmailSubject"].Value, html, text);
+        var content = PortalEmailRenderer.Render(new PortalEmailContent(
+            Subject: localizer["StaffInvite_EmailSubject"].Value,
+            Heading: linkText,
+            Preview: localizer["StaffInvite_EmailPreview"].Value,
+            Introduction: intro,
+            ActionText: linkText,
+            ActionUrl: signupUrl,
+            Instructions: $"{address} {setup}",
+            UnexpectedGuidance: localizer["PortalEmail_InvitationUnexpected"].Value,
+            Details: [new(assignedRole), new(invitationCode, IsCode: true), new(expiry)],
+            Language: CultureInfo.CurrentUICulture.TwoLetterISOLanguageName,
+            FallbackLabel: localizer["PortalEmail_Fallback"].Value));
+        return new(email, content.Subject, content.HtmlBody, content.PlainTextBody);
     }
 
     [HttpPost]

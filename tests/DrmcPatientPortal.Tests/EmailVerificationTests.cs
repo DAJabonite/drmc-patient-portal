@@ -189,6 +189,31 @@ public sealed class EmailVerificationTests(PortalFactory factory)
         Assert.StartsWith("/Identity/Account/Register?", response.Headers.Location?.OriginalString);
     }
 
+    [Theory]
+    [InlineData("en", "Check your email", "If this email address belongs to a confirmed account", "Request another reset link")]
+    [InlineData("fil", "Tingnan ang iyong email", "Kung ang email address na ito ay para sa isang kumpirmadong account", "Humiling ng panibagong reset link")]
+    [InlineData("ceb", "Tan-awa ang imong email", "Kung kini nga email address iya sa usa ka nakumpirmang account", "Pangayo og laing reset link")]
+    public async Task Password_reset_confirmation_uses_localized_portal_card_and_generic_next_steps(string culture, string title, string body, string action)
+    {
+        using var client = factory.CreatePortalClient();
+        var response = await client.GetAsync($"/Identity/Account/ForgotPasswordConfirmation?culture={culture}&ui-culture={culture}");
+        var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.CacheControl?.NoStore);
+        Assert.Contains(title, html);
+        Assert.Contains(body, html);
+        Assert.Contains(action, html);
+        Assert.Contains("auth-card auth-verification-card", html);
+        Assert.Contains("bi-envelope-check", html);
+        Assert.Contains("auth-verification-trust", html);
+        Assert.Contains("href=\"/Identity/Account/Login\"", html);
+        Assert.Contains("href=\"/Identity/Account/ForgotPassword\"", html);
+        Assert.Contains("images/drmc-masthead", html);
+        Assert.DoesNotContain("auth-verification-recipient", html);
+        Assert.DoesNotContain("is-success", html);
+        Assert.DoesNotContain("Forgot password confirmation", html);
+    }
+
     [Fact]
     public async Task Valid_confirmation_updates_account_and_preserves_sign_in_destination_without_signing_in()
     {
@@ -308,7 +333,7 @@ public sealed class EmailVerificationTests(PortalFactory factory)
         await host.Services.GetRequiredService<AccountEmailDispatcher>().DispatchOnceAsync();
         var delivered = Assert.Single(sender.Messages, message => message.Email == account.Email);
         Assert.Equal(account.Email, delivered.Email);
-        var href = WebUtility.HtmlDecode(Regex.Match(delivered.Body, "href='([^']+)'").Groups[1].Value);
+        var href = ActionUrl(delivered.Body);
         Assert.Contains("returnUrl=%2FPatient%2FRadiology", href);
         var confirmation = await client.GetAsync(href);
         Assert.Equal(HttpStatusCode.OK, confirmation.StatusCode);
@@ -333,6 +358,139 @@ public sealed class EmailVerificationTests(PortalFactory factory)
         using var scope = factory.Services.CreateScope();
         return await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().AccountEmails.AsNoTracking()
             .SingleAsync(m => m.UserId == userId);
+    }
+
+    private async Task<AccountEmailPayload> PayloadAsync(string userId)
+    {
+        var message = await QueuedEmailAsync(userId);
+        var protector = factory.Services.GetRequiredService<IDataProtectionProvider>().CreateProtector("DRMC.AccountEmail.v1");
+        return System.Text.Json.JsonSerializer.Deserialize<AccountEmailPayload>(protector.Unprotect(message.ProtectedPayload!))!;
+    }
+
+    private static string ActionUrl(string html) => WebUtility.HtmlDecode(
+        Regex.Match(html, "href=[\"']([^\"']+)[\"']").Groups[1].Value);
+
+    private static Uri AssertBrandedPayload(AccountEmailPayload payload, string culture, string action, string destination)
+    {
+        Assert.Contains("DRMC Patient Portal", payload.Body);
+        Assert.Contains($"cid:{PortalEmailRenderer.SealContentId}", payload.Body);
+        Assert.Contains($"lang=\"{culture}\"", payload.Body);
+        Assert.Contains(action, WebUtility.HtmlDecode(payload.Body));
+        Assert.NotNull(payload.PlainTextBody);
+        Assert.Contains(action, payload.PlainTextBody);
+        Assert.DoesNotContain("<table", payload.PlainTextBody);
+        var url = new Uri(ActionUrl(payload.Body));
+        Assert.Equal(destination, url.AbsolutePath);
+        Assert.Equal("https", url.Scheme);
+        Assert.Equal("localhost", url.Host);
+        Assert.Contains(url.AbsoluteUri, payload.PlainTextBody);
+        if (url.Query.Contains('&')) Assert.Contains("&amp;", payload.Body);
+        Assert.DoesNotContain("&amp;", payload.PlainTextBody);
+        return url;
+    }
+
+    [Theory]
+    [InlineData("en", "Confirm email address")]
+    [InlineData("fil", "Kumpirmahin ang email address")]
+    [InlineData("ceb", "Kumpirmaha ang email address")]
+    public async Task Registration_renders_localized_html_and_plain_text_inside_the_signup_transaction(string culture, string action)
+    {
+        using var host = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+            services.Configure<PatientRegistrationOptions>(options => options.RequireHospitalRecordCode = false)));
+        using var client = Client(host);
+        var email = $"signup-email.{Guid.NewGuid():N}@fixtures.test";
+        var path = $"/Identity/Account/Register?culture={culture}&ui-culture={culture}&returnUrl=%2FPatient%2FRadiology";
+        var response = await client.PostFormAsync(path, path, SignupForms.Signup(email));
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        using var scope = host.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = (await users.FindByEmailAsync(email))!;
+        Assert.NotNull(user);
+        Assert.False(user.EmailConfirmed);
+        var payload = await PayloadAsync(user.Id);
+        Assert.Equal(email, payload.Recipient);
+        var url = AssertBrandedPayload(payload, culture, action, "/Identity/Account/ConfirmEmail");
+        Assert.Equal("/Patient/Radiology", QueryHelpers.ParseQuery(url.Query)["returnUrl"]);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync(url)).StatusCode);
+        await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Entry(user).ReloadAsync();
+        Assert.True(user.EmailConfirmed);
+    }
+
+    [Theory]
+    [InlineData("en", "Confirm email address")]
+    [InlineData("fil", "Kumpirmahin ang email address")]
+    [InlineData("ceb", "Kumpirmaha ang email address")]
+    public async Task Resend_renders_request_culture_before_enqueue_and_preserves_confirmation_destination(string culture, string action)
+    {
+        var account = await NewAccountAsync();
+        using var client = factory.CreatePortalClient();
+        var response = await ResendAsync(client, account.Email,
+            $"?culture={culture}&ui-culture={culture}&returnUrl=%2FPatient%2FRadiology");
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        var payload = await PayloadAsync(account.Id);
+        var url = AssertBrandedPayload(payload, culture, action, "/Identity/Account/ConfirmEmail");
+        var query = QueryHelpers.ParseQuery(url.Query);
+        Assert.Equal(account.Id, query["userId"]);
+        Assert.Equal("/Patient/Radiology", query["returnUrl"]);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync(url)).StatusCode);
+    }
+
+    [Theory]
+    [InlineData("en", "Reset your password")]
+    [InlineData("fil", "Palitan ang iyong password")]
+    [InlineData("ceb", "Ilisi ang imong password")]
+    public async Task Password_reset_renders_both_localized_views_and_a_valid_reset_token(string culture, string action)
+    {
+        var account = await NewAccountAsync();
+        await ConfirmAccountAsync(account.Id);
+        using var client = factory.CreatePortalClient();
+        var path = $"/Identity/Account/ForgotPassword?culture={culture}&ui-culture={culture}";
+        var response = await client.PostFormAsync(path, path, new Dictionary<string, string> { ["Input.Email"] = account.Email });
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        var payload = await PayloadAsync(account.Id);
+        var url = AssertBrandedPayload(payload, culture, action, "/Identity/Account/ResetPassword");
+        var code = QueryHelpers.ParseQuery(url.Query)["code"].ToString();
+        using var scope = factory.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = (await users.FindByIdAsync(account.Id))!;
+        Assert.True(await users.VerifyUserTokenAsync(user, users.Options.Tokens.PasswordResetTokenProvider,
+            UserManager<ApplicationUser>.ResetPasswordTokenPurpose, Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code))));
+    }
+
+    [Theory]
+    [InlineData("en", "ChangeEmail", "Confirm new email address")]
+    [InlineData("fil", "ChangeEmail", "Kumpirmahin ang bagong email address")]
+    [InlineData("ceb", "ChangeEmail", "Kumpirmaha ang bag-ong email address")]
+    [InlineData("en", "SendVerificationEmail", "Confirm email address")]
+    [InlineData("fil", "SendVerificationEmail", "Kumpirmahin ang email address")]
+    [InlineData("ceb", "SendVerificationEmail", "Kumpirmaha ang email address")]
+    public async Task Account_settings_render_localized_views_for_the_bound_destination(string culture, string handler, string action)
+    {
+        var account = await NewAccountAsync();
+        await ConfirmAccountAsync(account.Id);
+        using var client = factory.CreatePortalClient();
+        await client.SignInSuccessfullyAsync(account.Email, PortalFactory.Password);
+        var destination = $"changed.{Guid.NewGuid():N}@fixtures.test";
+        var page = $"/Identity/Account/Manage/Email?culture={culture}&ui-culture={culture}";
+        var response = await client.PostFormAsync(page, page + "&handler=" + handler,
+            new Dictionary<string, string> { ["Input.NewEmail"] = destination });
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        var payload = await PayloadAsync(account.Id);
+        var changing = handler == "ChangeEmail";
+        Assert.Equal(changing ? destination : account.Email, payload.Recipient);
+        var url = AssertBrandedPayload(payload, culture, action,
+            changing ? "/Identity/Account/ConfirmEmailChange" : "/Identity/Account/ConfirmEmail");
+        var query = QueryHelpers.ParseQuery(url.Query);
+        Assert.Equal(account.Id, query["userId"]);
+        if (changing)
+        {
+            Assert.Equal(destination, query["email"]);
+            using var scope = factory.Services.CreateScope();
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = (await users.FindByIdAsync(account.Id))!;
+            var token = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(query["code"].ToString()));
+            Assert.True((await users.ChangeEmailAsync(user, destination, token)).Succeeded);
+        }
     }
 
     private async Task DispatchEmailAsync(WebApplicationFactory<Program> host, string userId, int expectedAttempts)

@@ -322,4 +322,25 @@
   <data name="Ids_Reload" xml:space="preserve"><value>I-reload ang Akong mga ID</value></data>
   <data name="Ids_ScanComplete" xml:space="preserve"><value>Nabasa ang mga detalye sa ID.</value></data>
   <data name="Your ID was added to your wallet." xml:space="preserve"><value>Nadugang ang imong ID sa wallet.</value></data>
+  <data name="PortalEmail_Fallback" xml:space="preserve"><value>Kung dili molihok ang button, ablihi kini nga link:</value></data>
+  <data name="PortalEmail_InvitationUnexpected" xml:space="preserve"><value>Kung wala ka magpaabot niini nga imbitasyon, ayaw gamita ang code o link. Kontaka ang imong portal Admin kung kinahanglan ka og tabang.</value></data>
+  <data name="StaffInvite_EmailPreview" xml:space="preserve"><value>Ang imong imbitasyon adunay gihatag nga tahas ug luwas nga link sa pagparehistro.</value></data>
+  <data name="Verification_EmailPreview" xml:space="preserve"><value>Kumpirmaha ang imong email address aron mahuman ang pag-set up sa imong DRMC Patient Portal account.</value></data>
+  <data name="Verification_EmailInstructions" xml:space="preserve"><value>Ablihi ang link aron kumpirmahon kini nga email address, dayon pag-sign in sa portal. Kung na-expire na ang link, pangayo og bag-ong confirmation email.</value></data>
+  <data name="Verification_EmailUnexpected" xml:space="preserve"><value>Kung wala ka naghimo og account o nangayo og verification, mahimo nimong ibaliwala kini nga email.</value></data>
+  <data name="AccountEmail_ResetSubject" xml:space="preserve"><value>Ilisi ang imong DRMC Patient Portal password</value></data>
+  <data name="AccountEmail_ResetAction" xml:space="preserve"><value>Ilisi ang imong password</value></data>
+  <data name="AccountEmail_ResetPreview" xml:space="preserve"><value>Gamita kining luwas nga link aron mopili og bag-ong password sa portal.</value></data>
+  <data name="AccountEmail_ResetIntro" xml:space="preserve"><value>Nakadawat kami og hangyo nga ilisan ang password sa imong DRMC Patient Portal account.</value></data>
+  <data name="AccountEmail_ResetInstructions" xml:space="preserve"><value>Ablihi ang link ug pagpili og bag-ong password. Kung na-expire na ang link, pangayo pag-usab og password reset sa portal.</value></data>
+  <data name="AccountEmail_ResetUnexpected" xml:space="preserve"><value>Kung wala ka nangayo og password reset, ibaliwala kini nga email. Dili mausab ang imong password.</value></data>
+  <data name="AccountEmail_ChangeSubject" xml:space="preserve"><value>Kumpirmaha ang imong bag-ong DRMC Patient Portal email address</value></data>
+  <data name="AccountEmail_ChangeAction" xml:space="preserve"><value>Kumpirmaha ang bag-ong email address</value></data>
+  <data name="AccountEmail_ChangePreview" xml:space="preserve"><value>Kumpirmaha kini nga address aron ilisan ang email nga gamiton sa pag-sign in sa portal.</value></data>
+  <data name="AccountEmail_ChangeIntro" xml:space="preserve"><value>Nangayo ka nga gamiton kini nga email address para sa imong DRMC Patient Portal account.</value></data>
+  <data name="AccountEmail_ChangeInstructions" xml:space="preserve"><value>Ablihi ang link aron kumpirmahon ang kausaban. Human makumpirma, gamita kining bag-ong email address sa pag-sign in.</value></data>
+  <data name="AccountEmail_ChangeUnexpected" xml:space="preserve"><value>Kung wala ka nangayo niini nga kausaban, ayaw ablihi ang link. Kontaka ang kawani sa portal kung kinahanglan ka og tabang.</value></data>
+  <data name="PasswordReset_RequestReceivedBody" xml:space="preserve"><value>Kung kini nga email address iya sa usa ka nakumpirmang account, magpadala kami og link aron ilisan ang password.</value></data>
+  <data name="PasswordReset_InboxHelp" xml:space="preserve"><value>Tan-awa ang imong inbox ug spam o junk folder. Ablihi ang reset link ug pagpili og bag-ong password.</value></data>
+  <data name="PasswordReset_RequestAnotherLink" xml:space="preserve"><value>Pangayo og laing reset link</value></data>
 </root>

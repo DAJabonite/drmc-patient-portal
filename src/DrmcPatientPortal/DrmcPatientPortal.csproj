@@ -12,6 +12,7 @@
     <EmbeddedResource Include="Services/OcrFixtures/probe.png" />
     <EmbeddedResource Include="Services/OcrFixtures/probe.jpg" />
     <EmbeddedResource Include="Services/OcrFixtures/*.webp" />
+    <EmbeddedResource Include="wwwroot/images/drmc-seal.png" LogicalName="DrmcPatientPortal.EmailSeal.png" />
   </ItemGroup>
 
   <ItemGroup>

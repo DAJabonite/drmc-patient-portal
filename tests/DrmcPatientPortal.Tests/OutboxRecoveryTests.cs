@@ -1,5 +1,7 @@
 using System.Data.Common;
 using System.Net;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Channels;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
@@ -22,6 +24,70 @@ namespace DrmcPatientPortal.Tests;
 [Collection(PortalCollection.Name)]
 public sealed class OutboxRecoveryTests(PortalFactory factory)
 {
+    private sealed class RecordingAccountSender : IEmailSender
+    {
+        public List<(string Recipient, string Subject, string Body)> Messages { get; } = [];
+        public Task SendEmailAsync(string email, string subject, string htmlMessage)
+        {
+            Messages.Add((email, subject, htmlMessage));
+            return Task.CompletedTask;
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Account_payload_survives_restart_with_optional_plain_text_and_legacy_json(bool legacy)
+    {
+        var recipient = $"account-payload.{Guid.NewGuid():N}@fixtures.test";
+        await StaffAccounts.EnsureAccountAsync(factory.Services, recipient, false);
+        using var accountScope = factory.Services.CreateScope();
+        var userId = await accountScope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Users
+            .Where(u => u.Email == recipient).Select(u => u.Id).SingleAsync();
+        var sender = new RecordingAccountSender();
+        WebApplicationFactory<Program> Host() => factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IEmailSender>();
+            services.AddSingleton<IEmailSender>(sender);
+        }));
+        Guid id;
+        using (var first = Host())
+        {
+            const string html = "<p>SYNTHETIC-ACCOUNT-TOKEN</p>";
+            var queue = first.Services.GetRequiredService<IAccountEmailQueue>();
+            if (legacy) await queue.EnqueueAsync(userId, recipient, "Synthetic account subject", html);
+            else await queue.EnqueueAsync(userId, recipient, "Synthetic account subject", html, "SYNTHETIC-PLAIN-TEXT");
+            using var scope = first.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var message = await db.AccountEmails.AsNoTracking().SingleAsync(m => m.UserId == userId);
+            id = message.Id;
+            var protector = first.Services.GetRequiredService<IDataProtectionProvider>().CreateProtector("DRMC.AccountEmail.v1");
+            Assert.DoesNotContain("SYNTHETIC", Encoding.UTF8.GetString(message.ProtectedPayload!));
+            if (legacy)
+            {
+                var bytes = JsonSerializer.SerializeToUtf8Bytes(new { Recipient = recipient, Subject = "Synthetic account subject", Body = html });
+                Assert.DoesNotContain("PlainTextBody", Encoding.UTF8.GetString(bytes));
+                await db.AccountEmails.Where(m => m.Id == id).ExecuteUpdateAsync(set => set.SetProperty(m => m.ProtectedPayload, protector.Protect(bytes)));
+                Assert.Null(JsonSerializer.Deserialize<AccountEmailPayload>(bytes)!.PlainTextBody);
+            }
+            else
+            {
+                var payload = JsonSerializer.Deserialize<AccountEmailPayload>(protector.Unprotect(message.ProtectedPayload!))!;
+                Assert.Equal("SYNTHETIC-PLAIN-TEXT", payload.PlainTextBody);
+                Assert.Equal(html, payload.Body);
+            }
+            Assert.Empty(sender.Messages);
+        }
+        using var restarted = Host();
+        for (var batch = 0; batch < 20 && !sender.Messages.Any(m => m.Recipient == recipient); batch++)
+            await restarted.Services.GetRequiredService<AccountEmailDispatcher>().DispatchOnceAsync();
+        Assert.Single(sender.Messages, m => m.Recipient == recipient && m.Subject == "Synthetic account subject" && m.Body == "<p>SYNTHETIC-ACCOUNT-TOKEN</p>");
+        using var completedScope = restarted.Services.CreateScope();
+        var completed = await completedScope.ServiceProvider.GetRequiredService<ApplicationDbContext>().AccountEmails.AsNoTracking().SingleAsync(m => m.Id == id);
+        Assert.Equal(AccountEmailStatus.Delivered, completed.Status);
+        Assert.Null(completed.ProtectedPayload);
+    }
+
     private sealed class SlowBatchSender(TestClock clock, bool fail) : IEmailSender
     {
         public Channel<TaskCompletionSource> Attempts { get; } = Channel.CreateUnbounded<TaskCompletionSource>();

@@ -19,6 +19,10 @@ public sealed class EmailDeliveryOptions
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public string FromAddress { get; set; } = string.Empty;
+    public string? FromName { get; set; } = "DRMC Patient Portal";
+
+    internal string SenderName => string.IsNullOrWhiteSpace(FromName) ? "DRMC Patient Portal" : FromName;
+    internal bool HasMultilineFromName => FromName?.IndexOfAny(['\r', '\n', '\u0085', '\u2028', '\u2029']) is >= 0;
 
     internal string SelectedProvider(bool development) => string.IsNullOrWhiteSpace(Provider)
         ? development ? "Console" : "Smtp"
@@ -33,6 +37,8 @@ public sealed class EmailDeliveryOptionsValidator(IHostEnvironment environment) 
 {
     public ValidateOptionsResult Validate(string? name, EmailDeliveryOptions options)
     {
+        if (options.HasMultilineFromName)
+            return ValidateOptionsResult.Fail("Notifications:Email:FromName must be a single line.");
         var provider = options.SelectedProvider(environment.IsDevelopment());
         if (string.Equals(provider, "Console", StringComparison.OrdinalIgnoreCase))
             return environment.IsDevelopment() ? ValidateOptionsResult.Success
@@ -78,14 +84,39 @@ public sealed class SmtpEmailSender(IOptions<EmailDeliveryOptions> options) : IE
 
     internal MailMessage CreateMessage(string email, string subject, string htmlMessage, string? plainTextBody)
     {
-        var message = new MailMessage(options.Value.FromAddress, email)
+        var settings = options.Value;
+        if (settings.HasMultilineFromName)
+            throw new ArgumentException("Notifications:Email:FromName must be a single line.");
+        var hasSeal = htmlMessage.Contains("cid:" + PortalEmailRenderer.SealContentId, StringComparison.OrdinalIgnoreCase);
+        var message = new MailMessage(new MailAddress(settings.FromAddress, settings.SenderName, Encoding.UTF8), new MailAddress(email))
         {
             Subject = subject, SubjectEncoding = Encoding.UTF8, BodyEncoding = Encoding.UTF8,
-            Body = plainTextBody ?? htmlMessage, IsBodyHtml = plainTextBody is null
+            Body = plainTextBody ?? (hasSeal ? string.Empty : htmlMessage), IsBodyHtml = plainTextBody is null && !hasSeal
         };
-        if (plainTextBody is not null)
-            message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(htmlMessage, Encoding.UTF8, MediaTypeNames.Text.Html));
-        return message;
+        try
+        {
+            if (plainTextBody is not null || hasSeal)
+            {
+                var html = AlternateView.CreateAlternateViewFromString(htmlMessage, Encoding.UTF8, MediaTypeNames.Text.Html);
+                message.AlternateViews.Add(html);
+                if (hasSeal)
+                {
+                    var seal = typeof(SmtpEmailSender).Assembly.GetManifestResourceStream("DrmcPatientPortal.EmailSeal.png")
+                        ?? throw new InvalidOperationException("The embedded DRMC email seal is unavailable.");
+                    html.LinkedResources.Add(new LinkedResource(seal, MediaTypeNames.Image.Png)
+                    {
+                        ContentId = PortalEmailRenderer.SealContentId,
+                        TransferEncoding = TransferEncoding.Base64
+                    });
+                }
+            }
+            return message;
+        }
+        catch
+        {
+            message.Dispose();
+            throw;
+        }
     }
 }
 
