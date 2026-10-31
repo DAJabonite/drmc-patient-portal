@@ -322,4 +322,25 @@
   <data name="Ids_Reload" xml:space="preserve"><value>I-reload ang Aking mga ID</value></data>
   <data name="Ids_ScanComplete" xml:space="preserve"><value>Nabasa ang mga detalye ng ID.</value></data>
   <data name="Your ID was added to your wallet." xml:space="preserve"><value>Naidagdag ang iyong ID sa wallet.</value></data>
+  <data name="PortalEmail_Fallback" xml:space="preserve"><value>Kung hindi gumana ang button, buksan ang link na ito:</value></data>
+  <data name="PortalEmail_InvitationUnexpected" xml:space="preserve"><value>Kung hindi mo inaasahan ang imbitasyong ito, huwag gamitin ang code o link. Makipag-ugnayan sa iyong portal Admin kung kailangan mo ng tulong.</value></data>
+  <data name="StaffInvite_EmailPreview" xml:space="preserve"><value>Kasama sa iyong imbitasyon ang itinalagang tungkulin at ligtas na link sa pagpaparehistro.</value></data>
+  <data name="Verification_EmailPreview" xml:space="preserve"><value>Kumpirmahin ang iyong email address upang matapos ang pag-set up ng iyong DRMC Patient Portal account.</value></data>
+  <data name="Verification_EmailInstructions" xml:space="preserve"><value>Buksan ang link upang kumpirmahin ang email address na ito, pagkatapos ay mag-sign in sa portal. Kung paso na ang link, humiling ng bagong confirmation email.</value></data>
+  <data name="Verification_EmailUnexpected" xml:space="preserve"><value>Kung hindi ka gumawa ng account o humiling ng pag-verify, maaari mong balewalain ang email na ito.</value></data>
+  <data name="AccountEmail_ResetSubject" xml:space="preserve"><value>Palitan ang iyong DRMC Patient Portal password</value></data>
+  <data name="AccountEmail_ResetAction" xml:space="preserve"><value>Palitan ang iyong password</value></data>
+  <data name="AccountEmail_ResetPreview" xml:space="preserve"><value>Gamitin ang ligtas na link na ito upang pumili ng bagong password sa portal.</value></data>
+  <data name="AccountEmail_ResetIntro" xml:space="preserve"><value>Nakatanggap kami ng kahilingang palitan ang password ng iyong DRMC Patient Portal account.</value></data>
+  <data name="AccountEmail_ResetInstructions" xml:space="preserve"><value>Buksan ang link at pumili ng bagong password. Kung paso na ang link, humiling muli ng password reset sa portal.</value></data>
+  <data name="AccountEmail_ResetUnexpected" xml:space="preserve"><value>Kung hindi ka humiling ng password reset, balewalain ang email na ito. Hindi magbabago ang iyong password.</value></data>
+  <data name="AccountEmail_ChangeSubject" xml:space="preserve"><value>Kumpirmahin ang iyong bagong DRMC Patient Portal email address</value></data>
+  <data name="AccountEmail_ChangeAction" xml:space="preserve"><value>Kumpirmahin ang bagong email address</value></data>
+  <data name="AccountEmail_ChangePreview" xml:space="preserve"><value>Kumpirmahin ang address na ito upang palitan ang email na ginagamit sa pag-sign in sa portal.</value></data>
+  <data name="AccountEmail_ChangeIntro" xml:space="preserve"><value>Hiniling mong gamitin ang email address na ito para sa iyong DRMC Patient Portal account.</value></data>
+  <data name="AccountEmail_ChangeInstructions" xml:space="preserve"><value>Buksan ang link upang kumpirmahin ang pagbabago. Pagkatapos makumpirma, gamitin ang bagong email address na ito sa pag-sign in.</value></data>
+  <data name="AccountEmail_ChangeUnexpected" xml:space="preserve"><value>Kung hindi mo hiniling ang pagbabagong ito, huwag buksan ang link. Makipag-ugnayan sa kawani ng portal kung kailangan mo ng tulong.</value></data>
+  <data name="PasswordReset_RequestReceivedBody" xml:space="preserve"><value>Kung ang email address na ito ay para sa isang kumpirmadong account, magpapadala kami ng link upang palitan ang password.</value></data>
+  <data name="PasswordReset_InboxHelp" xml:space="preserve"><value>Tingnan ang iyong inbox at spam o junk folder. Buksan ang reset link at pumili ng bagong password.</value></data>
+  <data name="PasswordReset_RequestAnotherLink" xml:space="preserve"><value>Humiling ng panibagong reset link</value></data>
 </root>

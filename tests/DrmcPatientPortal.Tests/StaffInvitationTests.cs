@@ -162,10 +162,10 @@ public sealed partial class StaffInvitationTests(PortalFactory factory)
     }
 
     [Theory]
-    [InlineData("en", "Your DRMC Patient Portal staff invitation", "Philippine time")]
-    [InlineData("fil", "Ang imbitasyon mo bilang kawani sa DRMC Patient Portal", "oras sa Pilipinas")]
-    [InlineData("ceb", "Imong imbitasyon isip kawani sa DRMC Patient Portal", "oras sa Pilipinas")]
-    public async Task Admin_invites_staff_with_a_localized_one_time_link_queued_and_only_a_hash_stored(string culture, string subject, string timeZone)
+    [InlineData("en", "Your DRMC Patient Portal staff invitation", "Philippine time", "Create your account")]
+    [InlineData("fil", "Ang imbitasyon mo bilang kawani sa DRMC Patient Portal", "oras sa Pilipinas", "Gumawa ng iyong account")]
+    [InlineData("ceb", "Imong imbitasyon isip kawani sa DRMC Patient Portal", "oras sa Pilipinas", "Himoa ang imong account")]
+    public async Task Admin_invites_staff_with_a_localized_one_time_link_queued_and_only_a_hash_stored(string culture, string subject, string timeZone, string actionText)
     {
         var sender = new RecordingEmailSender();
         using var host = factory.WithWebHostBuilder(b => b.ConfigureTestServices(s => { s.RemoveAll<IEmailSender>(); s.AddSingleton<IEmailSender>(sender); }));
@@ -202,6 +202,9 @@ public sealed partial class StaffInvitationTests(PortalFactory factory)
         var payload = JsonSerializer.Deserialize<OutboundNotificationPayload>(scope.ServiceProvider.GetRequiredService<IDataProtectionProvider>()
             .CreateProtector(KeyRingProtection.OutboundNotificationPurpose).Unprotect(queued.PayloadProtected))!;
         Assert.Equal(subject, payload.Subject);
+        Assert.Contains("DRMC Patient Portal", payload.Body);
+        Assert.Contains($"lang=\"{culture}\"", payload.Body);
+        Assert.Contains("<h1", payload.Body);
         Assert.Contains(code, payload.Body);
         Assert.Contains(code, payload.PlainTextBody);
         Assert.Contains("/Identity/Account/Register#invite=" + code, payload.PlainTextBody);
@@ -212,8 +215,18 @@ public sealed partial class StaffInvitationTests(PortalFactory factory)
         Assert.Contains("Radiology", payload.PlainTextBody);
         Assert.DoesNotContain("<svg", payload.Body);
         Assert.DoesNotContain("data:image", payload.Body);
-        Assert.DoesNotContain("cid:", payload.Body);
+        Assert.Contains("cid:" + PortalEmailRenderer.SealContentId, payload.Body);
         Assert.DoesNotContain("<a", payload.PlainTextBody);
+        var signupLinks = Regex.Matches(payload.Body, "<a\\b[^>]*href=\"([^\"]+)\"[^>]*>(.*?)</a>", RegexOptions.Singleline);
+        Assert.Equal(2, signupLinks.Count);
+        Assert.All(signupLinks.Cast<Match>(), link =>
+        {
+            Assert.EndsWith("/Identity/Account/Register#invite=" + code, WebUtility.HtmlDecode(link.Groups[1].Value));
+            Assert.Equal(actionText, WebUtility.HtmlDecode(Regex.Replace(link.Groups[2].Value, "<[^>]*>", string.Empty)));
+        });
+        var visibleEmail = WebUtility.HtmlDecode(Regex.Replace(payload.Body, "<[^>]*>", string.Empty));
+        Assert.DoesNotContain("https://", visibleEmail);
+        Assert.DoesNotContain("#invite=", visibleEmail);
 
         await host.Services.GetRequiredService<OutboundNotificationDispatcher>().DispatchOnceAsync();
         var message = Assert.Single(sender.Messages, m => m.Email == email);

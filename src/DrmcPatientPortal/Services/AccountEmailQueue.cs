@@ -19,20 +19,25 @@ public sealed class AccountEmailOptions
 public interface IAccountEmailQueue
 {
     void Stage(ApplicationDbContext db, Guid id, string userId, string recipient, string subject, string body);
+    void Stage(ApplicationDbContext db, Guid id, string userId, string recipient, string subject, string body, string? plainTextBody);
     Task EnqueueAsync(string userId, string recipient, string subject, string body, CancellationToken token = default);
+    Task EnqueueAsync(string userId, string recipient, string subject, string body, string? plainTextBody, CancellationToken token = default);
 }
 
-public sealed record AccountEmailPayload(string Recipient, string Subject, string Body);
+public sealed record AccountEmailPayload(string Recipient, string Subject, string Body, string? PlainTextBody = null);
 
 public sealed class AccountEmailQueue(IServiceScopeFactory scopes, IDataProtectionProvider protection,
     IOptions<AccountEmailOptions> options, TimeProvider clock) : IAccountEmailQueue
 {
     // Join the producer's transaction. The caller owns SaveChanges and commit.
     public void Stage(ApplicationDbContext db, Guid id, string userId, string recipient, string subject, string body)
+        => Stage(db, id, userId, recipient, subject, body, null);
+
+    public void Stage(ApplicationDbContext db, Guid id, string userId, string recipient, string subject, string body, string? plainTextBody)
     {
         var now = clock.GetUtcNow();
         var payload = protection.CreateProtector("DRMC.AccountEmail.v1").Protect(
-            JsonSerializer.SerializeToUtf8Bytes(new AccountEmailPayload(recipient, subject, body)));
+            JsonSerializer.SerializeToUtf8Bytes(new AccountEmailPayload(recipient, subject, body, plainTextBody)));
         db.AccountEmails.Add(new AccountEmail
         {
             Id = id, UserId = userId, ProtectedPayload = payload, CreatedUtc = now,
@@ -40,7 +45,10 @@ public sealed class AccountEmailQueue(IServiceScopeFactory scopes, IDataProtecti
         });
     }
 
-    public async Task EnqueueAsync(string userId, string recipient, string subject, string body, CancellationToken token = default)
+    public Task EnqueueAsync(string userId, string recipient, string subject, string body, CancellationToken token = default)
+        => EnqueueAsync(userId, recipient, subject, body, null, token);
+
+    public async Task EnqueueAsync(string userId, string recipient, string subject, string body, string? plainTextBody, CancellationToken token = default)
     {
         var id = Guid.NewGuid();
         await using var strategyScope = scopes.CreateAsyncScope();
@@ -51,7 +59,7 @@ public sealed class AccountEmailQueue(IServiceScopeFactory scopes, IDataProtecti
             await using var scope = scopes.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             if (await db.AccountEmails.AnyAsync(m => m.Id == id, token)) return;
-            Stage(db, id, userId, recipient, subject, body);
+            Stage(db, id, userId, recipient, subject, body, plainTextBody);
             await db.SaveChangesAsync(token);
         }, token);
     }
@@ -99,7 +107,7 @@ public sealed class AccountEmailDispatcher(IServiceScopeFactory scopes, IDataPro
                 using var deliveryTimeout = CancellationTokenSource.CreateLinkedTokenSource(token, deadline.Token);
                 var sender = scope.ServiceProvider.GetRequiredService<IEmailSender>();
                 if (sender is SmtpEmailSender smtp)
-                    await smtp.SendEmailAsync(payload.Recipient, payload.Subject, payload.Body, deliveryTimeout.Token);
+                    await smtp.SendEmailAsync(payload.Recipient, payload.Subject, payload.Body, payload.PlainTextBody, deliveryTimeout.Token);
                 else
                     await sender.SendEmailAsync(payload.Recipient, payload.Subject, payload.Body).WaitAsync(deliveryTimeout.Token);
                 var completed = clock.GetUtcNow();

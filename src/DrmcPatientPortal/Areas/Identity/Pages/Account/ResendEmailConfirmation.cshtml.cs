@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
-using System.Text.Encodings.Web;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -60,9 +60,18 @@ public sealed class ResendEmailConfirmationModel(
 
             try
             {
-                await emailSender.EnqueueAsync(user.Id, Input.Email, localizer["Verification_EmailSubject"],
-                    $"{HtmlEncoder.Default.Encode(localizer["Verification_EmailIntro"])} " +
-                    $"<a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>{HtmlEncoder.Default.Encode(localizer["Verification_EmailLinkText"])}</a>.", HttpContext.RequestAborted);
+                var email = PortalEmailRenderer.Render(new PortalEmailContent(
+                    Subject: localizer["Verification_EmailSubject"].Value,
+                    Heading: localizer["Verification_EmailLinkText"].Value,
+                    Preview: localizer["Verification_EmailPreview"].Value,
+                    Introduction: localizer["Verification_EmailIntro"].Value,
+                    ActionText: localizer["Verification_EmailLinkText"].Value,
+                    ActionUrl: callbackUrl,
+                    Instructions: localizer["Verification_EmailInstructions"].Value,
+                    UnexpectedGuidance: localizer["Verification_EmailUnexpected"].Value,
+                    Language: CultureInfo.CurrentUICulture.Name,
+                    FallbackLabel: localizer["PortalEmail_Fallback"].Value));
+                await emailSender.EnqueueAsync(user.Id, Input.Email, email.Subject, email.HtmlBody, email.PlainTextBody, HttpContext.RequestAborted);
             }
             catch (Exception exception)
             {

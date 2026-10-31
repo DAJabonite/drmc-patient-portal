@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
+using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Security.Claims;
 using DrmcPatientPortal.Areas.Admin.Controllers;
 using DrmcPatientPortal.Areas.Admin.Models;
@@ -76,6 +78,75 @@ public sealed class RedStarReminderTests
             Assert.DoesNotContain(term, subject + body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("DRMC", subject);
         Assert.Contains("&quot;", RedStarReminderService.EmailContent(DateTime.Today, "https://portal.example.org/Patient?x=\"test\"").Body);
+        var rendered = RedStarReminderService.RenderEmail(new DateTime(2026, 10, 14), "https://portal.example.org/Patient");
+        Assert.Contains("October 14, 2026", rendered.PlainTextBody);
+        Assert.Contains("Open patient portal:\nhttps://portal.example.org/Patient", rendered.PlainTextBody);
+        Assert.Contains("cid:" + PortalEmailRenderer.SealContentId, rendered.HtmlBody);
+        Assert.Equal(2, Regex.Matches(rendered.HtmlBody, "href=\"https://portal.example.org/Patient\"").Count);
+        Assert.DoesNotContain("https://portal.example.org/Patient", WebUtility.HtmlDecode(Regex.Replace(rendered.HtmlBody, "<[^>]*>", string.Empty)));
+        foreach (var term in new[] { "Red Star", "RedStar", "HIV", "ARV", "PrEP", "PEP", "regimen", "patient code" })
+            Assert.DoesNotContain(term, rendered.PlainTextBody, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Shared_email_renderer_encodes_all_text_and_retains_literal_plain_text()
+    {
+        const string content = "<script>alert(\"synthetic\")</script> & Patient";
+        const string url = "https://portal.example.org/Identity/Account/ConfirmEmail?code=a%2Bb&returnUrl=%2FPatient";
+        var rendered = PortalEmailRenderer.Render(new(content, content, content, content, content, url, content, content,
+            [new(content, IsCode: true)], Language: "fil", FallbackLabel: content));
+        Assert.DoesNotContain("<script>", rendered.HtmlBody);
+        Assert.Contains("&lt;script&gt;", rendered.HtmlBody);
+        Assert.Contains("&amp;returnUrl=", rendered.HtmlBody);
+        Assert.Contains(content, rendered.PlainTextBody);
+        Assert.Contains(url, rendered.PlainTextBody);
+        Assert.Contains("lang=\"fil\"", rendered.HtmlBody);
+        Assert.Contains("role=\"presentation\"", rendered.HtmlBody);
+        Assert.Contains("max-width:600px", rendered.HtmlBody);
+    }
+
+    [Theory]
+    [InlineData("en", "Confirm email address")]
+    [InlineData("fil", "Kumpirmahin ang email address")]
+    [InlineData("ceb", "Kumpirmaha ang email address")]
+    public void Shared_email_renderer_centers_brand_and_action_and_uses_localized_labels_without_exposing_the_url(string language, string actionText)
+    {
+        const string url = "https://portal.example.org/Identity/Account/ConfirmEmail?userId=synthetic-user&code=a%2Bb%2Fc%3D&returnUrl=%2FPatient%2FRadiology";
+        var rendered = PortalEmailRenderer.Render(new("Subject", "Heading", "Preview", "Introduction", actionText, url,
+            "Instructions", "Unexpected guidance", Language: language));
+        var links = Regex.Matches(rendered.HtmlBody, "<a\\b[^>]*href=\"([^\"]+)\"[^>]*>(.*?)</a>", RegexOptions.Singleline);
+        Assert.Equal(2, links.Count);
+        Assert.All(links.Cast<Match>(), link =>
+        {
+            Assert.Equal(url, WebUtility.HtmlDecode(link.Groups[1].Value));
+            Assert.Equal(actionText, WebUtility.HtmlDecode(Regex.Replace(link.Groups[2].Value, "<[^>]*>", string.Empty)));
+        });
+        Assert.Contains($"lang=\"{language}\"", rendered.HtmlBody);
+        Assert.DoesNotContain(url, WebUtility.HtmlDecode(Regex.Replace(rendered.HtmlBody, "<[^>]*>", string.Empty)));
+        Assert.Contains(actionText + ":\n" + url, rendered.PlainTextBody);
+
+        var brandTable = Regex.Match(rendered.HtmlBody,
+            $"<table\\b(?<attributes>[^>]*)>\\s*<tr>\\s*<td\\b[^>]*>\\s*<img\\b[^>]*src=\"cid:{PortalEmailRenderer.SealContentId}\"").Groups["attributes"].Value;
+        var actionTable = Regex.Match(rendered.HtmlBody,
+            "<table\\b(?<attributes>[^>]*)>\\s*<tr>\\s*<td\\b[^>]*>\\s*<a\\b").Groups["attributes"].Value;
+        var contentCell = Regex.Match(rendered.HtmlBody,
+            "<td\\b(?<attributes>[^>]*)>\\s*<h1\\b").Groups["attributes"].Value;
+        Assert.Contains("align=\"center\"", brandTable);
+        Assert.Matches("margin:\\s*0\\s+auto", brandTable);
+        Assert.Contains("align=\"center\"", actionTable);
+        Assert.Matches("margin:\\s*0\\s+auto", actionTable);
+        Assert.Contains("align=\"left\"", contentCell);
+    }
+
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("data:text/html,synthetic")]
+    [InlineData("https://user:password@portal.example.org/Patient")]
+    [InlineData("/Identity/Account/ConfirmEmail")]
+    public void Shared_email_renderer_requires_an_absolute_web_action_without_credentials(string action)
+    {
+        Assert.Throws<ArgumentException>(() => PortalEmailRenderer.Render(new("Subject", "Heading", "Preview", "Intro",
+            "Open portal", action, "Instructions", "Unexpected guidance")));
     }
 
     [Fact]

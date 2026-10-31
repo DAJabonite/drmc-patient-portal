@@ -5,10 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,6 +27,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 
 namespace DrmcPatientPortal.Areas.Identity.Pages.Account
@@ -47,6 +48,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
         private readonly PatientRegistrationOptions _registrationOptions;
         private readonly FirstAdminSignup _firstAdminSignup;
         private readonly IServiceScopeFactory _scopes;
+        private readonly IStringLocalizer<SharedResource> _localizer;
 
         // One message for every code failure (unknown, used, revoked, expired, already linked or
         // name or birth date mismatch), so the form never reveals which part was wrong.
@@ -72,7 +74,8 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             FirstAdminSignup firstAdminSignup,
             AccountLinks links,
             IServiceScopeFactory scopes,
-            IdDocumentScanService idScans)
+            IdDocumentScanService idScans,
+            IStringLocalizer<SharedResource> localizer)
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -88,6 +91,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
             _firstAdminSignup = firstAdminSignup;
             _links = links;
             _scopes = scopes;
+            _localizer = localizer;
         }
 
         public bool RequireHospitalRecordCode => _registrationOptions.RequireHospitalRecordCode;
@@ -384,8 +388,18 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
                 var callbackUrl = _links.Page(HttpContext, "/Account/ConfirmEmail",
                     new { area = "Identity", userId = user.Id, code, returnUrl });
 
-                _emailSender.Stage(_db, messageId, user.Id, Input.Email, "Confirm your email",
-                    $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                var email = PortalEmailRenderer.Render(new PortalEmailContent(
+                    Subject: _localizer["Verification_EmailSubject"].Value,
+                    Heading: _localizer["Verification_EmailLinkText"].Value,
+                    Preview: _localizer["Verification_EmailPreview"].Value,
+                    Introduction: _localizer["Verification_EmailIntro"].Value,
+                    ActionText: _localizer["Verification_EmailLinkText"].Value,
+                    ActionUrl: callbackUrl,
+                    Instructions: _localizer["Verification_EmailInstructions"].Value,
+                    UnexpectedGuidance: _localizer["Verification_EmailUnexpected"].Value,
+                    Language: CultureInfo.CurrentUICulture.Name,
+                    FallbackLabel: _localizer["PortalEmail_Fallback"].Value));
+                _emailSender.Stage(_db, messageId, user.Id, Input.Email, email.Subject, email.HtmlBody, email.PlainTextBody);
                 await _db.SaveChangesAsync(HttpContext.RequestAborted);
 
                 try
