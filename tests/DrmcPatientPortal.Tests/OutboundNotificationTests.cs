@@ -1,9 +1,11 @@
 using System.Collections.Concurrent;
 using System.Text;
+using System.Text.Json;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -51,6 +53,33 @@ public sealed class OutboundNotificationTests(PortalFactory factory)
     {
         using var scope = factory.Services.CreateScope();
         return await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().OutboundNotifications.AsNoTracking().SingleAsync(m => m.Id == id);
+    }
+
+    [Fact]
+    public async Task Legacy_encrypted_payload_without_plain_text_still_delivers_after_restart()
+    {
+        var clock = new TestClock(DateTimeOffset.UtcNow);
+        var sender = new Transport();
+        var recipient = $"legacy.{Guid.NewGuid():N}@fixtures.test";
+        Guid id;
+        using (var first = Host(sender, clock))
+        {
+            id = await first.Services.GetRequiredService<IOutboundNotificationQueue>().EnqueueAsync(
+                OutboundNotificationChannel.Email, new(recipient, "Legacy subject", "LEGACY-HTML"));
+            using var scope = first.Services.CreateScope();
+            var protector = scope.ServiceProvider.GetRequiredService<IDataProtectionProvider>()
+                .CreateProtector(KeyRingProtection.OutboundNotificationPurpose);
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(new { Recipient = recipient, Subject = "Legacy subject", Body = "LEGACY-HTML" });
+            Assert.DoesNotContain("PlainTextBody", Encoding.UTF8.GetString(bytes));
+            Assert.Null(JsonSerializer.Deserialize<OutboundNotificationPayload>(bytes)!.PlainTextBody);
+            await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().OutboundNotifications.Where(m => m.Id == id)
+                .ExecuteUpdateAsync(set => set.SetProperty(m => m.PayloadProtected, protector.Protect(bytes)));
+        }
+        using var restarted = Host(sender, clock);
+        await restarted.Services.GetRequiredService<OutboundNotificationDispatcher>().DispatchOnceAsync();
+        Assert.Single(sender.Sent, m => m.Recipient == recipient && m.Body == "LEGACY-HTML");
+        Assert.Equal(OutboundNotificationStatus.Delivered, (await Message(id)).Status);
+        Assert.Null((await Message(id)).PayloadProtected);
     }
 
     [Fact]

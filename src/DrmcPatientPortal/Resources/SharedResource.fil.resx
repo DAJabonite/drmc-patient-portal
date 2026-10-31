@@ -209,6 +209,14 @@
   <data name="Verification_EmailSubject" xml:space="preserve"><value>Kumpirmahin ang iyong DRMC email address</value></data>
   <data name="Verification_EmailIntro" xml:space="preserve"><value>Upang kumpirmahin ang iyong email address para sa DRMC Patient Portal, piliin ang link na ito:</value></data>
   <data name="Verification_EmailLinkText" xml:space="preserve"><value>Kumpirmahin ang email address</value></data>
+  <data name="StaffInvite_EmailSubject" xml:space="preserve"><value>Ang imbitasyon mo bilang kawani sa DRMC Patient Portal</value></data>
+  <data name="StaffInvite_EmailIntro" xml:space="preserve"><value>Inimbitahan kang gumawa ng account bilang kawani sa DRMC Patient Portal.</value></data>
+  <data name="StaffInvite_EmailRole" xml:space="preserve"><value>Itinalagang tungkulin: {0}</value></data>
+  <data name="StaffInvite_EmailAddress" xml:space="preserve"><value>Gamitin ang email address na pinadalhan ng imbitasyong ito.</value></data>
+  <data name="StaffInvite_EmailLink" xml:space="preserve"><value>Gumawa ng iyong account</value></data>
+  <data name="StaffInvite_EmailCode" xml:space="preserve"><value>Invitation code: {0}</value></data>
+  <data name="StaffInvite_EmailExpiry" xml:space="preserve"><value>Isang beses lang magagamit ang code na ito at mag-e-expire sa {0} (oras sa Pilipinas).</value></data>
+  <data name="StaffInvite_EmailSetup" xml:space="preserve"><value>Kumpirmahin ang iyong email address at i-on ang two-factor authentication upang ma-activate ang iyong access bilang kawani.</value></data>
   <data name="RS_Title" xml:space="preserve"><value>Red Star</value></data>
   <data name="RS_Private" xml:space="preserve"><value>Pribadong iskedyul ng iyong klinika</value></data>
   <data name="RS_Saved" xml:space="preserve"><value>Na-save ang iyong pagbabago.</value></data>

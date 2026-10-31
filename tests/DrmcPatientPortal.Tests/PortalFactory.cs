@@ -42,6 +42,11 @@ public sealed class PortalFactory : WebApplicationFactory<Program>, IAsyncLifeti
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
+        builder.UseSetting("Notifications:Email:Provider", "Console");
+        foreach (var setting in new[] { "Host", "Username", "Password", "FromAddress" })
+            builder.UseSetting("Notifications:Email:" + setting, string.Empty);
+        builder.UseSetting("Notifications:Email:Port", "587");
+        builder.UseSetting("Notifications:Email:UseSsl", "true");
         builder.UseSetting("ConnectionStrings:DefaultConnection", _connectionString);
         builder.UseSetting("DevelopmentFixtures:Enabled", "true");
         builder.UseSetting("DevelopmentFixtures:Primary:Email", PrimaryEmail);

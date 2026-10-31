@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Mail;
 using System.Security.Claims;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -45,6 +46,112 @@ internal sealed class TestEnvironment : IWebHostEnvironment
 
 public sealed class SecurityConfigurationTests
 {
+    private static EmailDeliveryOptions SmtpOptions(string? provider = "Smtp") => new()
+    {
+        Provider = provider, Host = "smtp.gmail.com", Port = 587, UseSsl = true,
+        Username = "portal@fixtures.test", Password = "synthetic-password", FromAddress = "portal@fixtures.test"
+    };
+
+    [Theory]
+    [InlineData("Development", null, "Console")]
+    [InlineData("Production", null, "Smtp")]
+    [InlineData("Staging", "", "Smtp")]
+    [InlineData("Development", "sMtP", "Smtp")]
+    [InlineData("Development", " console ", "Console")]
+    public void Email_provider_defaults_and_explicit_selection_are_validated(string environment, string? provider, string expected)
+    {
+        var options = SmtpOptions(provider);
+        var validator = new EmailDeliveryOptionsValidator(new TestEnvironment { EnvironmentName = environment });
+        Assert.Equal(expected, options.SelectedProvider(environment == "Development"), ignoreCase: true);
+        Assert.True(validator.Validate(null, options).Succeeded);
+    }
+
+    [Theory]
+    [InlineData("Production", "Console")]
+    [InlineData("Staging", "cOnSoLe")]
+    [InlineData("Development", "Gmail")]
+    public void Unsafe_or_unknown_email_providers_are_rejected(string environment, string provider)
+    {
+        var validator = new EmailDeliveryOptionsValidator(new TestEnvironment { EnvironmentName = environment });
+        Assert.True(validator.Validate(null, SmtpOptions(provider)).Failed);
+    }
+
+    [Theory]
+    [InlineData("Host", "")]
+    [InlineData("Port", "0")]
+    [InlineData("Port", "65536")]
+    [InlineData("Username", "")]
+    [InlineData("Password", "")]
+    [InlineData("Password", " \t\n ")]
+    [InlineData("FromAddress", "invalid-address")]
+    [InlineData("UseSsl", "false")]
+    public void Incomplete_smtp_configuration_is_rejected_in_development_and_production(string key, string value)
+    {
+        var values = new Dictionary<string, string?>
+        {
+            ["Provider"] = "Smtp", ["Host"] = "smtp.gmail.com", ["Port"] = "587", ["UseSsl"] = "true",
+            ["Username"] = "portal@fixtures.test", ["Password"] = "synthetic-password", ["FromAddress"] = "portal@fixtures.test"
+        };
+        values[key] = value;
+        var options = new ConfigurationBuilder().AddInMemoryCollection(values).Build().Get<EmailDeliveryOptions>()!;
+        foreach (var environment in new[] { Environments.Development, Environments.Production })
+        {
+            var result = new EmailDeliveryOptionsValidator(new TestEnvironment { EnvironmentName = environment }).Validate(null, options);
+            Assert.True(result.Failed);
+            Assert.DoesNotContain("synthetic-password", result.FailureMessage);
+        }
+    }
+
+    [Theory]
+    [InlineData("smtp.gmail.com", "abcd efgh ijkl mnop", "abcdefghijklmnop")]
+    [InlineData("SMTP.GMAIL.COM", " abcd\tefgh\nijkl\u00a0mnop ", "abcdefghijklmnop")]
+    [InlineData("smtp.example.org", " abcd efgh\tijkl mnop ", " abcd efgh\tijkl mnop ")]
+    [InlineData("smtp.gmail.com.example.org", "abcd efgh ijkl mnop", "abcd efgh ijkl mnop")]
+    public void App_password_grouping_is_removed_only_for_gmail(string host, string password, string expected)
+    {
+        var options = SmtpOptions();
+        options.Host = host; options.Password = password;
+        Assert.Equal(expected, options.AuthenticationPassword);
+        Assert.Equal(password, options.Password);
+    }
+
+    [Fact]
+    public async Task Smtp_message_has_real_plain_text_and_html_mime_alternatives_without_attachments()
+    {
+        const string text = "Invitation code: ABCDE-FGHIJ-KLMNO-PQRST\nKumpirmaha ang imong email.";
+        const string html = "<p>Invitation code: ABCDE-FGHIJ-KLMNO-PQRST</p><p>Kumpirmaha ang imong email.</p>";
+        var sender = new SmtpEmailSender(Options.Create(SmtpOptions()));
+        using var message = sender.CreateMessage("recipient@fixtures.test", "Imbitasyon", html, text);
+        Assert.False(message.IsBodyHtml);
+        Assert.Equal(text, message.Body);
+        Assert.Empty(message.Attachments);
+        var alternative = Assert.Single(message.AlternateViews);
+        Assert.Equal("text/html", alternative.ContentType.MediaType);
+        using (var reader = new StreamReader(alternative.ContentStream, Encoding.UTF8, leaveOpen: true))
+            Assert.Equal(html, await reader.ReadToEndAsync());
+        alternative.ContentStream.Position = 0;
+
+        var directory = Path.Combine(Path.GetTempPath(), "drmc-email-mime-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            // Serialize the same message through .NET's SMTP implementation without opening a network connection.
+            using var pickup = new SmtpClient { DeliveryMethod = SmtpDeliveryMethod.SpecifiedPickupDirectory, PickupDirectoryLocation = directory };
+            await pickup.SendMailAsync(message);
+            var raw = await File.ReadAllTextAsync(Assert.Single(Directory.GetFiles(directory)));
+            Assert.Contains("Content-Type: multipart/alternative", raw, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Content-Type: text/plain", raw, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Content-Type: text/html", raw, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Content-Disposition: attachment", raw, StringComparison.OrdinalIgnoreCase);
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+
+        using var legacy = sender.CreateMessage("recipient@fixtures.test", "Existing email", html, null);
+        Assert.True(legacy.IsBodyHtml);
+        Assert.Equal(html, legacy.Body);
+        Assert.Empty(legacy.AlternateViews);
+    }
+
     [Fact]
     public async Task Account_throttle_uses_the_first_email_value_when_login_fields_repeat()
     {
@@ -151,6 +258,37 @@ public sealed class SecurityHardeningTests(PortalFactory factory)
     }
 
     [Theory]
+    [InlineData("", typeof(ConsoleEmailSender))]
+    [InlineData("cOnSoLe", typeof(ConsoleEmailSender))]
+    [InlineData("sMtP", typeof(SmtpEmailSender))]
+    public void Development_email_provider_selects_the_registered_transport(string provider, Type expected)
+    {
+        using var host = factory.WithWebHostBuilder(b =>
+        {
+            b.UseSetting("Notifications:Email:Provider", provider);
+            b.UseSetting("Notifications:Email:Host", "smtp.invalid"); b.UseSetting("Notifications:Email:FromAddress", "portal@fixtures.test");
+            b.UseSetting("Notifications:Email:Username", "synthetic-user"); b.UseSetting("Notifications:Email:Password", "synthetic-password");
+        });
+        using var client = host.CreateClient();
+        Assert.IsType(expected, host.Services.GetRequiredService<IEmailSender>());
+    }
+
+    [Theory]
+    [InlineData("Smtp", "")]
+    [InlineData("Unknown", "synthetic-password")]
+    public void Invalid_development_email_configuration_prevents_startup(string provider, string password)
+    {
+        using var host = factory.WithWebHostBuilder(b =>
+        {
+            b.UseSetting("Notifications:Email:Provider", provider);
+            b.UseSetting("Notifications:Email:Host", "smtp.invalid"); b.UseSetting("Notifications:Email:FromAddress", "portal@fixtures.test");
+            b.UseSetting("Notifications:Email:Username", "synthetic-user"); b.UseSetting("Notifications:Email:Password", password);
+        });
+        var error = Assert.Throws<OptionsValidationException>(() => host.CreateClient());
+        Assert.Contains(error.Failures, failure => failure.Contains("SMTP", StringComparison.Ordinal) || failure.Contains("Provider", StringComparison.Ordinal));
+    }
+
+    [Theory]
     [InlineData("", "localhost")]
     [InlineData("https://localhost", "*")]
     public void Incomplete_production_host_configuration_prevents_the_app_from_starting(string origin, string hosts)
@@ -158,6 +296,8 @@ public sealed class SecurityHardeningTests(PortalFactory factory)
         using var host = factory.WithWebHostBuilder(b =>
         {
             b.UseEnvironment("Production"); b.UseSetting("Portal:PublicOrigin", origin); b.UseSetting("AllowedHosts", hosts);
+            b.UseSetting("Notifications:Email:Provider", "Smtp");
+            b.UseSetting("Notifications:Email:Username", "synthetic-user"); b.UseSetting("Notifications:Email:Password", "synthetic-password");
             b.UseSetting("Notifications:Email:Host", "smtp.invalid"); b.UseSetting("Notifications:Email:FromAddress", "portal@example.org");
             b.UseSetting("Notifications:Sms:Endpoint", "https://sms.invalid/send"); b.UseSetting("Notifications:Sms:ApiKey", "synthetic-test-key");
         });

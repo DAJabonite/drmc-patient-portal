@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Localization;
 
 namespace DrmcPatientPortal.Areas.Admin.Controllers;
 
@@ -19,7 +20,8 @@ namespace DrmcPatientPortal.Areas.Admin.Controllers;
 // two-factor authentication.
 [Area("Admin")]
 public sealed class StaffInvitationsController(ApplicationDbContext db, AdminWrites writes, IQrCodeService qr, IOutboundNotificationQueue queue,
-    ILookupNormalizer normalizer, IOptions<StaffInvitationOptions> options, AccountLinks links, TimeProvider clock) : Controller
+    ILookupNormalizer normalizer, IOptions<StaffInvitationOptions> options, AccountLinks links, TimeProvider clock,
+    IStringLocalizer<SharedResource> localizer) : Controller
 {
     private const string Entity = "StaffInvitations";
 
@@ -87,11 +89,7 @@ public sealed class StaffInvitationsController(ApplicationDbContext db, AdminWri
             expires = entity.ExpiresAtUtc;
             signupUrl = StaffInvitationCodes.SignupUrl(registerUrl, code);
             queue.Stage(database, messageId, OutboundNotificationChannel.Email,
-                new OutboundNotificationPayload(input.Email, "Your DRMC Patient Portal staff invitation",
-                    $"You have been invited to create a DRMC Patient Portal staff account ({HtmlEncoder.Default.Encode(StaffRoles.Label(input.Role))}). " +
-                    $"<a href='{HtmlEncoder.Default.Encode(signupUrl)}'>Create your account</a> using this email address. " +
-                    $"Your invitation code is {code}. It works once and expires on {Local(expires).ToString("MMMM d, yyyy h:mm tt", CultureInfo.InvariantCulture)} (Philippine time). " +
-                    "Your staff role is added after you confirm your email and turn on two-factor authentication."),
+                InvitationEmail(input.Email, input.Role, code, signupUrl, expires),
                 new DateTimeOffset(DateTime.SpecifyKind(expires, DateTimeKind.Utc)), entity.Id);
             foreach (var earlier in open)
                 await AdminAudit.AddAsync(database, User, "Revoke", Entity, earlier.Id.ToString(CultureInfo.InvariantCulture),
@@ -110,6 +108,24 @@ public sealed class StaffInvitationsController(ApplicationDbContext db, AdminWri
 
         Response.Headers.CacheControl = "no-store";
         return View("Invited", new StaffInvitationSlip(input.Email, input.Role, code!, signupUrl!, qr.GenerateSvgQrCode(signupUrl!), Local(expires), EmailQueued: true));
+    }
+
+    private OutboundNotificationPayload InvitationEmail(string email, string role, string code, string signupUrl, DateTime expires)
+    {
+        // Render now: the background worker's culture is not the issuing request's culture.
+        var intro = localizer["StaffInvite_EmailIntro"].Value;
+        var assignedRole = localizer["StaffInvite_EmailRole", StaffRoles.Label(role)].Value;
+        var address = localizer["StaffInvite_EmailAddress"].Value;
+        var linkText = localizer["StaffInvite_EmailLink"].Value;
+        var invitationCode = localizer["StaffInvite_EmailCode", code].Value;
+        var expiry = localizer["StaffInvite_EmailExpiry", Local(expires).ToString("MMMM d, yyyy h:mm tt", CultureInfo.CurrentCulture)].Value;
+        var setup = localizer["StaffInvite_EmailSetup"].Value;
+        string Encode(string value) => HtmlEncoder.Default.Encode(value);
+        var html = $"<p>{Encode(intro)}</p><p>{Encode(assignedRole)}</p><p>{Encode(address)}</p>" +
+            $"<p><a href='{Encode(signupUrl)}'>{Encode(linkText)}</a></p>" +
+            $"<p>{Encode(invitationCode)}</p><p>{Encode(expiry)}</p><p>{Encode(setup)}</p>";
+        var text = string.Join("\n\n", intro, assignedRole, address, $"{linkText}: {signupUrl}", invitationCode, expiry, setup);
+        return new(email, localizer["StaffInvite_EmailSubject"].Value, html, text);
     }
 
     [HttpPost]

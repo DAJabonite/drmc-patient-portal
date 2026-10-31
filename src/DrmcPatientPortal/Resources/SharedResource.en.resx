@@ -209,6 +209,14 @@
   <data name="Verification_EmailSubject" xml:space="preserve"><value>Confirm your DRMC email address</value></data>
   <data name="Verification_EmailIntro" xml:space="preserve"><value>To confirm your email address for the DRMC Patient Portal, select this link:</value></data>
   <data name="Verification_EmailLinkText" xml:space="preserve"><value>Confirm email address</value></data>
+  <data name="StaffInvite_EmailSubject" xml:space="preserve"><value>Your DRMC Patient Portal staff invitation</value></data>
+  <data name="StaffInvite_EmailIntro" xml:space="preserve"><value>You have been invited to create a DRMC Patient Portal staff account.</value></data>
+  <data name="StaffInvite_EmailRole" xml:space="preserve"><value>Assigned role: {0}</value></data>
+  <data name="StaffInvite_EmailAddress" xml:space="preserve"><value>Use the email address this invitation was sent to.</value></data>
+  <data name="StaffInvite_EmailLink" xml:space="preserve"><value>Create your account</value></data>
+  <data name="StaffInvite_EmailCode" xml:space="preserve"><value>Invitation code: {0}</value></data>
+  <data name="StaffInvite_EmailExpiry" xml:space="preserve"><value>This code works once and expires on {0} (Philippine time).</value></data>
+  <data name="StaffInvite_EmailSetup" xml:space="preserve"><value>Your staff role is added after you confirm your email and turn on two-factor authentication.</value></data>
   <data name="RS_Title" xml:space="preserve"><value>Red Star</value></data>
   <data name="RS_Private" xml:space="preserve"><value>Your private clinic schedule</value></data>
   <data name="RS_Saved" xml:space="preserve"><value>Your update has been saved.</value></data>

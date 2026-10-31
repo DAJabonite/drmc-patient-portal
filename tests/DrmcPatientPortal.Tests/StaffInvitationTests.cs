@@ -1,12 +1,15 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using DrmcPatientPortal.Areas.Identity.Pages.Account;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -158,14 +161,18 @@ public sealed partial class StaffInvitationTests(PortalFactory factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    [Fact]
-    public async Task Admin_invites_staff_with_a_one_time_link_queued_and_only_a_hash_stored()
+    [Theory]
+    [InlineData("en", "Your DRMC Patient Portal staff invitation", "Philippine time")]
+    [InlineData("fil", "Ang imbitasyon mo bilang kawani sa DRMC Patient Portal", "oras sa Pilipinas")]
+    [InlineData("ceb", "Imong imbitasyon isip kawani sa DRMC Patient Portal", "oras sa Pilipinas")]
+    public async Task Admin_invites_staff_with_a_localized_one_time_link_queued_and_only_a_hash_stored(string culture, string subject, string timeZone)
     {
         var sender = new RecordingEmailSender();
         using var host = factory.WithWebHostBuilder(b => b.ConfigureTestServices(s => { s.RemoveAll<IEmailSender>(); s.AddSingleton<IEmailSender>(sender); }));
         var admin = await StaffAccounts.SignInAsync(host, $"inviter.{Guid.NewGuid():N}@fixtures.test", "Admin");
         var email = Email();
-        var response = await admin.PostFormAsync("/Admin/StaffInvitations/Create", "/Admin/StaffInvitations/Create",
+        var path = $"/Admin/StaffInvitations/Create?culture={culture}&ui-culture={culture}";
+        var response = await admin.PostFormAsync(path, path,
             new Dictionary<string, string> { ["Email"] = email, ["Role"] = "RadiologyStaff" });
         var html = await response.Content.ReadAsStringAsync();
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -192,9 +199,25 @@ public sealed partial class StaffInvitationTests(PortalFactory factory)
         var ciphertext = Encoding.UTF8.GetString(queued.PayloadProtected);
         Assert.DoesNotContain(email, ciphertext);
         Assert.DoesNotContain(code, ciphertext);
+        var payload = JsonSerializer.Deserialize<OutboundNotificationPayload>(scope.ServiceProvider.GetRequiredService<IDataProtectionProvider>()
+            .CreateProtector(KeyRingProtection.OutboundNotificationPurpose).Unprotect(queued.PayloadProtected))!;
+        Assert.Equal(subject, payload.Subject);
+        Assert.Contains(code, payload.Body);
+        Assert.Contains(code, payload.PlainTextBody);
+        Assert.Contains("/Identity/Account/Register#invite=" + code, payload.PlainTextBody);
+        Assert.Contains(timeZone, payload.PlainTextBody);
+        var expires = ClinicalClock.WallTime(new DateTimeOffset(DateTime.SpecifyKind(stored.ExpiresAtUtc, DateTimeKind.Utc)))
+            .ToString("MMMM d, yyyy h:mm tt", CultureInfo.GetCultureInfo(culture));
+        Assert.Contains(expires, payload.PlainTextBody);
+        Assert.Contains("Radiology", payload.PlainTextBody);
+        Assert.DoesNotContain("<svg", payload.Body);
+        Assert.DoesNotContain("data:image", payload.Body);
+        Assert.DoesNotContain("cid:", payload.Body);
+        Assert.DoesNotContain("<a", payload.PlainTextBody);
 
         await host.Services.GetRequiredService<OutboundNotificationDispatcher>().DispatchOnceAsync();
         var message = Assert.Single(sender.Messages, m => m.Email == email);
+        Assert.Equal(subject, message.Subject);
         Assert.Contains("/Identity/Account/Register#invite=" + code, message.Body);
         var delivered = await OutboxAsync(stored.Id);
         Assert.Equal(OutboundNotificationStatus.Delivered, delivered.Status);

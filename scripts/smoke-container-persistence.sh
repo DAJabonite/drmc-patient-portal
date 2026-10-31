@@ -27,8 +27,11 @@ cat > "$DRMC_PORTAL_ENV_FILE" <<EOF
 ConnectionStrings__DefaultConnection=Server=sqlserver;Database=DrmcContainerSmoke;User Id=sa;Password=$MSSQL_SA_PASSWORD;Encrypt=True;TrustServerCertificate=True
 Portal__PublicOrigin=https://localhost
 AllowedHosts=localhost
+Notifications__Email__Provider=Smtp
 Notifications__Email__Host=smtp.invalid
 Notifications__Email__FromAddress=portal@example.org
+Notifications__Email__Username=synthetic-test-user
+Notifications__Email__Password=synthetic-test-password
 Notifications__Sms__Endpoint=https://sms.invalid/send
 Notifications__Sms__ApiKey=synthetic-ci-key
 AccountEmail__WorkerEnabled=false
