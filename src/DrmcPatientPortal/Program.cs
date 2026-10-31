@@ -150,22 +150,25 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.EventsType = typeof(PortalCookieEvents);
 });
 
+var emailSection = builder.Configuration.GetSection(EmailDeliveryOptions.SectionName);
+builder.Services.AddOptions<EmailDeliveryOptions>().Bind(emailSection).ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<EmailDeliveryOptions>, EmailDeliveryOptionsValidator>();
+var emailProvider = (emailSection.Get<EmailDeliveryOptions>() ?? new()).SelectedProvider(builder.Environment.IsDevelopment());
+if (string.Equals(emailProvider, "Console", StringComparison.OrdinalIgnoreCase))
+    builder.Services.AddSingleton<IEmailSender, ConsoleEmailSender>();
+else
+    builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
+
 if (builder.Environment.IsDevelopment())
 {
-    builder.Services.AddSingleton<IEmailSender, ConsoleEmailSender>();
     builder.Services.AddSingleton<ISmsSender, ConsoleSmsSender>();
 }
 else
 {
-    builder.Services.AddOptions<EmailDeliveryOptions>()
-        .Bind(builder.Configuration.GetSection(EmailDeliveryOptions.SectionName))
-        .Validate(x => !string.IsNullOrWhiteSpace(x.Host) && x.Port is > 0 and <= 65535 && !string.IsNullOrWhiteSpace(x.FromAddress) && x.UseSsl, "SMTP configuration with TLS is required in Production.")
-        .ValidateOnStart();
     builder.Services.AddOptions<SmsDeliveryOptions>()
         .Bind(builder.Configuration.GetSection(SmsDeliveryOptions.SectionName))
         .Validate(x => !x.Enabled || Uri.TryCreate(x.Endpoint, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps && !string.IsNullOrWhiteSpace(x.ApiKey), "Enabled SMS delivery requires an HTTPS webhook and API key in Production.")
         .ValidateOnStart();
-    builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
     builder.Services.AddHttpClient<ISmsSender, HttpSmsSender>();
 }
 

@@ -17,7 +17,7 @@ public sealed class OutboundNotificationOptions
     public int RetentionDays { get; set; } = 7;
 }
 
-public sealed record OutboundNotificationPayload(string Recipient, string? Subject, string Body);
+public sealed record OutboundNotificationPayload(string Recipient, string? Subject, string Body, string? PlainTextBody = null);
 
 public interface IOutboundNotificationQueue
 {
@@ -144,7 +144,7 @@ public sealed class OutboundNotificationDispatcher(IServiceScopeFactory scopes, 
                 {
                     var sender = scope.ServiceProvider.GetRequiredService<IEmailSender>();
                     if (sender is SmtpEmailSender smtp)
-                        await smtp.SendEmailAsync(payload.Recipient, payload.Subject!, payload.Body, delivery.Token);
+                        await smtp.SendEmailAsync(payload.Recipient, payload.Subject!, payload.Body, payload.PlainTextBody, delivery.Token);
                     else
                         await sender.SendEmailAsync(payload.Recipient, payload.Subject!, payload.Body).WaitAsync(delivery.Token);
                 }

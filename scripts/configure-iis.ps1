@@ -47,7 +47,7 @@ foreach ($property in (Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom
     if ($property.Name -notmatch '^[A-Za-z][A-Za-z0-9_]*$' -or $property.Value -isnot [string]) { throw 'Settings must be a flat JSON object of environment-variable names and string values.' }
     $settings[$property.Name] = $property.Value
 }
-foreach ($required in @('ConnectionStrings__DefaultConnection', 'AllowedHosts', 'Portal__PublicOrigin', 'Notifications__Email__Host', 'Notifications__Email__FromAddress')) {
+foreach ($required in @('ConnectionStrings__DefaultConnection', 'AllowedHosts', 'Portal__PublicOrigin', 'Notifications__Email__Host', 'Notifications__Email__FromAddress', 'Notifications__Email__Username', 'Notifications__Email__Password')) {
     if ([string]::IsNullOrWhiteSpace($settings[$required])) { throw "Missing required deployment setting: $required" }
 }
 if ($settings['Portal__PublicOrigin'].TrimEnd('/') -ne "https://$HostName") { throw 'PublicOrigin must match this HTTPS site hostname.' }

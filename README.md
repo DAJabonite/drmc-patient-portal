@@ -39,6 +39,14 @@ The application uses Razor Pages/MVC, Identity, Bootstrap, EF Core, HtmlSanitize
 
 These steps create an empty development installation. Keep the same PowerShell window open for configuration and running the app. Existing installations must use the [upgrade procedure](#upgrades-and-recovery) with their original database, keys and private storage.
 
+| Situation | What to do |
+| --- | --- |
+| Restart an existing installation | Repeat this terminal's configuration, select the email transport, and run the app. Keep the same database and private storage; use the existing Admin. |
+| Fresh installation on another computer | Complete steps 1–6 with a new database and private storage. Configure that installation's email sender if real delivery is needed. |
+| Another clone on the same computer | Choose a separate database and private storage for a separate installation. Cloning does not reset accounts or shared User Secrets. |
+
+A clone supplies code and migrations, not accounts, SMTP credentials, uploaded files or encryption keys. Bootstrap is a one-time account setup for a new installation, not a step to repeat on every restart.
+
 ### 1. Create an empty database
 
 In SSMS connect to `localhost\SQLEXPRESS` using Windows Authentication. Open **New Query** against `master` and run this once:
@@ -98,6 +106,9 @@ $env:AdminBootstrap__Enabled = 'false'
 $env:DevelopmentFixtures__Enabled = 'false'
 $env:ConnectionStrings__DefaultConnection = "Server=localhost\SQLEXPRESS;Database=$databaseName;Integrated Security=True;Encrypt=True;TrustServerCertificate=True"
 $env:Logging__LogLevel__Microsoft = 'Warning'
+$env:DOTNET_ENVIRONMENT = 'Development'
+$env:Notifications__Email__Provider = 'Console'
+$env:Portal__PublicOrigin = 'https://localhost:7104'
 
 # Persistent private storage outside Git and the web root.
 $localStorage = Join-Path $env:LOCALAPPDATA "DRMC\PatientPortal\$databaseName"
@@ -108,9 +119,46 @@ $env:LabReports__RootPath = Join-Path $localStorage 'LabReports'
 $env:Imports__StagingPath = Join-Path $localStorage 'ImportStaging'
 ```
 
-`TrustServerCertificate=True` is for this local SQL instance. Deployed SQL connections need a trusted certificate and validation. Development writes notification messages to the console; real SMTP credentials are unnecessary for this exercise.
+`TrustServerCertificate=True` is for this local SQL instance. Deployed SQL connections need a trusted certificate and validation. The explicit `Console` transport keeps this walkthrough local: messages are printed as `[EMAIL OUTBOX]`, not delivered to an inbox. Opening the printed confirmation link confirms the account; bootstrap and terminal output do not confirm it automatically.
 
 Double underscores separate configuration sections. These values override Development user-secrets and tracked settings. Clones share the project's `UserSecretsId`; using per-terminal configuration avoids pointing another checkout at the wrong database.
+
+#### Optional: deliver email with Gmail
+
+Keep `Console` for development without an email account. For real confirmation, password-reset and staff-invitation delivery, configure SMTP before creating the test messages. An omitted `Notifications:Email:Provider` defaults to Console in Development and Smtp elsewhere; explicit values are case-insensitive. Console is rejected outside Development. Smtp requires a host, valid port, username, password, valid sender address and TLS enabled in every environment.
+
+1. Choose a test Gmail sender account, enable [Google 2-Step Verification](https://support.google.com/accounts/answer/185833), and generate an [App Password](https://myaccount.google.com/apppasswords) named `DRMC Portal`. This is the portal's sender account; recipients do not need its credentials. If App Passwords are unavailable for that account, use another SMTP account rather than its normal Google password.
+2. From the repository root, save these settings in local .NET User Secrets. The password prompt is hidden, and the generated App Password goes through standard input instead of shell history. The command updates these keys without replacing unrelated secrets:
+
+```powershell
+$mailProject = Join-Path (Get-Location) 'src/DrmcPatientPortal/DrmcPatientPortal.csproj'
+$mailAddress = Read-Host 'Gmail sender address'
+$mailPassword = Read-Host 'Google App Password' -AsSecureString
+try {
+    @{
+        'Notifications:Email:Host' = 'smtp.gmail.com'
+        'Notifications:Email:Port' = '587'
+        'Notifications:Email:UseSsl' = 'true'
+        'Notifications:Email:Username' = $mailAddress
+        'Notifications:Email:FromAddress' = $mailAddress
+        'Notifications:Email:Password' = [System.Net.NetworkCredential]::new('', $mailPassword).Password
+    } | ConvertTo-Json | dotnet user-secrets set --project $mailProject
+    if ($LASTEXITCODE -ne 0) { throw 'Email configuration was not saved.' }
+} finally {
+    $mailPassword.Dispose()
+    Remove-Variable mailPassword
+}
+$env:Notifications__Email__Provider = 'Smtp'
+```
+
+Port 587 with `UseSsl=true` uses STARTTLS. Grouping whitespace is removed from Gmail App Passwords only; other SMTP passwords are preserved. Settings remain directly under `Notifications:Email`, without an extra `Smtp` section. Each developer configures credentials locally; do not commit credentials or copy them into shared instructions.
+
+3. Continue with the remaining setup steps and use the HTTPS profile below. If the app is already running, stop it with Ctrl+C before restarting. After repeating step 3 in a new terminal, set `Notifications__Email__Provider` to `Smtp` again to select real delivery. To return to terminal-only delivery, set it to `Console` and restart.
+4. Once an Admin is ready, create an invitation at `/Admin/StaffInvitations` for an inbox you control that is not already registered. Verify receipt, including the spam folder, then follow the signup link, confirm the new account's email, and enroll MFA. The email includes the role, one-time code, expiry in Philippine time, and a link that fills the code. The printable invitation page retains the QR code. An existing unconfirmed account can use `/Identity/Account/ResendEmailConfirmation` to test delivery.
+
+The invitation page's queued message means the outbox accepted it, not that an inbox received it. Workers must remain enabled (`AccountEmail:WorkerEnabled` and `Notifications:Outbox:WorkerEnabled`, both enabled by default). Messages already processed by Console do not resend after switching to SMTP; issue a new invitation or request a new confirmation link. Automated tests force isolated transports and never use these credentials for live delivery.
+
+For this walkthrough, open emailed links on the computer running the portal. Other devices need a reachable HTTPS test hostname, matching `Portal:PublicOrigin`, and appropriate allowed hosts. Production uses deployment-managed credentials and public HTTPS settings from [Deployment and maintenance](#deployment-and-maintenance), not developer User Secrets.
 
 ### 4. Apply migrations and initialize protection
 
@@ -146,7 +194,7 @@ SELECT COUNT(*) AS AccountCount FROM dbo.AspNetUsers;
 SELECT COUNT(*) AS PatientRecordCount FROM dbo.PatientRecords;
 ```
 
-The latest migration is `20261022060521_ProductionReadinessState`. Expect registry `Ready = 1`, document `Phase = 3`, and zero accounts and patient records on a fresh installation. Never create a replacement Initial migration or invent the tables manually.
+The latest committed migration is `20261028015220_AddStagedResultReports`. Expect registry `Ready = 1`, document `Phase = 3`, and zero accounts and patient records on a fresh installation. Never create a replacement Initial migration or invent the tables manually.
 
 The structured-name migration preserves exact old names in `LegacyFullName`. Staff must verify missing structured names before issuing enrollment codes. Names erased by an earlier deployed build require recovery from a verified backup or authoritative source; this upgrade cannot recreate them. Reconcile by stable patient-record ID and hospital identifiers, without guessing name splits or overwriting verified fields.
 
@@ -155,29 +203,24 @@ The structured-name migration preserves exact old names in `LegacyFullName`. Sta
 Keep the same terminal open:
 
 ```powershell
-dotnet run --project src/DrmcPatientPortal --launch-profile http
+dotnet dev-certs https --trust
+dotnet run --project src/DrmcPatientPortal --launch-profile https
 ```
 
-Open [http://localhost:5095](http://localhost:5095). Check the home page, `/Directory`, `/Advisories`, `/Identity/Account/Login` and `/Identity/Account/Register`. Empty clinical and directory lists are expected until staff add records.
+Open [https://localhost:7104](https://localhost:7104), matching `Portal:PublicOrigin` above. Check the home page, `/Directory`, `/Advisories`, `/Identity/Account/Login` and `/Identity/Account/Register`. Empty clinical and directory lists are expected until staff add records.
 
 Both `/health/live` and `/health/ready` should return `Healthy`. Readiness checks SQL, private-storage access, document protection, OCR initialization and worker activity. It is not proof of successful SMTP delivery or a complete backup restoration.
 
 Stop with **Ctrl+C** before changing configuration. An already-running process does not pick up new environment variables. If the port is occupied, stop the old portal or use a separate port:
 
 ```powershell
-dotnet run --project src/DrmcPatientPortal --no-launch-profile --urls http://localhost:5096
+$env:Portal__PublicOrigin = 'https://localhost:7105'
+dotnet run --project src/DrmcPatientPortal --no-launch-profile --urls https://localhost:7105
 ```
 
 Verify the new process started before relying on browser responses. `.\run.ps1` is another launcher; it does not create the database schema.
 
-For local HTTPS:
-
-```powershell
-dotnet dev-certs https --trust
-dotnet run --project src/DrmcPatientPortal --launch-profile https
-```
-
-Open [https://localhost:7104](https://localhost:7104). A phone's `localhost` refers to the phone; camera/QR rehearsal on another device needs a reachable HTTPS test host and the correct public origin.
+A phone's `localhost` refers to the phone; camera/QR rehearsal on another device needs a reachable HTTPS test host and the correct public origin. If using the alternate port above, reuse its `--no-launch-profile --urls https://localhost:7105` command for every restart in step 6. Otherwise free port 7104 and reset `Portal__PublicOrigin` to `https://localhost:7104` before using the `https` profile.
 
 For development SQL in Docker, set a strong local `MSSQL_SA_PASSWORD` and run `docker compose up -d --wait`. Connect to `localhost,1433` with SQL authentication, create the same binary-collation database and adjust the connection string. The SQL-only Compose service uses Developer edition for development/testing. `docker compose down -v` destroys its data.
 
@@ -190,24 +233,24 @@ The first Admin uses a temporary exemption because nobody can issue their enroll
 ```powershell
 $env:AdminBootstrap__Enabled = 'true'
 $env:AdminBootstrap__Email = Read-Host 'First Admin email'
-dotnet run --project src/DrmcPatientPortal --launch-profile http
+dotnet run --project src/DrmcPatientPortal --launch-profile https
 ```
 
 1. Register with exactly that email and leave the hospital record code blank. Accept the notice/terms and complete identity details; manual entry is available and an ID photo is optional. Startup never creates a default account/password.
-2. Find the newest **`[EMAIL OUTBOX]`** confirmation link in PowerShell. Copy the complete URL inside `href`, replace `&amp;` with `&`, then open it. If needed, request a new link at `/Identity/Account/ResendEmailConfirmation`.
+2. With Console selected, find the newest **`[EMAIL OUTBOX]`** confirmation link in PowerShell. Copy the complete URL inside `href`, replace `&amp;` with `&`, then open it. With Smtp selected, open the confirmation email instead. If needed, request a new link at `/Identity/Account/ResendEmailConfirmation`.
 3. Sign in and open `/Identity/Account/Manage/TwoFactorAuthentication`. Enroll an authenticator using its QR/manual key and a current code; save the recovery codes privately. If restarting before confirmation/MFA is complete, temporarily disable bootstrap to finish setup.
-4. Once confirmed and MFA-enabled, stop and restart with bootstrap enabled for the same email. Startup promotes the eligible account only while no Admin exists.
+4. Once confirmed and MFA-enabled, stop and restart with bootstrap enabled for the same email. Startup promotes that eligible account. The no-Admin check governs the registration-code exemption, not promotion of an existing account. Startup never sends an invitation email.
 5. Stop again, disable bootstrap, and restart:
 
 ```powershell
 $env:AdminBootstrap__Enabled = 'false'
 Remove-Item Env:AdminBootstrap__Email -ErrorAction SilentlyContinue
-dotnet run --project src/DrmcPatientPortal --launch-profile http
+dotnet run --project src/DrmcPatientPortal --launch-profile https
 ```
 
 Remove bootstrap settings from persistent configuration too. Sign out/in using a fresh authenticator code, leaving **Remember this device** unchecked, then open `/Admin`. Password-only and remembered-browser sessions do not qualify for staff access. Recovery codes are single-use; generating replacements invalidates the old set.
 
-An Admin uses `/Admin/StaffInvitations` to invite colleagues by email/role. They register with that invitation, confirm email and enroll MFA; the invited role then activates. Existing confirmed accounts use `/Admin/StaffAccess`. Role changes take effect on the next request and are audited.
+An Admin uses `/Admin/StaffInvitations` to invite colleagues by email/role. Console prints the invitation locally; Smtp sends it to the specified inbox. They register using that same email and invitation, confirm email and enroll MFA; the invited role then activates. Existing confirmed accounts use `/Admin/StaffAccess`. Role changes take effect on the next request and are audited.
 
 | Role | Main scope |
 | --- | --- |
@@ -253,7 +296,8 @@ Production requires confirmed accounts, a real public HTTPS origin, explicit all
 | `DataProtection__CertificatePath` / `__CertificatePasswordFile` | RSA PFX and optional password file outside Git/web/key directories; grant the app identity read access |
 | `DataProtection__ProtectKeysWithDpapi` | Alternative Windows current-user protection; requires the original account, machine and profile for recovery |
 | `DataProtection__DecryptionCertificates__0__Path` / `__PasswordFile` | Historical decryption certificates during rotation; retain old keys/certificates as long as data/backups require them |
-| `Notifications__Email__Host`, `__Port`, `__UseSsl`, `__FromAddress`, `__Username`, `__Password` | Approved SMTP provider; TLS is mandatory outside Development |
+| `Notifications__Email__Provider` | Omit or set `Smtp` outside Development; Console is rejected |
+| `Notifications__Email__Host`, `__Port`, `__UseSsl`, `__FromAddress`, `__Username`, `__Password` | SMTP host, valid port, username, password and valid sender are required; `UseSsl=true` is mandatory whenever Smtp is selected |
 | `Notifications__Sms__Enabled` | Default `false`; an enabled provider requires its HTTPS endpoint/API key; no automatic patient SMS producer exists |
 | `PatientResults__ShowFullResults` | Default `false`; hospital approval required for full laboratory/radiology disclosure |
 | `RedStar__WorkerEnabled` / `__RemindersEnabled` | Both default `false`; enable only after clinic/reminder-delivery verification |
