@@ -1,0 +1,49 @@
+@model RedStarMappingPage
+@{ ViewData["Title"] = "Verify hospital identity"; var input = Model.Input; }
+<h1 class="h3">Verify hospital identity</h1>
+<p>Clinic patient: <strong>@Model.Clinic.PatientCode · @Model.Clinic.FullName</strong>. Verify their hospital number against the clinic source record or ID before linking.</p>
+@if (TempData["RedStarError"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+@if (string.IsNullOrWhiteSpace(Model.Clinic.HospitalNumber))
+{
+    <p class="alert alert-warning">Record and verify the clinic patient's hospital number in the clinic registry first.</p>
+}
+else
+{
+<form asp-action="Verify" asp-route-id="@Model.Clinic.Id" method="post" autocomplete="off" class="card card-body mb-3">
+    <input name="PatientVersion" type="hidden" value="@input.PatientVersion" />
+    <div class="row g-3">
+        <div class="col-md-6"><label for="mapping-mrn" class="form-label">Verified hospital number</label><input id="mapping-mrn" name="HospitalNumber" value="@input.HospitalNumber" maxlength="80" required class="form-control" /></div>
+        <div class="col-md-6"><label for="mapping-dob" class="form-label">Date of birth</label><input id="mapping-dob" name="DateOfBirth" value="@input.DateOfBirth?.ToString("yyyy-MM-dd")" type="date" required class="form-control" /></div>
+        <div class="col-md-6"><label for="mapping-last" class="form-label">Last name</label><input id="mapping-last" name="LastName" value="@input.LastName" maxlength="255" required class="form-control" /></div>
+        <div class="col-md-6"><label for="mapping-first" class="form-label">First name</label><input id="mapping-first" name="FirstName" value="@input.FirstName" maxlength="255" required class="form-control" /></div>
+        <div class="col-md-6"><label for="mapping-middle" class="form-label">Middle name, if recorded</label><input id="mapping-middle" name="MiddleName" value="@input.MiddleName" maxlength="255" class="form-control" /></div>
+        <div class="col-md-6"><label for="mapping-suffix" class="form-label">Suffix, if recorded</label><input id="mapping-suffix" name="Suffix" value="@input.Suffix" maxlength="80" class="form-control" /></div>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3 align-self-start">Find exact hospital record</button>
+</form>
+}
+@if (Model.Candidate is { } hospital)
+{
+    <section class="card card-body mb-3">
+        <h2 class="h5">Review the matched hospital record</h2>
+        <p>@hospital.FullName · @hospital.HospitalNumber · @hospital.DateOfBirth?.ToString("MMM d, yyyy")</p>
+        <form asp-action="Map" asp-route-id="@Model.Clinic.Id" method="post">
+            <input type="hidden" name="PatientVersion" value="@input.PatientVersion" /><input type="hidden" name="HospitalVersion" value="@input.HospitalVersion" />
+            <input type="hidden" name="HospitalPatientRecordId" value="@hospital.Id" /><input type="hidden" name="HospitalNumber" value="@input.HospitalNumber" />
+            <input type="hidden" name="DateOfBirth" value="@input.DateOfBirth?.ToString("yyyy-MM-dd")" /><input type="hidden" name="LastName" value="@input.LastName" /><input type="hidden" name="FirstName" value="@input.FirstName" /><input type="hidden" name="MiddleName" value="@input.MiddleName" /><input type="hidden" name="Suffix" value="@input.Suffix" />
+            <div class="form-check mb-3"><input type="checkbox" name="IdentityVerified" value="true" id="mapping-verified" required class="form-check-input" /><label for="mapping-verified" class="form-check-label">I checked the clinic source record or ID and verified that this clinic patient and hospital record are the same person.</label></div>
+            <p class="small text-muted">Changing a mapping does not transfer earlier reports. Their patient and encounter assignments require explicit correction.</p>
+            <button type="submit" class="btn btn-primary">Confirm verified mapping</button>
+        </form>
+    </section>
+}
+@if (Model.Clinic.HospitalPatientRecordId.HasValue)
+{
+    <form asp-action="Unmap" asp-route-id="@Model.Clinic.Id" method="post" class="card card-body mb-3">
+        <input type="hidden" name="PatientVersion" value="@Convert.ToBase64String(Model.Clinic.RowVersion)" />
+        <div class="form-check mb-3"><input type="checkbox" name="IdentityVerified" value="true" id="unmap-verified" required class="form-check-input" /><label for="unmap-verified" class="form-check-label">Remove this mapping and suspend its patient report access.</label></div>
+        <button type="submit" class="btn btn-outline-danger align-self-start">Remove mapping</button>
+    </form>
+}
+<a asp-action="Index" asp-route-id="@Model.Clinic.Id" class="btn btn-outline-secondary">Back to reports</a>

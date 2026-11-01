@@ -82,64 +82,31 @@
                 </div>
             </div>
 
-            <!-- Lab Results from this Visit -->
-            <div class="mb-4">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <h3 class="h6 fw-bold text-primary-drmc mb-0">
-                        <i class="bi bi-file-earmark-medical me-1"></i> @Loc["Enc_Labs"]
-                    </h3>
-                    @if (Model.LabResults.Count > 0)
-                    {
-                        <span class="badge bg-light text-secondary border rounded-pill small">
-                            @Model.LabResults.Count @(Model.LabResults.Count == 1 ? Loc["Enc_Result"] : Loc["Enc_Results"])
-                        </span>
-                    }
-                </div>
-
-                @if (Model.LabResults.Count == 0)
+            @foreach (var reportSection in new[] {
+                (Title: "Laboratory requests and reports", Key: "LaboratoryRequests"),
+                (Title: "Radiology requests and reports", Key: "RadiologyRequests") })
+            {
+                var requests = ViewData[reportSection.Key] as IReadOnlyList<PatientReportCard> ?? Array.Empty<PatientReportCard>();
+                <section class="mb-4" aria-label="@reportSection.Title">
+                    <h3 class="h6 fw-bold text-primary-drmc">@reportSection.Title (@requests.Count)</h3>
+                    @if (requests.Count == 0) { <p class="small text-muted">No requests recorded for this encounter.</p> }
+                    @foreach (var request in requests.OrderByDescending(r => r.ActivityAt).ThenBy(r => r.Source).ThenByDescending(r => r.Id))
+                    { <partial name="_PatientReportCard" model="request" /> }
+                </section>
+            }
+            <section class="mb-4" aria-labelledby="encounterPrescriptionsHeading">
+                <h3 id="encounterPrescriptionsHeading" class="h6 fw-bold text-primary-drmc">Prescriptions (@Model.Prescriptions.Count)</h3>
+                @if (Model.Prescriptions.Count == 0) { <p class="small text-muted">No prescriptions recorded for this encounter.</p> }
+                @foreach (var rx in Model.Prescriptions)
                 {
-                    <div class="p-3 bg-light rounded-3 border small text-muted">
-                        <i class="bi bi-info-circle me-1"></i> @Loc["Enc_NoLabs"]
+                    <div class="border rounded-3 p-3 mb-2">
+                        <strong>@rx.GenericName @rx.Dosage</strong>
+                        <span class="badge bg-light text-dark border">@rx.Status</span>
+                        <p class="small mb-1">@rx.Frequency · Prescribed @rx.PrescribedAt.ToString("MMM d, yyyy")</p>
+                        <a asp-controller="Medications" asp-action="Details" asp-route-id="@rx.Id" class="small fw-semibold">Prescription details</a>
                     </div>
                 }
-                else
-                {
-                    <div class="d-flex flex-column gap-2">
-                        @foreach (var lab in Model.LabResults.OrderByDescending(l => l.CollectedAt))
-                        {
-                            <div class="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between flex-wrap gap-2">
-                                <div>
-                                    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
-                                        <span class="badge @(lab.Status == "Available" ? "bg-success-subtle text-success" : "bg-warning-subtle text-warning-emphasis") rounded-pill small">
-                                            <i class="bi @(lab.Status == "Available" ? "bi-check-circle" : "bi-clock") me-1"></i> @(lab.Status == "Available" ? Loc["Status_Available"] : lab.Status)
-                                        </span>
-                                        <span class="badge bg-white text-secondary border rounded-pill small">
-                                            @lab.Category
-                                        </span>
-                                        <span class="small text-muted" style="font-size: 0.75rem;">
-                                            @Loc["Enc_Accession"]: <strong>@lab.AccessionNumber</strong>
-                                        </span>
-                                    </div>
-                                    <strong class="text-dark d-block">@lab.TestName</strong>
-                                    <span class="small text-muted" style="font-size: 0.8rem;">
-                                        <i class="bi bi-calendar3 me-1"></i> @Loc["Enc_Collected"]: @lab.CollectedAt.ToString("d")
-                                    </span>
-                                </div>
-
-                                <div>
-                                    <a asp-controller="LabResults" asp-action="Details" asp-route-id="@lab.Id" class="btn btn-sm btn-outline-drmc rounded-pill px-3 fw-semibold">
-                                        <i class="bi bi-file-earmark-text me-1"></i> @Loc["Enc_ViewReport"]
-                                    </a>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                }
-
-                <a asp-controller="LabResults" asp-action="Index" class="d-inline-flex align-items-center gap-1 mt-3 fw-semibold">
-                    @Loc["Enc_ViewAllResults"] <i class="bi bi-arrow-right" aria-hidden="true"></i>
-                </a>
-            </div>
+            </section>
 
             <!-- Scheduled Follow-Up -->
             @if (Model.FollowUpDate.HasValue)

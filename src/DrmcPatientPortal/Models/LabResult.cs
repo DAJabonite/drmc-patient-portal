@@ -11,7 +11,9 @@ public class LabResult
     public string AccessionNumber { get; set; } = string.Empty; // e.g. "DRMC-LAB-2026-0981"
     public string TestName { get; set; } = string.Empty;        // e.g. "Complete Blood Count (CBC) with Platelet"
     public LabCategory Category { get; set; } = LabCategory.Hematology;
-    public DateTime CollectedAt { get; set; }
+    public DateTime? CollectedAt { get; set; }
+    public bool RequiresEncounterAssignment { get; set; }
+    public DateTime? PatientActivityAtUtc { get; set; }
     public DateTime? ReleasedAt { get; set; }
     public string Status { get; set; } = "Available"; // Available, In progress, Pending Verification
     public string ResultSummary { get; set; } = string.Empty;

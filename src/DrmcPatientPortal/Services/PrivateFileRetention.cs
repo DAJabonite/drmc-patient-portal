@@ -36,8 +36,9 @@ public sealed class PrivateFileRetention(IServiceScopeFactory scopes, IWebHostEn
                 locked = true;
             }
             var radiology = scope.ServiceProvider.GetRequiredService<IOptions<RadiologyReportStorageOptions>>();
+            var privateReports = scope.ServiceProvider.GetRequiredService<IOptions<RedStarLabReportStorageOptions>>();
             var roots = new[] { new PrivateStorageRoot(environment, documents.Value.RootPath), new PrivateStorageRoot(environment, reports.Value.RootPath),
-                new PrivateStorageRoot(environment, radiology.Value.RootPath) };
+                new PrivateStorageRoot(environment, radiology.Value.RootPath), new PrivateStorageRoot(environment, privateReports.Value.RootPath) };
             if (roots.Where((root, i) => roots.Skip(i + 1).Any(root.Overlaps)).Any())
                 throw new InvalidOperationException("Patient, laboratory and radiology storage must be separate.");
             var processed = 0; var removed = 0;
@@ -51,7 +52,8 @@ public sealed class PrivateFileRetention(IServiceScopeFactory scopes, IWebHostEn
                 var referenced = kind == 0
                     ? await db.PatientIdDocuments.AnyAsync(x => x.PatientUserId == owner && (x.FrontPhotoFileName == file || x.BackPhotoFileName == file), token)
                     : kind == 1 ? await db.LabResults.AnyAsync(x => x.ReportFileName == file, token)
-                    : await db.RadiologyStudies.AnyAsync(x => x.ReportFileName == file, token);
+                    : kind == 2 ? await db.RadiologyStudies.AnyAsync(x => x.ReportFileName == file, token)
+                    : await db.RedStarLabReports.AnyAsync(x => x.ReportFileName == file, token);
                 if (referenced)
                 {
                     if (retirement is not null) db.PrivateFileRetirements.Remove(retirement);
@@ -77,7 +79,7 @@ public sealed class PrivateFileRetention(IServiceScopeFactory scopes, IWebHostEn
             var obsolete = await db.PrivateFileRetirements.OrderBy(x => x.Id).Take(100).ToListAsync(token);
             foreach (var item in obsolete)
             {
-                if (item.Kind is < 0 or > 2) continue;
+                if (item.Kind is < 0 or > 3) continue;
                 var path = item.Kind == 0 ? roots[0].Resolve(item.Owner, item.FileName) : roots[item.Kind].Resolve(item.FileName);
                 if (!File.Exists(path)) db.PrivateFileRetirements.Remove(item);
             }

@@ -1,0 +1,48 @@
+@model RedStarLabPage
+@{ ViewData["Title"] = "Private laboratory reports"; }
+<div class="d-flex flex-wrap justify-content-between gap-3 mb-3">
+    <div><h1 class="h3">Private laboratory reports</h1><p>@Model.Clinic.PatientCode · @Model.Clinic.CodeName</p></div>
+    <div class="d-flex flex-wrap gap-2 align-items-start">
+        <a asp-action="Mapping" asp-route-id="@Model.Clinic.Id" class="btn btn-outline-primary">Verify hospital mapping</a>
+        @if (Model.Hospital is not null) { <a asp-action="Upload" asp-route-id="@Model.Clinic.Id" class="btn btn-primary">Requests / upload PDFs</a> }
+        <a asp-controller="RedStar" asp-action="Index" class="btn btn-outline-secondary">Clinic registry</a>
+    </div>
+</div>
+@if (TempData["RedStarError"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+@if (Model.Hospital is null)
+{
+    <div class="alert alert-warning">Hospital identity mapping needs verification. Patient access to these reports is suspended until the mapping is valid.</div>
+}
+else
+{
+    <p class="alert alert-info">Verified hospital record: @Model.Hospital.FullName · @Model.Hospital.HospitalNumber. Encounters are selected from this record.</p>
+}
+<div class="d-flex flex-column gap-3">
+@foreach (var report in Model.Reports)
+{
+    <article class="card"><div class="card-body">
+        <h2 class="h5">@report.Description</h2>
+        <p class="mb-1">Encounter @report.Encounter.EncounterReference · @report.Encounter.EncounterDate.ToString("MMM d, yyyy")</p>
+        <p class="small">@(report.CollectedAt.HasValue ? $"Test date: {report.CollectedAt:MMM d, yyyy}" : "Test date not recorded") · @report.Status</p>
+        @if (report.PatientRecordId != Model.Clinic.HospitalPatientRecordId) { <p class="text-warning-emphasis">This report retains its earlier patient assignment. It is hidden from patient access until explicitly corrected.</p> }
+        <div class="d-flex flex-wrap gap-2">
+        @if (Model.Hospital is not null) { <a asp-action="Edit" asp-route-id="@report.Id" class="btn btn-outline-primary btn-sm">Review / correct</a> }
+        @if (report.ReportFileName is not null) { <a asp-action="Preview" asp-route-id="@report.Id" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm">View PDF</a> }
+        </div>
+        @if (report.Status != "Withdrawn")
+        {
+            <form asp-action="Withdraw" asp-route-id="@report.Id" method="post" class="mt-3">
+                <input type="hidden" name="rowVersion" value="@Convert.ToBase64String(report.RowVersion)" />
+                <label for="withdraw-@report.Id" class="form-label small">Withdrawal reason</label>
+                <input id="withdraw-@report.Id" name="reason" maxlength="1000" required class="form-control mb-2" />
+                <button type="submit" class="btn btn-outline-danger btn-sm">Withdraw from patient access</button>
+            </form>
+        }
+    </div></article>
+}
+@if (Model.Reports.Count == 0) { <p class="text-muted">No private laboratory requests or PDFs have been recorded.</p> }
+</div>
+<nav class="d-flex gap-2 mt-3" aria-label="Private report pages">
+@if (Model.Page > 1) { <a asp-action="Index" asp-route-id="@Model.Clinic.Id" asp-route-page="@(Model.Page - 1)" class="btn btn-outline-secondary">Previous</a> }
+@if (Model.Page * 25 < Model.Total) { <a asp-action="Index" asp-route-id="@Model.Clinic.Id" asp-route-page="@(Model.Page + 1)" class="btn btn-outline-secondary">Next</a> }
+</nav>

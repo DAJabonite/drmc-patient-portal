@@ -4,6 +4,16 @@
     var recordId = ViewData["RecordId"] as int?;
 }
 <input asp-for="RowVersion" type="hidden" />
+<div class="mb-3">
+    <label asp-for="ClinicalEncounterId" class="form-label"></label>
+    <select asp-for="ClinicalEncounterId" asp-items='@(ViewData["Encounters"] as IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)' class="form-select" aria-describedby="encounterHelp">
+        <option value="">Select this patient's encounter</option>
+    </select>
+    <span asp-validation-for="ClinicalEncounterId" class="text-danger"></span>
+    <div id="encounterHelp" class="form-text">Use the originating encounter, even when the result returns weeks later. If it is missing, have an encounter encoder create it first.</div>
+</div>
+<div class="mb-3"><label asp-for="StudyName" class="form-label"></label><input asp-for="StudyName" maxlength="200" class="form-control" /><span asp-validation-for="StudyName" class="text-danger"></span></div>
+
 <fieldset class="border rounded-3 p-3 mb-3">
     <legend class="h6 float-none w-auto px-2">Official radiology report</legend>
     @if (!creating)
@@ -19,9 +29,9 @@
         else { <p class="small">No PDF attached.</p> }
     }
     <label asp-for="Report" class="form-label"></label>
-    <input asp-for="Report" type="file" accept=".pdf,application/pdf" class="form-control" aria-describedby="radiologyReportHelp" required="@creating" />
+    <input asp-for="Report" type="file" accept=".pdf,application/pdf" class="form-control" aria-describedby="radiologyReportHelp" />
     <span asp-validation-for="Report" class="text-danger"></span>
-    <p id="radiologyReportHelp" class="small text-muted mt-2 mb-0">PDF only, up to 10 MiB.@if (!creating) { <text> Leave blank to keep the current report.</text> }</p>
+    <p id="radiologyReportHelp" class="small text-muted mt-2 mb-0">PDF only, up to 10 MiB. Leave the PDF and actual test date blank to record a request before testing.@if (!creating) { <text> Leave blank to keep the current report.</text> }</p>
 </fieldset>
 <div class="row g-3">
     <div class="col-md-6"><label asp-for="PerformedAt" class="form-label"></label><input asp-for="PerformedAt" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" /><span asp-validation-for="PerformedAt" class="text-danger"></span></div>

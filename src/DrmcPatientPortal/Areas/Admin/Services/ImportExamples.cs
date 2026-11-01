@@ -58,7 +58,7 @@ public static class ImportExamples
                     Set(("SourceLabKey", Parent("LAB", "EXAMPLE-LAB-")), ("ParameterName", "Example Hemoglobin"),
                         ("Value", "14.2"), ("Unit", "g/dL"), ("ReferenceRange", "12.0-16.0"), ("Flag", "Normal")); break;
                 case "Prescriptions":
-                    Set(("SourceRecordKey", "RX" + number), ("RxNumber", "EXAMPLE-RX-" + number),
+                    Set(("SourceRecordKey", "RX" + number), ("SourceEncounterKey", Parent("ENC", "EXAMPLE-ENC-")), ("RxNumber", "EXAMPLE-RX-" + number),
                         ("GenericName", "Fictional Example Medication"), ("BrandName", "Example brand"),
                         ("Dosage", "Example dose only"), ("DosageForm", "Tablet"), ("Frequency", "Once daily"),
                         ("Instructions", "Fictional example; not prescribing instructions."),

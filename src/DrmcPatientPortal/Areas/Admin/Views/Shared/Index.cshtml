@@ -19,6 +19,14 @@
         <h1 class="admin-title">@Model.Title</h1>
     </div>
     <div class="admin-page-actions">
+        @if (controller is "LabResults" or "RadiologyStudies")
+        {
+            <a asp-action="NeedsEncounterAssignment" class="btn btn-outline-primary">Needs encounter assignment</a>
+        }
+        @if (controller == "LabResults")
+        {
+            <a asp-action="BatchUpload" asp-route-id="@Model.ContextId" class="btn btn-outline-primary">Upload PDFs</a>
+        }
         <a asp-area="Admin" asp-action="Create" asp-route-id="@Model.ContextId" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add record</a>
     </div>
 </div>

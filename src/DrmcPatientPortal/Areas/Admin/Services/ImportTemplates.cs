@@ -5,14 +5,14 @@ using DrmcPatientPortal.Areas.Admin.Models;
 
 namespace DrmcPatientPortal.Areas.Admin.Services;
 
-public sealed record ImportTemplate(string Name, Type InputType, string[] Columns, bool Clinical)
+public sealed record ImportTemplate(string Name, Type InputType, string[] Columns, bool Clinical, int Version = 1)
 {
-    public string Sheet => Name + "_v1";
+    public string Sheet => Name + "_v" + Version;
 }
 
 public static class ImportTemplates
 {
-    public const string ValidationVersion = "1.2.0";
+    public const string ValidationVersion = "2.0.0";
     private static string[] Columns(string fields, bool clinical = false, string context = "") =>
         (clinical ? new[] { "SourcePatientKey", "SourcePatientName", "SourceBirthDate" } : Array.Empty<string>())
         .Concat(context.Split(',', StringSplitOptions.RemoveEmptyEntries)).Concat(fields.Split(',')).ToArray();
@@ -24,12 +24,12 @@ public static class ImportTemplates
         new("ClinicalEncounters", typeof(EncounterInput), Columns("EncounterReference,EncounterDate,Department,Type,HistoricalDoctorName,ChiefComplaint,PrimaryDiagnosis,SecondaryDiagnosis,ClinicalSummary,CarePlanAndInstructions,VitalSignsRecorded,FollowUpDate,FollowUpNotes", true, "SourceRecordKey"), true),
         new("LabResults", typeof(LabInput), Columns("AccessionNumber,TestName,Category,CollectedAt,ReleasedAt,Status,HistoricalDoctorName,Pathologist.HistoricalDoctorName,ResultSummary,PerformingUnit,ClinicalNotes", true, "SourceRecordKey,SourceEncounterKey"), true),
         new("LabResultItems", typeof(LabItemInput), Columns("ParameterName,Value,Unit,ReferenceRange,Flag", true, "SourceLabKey"), true),
-        new("Prescriptions", typeof(PrescriptionInput), Columns("RxNumber,GenericName,BrandName,Dosage,DosageForm,Frequency,Instructions,Department,PrescribedAt,ValidUntil,LastRefillDate,RefillsTotal,RefillsRemaining,Status,HistoricalDoctorName", true, "SourceRecordKey"), true),
+        new("Prescriptions", typeof(PrescriptionInput), Columns("RxNumber,GenericName,BrandName,Dosage,DosageForm,Frequency,Instructions,Department,PrescribedAt,ValidUntil,LastRefillDate,RefillsTotal,RefillsRemaining,Status,HistoricalDoctorName", true, "SourceRecordKey,SourceEncounterKey"), true, 2),
         new("MedicationDoseSchedules", typeof(DoseInput), Columns("DoseTime,DisplayOrder", true, "SourcePrescriptionKey"), true),
         new("PatientAllergies", typeof(AllergyInput), Columns("Allergen,Reaction,Severity,RecordedAt", true), true)
     ];
     public static ImportTemplate Get(string name) => All.SingleOrDefault(t => t.Name == name || t.Sheet == name)
-        ?? throw new ImportRejectedException("Select a supported version 1 template.");
+        ?? throw new ImportRejectedException(name == "Prescriptions_v1" ? "Prescription imports now require an encounter. Download the current Prescriptions_v2 template and provide SourceEncounterKey." : "Download and select a current supported import template.");
 
     public static object Input(ImportRow row, List<string> errors)
     {

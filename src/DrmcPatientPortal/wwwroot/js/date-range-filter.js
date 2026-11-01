@@ -4,6 +4,7 @@
     const byId = (key) => (config[key] ? document.getElementById(config[key]) : null);
     const filterForm = byId("form");
     const mobileSubmitSelect = byId("mobileSubmit");
+    const statusSelect = byId("status");
     const rangeSelect = byId("range");
     const customRange = byId("customRange");
     const startDate = byId("start");
@@ -43,9 +44,11 @@
             dateToggle?.focus();
         }
     });
-    mobileSubmitSelect?.addEventListener("change", () => {
-        if (window.matchMedia("(max-width: 767.98px)").matches) filterForm?.requestSubmit();
-    });
+    for (const select of [mobileSubmitSelect, statusSelect]) {
+        select?.addEventListener("change", () => {
+            if (window.matchMedia("(max-width: 767.98px)").matches) filterForm?.requestSubmit();
+        });
+    }
 
     syncRangeVisibility();
 })();

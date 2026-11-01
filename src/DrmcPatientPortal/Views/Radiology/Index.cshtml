@@ -21,7 +21,15 @@
             <div class="radiology-search-field">
                 <label for="radiologySearch" class="form-label small fw-semibold text-dark mb-1">Search</label>
                 <input id="radiologySearch" name="search" type="search" class="form-control"
-                       value="@Model.SearchTerm" maxlength="200" placeholder="Study, body part or accession" />
+                       value="@Model.SearchTerm" maxlength="200" placeholder="Exam description or encounter reference" />
+            </div>
+            <div class="lab-request-status-field">
+                <label for="requestStatus" class="form-label small fw-semibold">Request status</label>
+                <select id="requestStatus" name="status" class="form-select">
+                    <option value="" selected="@(Model.SelectedStatus == null)">All requests</option>
+                    <option value="pending" selected="@(Model.SelectedStatus == "pending")">Pending requests</option>
+                    <option value="released" selected="@(Model.SelectedStatus == "released")">Released reports</option>
+                </select>
             </div>
             <div class="lab-filter-toolbar">
                 <div class="lab-category-field">
@@ -50,7 +58,7 @@
 
             <div id="radiologyDatePanel" class="lab-date-panel @(dateOpen ? "is-open" : null)">
                 <div class="lab-date-field">
-                    <label for="radiologyDateFilter" class="form-label small fw-semibold text-dark mb-1">Date performed</label>
+                    <label for="radiologyDateFilter" class="form-label small fw-semibold text-dark mb-1">Encounter date</label>
                     <select id="radiologyDateFilter" name="dateRange" class="form-select" aria-controls="customRadiologyDateRange">
                         <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDateRange))">Any date</option>
                         <option value="30d" selected="@(Model.SelectedDateRange == "30d")">Last 30 days</option>
@@ -61,7 +69,7 @@
                 </div>
                 <div id="customRadiologyDateRange" class="lab-custom-date @(Model.SelectedDateRange == "custom" ? null : "d-none")">
                     <fieldset class="custom-date-range">
-                        <legend class="visually-hidden">Custom imaging study date range</legend>
+                        <legend class="visually-hidden">Custom encounter date range</legend>
                         <div>
                             <label for="radiologyStartDate" class="form-label small fw-semibold text-dark mb-1">From</label>
                             <input id="radiologyStartDate" name="startDate" type="date"
@@ -101,6 +109,7 @@
     <script src="~/js/date-range-filter.js" asp-append-version="true"
             data-form="radiologyFilterForm"
             data-mobile-submit="radiologyModalityFilter"
+            data-status="requestStatus"
             data-range="radiologyDateFilter"
             data-custom-range="customRadiologyDateRange"
             data-start="radiologyStartDate"
@@ -112,47 +121,9 @@
 
 <section class="section py-5 bg-light">
     <div class="container">
-        <h2 class="h5 fw-bold text-dark mb-3">Your radiology PDFs</h2>
-        @if (Model.DateGroups.Count == 0)
-        {
-            <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white mb-5"
-                 data-testid="@(Model.TotalCount == 0 ? "radiology-empty" : "radiology-no-match")">
-                <i class="bi bi-file-earmark-pdf fs-1 text-muted mb-2" aria-hidden="true"></i>
-                <h3 class="h5 fw-bold text-dark">No radiology PDFs found</h3>
-                <p class="text-muted small mb-3">No released PDF reports matched your selected criteria.</p>
-                @if (Model.HasFilters)
-                {
-                    <a asp-action="Index" class="btn btn-primary-drmc btn-sm rounded-pill px-4 fw-semibold mx-auto">View all results</a>
-                }
-            </div>
-        }
-        else
-        {
-            <div class="d-flex flex-column gap-3 mb-5">
-                @for (var groupIndex = 0; groupIndex < Model.DateGroups.Count; groupIndex++)
-                {
-                    var group = Model.DateGroups[groupIndex];
-                    <details class="card border-0 shadow-sm rounded-4 bg-white"
-                             data-testid="radiology-date-group" data-date="@group.Date.ToString("yyyy-MM-dd")" open="@(groupIndex == 0)">
-                        <summary class="p-4 fw-bold text-primary-drmc">
-                            Study date: <time datetime="@group.Date.ToString("yyyy-MM-dd")">@group.Date.ToString("MMM d, yyyy")</time>
-                            <span class="badge bg-light text-secondary border ms-2">@group.Studies.Count @(group.Studies.Count == 1 ? "PDF" : "PDFs")</span>
-                        </summary>
-                        <div class="px-4 pb-4">
-                            @for (var reportIndex = 0; reportIndex < group.Studies.Count; reportIndex++)
-                            {
-                                var study = group.Studies[reportIndex];
-                                var description = $"{study.ModalityLabel} on {group.Date:MMM d, yyyy}, PDF {reportIndex + 1}";
-                                <article class="py-3 border-top" data-report-id="@study.Id">
-                                    <h3 class="h6 fw-bold text-dark">@study.ModalityLabel</h3>
-                                    <partial name="_PdfReportActions" model='new PdfReportActionsViewModel("Radiology", study.Id, description)' />
-                                </article>
-                            }
-                        </div>
-                    </details>
-                }
-            </div>
-        }
+        <h2 class="h5 fw-bold text-dark mb-3">Your imaging requests and reports</h2>
+        @{ ViewData["ReportKind"] = "radiology"; }
+        <partial name="_EncounterReportGroups" model="Model.Results" />
 
         <partial name="_PreparationGuide" model="new RadiologyPreparationViewModel(Model.PreparationGuide, dept)" />
 

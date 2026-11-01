@@ -24,6 +24,8 @@ public class ClinicalEncounter
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<LabResult> LabResults { get; set; } = new List<LabResult>();
+    public ICollection<RadiologyStudy> RadiologyStudies { get; set; } = new List<RadiologyStudy>();
+    public ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();
 }
 
 public enum EncounterType

@@ -35,6 +35,7 @@ public sealed class RadiologyAdminTests(PortalFactory factory)
     {
         var form = new Dictionary<string, string>
         {
+            ["StudyName"] = "Chest X-ray, PA view",
             ["Modality"] = "0", ["Status"] = status,
             ["PerformedAt"] = "2026-09-01", ["ReleasedAt"] = "2026-09-01T15:00",
         };
@@ -75,20 +76,24 @@ public sealed class RadiologyAdminTests(PortalFactory factory)
     {
         var client = await StaffAccounts.AdminAsync(factory);
         var patient = await PrimaryPatientIdAsync();
+        var encounter = await Db(db => db.ClinicalEncounters.Where(e => e.PatientRecordId == patient).Select(e => e.Id).FirstAsync());
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/Admin/RadiologyStudies")).StatusCode);
         Assert.Contains($"/Admin/RadiologyStudies/Create/{patient}", await client.GetStringAsync("/Admin/RadiologyStudies/Create"));
 
-        var invalid = await client.PostFormAsync($"/Admin/RadiologyStudies/Create/{patient}", $"/Admin/RadiologyStudies/Create/{patient}", Study());
+        var createFields = Study();
+        createFields["ClinicalEncounterId"] = encounter.ToString();
+        var invalid = await client.PostFormAsync($"/Admin/RadiologyStudies/Create/{patient}", $"/Admin/RadiologyStudies/Create/{patient}", createFields);
         Assert.Equal(HttpStatusCode.OK, invalid.StatusCode);
-        Assert.Contains("Choose the radiology report PDF.", await invalid.Content.ReadAsStringAsync());
+        Assert.Contains("An attached PDF is required for PDF release.", await invalid.Content.ReadAsStringAsync());
 
         var before = await Db(db => db.RadiologyStudies.MaxAsync(r => r.Id));
-        var created = await SavePdf(client, $"/Admin/RadiologyStudies/Create/{patient}", Study(), Pdf);
+        var created = await SavePdf(client, $"/Admin/RadiologyStudies/Create/{patient}", createFields, Pdf);
         Assert.Equal(HttpStatusCode.Redirect, created.StatusCode);
         var study = await Db(db => db.RadiologyStudies.SingleAsync(r => r.Id > before));
         Assert.Equal(patient, study.PatientRecordId);
         Assert.StartsWith("PORTAL-RAD-", study.AccessionNumber);
-        Assert.Equal("Radiology report", study.StudyName);
+        Assert.Equal("Chest X-ray, PA view", study.StudyName);
+        Assert.Equal(encounter, study.ClinicalEncounterId);
         Assert.Empty(study.OrderingPhysician);
         Assert.Empty(study.RadiologistName);
         Assert.Empty(study.Findings);
@@ -97,11 +102,14 @@ public sealed class RadiologyAdminTests(PortalFactory factory)
         var editPage = await client.GetStringAsync($"/Admin/RadiologyStudies/Edit/{study.Id}");
         Assert.Contains(">XRY</option>", editPage);
         Assert.Contains("type=\"date\"", editPage);
-        foreach (var field in new[] { "AccessionNumber", "StudyName", "BodyRegion", "HistoricalDoctorName", "Findings", "Impression", "ClinicalEncounterId" })
+        Assert.Contains("name=\"StudyName\"", editPage);
+        Assert.Contains("name=\"ClinicalEncounterId\"", editPage);
+        foreach (var field in new[] { "AccessionNumber", "BodyRegion", "HistoricalDoctorName", "Findings", "Impression" })
             Assert.DoesNotContain($"name=\"{field}\"", editPage);
         var version = System.Text.RegularExpressions.Regex.Match(editPage, "name=\"RowVersion\" value=\"([^\"]+)\"").Groups[1].Value;
         version = WebUtility.HtmlDecode(version);
         var fields = Study(rowVersion: version);
+        fields["ClinicalEncounterId"] = encounter.ToString();
         fields["Modality"] = "CT";
         var edited = await SavePdf(client, $"/Admin/RadiologyStudies/Edit/{study.Id}", fields, null);
         Assert.Equal(HttpStatusCode.Redirect, edited.StatusCode);

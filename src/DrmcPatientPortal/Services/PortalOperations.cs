@@ -53,8 +53,9 @@ public sealed class PortalReadinessHealthCheck(ApplicationDbContext db, PatientD
             await PatientDocumentProtectionUpgrade.VerifyReadyAsync(db, storage, cancellationToken);
             var paths = new List<PrivateStorageRoot> { storage.Root, storage.TemporaryRoot, new(environment, reports.Value.RootPath),
                 new(environment, radiology.Value.RootPath),
+                new(environment, configuration["RedStarLabReports:RootPath"] ?? "App_Data/RedStarLabReports"),
                 new(environment, configuration["Imports:StagingPath"] ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DRMC", "ImportStaging")) };
-            if (paths[2].Overlaps(paths[3])) return HealthCheckResult.Unhealthy();
+            if (paths.Where((root, i) => paths.Skip(i + 1).Any(root.Overlaps)).Any()) return HealthCheckResult.Unhealthy();
             var staging = configuration.GetSection(ResultStagingOptions.SectionName).Get<ResultStagingOptions>() ?? new();
             if (staging.Enabled)
                 paths.AddRange(new[] { staging.LaboratoryPath, staging.RadiologyPath, staging.QuarantinePath }.Select(p => new PrivateStorageRoot(environment, p)));

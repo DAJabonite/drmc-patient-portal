@@ -44,6 +44,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<WebsiteUsageDay> WebsiteUsageDays => Set<WebsiteUsageDay>();
     public DbSet<WebsiteUsageMarker> WebsiteUsageMarkers => Set<WebsiteUsageMarker>();
     public DbSet<RedStarPatient> RedStarPatients => Set<RedStarPatient>();
+    public DbSet<RedStarLabReport> RedStarLabReports => Set<RedStarLabReport>();
     public DbSet<RedStarEnrollment> RedStarEnrollments => Set<RedStarEnrollment>();
     public DbSet<RedStarAppointment> RedStarAppointments => Set<RedStarAppointment>();
     public DbSet<RedStarDispense> RedStarDispenses => Set<RedStarDispense>();
@@ -125,6 +126,25 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasIndex(x => new { x.Kind, x.Owner, x.FileName }).IsUnique();
         });
         RedStarModel.Configure(builder, protection);
+        builder.Entity<RedStarPatient>(e =>
+        {
+            e.HasOne<PatientRecord>().WithMany().HasForeignKey(x => x.HospitalPatientRecordId).OnDelete(DeleteBehavior.NoAction);
+            e.HasIndex(x => x.HospitalPatientRecordId).IsUnique().HasFilter("[HospitalPatientRecordId] IS NOT NULL");
+        });
+        builder.Entity<RedStarLabReport>(e =>
+        {
+            e.HasOne(x => x.RedStarPatient).WithMany().HasForeignKey(x => x.RedStarPatientId).OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(x => x.Patient).WithMany().HasForeignKey(x => x.PatientRecordId).OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(x => x.Encounter).WithMany().HasForeignKey(x => x.ClinicalEncounterId).OnDelete(DeleteBehavior.NoAction);
+            e.Property(x => x.RowVersion).IsRowVersion();
+            e.Property(x => x.ReportFileName).HasMaxLength(36);
+            e.Property(x => x.ReportContentType).HasMaxLength(100);
+            e.Property(x => x.ReportSha256).HasMaxLength(64);
+            e.Property(x => x.Status).HasMaxLength(30);
+            e.HasIndex(x => x.PatientRecordId);
+            e.HasIndex(x => x.ClinicalEncounterId);
+            e.HasIndex(x => x.RedStarPatientId);
+        });
         builder.UseCollation("Latin1_General_100_BIN2");
         builder.Entity<ApplicationUser>().Property(x => x.Suffix).HasMaxLength(10);
         builder.Entity<InstitutionalGuideHead>(e =>
@@ -318,7 +338,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(x => x.PatientRecordId)
                 .OnDelete(DeleteBehavior.NoAction);
             e.HasOne(x => x.Encounter)
-                .WithMany()
+                .WithMany(x => x.RadiologyStudies)
                 .HasForeignKey(x => x.ClinicalEncounterId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
             // Accession numbers are unique ignoring case, matching the lab accession comparison.
@@ -359,6 +379,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<Prescription>(e =>
         {
             e.Property(x => x.RouteOfAdministration).HasMaxLength(32);
+            e.HasOne(x => x.Encounter).WithMany(x => x.Prescriptions)
+                .HasForeignKey(x => x.ClinicalEncounterId).OnDelete(DeleteBehavior.NoAction);
+            e.HasIndex(x => x.ClinicalEncounterId);
             e.HasOne(x => x.Patient)
                 .WithMany(u => u.Prescriptions)
                 .HasForeignKey(x => x.PatientRecordId)

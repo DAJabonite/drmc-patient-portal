@@ -14,7 +14,19 @@
 <!-- Result filters -->
 <section class="py-3 bg-white border-bottom sticky-top shadow-xs" style="z-index: 1020;">
     <div class="container">
-        <form asp-action="Index" method="get" class="lab-filter-form" id="labResultFilterForm">
+        <form asp-action="Index" method="get" class="lab-filter-form has-search" id="labResultFilterForm">
+            <div class="radiology-search-field">
+                <label for="labSearch" class="form-label small fw-semibold">Search</label>
+                <input id="labSearch" name="search" type="search" class="form-control" value="@Model.SearchTerm" maxlength="200" placeholder="Exam description or encounter reference" />
+            </div>
+            <div class="lab-request-status-field">
+                <label for="requestStatus" class="form-label small fw-semibold">Request status</label>
+                <select id="requestStatus" name="status" class="form-select">
+                    <option value="" selected="@(Model.SelectedStatus == null)">All requests</option>
+                    <option value="pending" selected="@(Model.SelectedStatus == "pending")">Pending requests</option>
+                    <option value="released" selected="@(Model.SelectedStatus == "released")">Released reports</option>
+                </select>
+            </div>
             <div class="lab-filter-toolbar">
                 <div class="lab-category-field">
                     <label for="labCategoryFilter" class="form-label small fw-semibold text-dark mb-1 lab-filter-label">Test category</label>
@@ -42,7 +54,7 @@
 
             <div id="labDatePanel" class="lab-date-panel @(Model.SelectedDateRange is not null || ViewData["DateRangeError"] is not null ? "is-open" : null)">
                 <div class="lab-date-field">
-                    <label for="labDateFilter" class="form-label small fw-semibold text-dark mb-1">Date</label>
+                    <label for="labDateFilter" class="form-label small fw-semibold text-dark mb-1">Encounter date</label>
                     <select id="labDateFilter" name="dateRange" class="form-select" aria-controls="customLabDateRange">
                         <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDateRange))">Any date</option>
                         <option value="30d" selected="@(Model.SelectedDateRange == "30d")">Last 30 days</option>
@@ -53,7 +65,7 @@
                 </div>
                 <div id="customLabDateRange" class="lab-custom-date @(Model.SelectedDateRange == "custom" ? null : "d-none")">
                     <fieldset class="custom-date-range">
-                        <legend class="visually-hidden">Custom laboratory result date range</legend>
+                        <legend class="visually-hidden">Custom encounter date range</legend>
                         <div>
                             <label for="labStartDate" class="form-label small fw-semibold text-dark mb-1">From</label>
                             <input id="labStartDate"
@@ -83,7 +95,7 @@
                     <button type="submit" class="btn btn-primary-drmc fw-semibold">
                         <i class="bi bi-funnel me-1" aria-hidden="true"></i> Apply
                     </button>
-                    @if (Model.SelectedCategory.HasValue || !string.IsNullOrEmpty(Model.SelectedDateRange))
+                    @if (Model.HasFilters)
                     {
                         <a asp-action="Index" class="btn btn-outline-secondary fw-semibold">Clear</a>
                     }
@@ -97,6 +109,7 @@
     <script src="~/js/date-range-filter.js" asp-append-version="true"
             data-form="labResultFilterForm"
             data-mobile-submit="labCategoryFilter"
+            data-status="requestStatus"
             data-range="labDateFilter"
             data-custom-range="customLabDateRange"
             data-start="labStartDate"
@@ -108,41 +121,7 @@
 
 <section class="section py-5 bg-light">
     <div class="container">
-        @if (Model.DateGroups.Count == 0)
-        {
-            <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
-                <i class="bi bi-file-earmark-x fs-1 text-muted mb-2" aria-hidden="true"></i>
-                <h2 class="h5 fw-bold text-dark">No laboratory PDFs found</h2>
-                <p class="text-muted small mb-3">No released PDF reports matched your selected criteria.</p>
-                <a asp-action="Index" class="btn btn-primary-drmc btn-sm rounded-pill px-4 fw-semibold mx-auto">View all results</a>
-            </div>
-        }
-        else
-        {
-            <div class="d-flex flex-column gap-3">
-                @for (var groupIndex = 0; groupIndex < Model.DateGroups.Count; groupIndex++)
-                {
-                    var group = Model.DateGroups[groupIndex];
-                    <details class="card border-0 shadow-sm rounded-4 bg-white"
-                             data-testid="lab-date-group" data-date="@group.Date.ToString("yyyy-MM-dd")" open="@(groupIndex == 0)">
-                        <summary class="p-4 fw-bold text-primary-drmc">
-                            Test date: <time datetime="@group.Date.ToString("yyyy-MM-dd")">@group.Date.ToString("MMM d, yyyy")</time>
-                            <span class="badge bg-light text-secondary border ms-2">@group.Reports.Count @(group.Reports.Count == 1 ? "PDF" : "PDFs")</span>
-                        </summary>
-                        <div class="px-4 pb-4">
-                            @for (var reportIndex = 0; reportIndex < group.Reports.Count; reportIndex++)
-                            {
-                                var report = group.Reports[reportIndex];
-                                var description = $"{report.TestName} on {group.Date:MMM d, yyyy}, PDF {reportIndex + 1}";
-                                <article class="py-3 border-top" data-report-id="@report.Id">
-                                    <h2 class="h6 fw-bold text-dark">@report.TestName</h2>
-                                    <partial name="_PdfReportActions" model='new PdfReportActionsViewModel("LabResults", report.Id, description)' />
-                                </article>
-                            }
-                        </div>
-                    </details>
-                }
-            </div>
-        }
+        @{ ViewData["ReportKind"] = "lab"; }
+        <partial name="_EncounterReportGroups" model="Model.Results" />
     </div>
 </section>

@@ -16,13 +16,15 @@ public sealed class PatientResultsOptions
 public static class PatientResultsDisclosure
 {
     public static Expression<Func<RadiologyStudy, bool>> RadiologyPdfEligibility(bool disclosureEnabled, DateTime manilaNow) => result =>
-        disclosureEnabled && result.ReportFileName != null
+        disclosureEnabled && !result.RequiresEncounterAssignment && result.PerformedAt.HasValue && result.ReportFileName != null
+        && (result.ClinicalEncounterId == null || result.Encounter!.PatientRecordId == result.PatientRecordId)
         && (result.Status == RadiologyStatus.Final || result.Status == RadiologyStatus.Amended)
-        && result.ReleasedAt.HasValue && result.ReleasedAt.Value <= manilaNow;
+        && result.ReleasedAt.HasValue && result.ReleasedAt.Value >= result.PerformedAt.Value && result.ReleasedAt.Value <= manilaNow;
 
     public static Expression<Func<LabResult, bool>> PdfEligibility(bool disclosureEnabled, DateTime manilaNow) => result =>
-        disclosureEnabled && result.ReportFileName != null && result.Status == "Available"
-        && result.ReleasedAt.HasValue && result.ReleasedAt.Value <= manilaNow;
+        disclosureEnabled && !result.RequiresEncounterAssignment && result.CollectedAt.HasValue && result.ReportFileName != null && result.Status == "Available"
+        && (result.ClinicalEncounterId == null || result.Encounter!.PatientRecordId == result.PatientRecordId)
+        && result.ReleasedAt.HasValue && result.ReleasedAt.Value >= result.CollectedAt.Value && result.ReleasedAt.Value <= manilaNow;
 
     // A study is released when it has a final (or amended) report whose release time has passed.
     public static bool IsReleased(RadiologyStatus status, DateTime? releasedAt, DateTime manilaNow) =>
@@ -32,9 +34,9 @@ public static class PatientResultsDisclosure
 
     // Laboratory results use the existing "Available" status plus a release time that has passed.
     public static bool IsReleased(LabResult result, DateTime manilaNow) =>
-        result.Status == "Available"
+        !result.RequiresEncounterAssignment && result.CollectedAt.HasValue && result.Status == "Available"
         && result.ReleasedAt.HasValue
-        && result.ReleasedAt.Value <= manilaNow;
+        && result.ReleasedAt.Value >= result.CollectedAt.Value && result.ReleasedAt.Value <= manilaNow;
 
     public static DateTime ManilaNow => ClinicalClock.WallTime(DateTimeOffset.UtcNow);
 }

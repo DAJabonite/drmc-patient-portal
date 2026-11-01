@@ -15,10 +15,14 @@ public sealed class PrescriptionEditor : ClinicalEditor<Prescription, Prescripti
     public override string Summary(Prescription entity) => entity.GenericName + " | " + entity.Status;
     public override IQueryable<Prescription> Search(IQueryable<Prescription> query, string search) => query.Where(p =>
         EF.Functions.Collate(p.RxNumber, "Latin1_General_100_CI_AS").Contains(search) || EF.Functions.Collate(p.GenericName, "Latin1_General_100_CI_AS").Contains(search));
-    public override async Task ConfigureFormAsync(ApplicationDbContext db, ViewDataDictionary viewData, PrescriptionInput input, OwnershipContext? context, CancellationToken token) =>
+    public override async Task ConfigureFormAsync(ApplicationDbContext db, ViewDataDictionary viewData, PrescriptionInput input, OwnershipContext? context, CancellationToken token)
+    {
         viewData["Doctors"] = await PhysicianNames.OptionsAsync(db, token);
+        viewData["Encounters"] = context is null ? [] : await EncounterLinks.OptionsAsync(db, context.Patient.Id, token);
+    }
     public override PrescriptionInput Input(ApplicationDbContext db, Prescription entity) => new()
     {
+        ClinicalEncounterId = entity.ClinicalEncounterId,
         RxNumber = entity.RxNumber, GenericName = entity.GenericName, BrandName = entity.BrandName, Dosage = entity.Dosage,
         DosageForm = entity.DosageForm, RouteOfAdministration = entity.RouteOfAdministration,
         Frequency = entity.Frequency, Instructions = entity.Instructions, Department = entity.Department,
@@ -30,6 +34,8 @@ public sealed class PrescriptionEditor : ClinicalEditor<Prescription, Prescripti
     public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, PrescriptionInput input, Prescription entity, OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
     {
         if (context is null) return WriteResult.Invalid("The patient record no longer exists.");
+        if (!await EncounterLinks.ValidAsync(db, input.ClinicalEncounterId, context.Patient.Id, create || entity.ClinicalEncounterId.HasValue, token, lookups))
+            return WriteResult.Invalid("Select an existing encounter belonging to this patient.");
         if (input.RouteOfAdministration is not null && !AdministrationRoutes.All.Contains(input.RouteOfAdministration, StringComparer.Ordinal))
             return WriteResult.Invalid("Select a listed route of administration.");
         var number = input.RxNumber.Trim().ToUpperInvariant();
@@ -38,6 +44,8 @@ public sealed class PrescriptionEditor : ClinicalEditor<Prescription, Prescripti
         var physician = await PhysicianNames.ResolveAsync(db, input, token);
         if (physician is null) return WriteResult.Invalid("Select an existing directory physician or enter an explicit historical name.");
         if (create) entity.PatientRecordId = context.Patient.Id;
+        entity.ClinicalEncounterId = input.ClinicalEncounterId;
+        entity.PatientActivityAtUtc = DateTime.UtcNow;
         entity.RxNumber = number; entity.GenericName = input.GenericName.Trim(); entity.BrandName = input.BrandName;
         entity.Dosage = input.Dosage ?? ""; entity.DosageForm = input.DosageForm ?? ""; entity.Frequency = input.Frequency ?? "";
         entity.RouteOfAdministration = input.RouteOfAdministration;

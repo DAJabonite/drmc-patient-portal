@@ -2,8 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DrmcPatientPortal.Models;
 
-// These records deliberately have no relationship to the shared hospital patient registry.
-// Only the clinic's verified account binding conveys portal ownership.
+// The clinic registry stays private. An explicitly verified hospital mapping permits
+// encounter-linked reports without granting general staff access to clinic records.
 public sealed class RedStarPatient
 {
     public int Id { get; set; }
@@ -14,6 +14,9 @@ public sealed class RedStarPatient
     [StringLength(40)] public string? ContactNumber { get; set; }
     [StringLength(500)] public string? Address { get; set; }
     public string? PortalUserId { get; set; }
+    public int? HospitalPatientRecordId { get; set; }
+    public DateTime? HospitalMappingVerifiedAtUtc { get; set; }
+    public string? HospitalMappingFingerprint { get; set; }
     public string? PatientCodeBlindIndex { get; set; }
     public string? HospitalNumberBlindIndex { get; set; }
     public string? PortalUserIdBlindIndex { get; set; }
@@ -119,6 +122,7 @@ public sealed class RedStarAudit
     [StringLength(450)] public string ActorId { get; set; } = "";
     [StringLength(80)] public string Action { get; set; } = "";
     [StringLength(80)] public string Subject { get; set; } = "";
+    public string? Details { get; set; }
     public DateTimeOffset TimestampUtc { get; set; }
 }
 

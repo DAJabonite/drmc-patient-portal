@@ -24,12 +24,14 @@ public sealed class LabUploadEditor : ClinicalEditor<LabResult, LabUploadInput>
             .Select(f => f.Label == nameof(LabResult.AccessionNumber) ? f with { Label = "Report reference" } : f).ToArray();
     public override LabUploadInput Input(ApplicationDbContext db, LabResult entity) => new()
     {
-        CollectedAt = entity.CollectedAt.Date,
+        ClinicalEncounterId = entity.ClinicalEncounterId, TestName = entity.TestName,
+        CollectedAt = entity.CollectedAt?.Date,
         ReleasedAt = entity.ReleasedAt, Status = entity.Status
     };
     public override async Task ConfigureFormAsync(ApplicationDbContext db, ViewDataDictionary viewData,
         LabUploadInput input, OwnershipContext? context, CancellationToken token)
     {
+        viewData["Encounters"] = context is null ? [] : await EncounterLinks.OptionsAsync(db, context.Patient.Id, token);
         var id = viewData["RecordId"] as int?;
         var report = id.HasValue ? await SqlReadRetry.RunAsync(db, () => db.LabResults.AsNoTracking()
             .Where(l => l.Id == id.Value).Select(l => new { HasReport = l.ReportFileName != null, l.ReportSize, l.ReportUploadedAtUtc })
@@ -40,30 +42,39 @@ public sealed class LabUploadEditor : ClinicalEditor<LabResult, LabUploadInput>
     }
     public override async Task<IReadOnlyDictionary<string, int>> DependentsAsync(ApplicationDbContext db, LabResult entity, CancellationToken token) =>
         new Dictionary<string, int> { ["Lab items"] = await db.LabResultItems.CountAsync(i => i.LabResultId == entity.Id, token) };
-    public override Task<WriteResult> ApplyAsync(ApplicationDbContext db, LabUploadInput input, LabResult entity,
+    public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, LabUploadInput input, LabResult entity,
         OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
     {
-        if (context is null) return Task.FromResult(WriteResult.Invalid("The patient record no longer exists."));
+        if (context is null) return WriteResult.Invalid("The patient record no longer exists.");
+        if (!await EncounterLinks.ValidAsync(db, input.ClinicalEncounterId, context.Patient.Id,
+            create || entity.ClinicalEncounterId.HasValue || input.Report is not null || input.Status == "Available" && (entity.Status != "Available" || entity.RequiresEncounterAssignment), token, lookups))
+            return WriteResult.Invalid("Select an existing encounter belonging to this patient.");
         if (input.Report is not null && !context.Patient.HasHospitalNumber)
-            return Task.FromResult(WriteResult.Invalid(MissingHospitalNumberError));
-        if (create && input.Report is null) return Task.FromResult(WriteResult.Invalid("Choose the lab report PDF."));
-        var collectedAt = !create && entity.CollectedAt.Date == input.CollectedAt!.Value.Date
-            ? entity.CollectedAt : WallTime(input.CollectedAt!.Value.Date);
+            return WriteResult.Invalid(MissingHospitalNumberError);
+        if ((input.Report is not null || entity.ReportFileName is not null || input.Status == "Available") && input.CollectedAt is null)
+            return WriteResult.Invalid("Enter the actual test date before uploading or releasing a report.");
+        if (input.Status == "Cancelled" && (input.Report is not null || entity.ReportFileName is not null))
+            return WriteResult.Invalid("Only a request without an attached report can be cancelled.");
+        var collectedAt = input.CollectedAt is null ? (DateTime?)null : !create && entity.CollectedAt?.Date == input.CollectedAt.Value.Date
+            ? entity.CollectedAt : WallTime(input.CollectedAt.Value.Date);
         var releasedAt = input.ReleasedAt is null ? (DateTime?)null : WallTime(input.ReleasedAt.Value, create ? null : entity.ReleasedAt);
-        if (releasedAt < collectedAt) return Task.FromResult(WriteResult.Invalid("Release cannot precede collection."));
-        if (input.Status == "Available" && input.Report is null && entity.ReportFileName is null)
-            return Task.FromResult(WriteResult.Invalid("An attached PDF is required for PDF release."));
+        if (releasedAt < collectedAt) return WriteResult.Invalid("Release cannot precede collection.");
+        if (input.Status is "Available" or "Pending Verification" && input.Report is null && entity.ReportFileName is null)
+            return WriteResult.Invalid(input.Status == "Available" ? "An attached PDF is required for PDF release." : "Attach the PDF before marking it pending verification.");
         if (create)
         {
             entity.PatientRecordId = context.Patient.Id;
             entity.AccessionNumber = "PORTAL-LAB-" + Guid.NewGuid().ToString("N").ToUpperInvariant();
-            entity.TestName = "Laboratory report";
             entity.Category = LabCategory.SpecialDiagnostics;
             entity.PerformingUnit = "";
         }
-        entity.Status = input.Status;
+        entity.Status = input.Report is not null && input.Status == "In progress" ? "Pending Verification" : input.Status;
+        entity.TestName = input.TestName.Trim();
+        entity.ClinicalEncounterId = input.ClinicalEncounterId;
+        if (input.ClinicalEncounterId.HasValue) entity.RequiresEncounterAssignment = false;
         entity.CollectedAt = collectedAt;
         entity.ReleasedAt = releasedAt;
-        return Task.FromResult(WriteResult.Success);
+        entity.PatientActivityAtUtc = DateTime.UtcNow;
+        return WriteResult.Success;
     }
 }

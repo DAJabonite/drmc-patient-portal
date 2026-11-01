@@ -75,6 +75,7 @@ public sealed class PortalRequestControls(RequestDelegate next)
             path.Equals("/Identity/Account/ConfirmEmailChange", StringComparison.OrdinalIgnoreCase))) return PortalRequestKind.Authentication;
         if (!HttpMethods.IsPost(request.Method)) return PortalRequestKind.None;
         if (path.StartsWith("/Patient/LabResults/Report/", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/Patient/LabResults/RedStar/Report/", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/Patient/Radiology/Report/", StringComparison.OrdinalIgnoreCase)) return PortalRequestKind.Pdf;
         if (path.Equals("/Identity/Account/ForgotPassword", StringComparison.OrdinalIgnoreCase) ||
             path.Equals("/Identity/Account/ResendEmailConfirmation", StringComparison.OrdinalIgnoreCase) ||
@@ -102,7 +103,7 @@ public sealed class PortalRequestControls(RequestDelegate next)
             (context.Request.Path.Value ?? "").TrimEnd('/').Equals("/Identity/Account/Manage/MyIds", StringComparison.OrdinalIgnoreCase);
         var idUploadPost = registrationPost || walletPost;
         var action = context.GetEndpoint()?.Metadata.GetMetadata<Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor>();
-        var reportUpload = HttpMethods.IsPost(context.Request.Method) && action?.ControllerName is "LabResults" or "RadiologyStudies" &&
+        var reportUpload = HttpMethods.IsPost(context.Request.Method) && action?.ControllerName is "LabResults" or "RadiologyStudies" or "RedStarLabReports" &&
             action.RouteValues.TryGetValue("area", out var area) && area == "Admin" && context.Request.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) == true;
         var advisoryUpload = HttpMethods.IsPost(context.Request.Method) && action?.ControllerName == "PublicAdvisories" &&
             action.RouteValues.TryGetValue("area", out var advisoryArea) && advisoryArea == "Admin" &&
@@ -120,7 +121,8 @@ public sealed class PortalRequestControls(RequestDelegate next)
             var maximumRequestBytes = idUploadPost ? IdImageValidation.MaximumRequestBytes :
                 importUpload ? (action!.ControllerName == "Imports" ? ImportParser.MaxBytes : RedStarRegistryParser.MaxBytes) + 1024 * 1024 :
                 advisoryUpload ? AdvisoryImageStorage.MaximumRequestBytes :
-                LabReportStorage.MaximumBytes + (action!.ActionName == "UploadReport" ? 65536 : 1024 * 1024);
+                action!.ActionName == "BatchUpload" || action.ControllerName == "RedStarLabReports" && action.ActionName == "Upload" ? PdfReportValidation.MaximumRequestBytes :
+                LabReportStorage.MaximumBytes + (action.ActionName == "UploadReport" ? 65536 : 1024 * 1024);
             if (context.Request.ContentLength > maximumRequestBytes)
             { await Invalid(context, kind, "The upload request exceeds its size limit.", 413); return; }
             var sizeFeature = context.Features.Get<IHttpMaxRequestBodySizeFeature>();
@@ -156,7 +158,9 @@ public sealed class PortalRequestControls(RequestDelegate next)
             return;
         }
         // String model binding selects the first value, even when a field is repeated.
-        string accountKey = form?["Input.Email"].FirstOrDefault() ?? "";
+        // PDF passwords always belong to the authenticated account. Posted email fields
+        // must not create a fresh rate-limit bucket for another guess.
+        string accountKey = kind == PortalRequestKind.Pdf ? userId ?? "anonymous" : form?["Input.Email"].FirstOrDefault() ?? "";
         if (string.IsNullOrEmpty(accountKey)) accountKey = context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Request.Query["userId"].ToString();
         if (string.IsNullOrEmpty(accountKey) && kind == PortalRequestKind.Authentication)
         {

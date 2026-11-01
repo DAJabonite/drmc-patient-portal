@@ -1,0 +1,17 @@
+@model AdminList
+@{ ViewData["Title"] = Model.Title; }
+<h1 class="admin-title">@Model.Title</h1>
+<p>These PDFs are hidden from the patient until their originating encounter is verified. Choose the encounter and either fulfill an existing request or keep the uploaded report as a new result.</p>
+<div class="admin-card p-3">
+    @if (Model.Rows.Count == 0) { <p>No reports need encounter assignment.</p> }
+    @foreach (var row in Model.Rows)
+    {
+        <article class="border-bottom py-3"><h2 class="h6">@row.Label</h2><p>@row.Summary</p><a asp-action="AssignEncounter" asp-route-id="@row.Id" class="btn btn-outline-primary">Review assignment</a></article>
+    }
+    <nav class="d-flex gap-2 mt-3" aria-label="Assignment pages">
+        <a asp-action="NeedsEncounterAssignment" asp-route-page="@(Model.Page - 1)" class="btn btn-outline-secondary @(Model.Page == 1 ? "disabled" : null)">Previous</a>
+        <span>Page @Model.Page of @Model.Pages</span>
+        <a asp-action="NeedsEncounterAssignment" asp-route-page="@(Model.Page + 1)" class="btn btn-outline-secondary @(Model.Page == Model.Pages ? "disabled" : null)">Next</a>
+    </nav>
+</div>
+<a asp-action="Index" class="btn btn-link">Back to records</a>

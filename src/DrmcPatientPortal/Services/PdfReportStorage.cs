@@ -17,14 +17,7 @@ internal sealed class PdfReportStorage(IWebHostEnvironment environment, string c
 
     public async Task<StoredLabReport> StoreAsync(int id, IFormFile file, CancellationToken token)
     {
-        if (!string.Equals(Path.GetExtension(file.FileName), ".pdf", StringComparison.OrdinalIgnoreCase) ||
-            !string.Equals(file.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase) ||
-            file.Length is <= 0 or > MaximumBytes)
-            throw new InvalidDataException("Choose a PDF file no larger than 10 MiB.");
-        await using var input = file.OpenReadStream();
-        var bytes = await PrivateStorageIO.ReadBoundedAsync(input, MaximumBytes, token);
-        if (bytes.LongLength != file.Length || !bytes.AsSpan().StartsWith("%PDF-"u8))
-            throw new InvalidDataException("The file must have a PDF signature and match its declared size.");
+        var bytes = await PdfReportValidation.ReadValidatedAsync(file, token);
         var original = file.FileName.Replace('\\', '/').Split('/')[^1];
         if (!PrivateStorageRoot.IsLeaf(original)) throw new InvalidDataException("Choose a PDF with a valid filename.");
         var protector = Protector(id);
@@ -56,6 +49,31 @@ internal sealed class PdfReportStorage(IWebHostEnvironment environment, string c
             !(name?.Length == 36 && name.EndsWith(".pdf", StringComparison.Ordinal) && PrivateStorageRoot.IsGuid(name[..32])))
             throw new FileNotFoundException("Invalid report reference.");
         return Root.Resolve(name!);
+    }
+}
+
+public static class PdfReportValidation
+{
+    public const int MaximumFiles = 10;
+    public const int MaximumBatchBytes = 25 * 1024 * 1024;
+    public const int MaximumRequestBytes = 26 * 1024 * 1024;
+
+    public static async Task ValidateAsync(IFormFile file, CancellationToken token) =>
+        _ = await ReadValidatedAsync(file, token);
+
+    internal static async Task<byte[]> ReadValidatedAsync(IFormFile file, CancellationToken token)
+    {
+        if (!string.Equals(Path.GetExtension(file.FileName), ".pdf", StringComparison.OrdinalIgnoreCase) ||
+            !string.Equals(file.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase) ||
+            file.Length is <= 0 or > PdfReportStorage.MaximumBytes)
+            throw new InvalidDataException("Choose a PDF file no larger than 10 MiB.");
+        var original = file.FileName.Replace('\\', '/').Split('/')[^1];
+        if (!PrivateStorageRoot.IsLeaf(original)) throw new InvalidDataException("Choose a PDF with a valid filename.");
+        await using var input = file.OpenReadStream();
+        var bytes = await PrivateStorageIO.ReadBoundedAsync(input, PdfReportStorage.MaximumBytes, token);
+        if (bytes.LongLength != file.Length || !bytes.AsSpan().StartsWith("%PDF-"u8))
+            throw new InvalidDataException("The file must have a PDF signature and match its declared size.");
+        return bytes;
     }
 }
 

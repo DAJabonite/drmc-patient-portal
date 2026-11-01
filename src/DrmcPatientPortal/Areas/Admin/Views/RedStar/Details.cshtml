@@ -14,7 +14,7 @@
 }
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <div><h1 class="h3 mb-1">@patient.PatientCode @if (!string.IsNullOrEmpty(patient.CodeName)) { <span class="text-muted">· @patient.CodeName</span> }</h1><p class="mb-0 text-muted">@enrollment.Program · @AdminChips.Humanize(enrollment.Status)</p></div>
-    <div class="d-flex flex-wrap gap-2"><a asp-action="Edit" asp-route-id="@enrollment.Id" class="btn btn-primary">Edit / verify record</a><a asp-action="Create" asp-route-patientId="@patient.Id" class="btn btn-outline-secondary">Add program</a><a asp-action="Index" class="btn btn-outline-secondary">Registry</a></div>
+    <div class="d-flex flex-wrap gap-2"><a asp-controller="RedStarLabReports" asp-action="Index" asp-route-id="@patient.Id" class="btn btn-outline-primary">OHASIS lab reports</a><a asp-action="Edit" asp-route-id="@enrollment.Id" class="btn btn-primary">Edit / verify record</a><a asp-action="Create" asp-route-patientId="@patient.Id" class="btn btn-outline-secondary">Add program</a><a asp-action="Index" class="btn btn-outline-secondary">Registry</a></div>
 </div>
 <partial name="_Status" />
 <div class="row g-4 mb-4">

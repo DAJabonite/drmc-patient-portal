@@ -58,7 +58,7 @@
                             var latestEnc = Model.Encounters.First();
                             <div class="record-preview-list">
                                 <a asp-controller="Visits" asp-action="Details" asp-route-id="@latestEnc.Id" class="record-preview">
-                                    <span><strong>@latestEnc.Department</strong><small>@latestEnc.EncounterDate.ToString("MMM d, yyyy")</small></span>
+                                    <span><strong>@latestEnc.Department</strong><small>@latestEnc.EncounterReference · @latestEnc.EncounterDate.ToString("MMM d, yyyy")</small></span>
                                     <span class="badge status-badge text-bg-primary">@Loc[$"EncounterType_{latestEnc.Type}"]</span>
                                 </a>
                             </div>
@@ -80,17 +80,18 @@
                             <div>
                                 <h2 class="h5 fw-bold mb-0">Lab results</h2>
                             </div>
-                            <span class="summary-count">@Model.LabResultsCount</span>
+                            <span class="summary-count" aria-label="@Model.LabResultsCount laboratory requests">@Model.LabResultsCount</span>
                         </div>
 
+                        <p class="small text-muted mb-2">Requests and reports</p>
                         @if (Model.LabResults.Count > 0)
                         {
                             <div class="record-preview-list">
                                 @foreach (var lab in Model.LabResults.Take(2))
                                 {
-                                    <a asp-controller="LabResults" asp-action="Details" asp-route-id="@lab.Id" class="record-preview">
-                                        <span><strong>@lab.TestName</strong><small>@lab.CollectedAt.ToString("MMM d, yyyy")</small></span>
-                                        <span class="text-primary-drmc fw-semibold">View report</span>
+                                    <a href="@Url.Content("~" + lab.DetailsUrl)" class="record-preview">
+                                        <span><strong>@lab.Description</strong><small>@(lab.EncounterReference ?? "Encounter not assigned") · @(lab.EncounterDate?.ToString("MMM d, yyyy") ?? lab.ExamDate?.ToString("MMM d, yyyy"))</small></span>
+                                        <span class="text-primary-drmc fw-semibold">@(lab.CanOpenPdf ? "View report" : lab.Status)</span>
                                     </a>
                                 }
                             </div>

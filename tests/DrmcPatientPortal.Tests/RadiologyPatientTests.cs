@@ -142,7 +142,7 @@ public sealed class RadiologyPatientTests(PortalFactory factory)
             }
             foreach (var accession in new[] { Held, Draft, Pending })
                 Assert.DoesNotContain($"action=\"/Patient/Radiology/Report/{(await StudyAsync(accession)).Id}\"", html);
-            Assert.Contains("data-testid=\"radiology-date-group\"", html);
+            Assert.Contains("data-testid=\"radiology-encounter-group\"", html);
             Assert.Contains("data-testid=\"radiology-prep-guide\"", html);
             Assert.Contains("href=\"/Directory/Department/Radiology\"", html);
             foreach (var guide in RadiologyPreparation.Guides) Assert.Contains(guide.Title, html);
@@ -158,7 +158,7 @@ public sealed class RadiologyPatientTests(PortalFactory factory)
             Assert.Contains("The start date must be on or before the end date.", badRange);
 
             var empty = await PatientAsync(On, PortalFactory.EmptyEmail);
-            Assert.Contains("data-testid=\"radiology-empty\"", await empty.GetStringAsync("/Patient/Radiology"));
+            Assert.Contains("data-testid=\"radiology-no-match\"", await empty.GetStringAsync("/Patient/Radiology"));
         });
     }
 
@@ -188,7 +188,7 @@ public sealed class RadiologyPatientTests(PortalFactory factory)
     }
 
     [Fact]
-    public async Task With_switch_off_lists_offer_no_pdf_actions_and_details_are_not_found()
+    public async Task With_switch_off_metadata_is_visible_without_pdf_actions()
     {
         var client = await PatientAsync(factory, PortalFactory.PrimaryEmail);
         var list = await client.GetStringAsync("/Patient/Radiology");
@@ -197,7 +197,8 @@ public sealed class RadiologyPatientTests(PortalFactory factory)
         {
             var study = await StudyAsync(accession);
             var response = await client.GetAsync($"/Patient/Radiology/Details/{study.Id}");
-            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.DoesNotContain("name=\"password\"", await response.Content.ReadAsStringAsync());
             AssertNoClinicalText(study, list + await response.Content.ReadAsStringAsync());
         }
     }
@@ -223,7 +224,8 @@ public sealed class RadiologyPatientTests(PortalFactory factory)
             {
                 var study = await StudyAsync(accession);
                 var response = await client.GetAsync($"/Patient/Radiology/Details/{study.Id}");
-                Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.DoesNotContain("name=\"password\"", await response.Content.ReadAsStringAsync());
                 AssertNoClinicalText(study, list + await response.Content.ReadAsStringAsync());
             }
         });
@@ -260,8 +262,8 @@ public sealed class RadiologyPatientTests(PortalFactory factory)
         {
             var off = await PatientAsync(factory, PortalFactory.PrimaryEmail);
             var on = await PatientAsync(On, PortalFactory.PrimaryEmail);
-            Assert.Equal(HttpStatusCode.NotFound, (await off.GetAsync($"/Patient/LabResults/Details/{released.Id}")).StatusCode);
-            Assert.Equal(HttpStatusCode.NotFound, (await on.GetAsync($"/Patient/LabResults/Details/{unreleased.Id}")).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await off.GetAsync($"/Patient/LabResults/Details/{released.Id}")).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await on.GetAsync($"/Patient/LabResults/Details/{unreleased.Id}")).StatusCode);
             var html = await on.GetStringAsync($"/Patient/LabResults/Details/{released.Id}");
             Assert.Contains("name=\"password\"", html);
             Assert.DoesNotContain("data-testid=\"lab-result-values\"", html);

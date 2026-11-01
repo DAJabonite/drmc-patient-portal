@@ -4,6 +4,20 @@
     var recordId = ViewData["RecordId"] as int?;
 }
 <input asp-for="RowVersion" type="hidden" />
+<div class="mb-3">
+    <label asp-for="ClinicalEncounterId" class="form-label"></label>
+    <select asp-for="ClinicalEncounterId" asp-items='@(ViewData["Encounters"] as IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)' class="form-select" aria-describedby="encounterHelp">
+        <option value="">Select this patient's encounter</option>
+    </select>
+    <span asp-validation-for="ClinicalEncounterId" class="text-danger"></span>
+    <div id="encounterHelp" class="form-text">Use the originating encounter, even when the result returns weeks later. If it is missing, have an encounter encoder create it first.</div>
+</div>
+<div class="mb-3"><label asp-for="TestName" class="form-label"></label><input asp-for="TestName" maxlength="200" class="form-control" /><span asp-validation-for="TestName" class="text-danger"></span></div>
+
+@if (creating)
+{
+    <p><a asp-action="BatchUpload" asp-route-id="@ViewContext.RouteData.Values["id"]" class="btn btn-outline-primary">Upload multiple PDFs</a></p>
+}
 <fieldset class="border rounded-3 p-3 mb-3">
     <legend class="h6 float-none w-auto px-2">Official lab report</legend>
     @if (!creating)
@@ -19,12 +33,12 @@
         else { <p class="small">No PDF attached.</p> }
     }
     <label asp-for="Report" class="form-label"></label>
-    <input asp-for="Report" type="file" accept=".pdf,application/pdf" class="form-control" aria-describedby="labReportHelp" required="@creating" />
+    <input asp-for="Report" type="file" accept=".pdf,application/pdf" class="form-control" aria-describedby="labReportHelp" />
     <span asp-validation-for="Report" class="text-danger"></span>
-    <p id="labReportHelp" class="small text-muted mt-2 mb-0">PDF only, up to 10 MiB.@if (!creating) { <text> Leave blank to keep the current report.</text> }</p>
+    <p id="labReportHelp" class="small text-muted mt-2 mb-0">PDF only, up to 10 MiB. Leave the PDF and actual test date blank to record a request before testing.@if (!creating) { <text> Leave blank to keep the current report.</text> }</p>
 </fieldset>
 <div class="row g-3">
     <div class="col-md-6"><label asp-for="CollectedAt" class="form-label"></label><input asp-for="CollectedAt" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" /><span asp-validation-for="CollectedAt" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="Status" class="form-label"></label><select asp-for="Status" class="form-select"><option>Pending Verification</option><option>In progress</option><option>Available</option></select><span asp-validation-for="Status" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Status" class="form-label"></label><select asp-for="Status" class="form-select"><option>Pending Verification</option><option>In progress</option><option>Available</option><option>Cancelled</option></select><span asp-validation-for="Status" class="text-danger"></span></div>
     <div class="col-md-6"><label asp-for="ReleasedAt" class="form-label"></label><input asp-for="ReleasedAt" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="ReleasedAt" class="text-danger"></span></div>
 </div>

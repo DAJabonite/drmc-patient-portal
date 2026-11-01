@@ -84,8 +84,7 @@ public static class ImportValidation
 
         T? Parent<T>(ImportRow row, string field, string entity) where T : class
         {
-            var key = row.Fields[field].Trim();
-            if (key.Length == 0 && field == "SourceEncounterKey") return null;
+            var key = row.Fields.GetValueOrDefault(field, "").Trim();
             T? parent = null;
             if (key.StartsWith("batch:", StringComparison.Ordinal) && sourceParents.TryGetValue(entity + ":" + key[6..], out var staged)) parent = staged as T;
             else if (key.StartsWith("existing:", StringComparison.Ordinal))
@@ -145,7 +144,14 @@ public static class ImportValidation
                         lab.ClinicalEncounterId = encounterParent.Id;
                     }
                     await Add(row, lab, new LabEditor(), context, patient); break;
-                case PrescriptionInput prescription: await Add(row, prescription, new PrescriptionEditor(), context, patient); break;
+                case PrescriptionInput prescription:
+                    var prescriptionEncounter = Parent<ClinicalEncounter>(row, "SourceEncounterKey", "ClinicalEncounters");
+                    if (prescriptionEncounter is not null)
+                    {
+                        if (prescriptionEncounter.PatientRecordId != patient?.Id) reviews[row].Add("The encounter belongs to another patient.");
+                        prescription.ClinicalEncounterId = prescriptionEncounter.Id;
+                    }
+                    await Add(row, prescription, new PrescriptionEditor(), context, patient); break;
                 case LabItemInput item:
                     var labParent = Parent<LabResult>(row, "SourceLabKey", "LabResults");
                     if (labParent is not null && labParent.PatientRecordId != patient?.Id) reviews[row].Add("The lab belongs to another patient.");

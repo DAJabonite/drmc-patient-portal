@@ -1,28 +1,21 @@
-@model LabPdfReportViewModel
+@model PatientReportCard
 @{
-    ViewData["Title"] = "Laboratory report PDF";
+    var returnUrl = Context.Request.Query["returnUrl"].ToString();
+    var hasReturnUrl = Url.IsLocalUrl(returnUrl);
+    var backUrl = hasReturnUrl ? Url.Content(returnUrl) : Url.Action("Index");
 }
-
-<section class="page-header">
-    <div class="container">
-        <a asp-action="Index" class="text-white text-opacity-75 text-decoration-none small">
-            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>All laboratory PDFs
-        </a>
-        <h1 class="display-6 fw-bold mt-2 mb-0">Laboratory report PDF</h1>
+@{ ViewData["Title"] = "Laboratory request"; }
+<section class="page-header"><div class="container">
+    <a href="@backUrl" class="text-white text-opacity-75 small">@(hasReturnUrl ? "Back to previous page" : "Back to laboratory requests")</a>
+    <h1 class="display-6 fw-bold mt-2">Laboratory request</h1>
+</div></section>
+<section class="section py-5 bg-light"><div class="container" style="max-width: 720px;">
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+        <partial name="_PatientReportCard" model="Model" />
+        <nav class="pt-3 mt-3 border-top" aria-label="Request actions">
+            @if (Model.ClinicalEncounterId.HasValue)
+            { <a asp-controller="Visits" asp-action="Details" asp-route-id="@Model.ClinicalEncounterId" class="btn btn-outline-secondary">Back to encounter</a> }
+            <a href="@backUrl" class="btn btn-outline-secondary">@(hasReturnUrl ? "Back to previous page" : "Back to laboratory requests")</a>
+        </nav>
     </div>
-</section>
-
-<section class="section py-5 bg-light">
-    <div class="container" style="max-width: 720px;">
-        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-            <p class="small text-muted mb-1">
-                Test date: <time datetime="@Model.CollectedAt.ToString("yyyy-MM-dd")">@Model.CollectedAt.ToString("MMM d, yyyy")</time>
-            </p>
-            <h2 class="h5 fw-bold text-primary-drmc">@Model.TestName</h2>
-            <partial name="_PdfReportActions" model='new PdfReportActionsViewModel("LabResults", Model.Id, Model.TestName)' />
-            <nav class="pt-3 mt-3 border-top" aria-label="Report actions">
-                <a asp-action="Index" class="btn btn-outline-secondary">Back to results</a>
-            </nav>
-        </div>
-    </div>
-</section>
+</div></section>

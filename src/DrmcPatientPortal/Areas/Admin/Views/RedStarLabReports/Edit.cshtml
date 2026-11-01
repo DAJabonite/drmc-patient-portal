@@ -1,0 +1,19 @@
+@model RedStarEditReportPage
+@{ ViewData["Title"] = "Review private report"; var input = Model.Input; }
+<h1 class="h3">Review private report</h1>
+<p>Current verified hospital record: @Model.Hospital.FullName · @Model.Hospital.HospitalNumber</p>
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+<form asp-action="Edit" asp-route-id="@Model.Report.Id" method="post" enctype="multipart/form-data" class="card card-body">
+    <input name="RowVersion" type="hidden" value="@input.RowVersion" />
+    <label for="edit-description" class="form-label">Exam description</label><input id="edit-description" name="Description" value="@input.Description" maxlength="200" required class="form-control mb-3" />
+    <label for="edit-encounter" class="form-label">Encounter Reference</label><select id="edit-encounter" name="ClinicalEncounterId" required class="form-select mb-3"><option value="">Select encounter</option>@foreach (var encounter in Model.Encounters) { <option value="@encounter.Id" selected="@(encounter.Id == input.ClinicalEncounterId)">@encounter.EncounterReference · @encounter.EncounterDate.ToString("MMM d, yyyy") · @encounter.Department</option> }</select>
+    <label for="edit-collected" class="form-label">Actual test date (Manila)</label><input id="edit-collected" name="CollectedAt" value="@input.CollectedAt?.ToString("yyyy-MM-dd")" type="date" class="form-control mb-3" />
+    <label for="edit-status" class="form-label">Status</label><select id="edit-status" name="Status" class="form-select mb-3">@foreach (var status in new[] { "In progress", "Pending Verification", "Available", "Cancelled", "Withdrawn" }) { <option selected="@(input.Status == status)">@status</option> }</select>
+    <label for="edit-released" class="form-label">Released at (Manila)</label><input id="edit-released" name="ReleasedAt" value="@input.ReleasedAt?.ToString("yyyy-MM-ddTHH:mm")" type="datetime-local" class="form-control mb-3" />
+    @if (Model.Report.ReportFileName is not null) { <p><a asp-action="Preview" asp-route-id="@Model.Report.Id" target="_blank" rel="noopener">View current PDF</a></p> }
+    <label for="edit-report" class="form-label">Replacement PDF (optional, up to 10 MiB)</label><input id="edit-report" name="Report" type="file" accept=".pdf,application/pdf" class="form-control mb-3" />
+    <div class="form-check mb-3"><input id="edit-remove" name="RemoveReport" value="true" checked="@input.RemoveReport" type="checkbox" class="form-check-input" /><label for="edit-remove" class="form-check-label">Remove the current PDF</label></div>
+    <label for="edit-reason" class="form-label">Correction reason</label><textarea id="edit-reason" name="CorrectionReason" maxlength="1000" class="form-control mb-3">@input.CorrectionReason</textarea>
+    <p class="small text-muted">Required when changing patient/encounter assignment, replacing or removing a PDF. Earlier files remain protected by the approved retention policy.</p>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary">Save reviewed report</button><a asp-action="Index" asp-route-id="@Model.Report.RedStarPatientId" class="btn btn-outline-secondary">Cancel</a></div>
+</form>

@@ -1,3 +1,3 @@
 namespace DrmcPatientPortal.Models;
 
-public sealed record PdfReportActionsViewModel(string ControllerName, int ReportId, string Description);
+public sealed record PdfReportActionsViewModel(string ControllerName, int ReportId, string Description, string Source = "general");

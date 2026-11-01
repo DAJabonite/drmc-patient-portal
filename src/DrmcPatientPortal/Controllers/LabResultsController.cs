@@ -19,6 +19,7 @@ public class LabResultsController : Controller
     private readonly IOptionsMonitor<PatientResultsOptions> _resultsOptions;
     private readonly SignInManager<ApplicationUser> _signIn;
     private readonly ILabReportStorage _storage;
+    private readonly PatientReportQueries _reports;
 
     public LabResultsController(
         ApplicationDbContext db,
@@ -26,7 +27,7 @@ public class LabResultsController : Controller
         IAuditLogService auditLog,
         IOptionsMonitor<PatientResultsOptions> resultsOptions,
         SignInManager<ApplicationUser> signIn,
-        ILabReportStorage storage)
+        ILabReportStorage storage, PatientReportQueries reports)
     {
         _db = db;
         _userManager = userManager;
@@ -34,129 +35,46 @@ public class LabResultsController : Controller
         _resultsOptions = resultsOptions;
         _signIn = signIn;
         _storage = storage;
+        _reports = reports;
     }
 
-    // GET /Patient/LabResults
+    // Availability metadata remains visible while its PDF awaits release.
     [HttpGet("")]
-    public async Task<IActionResult> Index(
-        LabCategory? category,
-        string? search,
-        string? dateRange = null,
-        DateTime? startDate = null,
-        DateTime? endDate = null, int page = 1)
+    public async Task<IActionResult> Index(LabCategory? category, string? search, string? dateRange = null,
+        DateTime? startDate = null, DateTime? endDate = null, int page = 1, int legacyPage = 1, string? status = null)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
-
-        var owned = _db.LabResults.AsNoTracking()
-            .Where(PatientResultsDisclosure.PdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow))
-            .Where(l => l.Patient.PortalUserId == user.Id);
-        var query = owned;
-
-        if (category.HasValue)
+        search = PatientReportQueries.NormalizeSearch(search);
+        status = PatientReportQueries.NormalizeStatus(status);
+        dateRange = dateRange is "30d" or "6m" or "year" or "custom" ? dateRange : null;
+        if (category.HasValue && !Enum.IsDefined(category.Value)) category = null;
+        var bounds = PatientReportQueries.DateBounds(dateRange, startDate, endDate);
+        if (bounds.Error is not null) ViewData["DateRangeError"] = bounds.Error;
+        var owned = await _reports.LaboratoriesAsync(user.Id, HttpContext.RequestAborted);
+        var filtered = category.HasValue ? owned.Where(r => r.Category == category) : owned;
+        var results = PatientReportQueries.Page(filtered, search, status, bounds.Start, bounds.End,
+            dateRange != null && bounds.Error == null, page, legacyPage);
+        await _auditLog.LogAsync(user.Id, "VIEW_LAB_LIST", "Patient/LabResults", "Viewed owned laboratory availability.",
+            HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+        return View(new LabResultsIndexViewModel
         {
-            query = query.Where(l => l.Category == category.Value);
-        }
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var s = search.Trim().ToLower();
-            s = s.Length > 200 ? s[..200] : s;
-            query = query.Where(l => l.TestName.ToLower().Contains(s) || l.AccessionNumber.ToLower().Contains(s));
-        }
-
-        var today = ClinicalClock.Today;
-
-        if (dateRange == "30d")
-        {
-            var rangeStart = today.AddDays(-30);
-            query = query.Where(l => l.CollectedAt >= rangeStart);
-        }
-        else if (dateRange == "6m")
-        {
-            var rangeStart = today.AddMonths(-6);
-            query = query.Where(l => l.CollectedAt >= rangeStart);
-        }
-        else if (dateRange == "year")
-        {
-            var rangeStart = new DateTime(today.Year, 1, 1);
-            query = query.Where(l => l.CollectedAt >= rangeStart);
-        }
-        else if (dateRange == "custom")
-        {
-            if (!startDate.HasValue || !endDate.HasValue)
-            {
-                ViewData["DateRangeError"] = "Choose both a start date and an end date.";
-            }
-            else if (startDate.Value.Date > endDate.Value.Date)
-            {
-                ViewData["DateRangeError"] = "The start date must be on or before the end date.";
-            }
-            else if (startDate.Value.Date > today || endDate.Value.Date > today)
-            {
-                ViewData["DateRangeError"] = "Laboratory result dates cannot be in the future.";
-            }
-            else
-            {
-                var inclusiveStart = startDate.Value.Date;
-                var exclusiveEnd = endDate.Value.Date.AddDays(1);
-                query = query.Where(l => l.CollectedAt >= inclusiveStart && l.CollectedAt < exclusiveEnd);
-            }
-        }
-
-        var token = HttpContext.RequestAborted;
-        var allCount = await SqlReadRetry.RunAsync(_db, () => owned.CountAsync(token), token);
-        // Page distinct clinical dates before fetching their PDFs: a day's reports stay together.
-        var dateQuery = query.Select(l => l.CollectedAt.Date).Distinct();
-        var pagination = await PortalPagination.CreateAsync(dateQuery, _db, page);
-        ViewData["Pagination"] = pagination;
-        var dates = await SqlReadRetry.RunAsync(_db, () => dateQuery.OrderByDescending(date => date)
-            .Skip(pagination.Offset).Take(PortalPagination.Size).ToListAsync(token), token);
-        List<LabPdfReportViewModel> results = dates.Count == 0 ? [] : await SqlReadRetry.RunAsync(_db, () => query
-            .Where(l => dates.Contains(l.CollectedAt.Date))
-            .OrderByDescending(l => l.CollectedAt)
-            .ThenByDescending(l => l.Id)
-            .Select(l => new LabPdfReportViewModel { Id = l.Id, TestName = l.TestName, CollectedAt = l.CollectedAt })
-            .ToListAsync(token), token);
-
-        var model = new LabResultsIndexViewModel
-        {
-            SelectedCategory = category,
-            SearchTerm = search,
-            SelectedDateRange = dateRange,
-            SelectedStartDate = startDate,
-            SelectedEndDate = endDate,
-            DateGroups = results.GroupBy(l => l.CollectedAt.Date)
-                .Select(group => new LabReportDateGroup(group.Key, group.ToList())).ToList(),
-            TotalCount = allCount
-        };
-
-        await _auditLog.LogAsync(user.Id, "VIEW_LAB_LIST", "Patient/LabResults", "Viewed owned laboratory availability.", HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
-        return View(model);
+            SelectedCategory = category, SearchTerm = search, SelectedDateRange = dateRange,
+            SelectedStartDate = startDate, SelectedEndDate = endDate, SelectedStatus = status,
+            Results = results, TotalCount = owned.Count
+        });
     }
 
-    // GET /Patient/LabResults/Details/{id}
     [HttpGet("Details/{id:int}")]
     public async Task<IActionResult> Details(int id)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
-
-        var result = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.AsNoTracking()
-            .Where(PatientResultsDisclosure.PdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow))
-            .Where(l => l.Id == id && l.Patient.PortalUserId == user.Id)
-            .Select(l => new LabPdfReportViewModel { Id = l.Id, TestName = l.TestName, CollectedAt = l.CollectedAt })
-            .FirstOrDefaultAsync());
-
-        if (result is null)
-        {
-            return NotFound();
-        }
-
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
-        await _auditLog.LogAsync(user.Id, "VIEW_LAB_REPORT", $"LabResult/{id}",
-            "Viewed released laboratory report.", ip);
-
+        var result = (await _reports.LaboratoriesAsync(user.Id, HttpContext.RequestAborted))
+            .SingleOrDefault(r => r.Source == "lab" && r.Id == id);
+        if (result is null) return NotFound();
+        await _auditLog.LogAsync(user.Id, "VIEW_LAB_REPORT", $"LabResult/{id}", "Viewed owned laboratory request metadata.",
+            HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
         return View("Details", result);
     }
 

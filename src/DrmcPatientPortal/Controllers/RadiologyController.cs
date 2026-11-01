@@ -9,12 +9,11 @@ using Microsoft.Extensions.Options;
 
 namespace DrmcPatientPortal.Controllers;
 
-// Patient PDF metadata is always scoped to the signed-in user and the disclosure/release rules.
+// Request metadata is owned; attached PDFs independently enforce disclosure and release rules.
 [Authorize]
 [Route("Patient/Radiology")]
 public class RadiologyController : Controller
 {
-    private const int MaxSearchLength = 200;
 
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
@@ -23,6 +22,7 @@ public class RadiologyController : Controller
     private readonly InstitutionalGuideService _guides;
     private readonly IRadiologyReportStorage _storage;
     private readonly SignInManager<ApplicationUser> _signIn;
+    private readonly PatientReportQueries _reports;
 
     public RadiologyController(
         ApplicationDbContext db,
@@ -31,7 +31,7 @@ public class RadiologyController : Controller
         IOptionsMonitor<PatientResultsOptions> resultsOptions,
         InstitutionalGuideService guides,
         IRadiologyReportStorage storage,
-        SignInManager<ApplicationUser> signIn)
+        SignInManager<ApplicationUser> signIn, PatientReportQueries reports)
     {
         _db = db;
         _userManager = userManager;
@@ -40,142 +40,46 @@ public class RadiologyController : Controller
         _guides = guides;
         _storage = storage;
         _signIn = signIn;
+        _reports = reports;
     }
 
-    // GET /Patient/Radiology
     [HttpGet("")]
-    public async Task<IActionResult> Index(
-        RadiologyModality? modality,
-        string? search,
-        string? dateRange = null,
-        DateTime? startDate = null,
-        DateTime? endDate = null, int page = 1)
+    public async Task<IActionResult> Index(RadiologyModality? modality, string? search, string? dateRange = null,
+        DateTime? startDate = null, DateTime? endDate = null, int page = 1, int legacyPage = 1, string? status = null)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
-
-        var owned = _db.RadiologyStudies.AsNoTracking()
-            .Where(PatientResultsDisclosure.RadiologyPdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow))
-            .Where(s => s.Patient.PortalUserId == user.Id);
-        var query = owned;
-
-        if (modality.HasValue && Enum.IsDefined(modality.Value))
-        {
-            query = query.Where(s => s.Modality == modality.Value);
-        }
-        else
-        {
-            modality = null;
-        }
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            search = search.Trim();
-            if (search.Length > MaxSearchLength) search = search[..MaxSearchLength];
-            var s = search.ToLower();
-            query = query.Where(r => r.StudyName.ToLower().Contains(s)
-                                  || r.AccessionNumber.ToLower().Contains(s)
-                                  || r.BodyRegion.ToLower().Contains(s));
-        }
-        else
-        {
-            search = null;
-        }
-
-        var today = ClinicalClock.Today;
-        switch (dateRange)
-        {
-            case "30d":
-                var last30 = today.AddDays(-30);
-                query = query.Where(s => s.PerformedAt >= last30);
-                break;
-            case "6m":
-                var last6m = today.AddMonths(-6);
-                query = query.Where(s => s.PerformedAt >= last6m);
-                break;
-            case "year":
-                var yearStart = new DateTime(today.Year, 1, 1);
-                query = query.Where(s => s.PerformedAt >= yearStart);
-                break;
-            case "custom":
-                if (!startDate.HasValue || !endDate.HasValue)
-                {
-                    ViewData["DateRangeError"] = "Choose both a start date and an end date.";
-                }
-                else if (startDate.Value.Date > endDate.Value.Date)
-                {
-                    ViewData["DateRangeError"] = "The start date must be on or before the end date.";
-                }
-                else if (startDate.Value.Date > today || endDate.Value.Date > today)
-                {
-                    ViewData["DateRangeError"] = "Imaging study dates cannot be in the future.";
-                }
-                else
-                {
-                    var inclusiveStart = startDate.Value.Date;
-                    var exclusiveEnd = endDate.Value.Date.AddDays(1);
-                    query = query.Where(s => s.PerformedAt >= inclusiveStart && s.PerformedAt < exclusiveEnd);
-                }
-                break;
-            default:
-                dateRange = null;
-                break;
-        }
-
-        var token = HttpContext.RequestAborted;
-        var dateQuery = query.Select(s => s.PerformedAt.Date).Distinct();
-        var pagination = await PortalPagination.CreateAsync(dateQuery, _db, page);
-        ViewData["Pagination"] = pagination;
-        var dates = await SqlReadRetry.RunAsync(_db, () => dateQuery.OrderByDescending(date => date)
-            .Skip(pagination.Offset).Take(PortalPagination.Size).ToListAsync(token), token);
-        List<RadiologyListItem> studies = dates.Count == 0 ? [] : await SqlReadRetry.RunAsync(_db, () => query
-            .Where(s => dates.Contains(s.PerformedAt.Date))
-            .OrderByDescending(s => s.PerformedAt)
-            .ThenByDescending(s => s.Id)
-            .Select(s => new RadiologyListItem
-            {
-                Id = s.Id, Modality = s.Modality, PerformedAt = s.PerformedAt
-            })
-            .ToListAsync(token), token);
-
-        await _auditLog.LogAsync(user.Id, "VIEW_RADIOLOGY_LIST", "Patient/Radiology", "Viewed owned imaging availability.", HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+        search = PatientReportQueries.NormalizeSearch(search);
+        status = PatientReportQueries.NormalizeStatus(status);
+        dateRange = dateRange is "30d" or "6m" or "year" or "custom" ? dateRange : null;
+        if (modality.HasValue && !Enum.IsDefined(modality.Value)) modality = null;
+        var bounds = PatientReportQueries.DateBounds(dateRange, startDate, endDate);
+        if (bounds.Error is not null) ViewData["DateRangeError"] = bounds.Error;
+        var owned = await _reports.RadiologyAsync(user.Id, HttpContext.RequestAborted);
+        var filtered = modality.HasValue ? owned.Where(r => r.Modality == modality) : owned;
+        var results = PatientReportQueries.Page(filtered, search, status, bounds.Start, bounds.End,
+            dateRange != null && bounds.Error == null, page, legacyPage);
+        await _auditLog.LogAsync(user.Id, "VIEW_RADIOLOGY_LIST", "Patient/Radiology", "Viewed owned imaging availability.",
+            HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
         return View(new RadiologyIndexViewModel
         {
             PreparationGuide = await _guides.GetAsync("radiology-preparation", cancellationToken: HttpContext.RequestAborted),
-            SelectedModality = modality,
-            SearchTerm = search,
-            SelectedDateRange = dateRange,
-            SelectedStartDate = dateRange == "custom" ? startDate : null,
-            SelectedEndDate = dateRange == "custom" ? endDate : null,
-            DateGroups = studies.GroupBy(s => s.PerformedAt.Date)
-                .Select(group => new RadiologyDateGroup(group.Key, group.ToList())).ToList(),
-            TotalCount = await SqlReadRetry.RunAsync(_db, () => owned.CountAsync(token), token)
+            SelectedModality = modality, SearchTerm = search, SelectedDateRange = dateRange,
+            SelectedStartDate = startDate, SelectedEndDate = endDate, SelectedStatus = status,
+            Results = results, TotalCount = owned.Count
         });
     }
 
-    // GET /Patient/Radiology/Details/{id}
     [HttpGet("Details/{id:int}")]
     public async Task<IActionResult> Details(int id)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
-
-        var model = await SqlReadRetry.RunAsync(_db, () => _db.RadiologyStudies.AsNoTracking()
-            .Where(PatientResultsDisclosure.RadiologyPdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow))
-            .Where(s => s.Id == id && s.Patient.PortalUserId == user.Id)
-            .Select(s => new RadiologyDetailsViewModel
-            {
-                Id = s.Id, Modality = s.Modality, PerformedAt = s.PerformedAt
-            })
-            .FirstOrDefaultAsync());
-
-        if (model is null) return NotFound();
-
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
-        await _auditLog.LogAsync(user.Id, "VIEW_RADIOLOGY_REPORT", $"RadiologyStudy/{id}",
-            "Viewed released imaging report.", ip);
-
-        return View("Details", model);
+        var study = (await _reports.RadiologyAsync(user.Id, HttpContext.RequestAborted)).SingleOrDefault(r => r.Id == id);
+        if (study is null) return NotFound();
+        await _auditLog.LogAsync(user.Id, "VIEW_RADIOLOGY_REPORT", $"RadiologyStudy/{id}", "Viewed owned imaging request metadata.",
+            HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+        return View("Details", study);
     }
 
     [HttpPost("Report/{id:int}"), ValidateAntiForgeryToken]

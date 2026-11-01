@@ -27,7 +27,9 @@ public sealed class EncounterEditor : ClinicalEditor<ClinicalEncounter, Encounte
         new Dictionary<string, int>
         {
             ["Labs"] = await db.LabResults.CountAsync(l => l.ClinicalEncounterId == entity.Id, token),
-            ["Radiology studies"] = await db.RadiologyStudies.CountAsync(r => r.ClinicalEncounterId == entity.Id, token)
+            ["Radiology studies"] = await db.RadiologyStudies.CountAsync(r => r.ClinicalEncounterId == entity.Id, token),
+            ["Prescriptions"] = await db.Prescriptions.CountAsync(r => r.ClinicalEncounterId == entity.Id, token),
+            ["Associated records"] = await db.RedStarLabReports.AnyAsync(r => r.ClinicalEncounterId == entity.Id, token) ? 1 : 0
         };
     public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, EncounterInput input, ClinicalEncounter entity,
         OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)

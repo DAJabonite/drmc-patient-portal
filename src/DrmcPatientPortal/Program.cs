@@ -190,6 +190,11 @@ builder.Services.Configure<LabReportStorageOptions>(builder.Configuration.GetSec
 builder.Services.AddScoped<ILabReportStorage, LabReportStorage>();
 builder.Services.Configure<RadiologyReportStorageOptions>(builder.Configuration.GetSection("RadiologyReports"));
 builder.Services.AddScoped<IRadiologyReportStorage, RadiologyReportStorage>();
+builder.Services.AddOptions<RedStarLabReportStorageOptions>().Bind(builder.Configuration.GetSection("RedStarLabReports")).ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<RedStarLabReportStorageOptions>, RedStarLabReportStorageOptionsValidator>();
+builder.Services.AddScoped<IRedStarLabReportStorage, RedStarLabReportStorage>();
+builder.Services.AddScoped<RedStarReportAccess>();
+builder.Services.AddScoped<PatientReportQueries>();
 builder.Services.AddOptions<ResultStagingOptions>().Bind(builder.Configuration.GetSection(ResultStagingOptions.SectionName)).ValidateOnStart();
 builder.Services.AddSingleton<IValidateOptions<ResultStagingOptions>, ResultStagingOptionsValidator>();
 builder.Services.AddSingleton<StagedResultFileReadiness>();

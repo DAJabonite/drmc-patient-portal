@@ -1,6 +1,15 @@
 @model PrescriptionInput
 <input asp-for="RowVersion" type="hidden" />
 <div class="mb-3">
+    <label asp-for="ClinicalEncounterId" class="form-label"></label>
+    <select asp-for="ClinicalEncounterId" asp-items='@(ViewData["Encounters"] as IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)' class="form-select" aria-describedby="encounterHelp">
+        <option value="">Select this patient's encounter</option>
+    </select>
+    <span asp-validation-for="ClinicalEncounterId" class="text-danger"></span>
+    <div id="encounterHelp" class="form-text">Use the originating encounter, even when the result returns weeks later. If it is missing, have an encounter encoder create it first.</div>
+</div>
+
+<div class="mb-3">
     <label asp-for="RouteOfAdministration" class="form-label"></label>
     <select asp-for="RouteOfAdministration" class="form-select">
         <option value="">Not specified</option>

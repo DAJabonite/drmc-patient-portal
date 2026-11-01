@@ -1,10 +1,14 @@
 @model PdfReportActionsViewModel
 @{
-    var passwordId = $"pdf-password-{Model.ControllerName}-{Model.ReportId}";
+    var passwordId = $"pdf-password-{Model.ControllerName}-{Model.Source}-{Model.ReportId}";
     var helpId = passwordId + "-help";
+    var reportUrl = Model.Source == "redstar"
+        ? Url.Content($"~/Patient/LabResults/RedStar/Report/{Model.ReportId}")
+        : Url.Action("Report", Model.ControllerName, new { area = "", id = Model.ReportId });
 }
-<form asp-area="" asp-controller="@Model.ControllerName" asp-action="Report" asp-route-id="@Model.ReportId"
+<form action="@reportUrl"
       method="post" rel="noopener" class="mt-3">
+    @Html.AntiForgeryToken()
     <div asp-validation-summary="All" class="text-danger" role="alert"></div>
     <label for="@passwordId" class="form-label small fw-semibold">
         Account password <span class="visually-hidden">for @Model.Description</span>

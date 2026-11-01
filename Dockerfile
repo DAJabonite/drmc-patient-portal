@@ -15,6 +15,7 @@ RUN bash /tmp/setup-ocr-ubuntu.sh \
     && install -d -m 0700 -o app -g app /var/lib/drmc/keys /var/lib/drmc/storage \
        /var/lib/drmc/storage/patient-documents /var/lib/drmc/storage/temporary-uploads \
        /var/lib/drmc/storage/lab-reports /var/lib/drmc/storage/radiology-reports \
+       /var/lib/drmc/storage/redstar-lab-reports \
        /var/lib/drmc/storage/advisory-images /var/lib/drmc/storage/imports
 WORKDIR /app
 COPY --from=build /publish/ ./
