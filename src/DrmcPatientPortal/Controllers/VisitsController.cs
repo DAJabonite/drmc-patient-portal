@@ -15,15 +15,17 @@ public class VisitsController : Controller
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IAuditLogService _auditLog;
+    private readonly PatientReportQueries _reports;
 
     public VisitsController(
         ApplicationDbContext db,
         UserManager<ApplicationUser> userManager,
-        IAuditLogService auditLog)
+        IAuditLogService auditLog, PatientReportQueries reports)
     {
         _db = db;
         _userManager = userManager;
         _auditLog = auditLog;
+        _reports = reports;
     }
 
     // GET /Patient/Visits
@@ -125,14 +127,22 @@ public class VisitsController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
 
-        var encounter = await SqlReadRetry.RunAsync(_db, () => _db.ClinicalEncounters
-            .Include(e => e.LabResults.Where(l => l.Patient.PortalUserId == user.Id))
+        var encounter = await SqlReadRetry.RunAsync(_db, () => _db.ClinicalEncounters.AsNoTracking()
             .FirstOrDefaultAsync(e => e.Id == id && e.Patient.PortalUserId == user.Id));
 
         if (encounter is null)
         {
             return NotFound();
         }
+
+        var token = HttpContext.RequestAborted;
+        ViewData["LaboratoryRequests"] = (await _reports.LaboratoriesAsync(user.Id, token))
+            .Where(r => r.ClinicalEncounterId == encounter.Id).ToList();
+        ViewData["RadiologyRequests"] = (await _reports.RadiologyAsync(user.Id, token))
+            .Where(r => r.ClinicalEncounterId == encounter.Id).ToList();
+        encounter.Prescriptions = await SqlReadRetry.RunAsync(_db, () => _db.Prescriptions.AsNoTracking()
+            .Where(p => p.ClinicalEncounterId == encounter.Id && p.PatientRecordId == encounter.PatientRecordId
+                && p.Patient.PortalUserId == user.Id).OrderByDescending(p => p.PrescribedAt).ThenByDescending(p => p.Id).ToListAsync(token), token);
 
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
         await _auditLog.LogAsync(user.Id, "VIEW_ENCOUNTER_SUMMARY", $"ClinicalEncounter/{id}", "Viewed an owned encounter summary.", ip);

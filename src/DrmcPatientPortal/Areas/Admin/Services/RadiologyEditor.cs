@@ -29,6 +29,7 @@ public sealed class RadiologyEditor : ClinicalEditor<RadiologyStudy, RadiologyIn
 
     public override async Task ConfigureFormAsync(ApplicationDbContext db, ViewDataDictionary viewData, RadiologyInput input, OwnershipContext? context, CancellationToken token)
     {
+        viewData["Encounters"] = context is null ? [] : await EncounterLinks.OptionsAsync(db, context.Patient.Id, token);
         var id = viewData["RecordId"] as int?;
         var report = id.HasValue ? await SqlReadRetry.RunAsync(db, () => db.RadiologyStudies.AsNoTracking()
             .Where(s => s.Id == id.Value).Select(s => new { HasReport = s.ReportFileName != null, s.ReportSize, s.ReportUploadedAtUtc })
@@ -40,33 +41,46 @@ public sealed class RadiologyEditor : ClinicalEditor<RadiologyStudy, RadiologyIn
 
     public override RadiologyInput Input(ApplicationDbContext db, RadiologyStudy entity) => new()
     {
-        Modality = entity.Modality, PerformedAt = entity.PerformedAt.Date, ReleasedAt = entity.ReleasedAt,
+        ClinicalEncounterId = entity.ClinicalEncounterId, StudyName = entity.StudyName,
+        Modality = entity.Modality, PerformedAt = entity.PerformedAt?.Date, ReleasedAt = entity.ReleasedAt,
         Status = entity.Status, AmendmentNote = entity.AmendmentNote
     };
 
-    public override Task<WriteResult> ApplyAsync(ApplicationDbContext db, RadiologyInput input, RadiologyStudy entity, OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
+    public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, RadiologyInput input, RadiologyStudy entity, OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
     {
-        if (context is null) return Task.FromResult(WriteResult.Invalid("The patient record no longer exists."));
+        if (context is null) return WriteResult.Invalid("The patient record no longer exists.");
+        if (!await EncounterLinks.ValidAsync(db, input.ClinicalEncounterId, context.Patient.Id,
+            create || entity.ClinicalEncounterId.HasValue || input.Report is not null || input.Status is RadiologyStatus.Final or RadiologyStatus.Amended &&
+            (entity.Status != input.Status || entity.RequiresEncounterAssignment), token, lookups))
+            return WriteResult.Invalid("Select an existing encounter belonging to this patient.");
         if (input.Report is not null && !context.Patient.HasHospitalNumber)
-            return Task.FromResult(WriteResult.Invalid(LabUploadEditor.MissingHospitalNumberError));
-        if (create && input.Report is null) return Task.FromResult(WriteResult.Invalid("Choose the radiology report PDF."));
+            return WriteResult.Invalid(LabUploadEditor.MissingHospitalNumberError);
+        if ((input.Report is not null || entity.ReportFileName is not null || input.Status is RadiologyStatus.Final or RadiologyStatus.Amended) && input.PerformedAt is null)
+            return WriteResult.Invalid("Enter the actual study date before uploading or releasing a report.");
         if (input.Status is RadiologyStatus.Final or RadiologyStatus.Amended && entity.ReportFileName is null && input.Report is null)
-            return Task.FromResult(WriteResult.Invalid("An attached PDF is required for PDF release."));
-        var performedAt = !create && entity.PerformedAt.Date == input.PerformedAt!.Value.Date
-            ? entity.PerformedAt : WallTime(input.PerformedAt!.Value.Date);
+            return WriteResult.Invalid("An attached PDF is required for PDF release.");
+        if (input.Status == RadiologyStatus.PendingVerification && entity.ReportFileName is null && input.Report is null)
+            return WriteResult.Invalid("Attach the PDF before marking it pending verification.");
+        if (input.Status == RadiologyStatus.Cancelled && (input.Report is not null || entity.ReportFileName is not null))
+            return WriteResult.Invalid("Only a request without an attached report can be cancelled.");
+        var performedAt = input.PerformedAt is null ? (DateTime?)null : !create && entity.PerformedAt?.Date == input.PerformedAt.Value.Date
+            ? entity.PerformedAt : WallTime(input.PerformedAt.Value.Date);
         var releasedAt = input.ReleasedAt is null ? (DateTime?)null : WallTime(input.ReleasedAt.Value, create ? null : entity.ReleasedAt);
-        if (releasedAt < performedAt) return Task.FromResult(WriteResult.Invalid("Release cannot precede the exam."));
+        if (releasedAt < performedAt) return WriteResult.Invalid("Release cannot precede the exam.");
         if (create)
         {
             entity.PatientRecordId = context.Patient.Id;
             entity.AccessionNumber = "PORTAL-RAD-" + Guid.NewGuid().ToString("N").ToUpperInvariant();
-            entity.StudyName = "Radiology report";
         }
         entity.Modality = input.Modality;
+        entity.StudyName = input.StudyName.Trim();
+        entity.ClinicalEncounterId = input.ClinicalEncounterId;
+        if (input.ClinicalEncounterId.HasValue) entity.RequiresEncounterAssignment = false;
+        entity.PatientActivityAtUtc = DateTime.UtcNow;
         entity.PerformedAt = performedAt;
         entity.ReleasedAt = releasedAt;
-        entity.Status = input.Status;
+        entity.Status = input.Report is not null && input.Status == RadiologyStatus.InProgress ? RadiologyStatus.PendingVerification : input.Status;
         if (input.Status == RadiologyStatus.Amended) entity.AmendmentNote = input.AmendmentNote!.Trim();
-        return Task.FromResult(WriteResult.Success);
+        return WriteResult.Success;
     }
 }

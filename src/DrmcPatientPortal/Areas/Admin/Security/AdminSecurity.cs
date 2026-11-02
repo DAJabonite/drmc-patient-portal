@@ -68,6 +68,7 @@ public static class AdminPolicies
         ["RegistrationCodes"] = PatientServices,
         ["RedStar"] = RedStar,
         ["RedStarImports"] = RedStar,
+        ["RedStarLabReports"] = RedStar,
     };
 
     public static string For(string? controller) => controller is not null && Controllers.TryGetValue(controller, out var policy) ? policy : Admin;

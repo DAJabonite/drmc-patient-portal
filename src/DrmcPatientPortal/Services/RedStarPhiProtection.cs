@@ -19,13 +19,14 @@ public sealed class RedStarPhiProtection(IDataProtectionProvider provider, strin
     public const string Envelope = "rsphi:v1:";
     public static readonly RedStarProtectedTable[] Tables =
     [
-        new(typeof(RedStarPatient), "RedStarPatients", "PatientCode", "CodeName", "FullName", "HospitalNumber", "ContactNumber", "Address", "PortalUserId"),
+        new(typeof(RedStarPatient), "RedStarPatients", "PatientCode", "CodeName", "FullName", "HospitalNumber", "ContactNumber", "Address", "PortalUserId", "HospitalMappingFingerprint"),
+        new(typeof(RedStarLabReport), "RedStarLabReports", "Description"),
         new(typeof(RedStarEnrollment), "RedStarEnrollments", "ReceivingHub", "Medicines", "SourceStatus"),
         new(typeof(RedStarAppointment), "RedStarAppointments", "Label"),
         new(typeof(RedStarDispense), "RedStarDispenses", "Medicines", "RecordedById"),
         new(typeof(RedStarRescheduleRequest), "RedStarRescheduleRequests", "Reason"),
         new(typeof(RedStarReminder), "RedStarReminders", "PortalUserId"),
-        new(typeof(RedStarAudit), "RedStarAudits", "ActorId"),
+        new(typeof(RedStarAudit), "RedStarAudits", "ActorId", "Details"),
         new(typeof(RedStarImportBatch), "RedStarImportBatches", "CreatedById")
     ];
     private readonly object gate = new();

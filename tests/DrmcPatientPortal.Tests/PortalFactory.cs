@@ -68,6 +68,7 @@ public sealed class PortalFactory : WebApplicationFactory<Program>, IAsyncLifeti
         builder.UseSetting("PatientDocuments:TemporaryPath", Path.Combine(_storageRoot, "uploads"));
         builder.UseSetting("LabReports:RootPath", Path.Combine(_storageRoot, "reports"));
         builder.UseSetting("RadiologyReports:RootPath", Path.Combine(_storageRoot, "radiology-reports"));
+        builder.UseSetting("RedStarLabReports:RootPath", Path.Combine(_storageRoot, "redstar-reports"));
         builder.UseSetting("ResultStaging:Enabled", "false");
         builder.UseSetting("ResultStaging:LaboratoryPath", Path.Combine(_storageRoot, "result-staging", "Laboratory"));
         builder.UseSetting("ResultStaging:RadiologyPath", Path.Combine(_storageRoot, "result-staging", "Radiology"));

@@ -229,73 +229,51 @@ public sealed class StagedResultIngestionProcessor(ApplicationDbContext db, ILab
         else
         {
             var date = parsed!.Date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
-            var end = date.AddDays(1);
             var hash = Convert.ToHexString(SHA256.HashData(content!));
             await using var stream = new MemoryStream(content!, writable: false);
             var upload = new FormFile(stream, 0, stream.Length, "report", name)
             { Headers = new HeaderDictionary(), ContentType = "application/pdf" };
-            var duplicate = false;
-            var ambiguous = false;
-            int recordId = 0;
+            int recordId;
+            bool duplicate;
+            // A filename identifies a patient and exam date, not the originating order.
+            // Only a previous receipt/hash is safe to replay automatically; new files wait for staff assignment.
             if (kind == StagedResultKind.Laboratory)
             {
-                var results = (await db.LabResults.Where(r => r.PatientRecordId == patient!.Id && r.CollectedAt >= date && r.CollectedAt < end).ToListAsync(token))
-                    .Where(r => string.Equals(PatientNames.Clean(r.TestName), parsed.TestName, StringComparison.OrdinalIgnoreCase)).ToArray();
-                ambiguous = results.Length > 1;
-                if (!ambiguous)
+                var existing = await db.LabResults.Where(r => r.PatientRecordId == patient!.Id && r.ReportSha256 == hash)
+                    .OrderBy(r => r.Id).FirstOrDefaultAsync(token);
+                duplicate = existing is not null;
+                if (existing is null)
                 {
-                    var result = results.SingleOrDefault();
-                    if (result is null)
-                    {
-                        result = new LabResult { PatientRecordId = patient!.Id, AccessionNumber = "STAGED-LAB-" + Guid.NewGuid().ToString("N").ToUpperInvariant(),
-                            TestName = parsed.TestName!, CollectedAt = date, Category = LabCategory.SpecialDiagnostics, PerformingUnit = "" };
-                        db.LabResults.Add(result);
-                        await db.SaveChangesAsync(token);
-                    }
-                    var previousHash = result.ReportSha256;
-                    if (previousHash is null && result.ReportFileName is not null)
-                        previousHash = Convert.ToHexString(SHA256.HashData(await labs.ReadAsync(result.Id, result.ReportFileName, token)));
-                    duplicate = result.ReportFileName is not null && previousHash == hash;
-                    if (duplicate) result.ReportSha256 = hash;
-                    else
-                    {
-                        ReportAttachments.Apply(result, await labs.StoreAsync(result.Id, upload, token), clock.GetUtcNow().UtcDateTime);
-                        result.Status = "Pending Verification"; result.ReleasedAt = null;
-                    }
-                    recordId = result.Id;
+                    existing = new LabResult { PatientRecordId = patient!.Id,
+                        AccessionNumber = "STAGED-LAB-" + Guid.NewGuid().ToString("N").ToUpperInvariant(),
+                        TestName = parsed.TestName!, CollectedAt = date, Category = LabCategory.SpecialDiagnostics,
+                        PerformingUnit = "", Status = "Pending Verification", ReleasedAt = null,
+                        RequiresEncounterAssignment = true };
+                    db.LabResults.Add(existing);
+                    await db.SaveChangesAsync(token);
+                    ReportAttachments.Apply(existing, await labs.StoreAsync(existing.Id, upload, token), clock.GetUtcNow().UtcDateTime);
                 }
+                recordId = existing.Id;
             }
             else
             {
-                var results = await db.RadiologyStudies.Where(r => r.PatientRecordId == patient!.Id && r.PerformedAt >= date && r.PerformedAt < end
-                    && r.Modality == parsed.Modality).ToListAsync(token);
-                ambiguous = results.Count > 1;
-                if (!ambiguous)
+                var existing = await db.RadiologyStudies.Where(r => r.PatientRecordId == patient!.Id && r.ReportSha256 == hash)
+                    .OrderBy(r => r.Id).FirstOrDefaultAsync(token);
+                duplicate = existing is not null;
+                if (existing is null)
                 {
-                    var result = results.SingleOrDefault();
-                    if (result is null)
-                    {
-                        result = new RadiologyStudy { PatientRecordId = patient!.Id, AccessionNumber = "STAGED-RAD-" + Guid.NewGuid().ToString("N").ToUpperInvariant(),
-                            StudyName = parsed.Modality!.Value.DisplayName(), Modality = parsed.Modality.Value, PerformedAt = date };
-                        db.RadiologyStudies.Add(result);
-                        await db.SaveChangesAsync(token);
-                    }
-                    var previousHash = result.ReportSha256;
-                    if (previousHash is null && result.ReportFileName is not null)
-                        previousHash = Convert.ToHexString(SHA256.HashData(await radiology.ReadAsync(result.Id, result.ReportFileName, token)));
-                    duplicate = result.ReportFileName is not null && previousHash == hash;
-                    if (duplicate) result.ReportSha256 = hash;
-                    else
-                    {
-                        ReportAttachments.Apply(result, await radiology.StoreAsync(result.Id, upload, token), clock.GetUtcNow().UtcDateTime);
-                        result.Status = RadiologyStatus.PendingVerification; result.ReleasedAt = null;
-                    }
-                    recordId = result.Id;
+                    existing = new RadiologyStudy { PatientRecordId = patient!.Id,
+                        AccessionNumber = "STAGED-RAD-" + Guid.NewGuid().ToString("N").ToUpperInvariant(),
+                        StudyName = parsed.Modality!.Value.DisplayName(), Modality = parsed.Modality.Value, PerformedAt = date,
+                        Status = RadiologyStatus.PendingVerification, ReleasedAt = null, RequiresEncounterAssignment = true };
+                    db.RadiologyStudies.Add(existing);
+                    await db.SaveChangesAsync(token);
+                    ReportAttachments.Apply(existing, await radiology.StoreAsync(existing.Id, upload, token), clock.GetUtcNow().UtcDateTime);
                 }
+                recordId = existing.Id;
             }
-            action = ambiguous ? RejectedAction : duplicate ? DuplicateAction : IngestedAction;
-            details = ambiguous ? $"Warning; reason=AmbiguousResult; kind={kind}; quarantine required."
-                : $"kind={kind}; recordId={recordId}; duplicate={duplicate}.";
+            action = duplicate ? DuplicateAction : IngestedAction;
+            details = $"kind={kind}; recordId={recordId}; duplicate={duplicate}; encounter assignment required for new files.";
         }
         // AuditLogService shares this context. The attachment and outcome either both commit or neither does.
         await audit.LogAsync(null, action, resource, details, "system");

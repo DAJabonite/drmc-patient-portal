@@ -64,6 +64,7 @@ docker compose exec -T --index 1 portal sh -ec '
   test -w /var/lib/drmc/storage/patient-documents
   test -w /var/lib/drmc/storage/temporary-uploads
   test -w /var/lib/drmc/storage/lab-reports
+  test -w /var/lib/drmc/storage/redstar-lab-reports
   test -w /var/lib/drmc/storage/imports
   grep -q encryptedSecret /var/lib/drmc/keys/key-*.xml
   printf synthetic-persistence-fixture > /var/lib/drmc/storage/smoke-marker

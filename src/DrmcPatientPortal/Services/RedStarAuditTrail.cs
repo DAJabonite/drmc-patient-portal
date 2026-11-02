@@ -6,9 +6,9 @@ namespace DrmcPatientPortal.Services;
 
 public static class RedStarAuditTrail
 {
-    public static async Task RecordAsync(ApplicationDbContext db, string actor, string action, string subject, CancellationToken token = default)
+    public static async Task RecordAsync(ApplicationDbContext db, string actor, string action, string subject, CancellationToken token = default, string? details = null)
     {
-        db.RedStarAudits.Add(new RedStarAudit { ActorId = actor, Action = action, Subject = subject, TimestampUtc = DateTimeOffset.UtcNow });
+        db.RedStarAudits.Add(new RedStarAudit { ActorId = actor, Action = action, Subject = subject, Details = details, TimestampUtc = DateTimeOffset.UtcNow });
         try { await db.SaveChangesAsync(token); }
         catch (Exception error) when (error is not OperationCanceledException and not DbUpdateConcurrencyException)
         { throw new AuditLogPersistenceException("Private access audit could not be recorded.", error); }

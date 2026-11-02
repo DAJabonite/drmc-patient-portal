@@ -19,6 +19,54 @@ public sealed class RadiologyStudiesController(ApplicationDbContext db, AdminWri
 {
     private string? previousReport;
 
+    [HttpGet]
+    public async Task<IActionResult> NeedsEncounterAssignment(int page = 1, CancellationToken token = default)
+    {
+        var query = Database.RadiologyStudies.Include(l => l.Patient).Where(l => l.RequiresEncounterAssignment);
+        var count = await query.CountAsync(token);
+        page = Math.Clamp(page, 1, Math.Max(1, (count + 24) / 25));
+        var rows = await query.OrderBy(l => l.Id).Skip((page - 1) * 25).Take(25).ToListAsync(token);
+        await AdminAudit.ViewAsync(Database, User, "RadiologyStudies", rows.Select(l => l.PatientRecordId), "Needs encounter assignment", token);
+        return View("/Areas/Admin/Views/Shared/EncounterAssignmentQueue.cshtml", new AdminList("Needs encounter assignment",
+            rows.Select(l => new AdminRow(l.Id, l.StudyName, l.Patient.FullName + " | Hospital number: " + l.Patient.HospitalNumber + " | " +
+                (l.PerformedAt.HasValue ? l.PerformedAt.Value.ToString("yyyy-MM-dd") : "Test date not recorded"), l.PatientRecordId)).ToArray(), null, page, count));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AssignEncounter(int id, CancellationToken token)
+    {
+        var source = await Database.RadiologyStudies.Include(l => l.Patient).SingleOrDefaultAsync(l => l.Id == id && l.RequiresEncounterAssignment, token);
+        if (source is null) return NotFound();
+        await AdminAudit.ViewAsync(Database, User, "RadiologyStudies", [source.PatientRecordId], "Assign encounter", token);
+        ViewData["Encounters"] = await EncounterLinks.OptionsAsync(Database, source.PatientRecordId, token);
+        var pending = await Database.RadiologyStudies.Include(l => l.Encounter).Where(l => l.PatientRecordId == source.PatientRecordId
+            && l.ClinicalEncounterId != null && !l.RequiresEncounterAssignment && l.ReportFileName == null && l.Status != RadiologyStatus.Cancelled)
+            .OrderByDescending(l => l.Id).ToListAsync(token);
+        var choices = pending.Select(l => new PendingRequestChoice(PendingRequestKeys.Create(l.Id, Database.Entry(l).Property<byte[]>("RowVersion").CurrentValue!),
+            $"{l.Encounter!.EncounterReference} · {l.AccessionNumber} · {l.StudyName}", l.ClinicalEncounterId!.Value)).ToArray();
+        return View("/Areas/Admin/Views/Shared/AssignEncounter.cshtml", new ResultAssignmentPage(id, source.StudyName, source.Patient.FullName,
+            source.Patient.HospitalNumber ?? "", source.PerformedAt, new ResultAssignmentInput { RowVersion = Convert.ToBase64String(Database.Entry(source).Property<byte[]>("RowVersion").CurrentValue!) }, choices));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> AssignEncounter(int id, ResultAssignmentInput input, CancellationToken token)
+    {
+        if (ModelState.IsValid)
+        {
+            var result = await Writes.RunAsync(async database =>
+            {
+                try { return await ResultAssignments.RadiologyAsync(database, storage, id, input, User, token); }
+                catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
+                { return WriteResult.Invalid("The encrypted report could not be read or stored. Restore storage access and retry."); }
+            }, token);
+            if (result.Succeeded) return RedirectToAction(nameof(NeedsEncounterAssignment));
+            if (result.Conflict) Response.StatusCode = 409;
+            ModelState.AddModelError("", result.Error!);
+        }
+        return await AssignEncounter(id, token);
+    }
+
+
     protected override async Task<WriteResult> SaveRecordAsync(ApplicationDbContext database, RadiologyInput input, RadiologyStudy entity, CancellationToken token)
     {
         // Obtain the generated ID within the same transaction before binding PDF encryption to it.
@@ -74,6 +122,8 @@ public sealed class RadiologyStudiesController(ApplicationDbContext db, AdminWri
             var study = await database.RadiologyStudies.SingleOrDefaultAsync(s => s.Id == id, token);
             if (study is null || !version.SequenceEqual(database.Entry(study).Property<byte[]>("RowVersion").CurrentValue!)) return WriteResult.Stale;
             if (study.ReportFileName is null) return WriteResult.Invalid("An attached PDF is required for PDF release.");
+            if (study.RequiresEncounterAssignment || study.PerformedAt is null || !await EncounterLinks.ValidAsync(database, study.ClinicalEncounterId, study.PatientRecordId, true, token))
+                return WriteResult.Invalid("Assign the originating encounter and actual study date before releasing the PDF.");
             if (releasedAt < study.PerformedAt) return WriteResult.Invalid("Release cannot precede the exam.");
             // Verify the current attachment can actually be opened before publishing it.
             try { await storage.ReadAsync(study.Id, study.ReportFileName, token); }
@@ -81,6 +131,7 @@ public sealed class RadiologyStudiesController(ApplicationDbContext db, AdminWri
             { return WriteResult.Invalid("The attached PDF is unavailable. Try again after storage is restored."); }
             study.ReleasedAt = releasedAt;
             study.Status = status;
+            study.PatientActivityAtUtc = clock.GetUtcNow().UtcDateTime;
             if (status == RadiologyStatus.Amended) study.AmendmentNote = amendmentNote!.Trim();
             database.Entry(study).Property("RowVersion").OriginalValue = version;
             await AdminAudit.AddAsync(database, User, "Release PDF", "RadiologyStudies", id.ToString(System.Globalization.CultureInfo.InvariantCulture),

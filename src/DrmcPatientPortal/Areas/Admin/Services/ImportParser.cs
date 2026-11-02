@@ -87,7 +87,7 @@ public static class ImportParser
         do
         {
             var template = ImportTemplates.All.SingleOrDefault(t => t.Sheet == reader.Name)
-                ?? throw new ImportRejectedException("The workbook contains an unknown sheet.");
+                ?? throw new ImportRejectedException(reader.Name == "Prescriptions_v1" ? "Prescription imports now require an encounter. Download the current workbook with Prescriptions_v2 and provide SourceEncounterKey." : "The workbook contains an unknown sheet. Download the current workbook template.");
             if (!sheets.Add(reader.Name) || !reader.Read()) throw new ImportRejectedException("Each sheet needs exactly one template header.");
             Header(Enumerable.Range(0, reader.FieldCount).Select(i => Convert.ToString(reader.GetValue(i), CultureInfo.InvariantCulture) ?? "").ToArray(), template);
             var number = 1;
@@ -113,7 +113,7 @@ public static class ImportParser
     private static void Header(string[] header, ImportTemplate template)
     {
         if (!header.SequenceEqual(template.Columns, StringComparer.Ordinal))
-            throw new ImportRejectedException("Columns must exactly match the selected version 1 template, in order. Unknown or Identity columns are not accepted.");
+            throw new ImportRejectedException($"Columns must exactly match the current {template.Sheet} template, in order. Download the current template. Unknown or Identity columns are not accepted.");
     }
 
     private static void Add(List<ImportRow> rows, ImportTemplate template, int number, string[] values)

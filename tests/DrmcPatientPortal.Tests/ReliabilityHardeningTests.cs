@@ -391,7 +391,8 @@ public sealed class ReliabilityHardeningTests(PortalFactory factory)
         var correct = await client.PostFormAsync(path, action, new Dictionary<string, string> { ["password"] = PortalFactory.Password, ["intent"] = "view" });
         Assert.Equal("application/pdf", correct.Content.Headers.ContentType?.MediaType);
         Assert.Equal(2, await Db(db => db.Users.Where(u => u.Id == account.Id).Select(u => u.AccessFailedCount).SingleAsync()));
-        var rejected = await client.PostFormAsync(path, action, new Dictionary<string, string> { ["password"] = PortalFactory.Password, ["intent"] = "download" });
+        var rejected = await client.PostFormAsync(path, action, new Dictionary<string, string>
+        { ["password"] = PortalFactory.Password, ["intent"] = "download", ["Input.Email"] = "another-bucket@fixtures.test" });
         Assert.Equal(HttpStatusCode.TooManyRequests, rejected.StatusCode); Assert.NotNull(rejected.Headers.RetryAfter);
     }
 
@@ -461,12 +462,13 @@ public sealed class ReliabilityHardeningTests(PortalFactory factory)
             db.PatientRecords.Add(patient); await db.SaveChangesAsync();
             for (var i = 0; i < 31; i++)
             {
-                db.ClinicalEncounters.Add(new() { PatientRecordId = patient.Id, EncounterDate = DateTime.Today, EncounterReference = $"PAGE-{patient.Id}-{i:D2}" });
-                db.LabResults.Add(new() { PatientRecordId = patient.Id, CollectedAt = ClinicalClock.Today.AddDays(-i), AccessionNumber = $"PAGE-{patient.Id}-{i:D2}", TestName = "Paging lab", Status = "Available", ReleasedAt = ClinicalClock.Today, ReportFileName = Guid.NewGuid().ToString("N") });
-                db.RadiologyStudies.Add(new() { PatientRecordId = patient.Id, PerformedAt = ClinicalClock.Today.AddDays(-i), AccessionNumber = $"PAGE-{patient.Id}-{i:D2}", StudyName = "Paging radiology", Status = RadiologyStatus.Final, ReleasedAt = ClinicalClock.Today, ReportFileName = Guid.NewGuid().ToString("N") });
+                var encounter = new ClinicalEncounter { PatientRecordId = patient.Id, EncounterDate = ClinicalClock.Today, EncounterReference = $"PAGE-{patient.Id}-{i:D2}" };
+                db.ClinicalEncounters.Add(encounter);
+                db.LabResults.Add(new() { PatientRecordId = patient.Id, Encounter = encounter, CollectedAt = ClinicalClock.Today.AddDays(-i), AccessionNumber = $"PAGE-{patient.Id}-{i:D2}", TestName = "Paging lab", Status = "Available", ReleasedAt = ClinicalClock.Today, ReportFileName = Guid.NewGuid().ToString("N") });
+                db.RadiologyStudies.Add(new() { PatientRecordId = patient.Id, Encounter = encounter, PerformedAt = ClinicalClock.Today.AddDays(-i), AccessionNumber = $"PAGE-{patient.Id}-{i:D2}", StudyName = "Paging radiology", Status = RadiologyStatus.Final, ReleasedAt = ClinicalClock.Today, ReportFileName = Guid.NewGuid().ToString("N") });
                 db.PatientIdDocuments.Add(new() { PatientUserId = account.Id, IdType = "Passport", IdNumber = $"ID{i:D2}", IsManualEntry = true });
                 db.PatientAllergies.Add(new() { PatientRecordId = patient.Id, Allergen = $"Allergen{i:D2}" });
-                db.Prescriptions.Add(new() { PatientRecordId = patient.Id, RxNumber = $"PAGE-{patient.Id}-{i:D2}", GenericName = $"Medication{i:D2}", PrescribedAt = DateTime.Today, ValidUntil = DateTime.Today.AddDays(30),
+                db.Prescriptions.Add(new() { PatientRecordId = patient.Id, Encounter = encounter, RxNumber = $"PAGE-{patient.Id}-{i:D2}", GenericName = $"Medication{i:D2}", PrescribedAt = DateTime.Today, ValidUntil = DateTime.Today.AddDays(30),
                     DoseSchedules = [new() { DoseTime = new TimeOnly(8, 0) }] });
             }
             await db.SaveChangesAsync(); return patient.Id;
@@ -482,7 +484,7 @@ public sealed class ReliabilityHardeningTests(PortalFactory factory)
             Assert.Contains(parameter + "=1", second);
             if (path is "/Patient/LabResults" or "/Patient/Radiology")
             {
-                var group = path.EndsWith("LabResults", StringComparison.Ordinal) ? "lab-date-group" : "radiology-date-group";
+                var group = path.EndsWith("LabResults", StringComparison.Ordinal) ? "lab-encounter-group" : "radiology-encounter-group";
                 Assert.Equal(25, System.Text.RegularExpressions.Regex.Matches(first, $"data-testid=\"{group}\"").Count);
                 Assert.Equal(6, System.Text.RegularExpressions.Regex.Matches(second, $"data-testid=\"{group}\"").Count);
                 Assert.Equal(25, System.Text.RegularExpressions.Regex.Matches(first, $"action=\"{path}/Report/\\d+\"").Count);
@@ -503,7 +505,7 @@ public sealed class ReliabilityHardeningTests(PortalFactory factory)
         var principal = await scope.ServiceProvider.GetRequiredService<IUserClaimsPrincipalFactory<ApplicationUser>>().CreateAsync(user!);
         controller.ControllerContext = new() { HttpContext = new DefaultHttpContext { User = principal, RequestServices = scope.ServiceProvider } };
         var dashboard = Assert.IsType<PatientDashboardViewModel>(Assert.IsType<ViewResult>(await controller.Home()).Model);
-        Assert.Single(dashboard.Encounters); Assert.Single(dashboard.LabResults); Assert.Equal(31, dashboard.EncountersCount); Assert.Equal(31, dashboard.LabResultsCount);
+        Assert.Single(dashboard.Encounters); Assert.Equal(2, dashboard.LabResults.Count); Assert.Equal(31, dashboard.EncountersCount); Assert.Equal(31, dashboard.LabResultsCount);
         Assert.Equal(31, await Db(db => db.MedicationDoseSchedules.CountAsync(s => s.Prescription.PatientRecordId == patientId)));
     }
 

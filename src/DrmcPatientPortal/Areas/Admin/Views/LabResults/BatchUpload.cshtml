@@ -1,0 +1,33 @@
+@model LabBatchInput
+@{
+    ViewData["Title"] = "Upload laboratory PDFs";
+    var context = (OwnershipContext)ViewData["Context"]!;
+    var requests = (IReadOnlyList<PendingRequestChoice>)ViewData["Requests"]!;
+}
+<h1 class="admin-title">Upload laboratory PDFs</h1>
+<partial name="_Context" model="context" />
+<p>Select one encounter and actual test date for this batch. Each PDF can fulfill an existing request or create a new result. Reports wait for verification before release.</p>
+<form method="post" enctype="multipart/form-data" id="labBatchForm" class="admin-card p-4">
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    <div class="mb-3"><label asp-for="ClinicalEncounterId" class="form-label"></label><select asp-for="ClinicalEncounterId" asp-items='@(ViewData["Encounters"] as IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)' class="form-select" required><option value="">Select this patient's encounter</option></select><span asp-validation-for="ClinicalEncounterId" class="text-danger"></span></div>
+    <div class="mb-3"><label asp-for="CollectedAt" class="form-label"></label><input asp-for="CollectedAt" type="date" class="form-control" required /><span asp-validation-for="CollectedAt" class="text-danger"></span></div>
+    <div class="mb-3"><label for="batchFiles" class="form-label">Lab PDF files</label><input id="batchFiles" name="Files" type="file" accept=".pdf,application/pdf" multiple required class="form-control" aria-describedby="batchHelp" /><p id="batchHelp" class="form-text">Choose up to 10 PDFs, up to 10 MiB each and 25 MiB combined. When retrying a rejected batch, select the files again.</p></div>
+    <div id="batchItems" aria-live="polite"></div>
+    <template id="batchItemTemplate">
+        <fieldset class="border rounded p-3 mb-3">
+            <legend class="h6 float-none w-auto px-2" data-file-name></legend>
+            <label class="form-label" data-target-label>Existing pending request</label>
+            <select class="form-select mb-2" data-field="ExistingRequest">
+                <option value="">Create a new result</option>
+                @foreach (var request in requests) { <option value="@request.Key" data-encounter="@request.EncounterId">@request.Label</option> }
+            </select>
+            <label class="form-label" data-description-label>Exam type / description for a new result</label>
+            <input class="form-control" data-field="Description" maxlength="200" />
+            <p class="form-text mb-0">Selecting an existing request preserves its description and reference. A request can receive one PDF in this batch.</p>
+        </fieldset>
+    </template>
+    <noscript><p class="text-danger">Use the single-request form when JavaScript is unavailable.</p></noscript>
+    <button class="btn btn-primary" type="submit">Upload PDFs for verification</button>
+    <a asp-action="Index" asp-route-contextId="@context.Patient.Id" class="btn btn-outline-secondary">Back to laboratory records</a>
+</form>
+@section Scripts { <script src="~/js/lab-batch-upload.js" asp-append-version="true"></script> }

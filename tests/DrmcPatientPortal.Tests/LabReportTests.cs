@@ -41,6 +41,7 @@ public sealed class LabReportTests(PortalFactory factory)
     private static Dictionary<string, string> Fields(string? version = null) => new()
     {
         ["Status"] = "Available",
+        ["TestName"] = "Synthetic uploaded laboratory report",
         ["CollectedAt"] = ClinicalClock.Today.AddDays(-2).ToString("yyyy-MM-dd"),
         ["ReleasedAt"] = PatientResultsDisclosure.ManilaNow.AddDays(-1).ToString("yyyy-MM-ddTHH:mm:ss"),
         ["RowVersion"] = version ?? ""
@@ -52,6 +53,11 @@ public sealed class LabReportTests(PortalFactory factory)
         var page = await admin.GetStringAsync(path);
         Assert.Contains("enctype=\"multipart/form-data\"", page);
         Assert.Contains("name=\"Report\"", page);
+        if (!fields.ContainsKey("ClinicalEncounterId"))
+        {
+            var choices = Regex.Match(page, "<select[^>]*name=\"ClinicalEncounterId\"[^>]*>([\\s\\S]*?)</select>").Groups[1].Value;
+            fields["ClinicalEncounterId"] = Regex.Match(choices, "<option[^>]*value=\"([1-9][0-9]*)\"").Groups[1].Value;
+        }
         using var body = new MultipartFormDataContent();
         foreach (var (key, value) in fields) body.Add(new StringContent(value), key);
         body.Add(new StringContent(StaffAccounts.Token(page)), "__RequestVerificationToken");
@@ -117,11 +123,11 @@ public sealed class LabReportTests(PortalFactory factory)
         Assert.DoesNotContain("Check Status &amp; Location", index);
         Assert.DoesNotContain("Claiming Unit:", index);
         var response = await patient.GetAsync($"/Patient/LabResults/Details/{id}");
-        Assert.Equal(available ? HttpStatusCode.OK : HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var detail = await response.Content.ReadAsStringAsync();
         Assert.Equal(available, detail.Contains("name=\"password\""));
         var dashboard = await patient.GetStringAsync("/Patient/Home");
-        if (!available) Assert.DoesNotContain($"/Patient/LabResults/Details/{id}", dashboard);
+        Assert.Contains("Lab results", dashboard);
     }
 
     [Fact]

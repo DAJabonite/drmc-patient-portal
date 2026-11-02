@@ -26,7 +26,7 @@
             var (lead, chips) = AdminChips.Split(row.Summary);
             <tr><td class="text-break" data-label="Record"><span class="fw-semibold">@row.Label</span><div class="admin-id">#@row.Id</div></td><td class="text-break" data-label="Details">@lead <span class="admin-chips">@foreach (var chip in chips) { <span class="@AdminChips.Css(chip)">@chip</span> }</span></td><td class="text-end" data-label="Select">
                 @if (action == "Index") { <a asp-area="Admin" asp-action="Index" asp-route-contextId="@row.Id" class="btn btn-sm btn-outline-primary" aria-label="Select @row.Label">Select <i class="bi bi-chevron-right" aria-hidden="true"></i></a> }
-                else { <a asp-area="Admin" asp-action="Create" asp-route-id="@row.Id" class="btn btn-sm btn-outline-primary" aria-label="Select @row.Label">Select <i class="bi bi-chevron-right" aria-hidden="true"></i></a> }
+                else { <a asp-area="Admin" asp-action="@action" asp-route-id="@row.Id" class="btn btn-sm btn-outline-primary" aria-label="Select @row.Label">Select <i class="bi bi-chevron-right" aria-hidden="true"></i></a> }
             </td></tr>
         }
         </tbody></table></div>

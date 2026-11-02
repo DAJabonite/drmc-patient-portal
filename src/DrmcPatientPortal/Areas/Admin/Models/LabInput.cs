@@ -9,9 +9,9 @@ public sealed class LabInput : PhysicianInput
     [Required, StringLength(100000), Display(Name = "Accession number")] public string AccessionNumber { get; set; } = "";
     [Required, StringLength(100000), Display(Name = "Test name")] public string TestName { get; set; } = "";
     [EnumDataType(typeof(LabCategory))] public LabCategory Category { get; set; }
-    [Required, Display(Name = "Collected at (Manila)")] public DateTime? CollectedAt { get; set; }
+    [Display(Name = "Collected at (Manila)")] public DateTime? CollectedAt { get; set; }
     [Display(Name = "Released at (Manila)")] public DateTime? ReleasedAt { get; set; }
-    [Required, RegularExpression("^(Available|In progress|Pending Verification)$")] public string Status { get; set; } = "Pending Verification";
+    [Required, RegularExpression("^(Available|In progress|Pending Verification|Cancelled)$")] public string Status { get; set; } = "In progress";
     [Display(Name = "Encounter")] public int? ClinicalEncounterId { get; set; }
     [StringLength(100000), Display(Name = "Result summary")] public string? ResultSummary { get; set; }
     [Required] public PhysicianChoice Pathologist { get; set; } = new();
@@ -20,6 +20,8 @@ public sealed class LabInput : PhysicianInput
     public override IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         foreach (var error in base.Validate(validationContext)) yield return error;
+        if ((Report is not null || Status == "Available") && CollectedAt is null)
+            yield return new ValidationResult("Enter the actual test date before uploading or releasing a report.", [nameof(CollectedAt)]);
         if (ReleasedAt < CollectedAt) yield return new ValidationResult("Release cannot precede collection.", [nameof(ReleasedAt)]);
         if (CollectedAt is { Kind: not DateTimeKind.Unspecified } || ReleasedAt is { Kind: not DateTimeKind.Unspecified })
             yield return new ValidationResult("Enter Manila wall time without a time-zone suffix.", [nameof(CollectedAt)]);

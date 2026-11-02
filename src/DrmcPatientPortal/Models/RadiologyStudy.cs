@@ -19,7 +19,9 @@ public class RadiologyStudy
     public string StudyName { get; set; } = string.Empty;         // e.g. "Chest X-ray, PA view"
     public RadiologyModality Modality { get; set; } = RadiologyModality.XRay;
     public string BodyRegion { get; set; } = string.Empty;
-    public DateTime PerformedAt { get; set; }
+    public DateTime? PerformedAt { get; set; }
+    public bool RequiresEncounterAssignment { get; set; }
+    public DateTime? PatientActivityAtUtc { get; set; }
     public DateTime? ReleasedAt { get; set; }
     public RadiologyStatus Status { get; set; } = RadiologyStatus.InProgress;
     public string? ReportFileName { get; set; }
@@ -61,5 +63,6 @@ public enum RadiologyStatus
     [Display(Name = "In progress")] InProgress,
     [Display(Name = "Pending verification")] PendingVerification,
     [Display(Name = "Final")] Final,
-    [Display(Name = "Amended")] Amended
+    [Display(Name = "Amended")] Amended,
+    [Display(Name = "Cancelled")] Cancelled
 }

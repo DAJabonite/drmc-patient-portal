@@ -1,0 +1,28 @@
+@model RedStarPatientReportPage
+@{
+    ViewData["Title"] = "Laboratory request";
+    var report = Model.Report;
+    var returnUrl = Context.Request.Query["returnUrl"].ToString();
+    var backUrl = Url.IsLocalUrl(returnUrl) ? Url.Content(returnUrl) : Url.Action("Index", "LabResults");
+}
+<section class="page-header"><div class="container">
+    <a href="@backUrl" class="text-white text-opacity-75 text-decoration-none small">Back to laboratory requests</a>
+    <h1 class="display-6 fw-bold mt-2 mb-0">Laboratory request</h1>
+</div></section>
+<section class="section py-5 bg-light"><div class="container" style="max-width:720px">
+    <article class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+        <h2 class="h5 fw-bold text-primary-drmc">@report.Description</h2>
+        <p class="mb-1"><a asp-controller="Visits" asp-action="Details" asp-route-id="@report.ClinicalEncounterId">Encounter @report.Encounter.EncounterReference</a> · @report.Encounter.EncounterDate.ToString("MMM d, yyyy")</p>
+        <p class="small text-muted mb-1">@(report.CollectedAt.HasValue ? $"Test date: {report.CollectedAt:MMM d, yyyy}" : "Test date not recorded")</p>
+        <p class="small mb-2">Status: @report.Status</p>
+        @if (Model.CanOpenPdf)
+        {
+            <partial name="_PdfReportActions" model='new PdfReportActionsViewModel("LabResults", report.Id, report.Description, "redstar")' />
+        }
+        else
+        {
+            <p class="text-muted mb-0">@(report.Status == "Cancelled" ? "This request was cancelled." : "A PDF is not available to view yet.")</p>
+        }
+        <nav class="pt-3 mt-3 border-top" aria-label="Request navigation"><a href="@backUrl" class="btn btn-outline-secondary">Back to laboratory requests</a></nav>
+    </article>
+</div></section>

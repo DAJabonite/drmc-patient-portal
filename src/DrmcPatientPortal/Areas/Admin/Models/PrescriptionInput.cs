@@ -5,6 +5,7 @@ namespace DrmcPatientPortal.Areas.Admin.Models;
 
 public sealed class PrescriptionInput : PhysicianInput
 {
+    [Display(Name = "Encounter Reference")] public int? ClinicalEncounterId { get; set; }
     [Required, StringLength(450), Display(Name = "Rx number")] public string RxNumber { get; set; } = "";
     [Required, StringLength(100000), Display(Name = "Generic name")] public string GenericName { get; set; } = "";
     [StringLength(100000), Display(Name = "Brand name")] public string? BrandName { get; set; }

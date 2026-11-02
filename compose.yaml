@@ -40,6 +40,7 @@ services:
       PatientDocuments__TemporaryPath: /var/lib/drmc/storage/temporary-uploads
       LabReports__RootPath: /var/lib/drmc/storage/lab-reports
       RadiologyReports__RootPath: /var/lib/drmc/storage/radiology-reports
+      RedStarLabReports__RootPath: /var/lib/drmc/storage/redstar-lab-reports
       AdvisoryImages__RootPath: /var/lib/drmc/storage/advisory-images
       Imports__StagingPath: /var/lib/drmc/storage/imports
     ports:

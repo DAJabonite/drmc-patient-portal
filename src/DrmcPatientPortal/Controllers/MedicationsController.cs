@@ -30,18 +30,33 @@ public class MedicationsController : Controller
 
     // GET /Patient/Medications
     [HttpGet("")]
-    public async Task<IActionResult> Index(int page = 1, int schedulePage = 1, int allergyPage = 1)
+    public async Task<IActionResult> Index(int page = 1, int schedulePage = 1, int allergyPage = 1, int legacyPage = 1,
+        string? dateRange = null, DateTime? startDate = null, DateTime? endDate = null)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
 
-        var owned = _db.Prescriptions.AsNoTracking().Where(p => p.Patient.PortalUserId == user.Id);
-        var pagination = await PortalPagination.CreateAsync(owned, _db, page);
-        ViewData["Pagination"] = pagination;
-        var prescriptions = await SqlReadRetry.RunAsync(_db, () => owned
-            .OrderByDescending(p => p.Status == PrescriptionStatus.Active)
-            .ThenByDescending(p => p.PrescribedAt)
-            .ThenByDescending(p => p.Id).Skip(pagination.Offset).Take(PortalPagination.Size).ToListAsync());
+        var owned = _db.Prescriptions.AsNoTracking().Where(p => p.Patient.PortalUserId == user.Id
+            && (p.ClinicalEncounterId == null || p.Encounter!.PatientRecordId == p.PatientRecordId));
+        var allPrescriptions = await SqlReadRetry.RunAsync(_db, () => owned.Include(p => p.Encounter).ToListAsync());
+        dateRange = dateRange is "30d" or "6m" or "year" or "custom" ? dateRange : null;
+        var bounds = PatientReportQueries.DateBounds(dateRange, startDate, endDate);
+        if (bounds.Error != null) ViewData["DateRangeError"] = bounds.Error;
+        var filtered = allPrescriptions.Where(p => p.Encounter != null
+            && (!bounds.Start.HasValue || p.Encounter.EncounterDate >= bounds.Start)
+            && (!bounds.End.HasValue || p.Encounter.EncounterDate < bounds.End)).ToList();
+        var groups = filtered.GroupBy(p => p.ClinicalEncounterId!.Value)
+            .OrderByDescending(g => g.Any(p => p.Status == PrescriptionStatus.Active))
+            .ThenByDescending(g => g.Max(p => p.PatientActivityAtUtc ?? p.PrescribedAt))
+            .ThenByDescending(g => g.First().Encounter!.EncounterDate).ThenByDescending(g => g.Key).ToList();
+        var pagination = PatientReportQueries.Pagination(groups.Count, page);
+        var legacy = dateRange == null || bounds.Error != null ? allPrescriptions.Where(p => p.ClinicalEncounterId == null)
+            .OrderByDescending(p => p.Status == PrescriptionStatus.Active).ThenByDescending(p => p.PrescribedAt).ThenByDescending(p => p.Id).ToList() : [];
+        var legacyPagination = PatientReportQueries.Pagination(legacy.Count, legacyPage, "legacyPage");
+        var prescriptionGroups = groups.Skip(pagination.Offset).Take(PortalPagination.Size).Select(g =>
+            new PrescriptionEncounterGroup(g.Key, g.First().Encounter!.EncounterReference, g.First().Encounter!.EncounterDate,
+                g.OrderByDescending(p => p.Status == PrescriptionStatus.Active).ThenByDescending(p => p.PrescribedAt).ThenByDescending(p => p.Id).ToList())).ToList();
+        var prescriptions = legacy.Skip(legacyPagination.Offset).Take(PortalPagination.Size).ToList();
 
         var allergyQuery = _db.PatientAllergies.AsNoTracking().Where(a => a.Patient.PortalUserId == user.Id);
         var allergyPagination = await PortalPagination.CreateAsync(allergyQuery, _db, allergyPage, "allergyPage");
@@ -61,7 +76,10 @@ public class MedicationsController : Controller
             Prescriptions = prescriptions,
             Allergies = allergies,
             ActiveCount = await SqlReadRetry.RunAsync(_db, () => owned.CountAsync(p => p.Status == PrescriptionStatus.Active)),
-            PrescriptionTotal = pagination.Total,
+            PrescriptionTotal = filtered.Count + legacy.Count,
+            PrescriptionGroups = prescriptionGroups, Pagination = pagination, LegacyPagination = legacyPagination,
+            SelectedDateRange = dateRange, SelectedStartDate = startDate, SelectedEndDate = endDate,
+            LegacyExcluded = dateRange != null && bounds.Error == null && allPrescriptions.Any(p => p.ClinicalEncounterId == null),
             Schedules = schedules, SchedulePagination = schedulePagination, AllergyPagination = allergyPagination
         };
 
@@ -76,8 +94,9 @@ public class MedicationsController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
 
-        var rx = await SqlReadRetry.RunAsync(_db, () => _db.Prescriptions
-            .FirstOrDefaultAsync(p => p.Id == id && p.Patient.PortalUserId == user.Id));
+        var rx = await SqlReadRetry.RunAsync(_db, () => _db.Prescriptions.AsNoTracking().Include(p => p.Encounter)
+            .FirstOrDefaultAsync(p => p.Id == id && p.Patient.PortalUserId == user.Id
+                && (p.ClinicalEncounterId == null || p.Encounter!.PatientRecordId == p.PatientRecordId)));
 
         if (rx is null)
         {
@@ -97,6 +116,13 @@ public class MedicationsIndexViewModel
     public RedStarRefillCard? RedStarRefill { get; set; }
     public IReadOnlyList<Prescription> Prescriptions { get; set; } = Array.Empty<Prescription>();
     public IReadOnlyList<PatientAllergy> Allergies { get; set; } = Array.Empty<PatientAllergy>();
+    public IReadOnlyList<PrescriptionEncounterGroup> PrescriptionGroups { get; set; } = [];
+    public PortalPagination Pagination { get; set; } = new(0, 1);
+    public PortalPagination LegacyPagination { get; set; } = new(0, 1, "legacyPage");
+    public string? SelectedDateRange { get; set; }
+    public DateTime? SelectedStartDate { get; set; }
+    public DateTime? SelectedEndDate { get; set; }
+    public bool LegacyExcluded { get; set; }
     public int ActiveCount { get; set; }
     public int PrescriptionTotal { get; set; }
     public IReadOnlyList<MedicationScheduleItem> Schedules { get; set; } = [];
@@ -105,3 +131,5 @@ public class MedicationsIndexViewModel
 }
 
 public sealed record MedicationScheduleItem(TimeOnly DoseTime, string GenericName, string Dosage);
+
+public sealed record PrescriptionEncounterGroup(int? EncounterId, string Reference, DateTime? Date, IReadOnlyList<Prescription> Prescriptions);

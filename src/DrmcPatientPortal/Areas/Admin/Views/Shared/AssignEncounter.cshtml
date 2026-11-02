@@ -1,0 +1,13 @@
+@model ResultAssignmentPage
+@{ ViewData["Title"] = "Assign originating encounter"; }
+<h1 class="admin-title">Assign originating encounter</h1>
+<p><strong>@Model.PatientName</strong> · Hospital number: @Model.HospitalNumber</p>
+<p>@Model.Description · Actual test date: @(Model.ActualDate?.ToString("yyyy-MM-dd") ?? "Test date not recorded")</p>
+<form method="post" asp-route-id="@Model.Id" class="admin-card p-4">
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    <input name="RowVersion" type="hidden" value="@Model.Input.RowVersion" />
+    <div class="mb-3"><label for="assignmentEncounter" class="form-label">Encounter Reference</label><select id="assignmentEncounter" name="ClinicalEncounterId" asp-items='@(ViewData["Encounters"] as IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)' class="form-select" required><option value="">Select the originating encounter</option></select></div>
+    <div class="mb-3"><label for="existingRequest" class="form-label">Existing pending request</label><select id="existingRequest" name="ExistingRequest" class="form-select"><option value="">Keep as a new result under this encounter</option>@foreach (var request in Model.Requests) { <option value="@request.Key">@request.Label</option> }</select><div class="form-text">An existing request must belong to the selected encounter and have no PDF. Its exam description and reference are preserved.</div></div>
+    <button type="submit" class="btn btn-primary">Confirm assignment</button>
+    <a asp-action="NeedsEncounterAssignment" class="btn btn-outline-secondary">Back to assignment queue</a>
+</form>

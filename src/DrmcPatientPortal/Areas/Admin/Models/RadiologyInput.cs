@@ -5,15 +5,19 @@ namespace DrmcPatientPortal.Areas.Admin.Models;
 
 public sealed class RadiologyInput : AdminInput, IValidatableObject
 {
+    [Display(Name = "Encounter Reference")] public int? ClinicalEncounterId { get; set; }
+    [Required, StringLength(RadiologyStudy.NameLength), Display(Name = "Exam type / description")] public string StudyName { get; set; } = "";
     [Display(Name = "Radiology report PDF")] public IFormFile? Report { get; set; }
     [EnumDataType(typeof(RadiologyModality))] public RadiologyModality Modality { get; set; }
-    [Required, Display(Name = "Study date (Manila)")] public DateTime? PerformedAt { get; set; }
+    [Display(Name = "Actual study date (Manila)")] public DateTime? PerformedAt { get; set; }
     [Display(Name = "Released to patient at (Manila)")] public DateTime? ReleasedAt { get; set; }
     [EnumDataType(typeof(RadiologyStatus))] public RadiologyStatus Status { get; set; } = RadiologyStatus.InProgress;
     [StringLength(RadiologyStudy.ShortTextLength), Display(Name = "Amendment note")] public string? AmendmentNote { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        if ((Report is not null || Status is RadiologyStatus.Final or RadiologyStatus.Amended) && PerformedAt is null)
+            yield return new ValidationResult("Enter the actual study date before uploading or releasing a report.", [nameof(PerformedAt)]);
         if (Status is RadiologyStatus.Final or RadiologyStatus.Amended)
         {
             if (ReleasedAt is null) yield return new ValidationResult("A final or amended report needs a release time.", [nameof(ReleasedAt)]);

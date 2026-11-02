@@ -21,8 +21,7 @@ public sealed class LabEditor : ClinicalEditor<LabResult, LabInput>
     public override async Task ConfigureFormAsync(ApplicationDbContext db, ViewDataDictionary viewData, LabInput input, OwnershipContext? context, CancellationToken token)
     {
         viewData["Doctors"] = await PhysicianNames.OptionsAsync(db, token);
-        viewData["Encounters"] = await db.ClinicalEncounters.Where(e => e.PatientRecordId == context!.Patient.Id)
-            .OrderByDescending(e => e.EncounterDate).ThenBy(e => e.Id).Select(e => new SelectListItem(e.EncounterReference, e.Id.ToString())).ToListAsync(token);
+        viewData["Encounters"] = context is null ? [] : await EncounterLinks.OptionsAsync(db, context.Patient.Id, token);
     }
     public override LabInput Input(ApplicationDbContext db, LabResult entity) => new()
     {
@@ -36,11 +35,11 @@ public sealed class LabEditor : ClinicalEditor<LabResult, LabInput>
     public override async Task<WriteResult> ApplyAsync(ApplicationDbContext db, LabInput input, LabResult entity, OwnershipContext? context, bool create, CancellationToken token, ImportLookups? lookups = null)
     {
         if (context is null) return WriteResult.Invalid("The patient record no longer exists.");
-        if (input.ClinicalEncounterId is not null && (lookups is not null
-            ? !lookups.Encounters.TryGetValue(input.ClinicalEncounterId.Value, out var parent) || parent.PatientRecordId != context.Patient.Id
-            : !db.ClinicalEncounters.Local.Any(e => db.Entry(e).State == EntityState.Added && e.Id == input.ClinicalEncounterId && e.PatientRecordId == context.Patient.Id) &&
-            !await db.ClinicalEncounters.AnyAsync(e => e.Id == input.ClinicalEncounterId && e.PatientRecordId == context.Patient.Id, token)))
+        if (!await EncounterLinks.ValidAsync(db, input.ClinicalEncounterId, context.Patient.Id, create || entity.ClinicalEncounterId.HasValue || input.Report is not null, token, lookups))
             return WriteResult.Invalid("Select an existing encounter belonging to this patient.");
+        if ((input.Report is not null || input.Status == "Available") && input.CollectedAt is null)
+            return WriteResult.Invalid("Enter the actual test date before uploading or releasing a report.");
+        // Structured result values remain a supported import format; a PDF is not required for their status.
         var accession = input.AccessionNumber.Trim().ToUpperInvariant();
         if (lookups is not null ? lookups.Exists("Lab:" + accession) : await db.LabResults.AnyAsync(l => l.Id != entity.Id && EF.Functions.Collate(l.AccessionNumber, "Latin1_General_100_CI_AS") == accession, token))
             return WriteResult.Invalid("A lab already uses this accession number.");
@@ -48,8 +47,10 @@ public sealed class LabEditor : ClinicalEditor<LabResult, LabInput>
         if (ordering is null || pathologist is null) return WriteResult.Invalid("Select existing directory physicians or enter explicit historical names.");
         if (create) entity.PatientRecordId = context.Patient.Id;
         entity.AccessionNumber = accession; entity.TestName = input.TestName.Trim(); entity.Category = input.Category;
-        entity.CollectedAt = WallTime(input.CollectedAt!.Value, create ? null : entity.CollectedAt); entity.ReleasedAt = input.ReleasedAt is null ? null : WallTime(input.ReleasedAt.Value, create ? null : entity.ReleasedAt);
+        entity.CollectedAt = input.CollectedAt is null ? null : WallTime(input.CollectedAt.Value, create ? null : entity.CollectedAt); entity.ReleasedAt = input.ReleasedAt is null ? null : WallTime(input.ReleasedAt.Value, create ? null : entity.ReleasedAt);
         entity.Status = input.Status; entity.ClinicalEncounterId = input.ClinicalEncounterId; entity.ResultSummary = input.ResultSummary ?? "";
+        if (input.ClinicalEncounterId.HasValue) entity.RequiresEncounterAssignment = false;
+        entity.PatientActivityAtUtc = DateTime.UtcNow;
         entity.OrderingPhysician = ordering; entity.PathologistName = pathologist; entity.PerformingUnit = input.PerformingUnit ?? "";
         entity.ClinicalNotes = input.ClinicalNotes ?? ""; return WriteResult.Success;
     }

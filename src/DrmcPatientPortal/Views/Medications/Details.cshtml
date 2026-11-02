@@ -34,6 +34,9 @@
                         }
                     </h2>
                     <span class="small text-muted">Prescription Number: <strong>@Model.RxNumber</strong></span>
+                    @if (Model.ClinicalEncounterId.HasValue)
+                    { <p class="small mt-2 mb-0">Encounter: <a asp-controller="Visits" asp-action="Details" asp-route-id="@Model.ClinicalEncounterId">@Model.Encounter!.EncounterReference</a> · @Model.Encounter!.EncounterDate.ToString("MMM d, yyyy")</p> }
+                    else { <p class="small mt-2 mb-0">Encounter not assigned</p> }
                 </div>
 
                 <div class="text-md-end">

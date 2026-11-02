@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace DrmcPatientPortal.Controllers;
 
@@ -15,15 +14,15 @@ public class PatientController : Controller
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IAuditLogService _auditLog;
-    private readonly IOptionsMonitor<PatientResultsOptions> _resultsOptions;
+    private readonly PatientReportQueries _reports;
 
     public PatientController(ApplicationDbContext db, UserManager<ApplicationUser> userManager, IAuditLogService auditLog,
-        IOptionsMonitor<PatientResultsOptions> resultsOptions)
+        PatientReportQueries reports)
     {
         _db = db;
         _userManager = userManager;
         _auditLog = auditLog;
-        _resultsOptions = resultsOptions;
+        _reports = reports;
     }
 
     public async Task<IActionResult> Home()
@@ -40,12 +39,8 @@ public class PatientController : Controller
             .OrderByDescending(e => e.EncounterDate)
             .ThenByDescending(e => e.Id).Take(1).ToListAsync());
 
-        var visibleLabs = _db.LabResults.AsNoTracking()
-            .Where(l => l.Patient.PortalUserId == user.Id)
-            .Where(PatientResultsDisclosure.PdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow));
-        var latestLab = await SqlReadRetry.RunAsync(_db, () => visibleLabs
-            .OrderByDescending(l => l.CollectedAt)
-            .ThenByDescending(l => l.Id).Take(1).ToListAsync());
+        var visibleLabs = await _reports.LaboratoriesAsync(user.Id, HttpContext.RequestAborted);
+        var latestLab = visibleLabs.OrderByDescending(r => r.ActivityAt).ThenBy(r => r.Source).ThenByDescending(r => r.Id).Take(2).ToList();
 
         var activePrescriptions = await SqlReadRetry.RunAsync(_db, () => _db.Prescriptions
             .CountAsync(p => p.Patient.PortalUserId == user.Id && p.Status == PrescriptionStatus.Active));
@@ -59,7 +54,7 @@ public class PatientController : Controller
             Encounters = encounters,
             LabResults = latestLab,
             EncountersCount = await SqlReadRetry.RunAsync(_db, () => _db.ClinicalEncounters.CountAsync(e => e.Patient.PortalUserId == user.Id)),
-            LabResultsCount = await SqlReadRetry.RunAsync(_db, () => visibleLabs.CountAsync()),
+            LabResultsCount = visibleLabs.Count,
             ActivePrescriptionsCount = activePrescriptions,
             Departments = ClinicalDepartments.All,
         };
@@ -102,7 +97,7 @@ public class PatientDashboardViewModel
     public string ContactNumber { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public IReadOnlyList<ClinicalEncounter> Encounters { get; set; } = Array.Empty<ClinicalEncounter>();
-    public IReadOnlyList<LabResult> LabResults { get; set; } = Array.Empty<LabResult>();
+    public IReadOnlyList<PatientReportCard> LabResults { get; set; } = Array.Empty<PatientReportCard>();
     public int ActivePrescriptionsCount { get; set; }
     public int EncountersCount { get; set; }
     public int LabResultsCount { get; set; }
