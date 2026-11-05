@@ -109,6 +109,12 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
         public override async Task OnPageHandlerExecutionAsync(Microsoft.AspNetCore.Mvc.Filters.PageHandlerExecutingContext context,
             Microsoft.AspNetCore.Mvc.Filters.PageHandlerExecutionDelegate next)
         {
+            if (!HttpMethods.IsGet(Request.Method) && !HttpMethods.IsHead(Request.Method) && !HttpMethods.IsPost(Request.Method))
+            {
+                Response.Headers.Allow = "GET, HEAD, POST";
+                context.Result = new StatusCodeResult(StatusCodes.Status405MethodNotAllowed);
+                return;
+            }
             FirstAdminSetupOpen = RequireHospitalRecordCode && await _firstAdminSignup.IsOpenAsync(HttpContext.RequestAborted);
             await next();
         }
