@@ -68,10 +68,26 @@ $directories = [ordered]@{
     PatientDocuments__TemporaryPath = 'temporary-uploads'
     LabReports__RootPath = 'lab-reports'
     RadiologyReports__RootPath = 'radiology-reports'
+    RedStarLabReports__RootPath = 'redstar-lab-reports'
     AdvisoryImages__RootPath = 'advisory-images'
     Imports__StagingPath = 'imports'
 }
-foreach ($key in $directories.Keys) { $settings[$key] = Join-Path $privateRoot $directories[$key] }
+$stagingEnabled = $false
+if ($settings.ContainsKey('ResultStaging__Enabled') -and -not [bool]::TryParse($settings['ResultStaging__Enabled'], [ref]$stagingEnabled)) {
+    throw 'ResultStaging__Enabled must be true or false.'
+}
+if ($stagingEnabled) {
+    $directories['ResultStaging__LaboratoryPath'] = 'staging-laboratory'
+    $directories['ResultStaging__RadiologyPath'] = 'staging-radiology'
+    $directories['ResultStaging__QuarantinePath'] = 'staging-quarantine'
+}
+foreach ($key in $directories.Keys) {
+    $path = Join-Path $privateRoot $directories[$key]
+    if ((Test-Path -LiteralPath $path) -and ((Get-Item -LiteralPath $path).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        throw 'Private storage directories must not be junctions or symbolic links.'
+    }
+    $settings[$key] = $path
+}
 if (Test-Path -LiteralPath "IIS:\Sites\$SiteName") {
     if ((FullPath (Get-Item "IIS:\Sites\$SiteName").physicalPath) -ne $publish) { throw 'An existing site uses a different publish directory.' }
     if (Get-WebBinding -Name $SiteName | Where-Object { $_.protocol -ne 'https' }) {
