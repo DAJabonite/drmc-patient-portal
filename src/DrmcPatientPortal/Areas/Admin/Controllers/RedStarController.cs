@@ -58,8 +58,8 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
     {
         var generatedAt = ClinicalClock.WallTime(DateTimeOffset.UtcNow);
         if (!TryRegistryFilters(search, worklist, program, status, month, year, generatedAt.Date, out var filters)) return BadRequest();
-        var rows = await RegistryRowsAsync(filters, generatedAt.Date, cancellationToken);
-        if (rows.Count > RedStarRegistryParser.MaxRows)
+        var rows = await RegistryExportRowsAsync(filters, generatedAt.Date, cancellationToken);
+        if (rows is null)
         {
             TempData["RedStarError"] = "The formatted report exceeds the 5,000-record export limit. Narrow the registry filters and try again.";
             return RedirectToAction(nameof(Index), new { search = filters.Search, worklist = filters.Worklist,
@@ -120,7 +120,7 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
         return new(active, living, expired, monthStart);
     }
 
-    private async Task<List<RedStarRegistryRow>> RegistryRowsAsync(RegistryFilters filters, DateTime today, CancellationToken cancellationToken)
+    private IQueryable<RedStarEnrollment> RegistryQuery(RegistryFilters filters, DateTime today)
     {
         var all = db.RedStarEnrollments.AsNoTracking();
         var refills = OutstandingRefills();
@@ -148,19 +148,53 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
             var clinicalStatus = (RedStarStatus)filters.Status.Value;
             query = query.Where(e => e.Status == clinicalStatus);
         }
-        // Ciphertext cannot be searched or sorted by SQL. Project only the registry
-        // summary, then apply the existing private search/order before pagination.
-        var summaries = await query
-            .Select(e => new RedStarRegistryRow(e.Id, e.PatientId, e.Patient.PatientCode, e.Patient.CodeName, e.Program, e.Status,
+        return query;
+    }
+
+    private IQueryable<RedStarRegistryRow> RegistryProjection(IQueryable<RedStarEnrollment> query, DateTime today)
+    {
+        var refills = OutstandingRefills();
+        return query.Select(e => new RedStarRegistryRow(e.Id, e.PatientId, e.Patient.PatientCode, e.Patient.CodeName, e.Program, e.Status,
                 refills.Where(a => a.EnrollmentId == e.Id).OrderBy(a => a.DueDate).ThenBy(a => a.Id)
                     .Select(a => (DateTime?)a.DueDate).FirstOrDefault(),
                 db.RedStarRescheduleRequests.Count(r => r.Appointment.EnrollmentId == e.Id && r.State == RedStarRequestState.Pending),
                 e.Program == RedStarProgram.ART && refills.Any(a => a.EnrollmentId == e.Id && a.DueDate.AddMonths(1) <= today),
                 refills.Where(a => a.EnrollmentId == e.Id).OrderBy(a => a.DueDate).ThenBy(a => a.Id)
-                    .Select(a => (bool?)a.RemindersVerified).FirstOrDefault(), e.StatusDate))
-            .ToListAsync(cancellationToken);
+                    .Select(a => (bool?)a.RemindersVerified).FirstOrDefault(), e.StatusDate));
+    }
+
+    private async Task<List<RedStarRegistryRow>> RegistryRowsAsync(RegistryFilters filters, DateTime today, CancellationToken cancellationToken)
+    {
+        // Ciphertext cannot be searched or sorted by SQL. Preserve the registry's private alphabetical list behavior.
+        var summaries = await RegistryProjection(RegistryQuery(filters, today), today).ToListAsync(cancellationToken);
         return summaries.Where(e => filters.Search is null ||
             RedStarPhiProtection.Contains(e.PatientCode, filters.Search) || RedStarPhiProtection.Contains(e.CodeName, filters.Search))
+            .OrderBy(e => e.PatientCode, RedStarPhiProtection.RegistryOrder).ThenBy(e => e.EnrollmentId).ToList();
+    }
+
+    private async Task<List<RedStarRegistryRow>?> RegistryExportRowsAsync(RegistryFilters filters, DateTime today, CancellationToken cancellationToken)
+    {
+        var query = RegistryQuery(filters, today);
+        var ids = new List<int>();
+        var lastId = 0;
+        while (true)
+        {
+            var batch = await query.Where(e => e.Id > lastId).OrderBy(e => e.Id).Take(256)
+                .Select(e => new { e.Id, e.Patient.PatientCode, e.Patient.CodeName }).ToListAsync(cancellationToken);
+            if (batch.Count == 0) break;
+            foreach (var row in batch)
+                if (filters.Search is null || RedStarPhiProtection.Contains(row.PatientCode, filters.Search)
+                    || RedStarPhiProtection.Contains(row.CodeName, filters.Search))
+                {
+                    if (ids.Count == RedStarRegistryParser.MaxRows) return null;
+                    ids.Add(row.Id);
+                }
+            lastId = batch[^1].Id;
+        }
+        var selected = ids.ToArray();
+        var rows = await RegistryProjection(query.Where(e => EF.Parameter(selected).Contains(e.Id)), today).ToListAsync(cancellationToken);
+        return rows.Where(e => filters.Search is null || RedStarPhiProtection.Contains(e.PatientCode, filters.Search)
+                || RedStarPhiProtection.Contains(e.CodeName, filters.Search))
             .OrderBy(e => e.PatientCode, RedStarPhiProtection.RegistryOrder).ThenBy(e => e.EnrollmentId).ToList();
     }
 

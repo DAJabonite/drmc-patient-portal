@@ -6,14 +6,19 @@ using Microsoft.Extensions.Options;
 namespace DrmcPatientPortal.Services;
 
 // One owned metadata projection is shared by the lists, encounter summary and dashboard.
-public sealed class PatientReportQueries(ApplicationDbContext db, IOptionsMonitor<PatientResultsOptions> options,
+public sealed partial class PatientReportQueries(ApplicationDbContext db, IOptionsMonitor<PatientResultsOptions> options,
     RedStarReportAccess privateReports)
 {
-    public async Task<IReadOnlyList<PatientReportCard>> LaboratoriesAsync(string userId, CancellationToken token = default)
+    public async Task<IReadOnlyList<PatientReportCard>> LaboratoriesAsync(string userId, CancellationToken token = default,
+        int? encounterId = null, int? id = null, int[]? laboratoryIds = null, int[]? privateIds = null)
     {
-        var rows = await SqlReadRetry.RunAsync(db, () => db.LabResults.AsNoTracking()
+        var query = db.LabResults.AsNoTracking()
             .Where(l => l.Patient.PortalUserId == userId && !l.RequiresEncounterAssignment
-                && (l.ClinicalEncounterId == null || l.Encounter!.PatientRecordId == l.PatientRecordId))
+                && (l.ClinicalEncounterId == null || l.Encounter!.PatientRecordId == l.PatientRecordId));
+        if (encounterId.HasValue) query = query.Where(l => l.ClinicalEncounterId == encounterId);
+        if (id.HasValue) query = query.Where(l => l.Id == id);
+        if (laboratoryIds is not null) query = query.Where(l => EF.Parameter(laboratoryIds).Contains(l.Id));
+        var rows = await SqlReadRetry.RunAsync(db, () => query
             .Select(l => new
             {
                 l.Id, l.TestName, l.AccessionNumber, l.CollectedAt, l.ClinicalEncounterId, l.Status, l.ReleasedAt,
@@ -32,7 +37,7 @@ public sealed class PatientReportQueries(ApplicationDbContext db, IOptionsMonito
                 && l.ReportFileName != null && l.Status == "Available" && l.ReleasedAt <= now && l.ReleasedAt >= l.CollectedAt,
             ActivityAt = Activity(l.PatientActivityAtUtc, l.ReportUploadedAtUtc, l.Status == "Available" && l.ReportFileName != null && l.ReleasedAt >= l.CollectedAt ? l.ReleasedAt : null, l.EncounterDate ?? l.CollectedAt, now)
         }).ToList();
-        foreach (var report in await privateReports.GetOwnedReportsAsync(userId, token))
+        foreach (var report in await privateReports.GetOwnedReportsAsync(userId, token, encounterId, privateIds))
         {
             var released = RedStarReportAccess.CanOpenPdf(report, true, now);
             result.Add(new PatientReportCard
@@ -49,11 +54,16 @@ public sealed class PatientReportQueries(ApplicationDbContext db, IOptionsMonito
         return result;
     }
 
-    public async Task<IReadOnlyList<PatientReportCard>> RadiologyAsync(string userId, CancellationToken token = default)
+    public async Task<IReadOnlyList<PatientReportCard>> RadiologyAsync(string userId, CancellationToken token = default,
+        int? encounterId = null, int? id = null, int[]? ids = null)
     {
-        var rows = await SqlReadRetry.RunAsync(db, () => db.RadiologyStudies.AsNoTracking()
+        var query = db.RadiologyStudies.AsNoTracking()
             .Where(r => r.Patient.PortalUserId == userId && !r.RequiresEncounterAssignment
-                && (r.ClinicalEncounterId == null || r.Encounter!.PatientRecordId == r.PatientRecordId))
+                && (r.ClinicalEncounterId == null || r.Encounter!.PatientRecordId == r.PatientRecordId));
+        if (encounterId.HasValue) query = query.Where(r => r.ClinicalEncounterId == encounterId);
+        if (id.HasValue) query = query.Where(r => r.Id == id);
+        if (ids is not null) query = query.Where(r => EF.Parameter(ids).Contains(r.Id));
+        var rows = await SqlReadRetry.RunAsync(db, () => query
             .Select(r => new
             {
                 r.Id, r.StudyName, r.AccessionNumber, r.Modality, r.PerformedAt, r.ClinicalEncounterId, r.Status, r.ReleasedAt,

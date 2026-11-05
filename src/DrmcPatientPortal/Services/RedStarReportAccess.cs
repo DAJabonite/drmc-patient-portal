@@ -38,16 +38,32 @@ public sealed class RedStarReportAccess(ApplicationDbContext db)
         return hospital is not null && MappingValid(clinic, hospital) ? hospital : null;
     }
 
-    public async Task<IReadOnlyList<RedStarLabReport>> GetOwnedReportsAsync(string userId, CancellationToken token = default)
+    public async Task<IQueryable<RedStarLabReport>> OwnedReportsAsync(string userId, CancellationToken token = default)
     {
-        var reports = await db.RedStarLabReports.AsNoTracking().Include(r => r.Patient).Include(r => r.Encounter)
-            .Include(r => r.RedStarPatient).Where(r => r.Patient.PortalUserId == userId && r.Status != "Withdrawn")
-            .ToListAsync(token);
-        var visible = reports.Where(r => r.Encounter.PatientRecordId == r.PatientRecordId &&
-            MappingValid(r.RedStarPatient, r.Patient)).ToArray();
-        if (visible.Length > 0)
+        var owned = db.RedStarLabReports.AsNoTracking().Where(r => r.Patient.PortalUserId == userId && r.Status != "Withdrawn"
+            && r.Encounter.PatientRecordId == r.PatientRecordId);
+        var mappings = await owned.Select(r => new { r.RedStarPatientId, r.PatientRecordId }).Distinct().ToListAsync(token);
+        var clinicIds = mappings.Select(m => m.RedStarPatientId).Distinct().ToArray();
+        var patientIds = mappings.Select(m => m.PatientRecordId).Distinct().ToArray();
+        var clinics = await db.RedStarPatients.AsNoTracking().Where(p => EF.Parameter(clinicIds).Contains(p.Id)).ToDictionaryAsync(p => p.Id, token);
+        var patients = await db.PatientRecords.AsNoTracking().Where(p => EF.Parameter(patientIds).Contains(p.Id)).ToDictionaryAsync(p => p.Id, token);
+        var valid = mappings.Where(m => clinics.TryGetValue(m.RedStarPatientId, out var clinic)
+            && patients.TryGetValue(m.PatientRecordId, out var patient) && MappingValid(clinic, patient))
+            .Select(m => m.RedStarPatientId).Distinct().ToArray();
+        if (valid.Length > 0)
             await RedStarAuditTrail.RecordAsync(db, userId, "View owned lab availability", "PrivateLabReports", token);
-        return visible;
+        return owned.Where(r => EF.Parameter(valid).Contains(r.RedStarPatientId)
+            && r.RedStarPatient.HospitalPatientRecordId == r.PatientRecordId);
+    }
+
+    public async Task<IReadOnlyList<RedStarLabReport>> GetOwnedReportsAsync(string userId, CancellationToken token = default,
+        int? encounterId = null, int[]? ids = null)
+    {
+        if (ids is { Length: 0 }) return [];
+        var owned = await OwnedReportsAsync(userId, token);
+        if (encounterId.HasValue) owned = owned.Where(r => r.ClinicalEncounterId == encounterId);
+        if (ids is not null) owned = owned.Where(r => EF.Parameter(ids).Contains(r.Id));
+        return await owned.Include(r => r.Encounter).ToListAsync(token);
     }
 
     public async Task<RedStarLabReport?> GetOwnedReportAsync(string userId, int id, CancellationToken token = default)
