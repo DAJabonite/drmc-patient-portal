@@ -28,7 +28,7 @@ public abstract class PatientAccountInput : AdminInput
 {
     [Required, EmailAddress, StringLength(256)]
     public string Email { get; set; } = "";
-    [Range(typeof(bool), "true", "true", ErrorMessage = "Confirm that staff checked the patient's identity.")]
+    [MustBeTrue(ErrorMessage = "Confirm that staff checked the patient's identity.")]
     public bool IdentityVerified { get; set; }
 }
 
