@@ -72,7 +72,7 @@ public class AdvisoriesController : Controller
         }
 
         var now = _clock.GetUtcNow().UtcDateTime;
-        var advisory = await SqlReadRetry.RunAsync(_db, () => _db.PublicAdvisories
+        var advisory = await SqlReadRetry.RunAsync(_db, () => _db.PublicAdvisories.AsNoTracking()
             .FirstOrDefaultAsync(a => a.Slug == targetSlug && a.PublishedAt <= now));
 
         if (advisory is null)
@@ -85,7 +85,7 @@ public class AdvisoriesController : Controller
             .ExecuteUpdateAsync(setters => setters.SetProperty(a => a.ViewCount, a => a.ViewCount + 1));
         if (advisory.ViewCount < int.MaxValue) advisory.ViewCount++;
 
-        var related = await SqlReadRetry.RunAsync(_db, () => _db.PublicAdvisories
+        var related = await SqlReadRetry.RunAsync(_db, () => _db.PublicAdvisories.AsNoTracking()
             .Where(a => a.Id != advisory.Id && a.PublishedAt <= now && (a.EffectiveUntil == null || a.EffectiveUntil > now))
             .OrderByDescending(a => a.PublishedAt)
             .Take(3)
