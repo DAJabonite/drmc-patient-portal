@@ -295,7 +295,7 @@ public sealed class RedStarReminderService(IServiceScopeFactory scopes, IDataPro
             uri.AbsolutePath != "/" || uri.Query.Length != 0 || uri.Fragment.Length != 0 ||
             uri.Scheme != Uri.UriSchemeHttps && !(environment.IsDevelopment() && uri.IsLoopback && uri.Scheme == Uri.UriSchemeHttp))
             throw new InvalidOperationException("Configure a trusted portal origin for appointment reminders.");
-        return new Uri(uri, "/Patient").AbsoluteUri;
+        return new Uri(uri, "/Patient/Home").AbsoluteUri;
     }
 
     public static (string Subject, string Body) EmailContent(DateTime due, string portalUrl)
