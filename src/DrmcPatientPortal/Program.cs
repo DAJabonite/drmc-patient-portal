@@ -4,6 +4,8 @@ using DrmcPatientPortal;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Localization;
@@ -74,6 +76,7 @@ builder.Services.AddHostedService<OutboundNotificationWorker>();
 builder.Services.AddOptions<RedStarOptions>().Bind(builder.Configuration.GetSection("RedStar"))
     .Validate(x => x.MaximumAttempts is >= 1 and <= 10, "Appointment reminder attempts must be 1–10.").ValidateOnStart();
 builder.Services.AddScoped<RedStarPatientService>();
+builder.Services.AddScoped<MfaManagement>();
 builder.Services.AddScoped<RedStarImports>();
 builder.Services.AddSingleton<RedStarReminderService>();
 builder.Services.AddHostedService<RedStarReminderWorker>();
@@ -138,6 +141,18 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 builder.Services.Configure<SecurityStampValidatorOptions>(options =>
 {
     options.OnRefreshingPrincipal = PortalCookieEvents.PreserveClaims;
+});
+
+builder.Services.Configure<CookieAuthenticationOptions>(IdentityConstants.TwoFactorRememberMeScheme, options =>
+{
+    // A previous authenticator must stop authorizing remembered browsers as soon as its stamp changes.
+    options.Events.OnValidatePrincipal = async context =>
+    {
+        var signIn = context.HttpContext.RequestServices.GetRequiredService<SignInManager<ApplicationUser>>();
+        if (await signIn.ValidateTwoFactorSecurityStampAsync(context.Principal) is not null) return;
+        context.RejectPrincipal();
+        await context.HttpContext.SignOutAsync(IdentityConstants.TwoFactorRememberMeScheme);
+    };
 });
 
 builder.Services.ConfigureApplicationCookie(options =>
