@@ -105,6 +105,7 @@ namespace DrmcPatientPortal.Areas.Identity.Pages.Account
 
         public bool RequireCodeInBrowser => RequireHospitalRecordCode && !StaffInvitationMode && !FirstAdminSetupOpen;
 
+        [NonHandler]
         public override async Task OnPageHandlerExecutionAsync(Microsoft.AspNetCore.Mvc.Filters.PageHandlerExecutingContext context,
             Microsoft.AspNetCore.Mvc.Filters.PageHandlerExecutionDelegate next)
         {
