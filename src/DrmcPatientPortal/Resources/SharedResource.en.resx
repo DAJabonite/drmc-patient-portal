@@ -343,4 +343,46 @@
   <data name="PasswordReset_RequestReceivedBody" xml:space="preserve"><value>If this email address belongs to a confirmed account, we’ll send a password-reset link.</value></data>
   <data name="PasswordReset_InboxHelp" xml:space="preserve"><value>Check your inbox and spam or junk folder. Open the reset link and choose a new password.</value></data>
   <data name="PasswordReset_RequestAnotherLink" xml:space="preserve"><value>Request another reset link</value></data>
+  <data name="Report_Encounter" xml:space="preserve"><value>Encounter</value></data>
+  <data name="Report_EncounterLabel" xml:space="preserve"><value>Encounter:</value></data>
+  <data name="Report_Unassigned" xml:space="preserve"><value>Encounter not assigned</value></data>
+  <data name="Report_TestDate" xml:space="preserve"><value>Test date:</value></data>
+  <data name="Report_StudyDate" xml:space="preserve"><value>Study date:</value></data>
+  <data name="Report_NoTestDate" xml:space="preserve"><value>Test date not recorded</value></data>
+  <data name="Report_Status" xml:space="preserve"><value>Status:</value></data>
+  <data name="Report_RequestReference" xml:space="preserve"><value>Request reference:</value></data>
+  <data name="Report_Cancelled" xml:space="preserve"><value>This request was cancelled.</value></data>
+  <data name="Report_UnavailablePdf" xml:space="preserve"><value>The PDF is not currently available to view.</value></data>
+  <data name="Report_PendingPdf" xml:space="preserve"><value>The report PDF is not available yet.</value></data>
+  <data name="Report_Details" xml:space="preserve"><value>Request details</value></data>
+  <data name="Report_CountSummary" xml:space="preserve"><value>{0} encounters · {1} requests · {2} attached PDFs. Recently updated encounters appear first.</value></data>
+  <data name="Report_GroupCounts" xml:space="preserve"><value>{0} requests · {1} PDFs</value></data>
+  <data name="Report_NoMatch" xml:space="preserve"><value>No requests match these filters</value></data>
+  <data name="Report_TryFilters" xml:space="preserve"><value>Try another encounter date, description or status.</value></data>
+  <data name="Report_ClearFilters" xml:space="preserve"><value>Clear filters and view all requests</value></data>
+  <data name="Report_LegacyExcluded" xml:space="preserve"><value>Records with an encounter not assigned are excluded from encounter-date filters. Clear the date filter to see them.</value></data>
+  <data name="Report_LegacyHelp" xml:space="preserve"><value>These historical records remain available while their originating encounter is unassigned.</value></data>
+  <data name="Report_Password" xml:space="preserve"><value>Account password</value></data>
+  <data name="Report_ForDescription" xml:space="preserve"><value>for {0}</value></data>
+  <data name="Report_PdfPasswordHelp" xml:space="preserve"><value>Confirm your password each time you view or download this PDF.</value></data>
+  <data name="Report_ViewPdf" xml:space="preserve"><value>View PDF</value></data>
+  <data name="Report_DownloadPdf" xml:space="preserve"><value>Download PDF</value></data>
+  <data name="Report_NewTab" xml:space="preserve"><value>for {0} (opens in a new tab)</value></data>
+  <data name="Report_BackPrevious" xml:space="preserve"><value>Back to previous page</value></data>
+  <data name="Report_BackLab" xml:space="preserve"><value>Back to laboratory requests</value></data>
+  <data name="Report_BackImaging" xml:space="preserve"><value>Back to imaging requests</value></data>
+  <data name="Report_LabRequest" xml:space="preserve"><value>Laboratory request</value></data>
+  <data name="Report_RadiologyRequest" xml:space="preserve"><value>Radiology request</value></data>
+  <data name="Report_RequestActions" xml:space="preserve"><value>Request actions</value></data>
+  <data name="Report_BackEncounter" xml:space="preserve"><value>Back to encounter</value></data>
+  <data name="ReportStatus_requested" xml:space="preserve"><value>Requested</value></data>
+  <data name="ReportStatus_awaiting report" xml:space="preserve"><value>Awaiting report</value></data>
+  <data name="ReportStatus_in progress" xml:space="preserve"><value>In progress</value></data>
+  <data name="ReportStatus_pending verification" xml:space="preserve"><value>Pending Verification</value></data>
+  <data name="ReportStatus_available" xml:space="preserve"><value>Available</value></data>
+  <data name="ReportStatus_cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="ReportStatus_final" xml:space="preserve"><value>Final</value></data>
+  <data name="ReportStatus_amended" xml:space="preserve"><value>Amended</value></data>
+  <data name="ReportStatus_unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="ReportStatus_withdrawn" xml:space="preserve"><value>Withdrawn</value></data>
 </root>
