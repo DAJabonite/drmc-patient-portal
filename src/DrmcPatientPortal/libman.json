@@ -18,7 +18,7 @@
       ]
     },
     {
-      "library": "jquery-validate@1.21.0",
+      "library": "jquery-validate@1.22.1",
       "destination": "wwwroot/lib/jquery-validation/",
       "files": [
         "jquery.validate.min.js"
@@ -32,7 +32,8 @@
       ]
     },
     {
-      "library": "bootstrap-icons@1.11.3",
+      "provider": "jsdelivr",
+      "library": "bootstrap-icons@1.13.2",
       "destination": "wwwroot/lib/bootstrap-icons/",
       "files": [
         "font/bootstrap-icons.min.css",
