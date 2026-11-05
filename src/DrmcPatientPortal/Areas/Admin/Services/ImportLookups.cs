@@ -10,6 +10,7 @@ public sealed class ImportLookups
     private const string Collation = "Latin1_General_100_CI_AS";
     private readonly HashSet<string> keys = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<int, PatientRecord> Patients { get; } = [];
+    public List<PatientRecord> IdentityPatients { get; } = [];
     public Dictionary<int, ClinicalEncounter> Encounters { get; } = [];
     public Dictionary<int, LabResult> Labs { get; } = [];
     public Dictionary<int, Prescription> Prescriptions { get; } = [];
@@ -36,7 +37,18 @@ public sealed class ImportLookups
         string[] Values(string template, string field) => rows.Where(row => row.Template == template).Select(row => row.Fields.GetValueOrDefault(field, "").Trim()).Where(value => value.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         string[] References(string field) => rows.Select(row => row.Fields.GetValueOrDefault(field, "").Trim()).Where(value => value.StartsWith("existing:", StringComparison.Ordinal)).Select(value => value[9..]).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         var ids = envelope.Mappings.Where(mapping => mapping.PatientRecordId.HasValue).Select(mapping => mapping.PatientRecordId!.Value).Distinct().ToArray();
-        if (ids.Length > 0) foreach (var patient in await db.PatientRecords.Where(patient => EF.Parameter(ids).Contains(patient.Id)).Select(patient => new PatientRecord { Id = patient.Id }).ToListAsync(token)) result.Patients[patient.Id] = patient;
+        var dates = rows.Where(row => ImportTemplates.Get(row.Template).Clinical)
+            .Select(row => ImportValidation.TrySourceBirthDate(row.Fields["SourceBirthDate"], out var date) ? (DateTime?)date : null)
+            .Where(date => date.HasValue).Select(date => date!.Value).Distinct().ToArray();
+        if (ids.Length > 0 || dates.Length > 0)
+            foreach (var patient in await db.PatientRecords.Where(patient => EF.Parameter(ids).Contains(patient.Id) ||
+                patient.DateOfBirth.HasValue && EF.Parameter(dates).Contains(patient.DateOfBirth.Value.Date))
+                .Select(patient => new PatientRecord { Id = patient.Id, FirstName = patient.FirstName, MiddleName = patient.MiddleName,
+                    LastName = patient.LastName, Suffix = patient.Suffix, DateOfBirth = patient.DateOfBirth }).ToListAsync(token))
+            {
+                result.IdentityPatients.Add(patient);
+                if (ids.Contains(patient.Id)) result.Patients[patient.Id] = patient;
+            }
         var hospitals = Values("Patients", "HospitalNumber").Concat(envelope.Mappings.Where(mapping => mapping.CreateNew).Select(mapping => mapping.Patient.HospitalNumber?.Trim() ?? "")).Where(value => value.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         if (hospitals.Length > 0) foreach (var key in await db.PatientRecords.Where(patient => patient.HospitalNumber != null && EF.Parameter(hospitals).Contains(EF.Functions.Collate(patient.HospitalNumber, Collation))).Select(patient => patient.HospitalNumber!).ToListAsync(token)) result.keys.Add("Hospital:" + key.TrimEnd());
         var names = Values("Doctors", "FullName");

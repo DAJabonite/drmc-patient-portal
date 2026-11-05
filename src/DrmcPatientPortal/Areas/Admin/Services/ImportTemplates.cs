@@ -12,7 +12,7 @@ public sealed record ImportTemplate(string Name, Type InputType, string[] Column
 
 public static class ImportTemplates
 {
-    public const string ValidationVersion = "2.0.0";
+    public const string ValidationVersion = "3.0.0";
     private static string[] Columns(string fields, bool clinical = false, string context = "") =>
         (clinical ? new[] { "SourcePatientKey", "SourcePatientName", "SourceBirthDate" } : Array.Empty<string>())
         .Concat(context.Split(',', StringSplitOptions.RemoveEmptyEntries)).Concat(fields.Split(',')).ToArray();
