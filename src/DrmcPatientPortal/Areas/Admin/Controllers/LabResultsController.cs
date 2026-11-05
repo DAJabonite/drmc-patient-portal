@@ -183,6 +183,11 @@ public sealed class LabResultsController(ApplicationDbContext db, AdminWrites wr
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         { return WriteResult.Invalid("The PDF could not be stored. Choose the file again and try saving."); }
         previousReport = entity.ReportFileName;
+        if (previousReport is not null)
+        {
+            entity.Status = "Pending Verification";
+            entity.ReleasedAt = null;
+        }
         ReportAttachments.Apply(entity, stored, DateTime.UtcNow);
         await database.SaveChangesAsync(token);
         return WriteResult.Success;
