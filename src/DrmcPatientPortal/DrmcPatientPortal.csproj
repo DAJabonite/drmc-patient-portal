@@ -28,7 +28,6 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.14" />
     <PackageReference Include="QRCoder" Version="1.8.1" />
     <PackageReference Include="SkiaSharp" Version="4.154.0" />
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.154.0" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
     <PackageReference Include="Tesseract" Version="5.2.0" />
     <PackageReference Include="Tesseract.Data.English" Version="4.0.0" />
