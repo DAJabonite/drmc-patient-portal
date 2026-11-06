@@ -144,7 +144,7 @@ public sealed class LabResultsController(ApplicationDbContext db, AdminWrites wr
         if (result.Succeeded)
         {
             TempData["Success"] = $"Uploaded {input.Files.Count} PDF reports for the selected encounter. Review them before release.";
-            return RedirectToAction(nameof(Index), new { contextId = id });
+            return RedirectToAction(nameof(Index), new { area = "Admin", contextId = id });
         }
         if (result.Conflict) Response.StatusCode = 409;
         ModelState.AddModelError("", result.Error!);
