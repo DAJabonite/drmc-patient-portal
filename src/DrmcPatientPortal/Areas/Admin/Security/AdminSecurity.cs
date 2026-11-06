@@ -207,29 +207,49 @@ public static class AdminBootstrap
     {
         using var scope = services.CreateScope();
         var enabled = configuration.GetValue<bool>("AdminBootstrap:Enabled");
+        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("AdminBootstrap");
         if (enabled)
-            scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("AdminBootstrap")
-                .LogWarning("Admin bootstrap is enabled. Remove AdminBootstrap configuration after initial setup.");
+            logger.LogWarning("Admin bootstrap is enabled. Remove AdminBootstrap configuration after initial setup.");
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         foreach (var role in StaffRoles.All)
-            await EnsureRoleAsync(roles, scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(), role);
+            await EnsureRoleAsync(roles, db, role);
         if (!enabled) return;
-        var email = configuration["AdminBootstrap:Email"];
+        var email = configuration["AdminBootstrap:Email"]?.Trim();
         if (string.IsNullOrWhiteSpace(email)) return;
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        var user = await users.FindByEmailAsync(email);
-        if (user is null)
+        await using var transaction = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+        await db.Database.ExecuteSqlRawAsync("""
+            DECLARE @result int;
+            EXEC @result = sys.sp_getapplock @Resource=N'DRMC.AdminBootstrap',
+                @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000;
+            IF @result < 0 THROW 51000, 'Could not acquire the initial Admin bootstrap lock.', 1;
+            """);
+        var normalizedEmail = users.NormalizeEmail(email);
+        var user = await users.Users.SingleOrDefaultAsync(candidate => candidate.NormalizedEmail == normalizedEmail);
+        if (user is not null && await users.IsInRoleAsync(user, StaffRoles.Admin))
+        {
+            await transaction.CommitAsync();
+            return;
+        }
+        if (await (from assignment in db.UserRoles join role in db.Roles on assignment.RoleId equals role.Id
+                   where role.Name == StaffRoles.Admin select assignment.UserId).AnyAsync())
+        {
+            logger.LogWarning("Admin bootstrap skipped because an Admin already exists. Disable AdminBootstrap configuration.");
+            await transaction.CommitAsync();
+            return;
+        }
+        if (user is null || !user.EmailConfirmed || !user.TwoFactorEnabled || await users.IsLockedOutAsync(user))
         {
             // First-Admin setup: signup lets this email register without a hospital record code
             // until an Admin exists. Promotion happens on a later restart once it is ready.
-            scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("AdminBootstrap")
-                .LogWarning("Admin bootstrap is waiting for the configured account to sign up, confirm its email and enable two-factor authentication.");
+            logger.LogWarning("Admin bootstrap is waiting for the configured account to sign up, confirm its email, enable two-factor authentication and be unlocked.");
+            await transaction.CommitAsync();
             return;
         }
-        if (!user.EmailConfirmed || !user.TwoFactorEnabled || await users.IsLockedOutAsync(user))
-            throw new InvalidOperationException("Admin bootstrap requires an existing email-confirmed, 2FA-enabled account that is not locked out.");
-        if (!await users.IsInRoleAsync(user, "Admin") && !(await users.AddToRoleAsync(user, "Admin")).Succeeded)
+        if (!(await users.AddToRoleAsync(user, StaffRoles.Admin)).Succeeded)
             throw new InvalidOperationException("Admin bootstrap promotion failed.");
+        await transaction.CommitAsync();
     }
 
     private static async Task EnsureRoleAsync(RoleManager<IdentityRole> roles, ApplicationDbContext db, string name)

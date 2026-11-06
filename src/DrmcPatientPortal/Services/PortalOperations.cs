@@ -41,8 +41,7 @@ public sealed class PortalWorkerHealth(TimeProvider clock, IConfiguration config
 }
 
 public sealed class PortalReadinessHealthCheck(ApplicationDbContext db, PatientDocumentStorage storage,
-    IWebHostEnvironment environment, IConfiguration configuration, IOptions<LabReportStorageOptions> reports,
-    IOptions<RadiologyReportStorageOptions> radiology,
+    IWebHostEnvironment environment, IConfiguration configuration, IServiceProvider services,
     IOptions<PortalOperationsOptions> options, PortalWorkerHealth workers, OcrRuntime ocr) : IHealthCheck
 {
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
@@ -50,15 +49,11 @@ public sealed class PortalReadinessHealthCheck(ApplicationDbContext db, PatientD
         try
         {
             if (!ocr.IsReady || !await db.Database.CanConnectAsync(cancellationToken)) return HealthCheckResult.Unhealthy();
+            await RedStarProtectionUpgrade.VerifyReadyAsync(db, cancellationToken);
             await PatientDocumentProtectionUpgrade.VerifyReadyAsync(db, storage, cancellationToken);
-            var paths = new List<PrivateStorageRoot> { storage.Root, storage.TemporaryRoot, new(environment, reports.Value.RootPath),
-                new(environment, radiology.Value.RootPath),
-                new(environment, configuration["RedStarLabReports:RootPath"] ?? "App_Data/RedStarLabReports"),
-                new(environment, configuration["Imports:StagingPath"] ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DRMC", "ImportStaging")) };
+            KeyRingProtection.Verify(services);
+            var paths = ProductionConfiguration.StoragePaths(configuration, environment).Values.Select(path => new PrivateStorageRoot(environment, path)).ToArray();
             if (paths.Where((root, i) => paths.Skip(i + 1).Any(root.Overlaps)).Any()) return HealthCheckResult.Unhealthy();
-            var staging = configuration.GetSection(ResultStagingOptions.SectionName).Get<ResultStagingOptions>() ?? new();
-            if (staging.Enabled)
-                paths.AddRange(new[] { staging.LaboratoryPath, staging.RadiologyPath, staging.QuarantinePath }.Select(p => new PrivateStorageRoot(environment, p)));
             foreach (var root in paths)
             {
                 Directory.CreateDirectory(root.Resolve());
