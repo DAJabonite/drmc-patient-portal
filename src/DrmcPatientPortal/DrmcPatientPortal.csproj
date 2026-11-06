@@ -4,10 +4,12 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
     <UserSecretsId>aspnet-DrmcPatientPortal-726528f1-7bcc-40a0-88e2-1808e4797a51</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="Services/OcrFixtures/probe.*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <EmbeddedResource Include="Content/InstitutionalGuides/v1/*.json" />
     <EmbeddedResource Include="Services/OcrFixtures/probe.png" />
     <EmbeddedResource Include="Services/OcrFixtures/probe.jpg" />
