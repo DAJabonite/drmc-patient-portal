@@ -372,6 +372,10 @@ try {
     $ancm = $webConfig.SelectSingleNode('//system.webServer/aspNetCore')
     if ($null -eq $ancm -or $ancm.hostingModel -ine 'inprocess') { Fail 'The published web.config must use the InProcess IIS hosting model.' }
     if (@($webConfig.SelectNodes('//aspNetCore/environmentVariables/environmentVariable')).Count) { Fail 'Configure environment settings at the dedicated pool, not in the published web.config.' }
+    $authenticationNames = @('anonymousAuthentication','windowsAuthentication','basicAuthentication','digestAuthentication')
+    if (@($webConfig.SelectNodes('//system.webServer/security/authentication/*') | Where-Object { $authenticationNames -contains $_.LocalName }).Count) {
+        Fail 'Configure IIS authentication at the dedicated site in ApplicationHost.config, not in the published web.config.'
+    }
     $certificate = Get-Item -LiteralPath "Cert:\LocalMachine\My\$CertificateThumbprint"
     if (-not $certificate.HasPrivateKey -or $certificate.NotAfter -le (Get-Date) -or $certificate.NotBefore -gt (Get-Date)) { Fail 'The TLS certificate must have a private key and be within its validity period.' }
     AssertCertificateHost $certificate $HostName
@@ -393,7 +397,22 @@ try {
         if (@(Get-WebApplication -Site $SiteName).Count) { Fail 'The dedicated portal site must not contain nested IIS applications.' }
     }
     $manager = [Microsoft.Web.Administration.ServerManager]::new()
-    try { $null = @($manager.WorkerProcesses) } finally { $manager.Dispose() }
+    try {
+        $null = @($manager.WorkerProcesses)
+        $hostConfiguration = $manager.GetApplicationHostConfiguration()
+        $authenticationGroup = $hostConfiguration.RootSectionGroup.SectionGroups['system.webServer'].SectionGroups['security'].SectionGroups['authentication']
+        $registeredAuthentication = @($authenticationGroup.Sections | ForEach-Object { $_.Name })
+        if ($registeredAuthentication -notcontains 'anonymousAuthentication') { Fail 'Install IIS Anonymous Authentication before configuring the portal.' }
+        $authenticationSections = @($authenticationNames | Where-Object { $registeredAuthentication -contains $_ })
+        foreach ($name in $authenticationSections) {
+            $section = $hostConfiguration.GetSection("system.webServer/security/authentication/$name")
+            if ($null -eq $section.Attributes['enabled']) { Fail 'An IIS authentication section is unavailable or has an unsupported schema.' }
+            if ($name -eq 'anonymousAuthentication' -and ($null -eq $section.Attributes['userName'] -or $null -eq $section.Attributes['password'])) {
+                Fail 'The IIS Anonymous Authentication section must support application-pool identity credentials.'
+            }
+        }
+    }
+    finally { $manager.Dispose() }
     if (-not $PSCmdlet.ShouldProcess("IIS site $SiteName and dedicated pool $PoolName", 'Apply validated production settings and scoped ACLs; leave the pool stopped')) { return }
 
     $phase = 'configuration'; $mutationStarted = $true
@@ -437,6 +456,15 @@ try {
         else { Add-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter $filter -Name '.' -Value @{name=$key;value=$settings[$key]} }
     }
     if (-not $siteExists) { New-Website -Name $SiteName -PhysicalPath $publish -ApplicationPool $PoolName -Port 443 -HostHeader $HostName -Ssl -SslFlags 1 | Out-Null }
+    foreach ($name in $authenticationSections) {
+        $authenticationFilter = "system.webServer/security/authentication/$name"
+        Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Location $SiteName -Filter $authenticationFilter -Name enabled -Value ($name -eq 'anonymousAuthentication')
+        if ($name -eq 'anonymousAuthentication') {
+            # Empty credentials use the pool identity that has read access to the published site.
+            Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Location $SiteName -Filter $authenticationFilter -Name userName -Value ''
+            Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Location $SiteName -Filter $authenticationFilter -Name password -Value ''
+        }
+    }
     Set-ItemProperty -LiteralPath "IIS:\Sites\$SiteName" -Name serverAutoStart -Value $true
     Set-ItemProperty -LiteralPath "IIS:\Sites\$SiteName" -Name applicationDefaults.preloadEnabled -Value $true
     Set-WebBinding -Name $SiteName -BindingInformation $bindingInformation -PropertyName sslFlags -Value 1
