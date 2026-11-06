@@ -55,10 +55,8 @@ public class RadiologyController : Controller
         if (modality.HasValue && !Enum.IsDefined(modality.Value)) modality = null;
         var bounds = PatientReportQueries.DateBounds(dateRange, startDate, endDate);
         if (bounds.Error is not null) ViewData["DateRangeError"] = bounds.Error;
-        var owned = await _reports.RadiologyAsync(user.Id, HttpContext.RequestAborted);
-        var filtered = modality.HasValue ? owned.Where(r => r.Modality == modality) : owned;
-        var results = PatientReportQueries.Page(filtered, search, status, bounds.Start, bounds.End,
-            dateRange != null && bounds.Error == null, page, legacyPage);
+        var results = await _reports.RadiologyPageAsync(user.Id, modality, search, status, bounds.Start, bounds.End,
+            dateRange != null && bounds.Error == null, page, legacyPage, HttpContext.RequestAborted);
         await _auditLog.LogAsync(user.Id, "VIEW_RADIOLOGY_LIST", "Patient/Radiology", "Viewed owned imaging availability.",
             HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
         return View(new RadiologyIndexViewModel
@@ -66,7 +64,7 @@ public class RadiologyController : Controller
             PreparationGuide = await _guides.GetAsync("radiology-preparation", cancellationToken: HttpContext.RequestAborted),
             SelectedModality = modality, SearchTerm = search, SelectedDateRange = dateRange,
             SelectedStartDate = startDate, SelectedEndDate = endDate, SelectedStatus = status,
-            Results = results, TotalCount = owned.Count
+            Results = results.Page, TotalCount = results.Total
         });
     }
 
@@ -75,7 +73,7 @@ public class RadiologyController : Controller
     {
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
-        var study = (await _reports.RadiologyAsync(user.Id, HttpContext.RequestAborted)).SingleOrDefault(r => r.Id == id);
+        var study = (await _reports.RadiologyAsync(user.Id, HttpContext.RequestAborted, id: id)).SingleOrDefault(r => r.Id == id);
         if (study is null) return NotFound();
         await _auditLog.LogAsync(user.Id, "VIEW_RADIOLOGY_REPORT", $"RadiologyStudy/{id}", "Viewed owned imaging request metadata.",
             HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");

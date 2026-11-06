@@ -39,8 +39,7 @@ public class PatientController : Controller
             .OrderByDescending(e => e.EncounterDate)
             .ThenByDescending(e => e.Id).Take(1).ToListAsync());
 
-        var visibleLabs = await _reports.LaboratoriesAsync(user.Id, HttpContext.RequestAborted);
-        var latestLab = visibleLabs.OrderByDescending(r => r.ActivityAt).ThenBy(r => r.Source).ThenByDescending(r => r.Id).Take(2).ToList();
+        var visibleLabs = await _reports.LaboratoryPreviewAsync(user.Id, HttpContext.RequestAborted);
 
         var activePrescriptions = await SqlReadRetry.RunAsync(_db, () => _db.Prescriptions
             .CountAsync(p => p.Patient.PortalUserId == user.Id && p.Status == PrescriptionStatus.Active));
@@ -52,9 +51,9 @@ public class PatientController : Controller
             ContactNumber = user.ContactNumber,
             CreatedAt = user.CreatedAt,
             Encounters = encounters,
-            LabResults = latestLab,
+            LabResults = visibleLabs.Reports,
             EncountersCount = await SqlReadRetry.RunAsync(_db, () => _db.ClinicalEncounters.CountAsync(e => e.Patient.PortalUserId == user.Id)),
-            LabResultsCount = visibleLabs.Count,
+            LabResultsCount = visibleLabs.Total,
             ActivePrescriptionsCount = activePrescriptions,
             Departments = ClinicalDepartments.All,
         };

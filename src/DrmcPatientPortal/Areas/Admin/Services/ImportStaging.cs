@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using DrmcPatientPortal.Areas.Admin.Models;
+using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.DataProtection;
 
 namespace DrmcPatientPortal.Areas.Admin.Services;
@@ -11,10 +12,8 @@ public sealed class ImportStaging
     private readonly IDataProtector protector;
     public ImportStaging(IConfiguration configuration, IWebHostEnvironment environment, IDataProtectionProvider protection)
     {
-        root = Path.GetFullPath(configuration["Imports:StagingPath"] ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DRMC", "ImportStaging"));
-        var web = Path.GetFullPath(environment.WebRootPath ?? Path.Combine(environment.ContentRootPath, "wwwroot")).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
-        if (root.Equals(web.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase) || root.StartsWith(web, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("Import staging must be outside the web root.");
+        root = new PrivateStorageRoot(environment, configuration["Imports:StagingPath"] ??
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DRMC", "ImportStaging")).Path;
         Directory.CreateDirectory(root);
         protector = protection.CreateProtector("DRMC.Admin.ImportStaging.v1");
     }

@@ -61,7 +61,7 @@ public class DirectoryController : Controller
     // GET /Directory/Doctor/5
     public async Task<IActionResult> Doctor(int id)
     {
-        var doctor = await SqlReadRetry.RunAsync(_db, () => _db.Doctors.FindAsync(id).AsTask());
+        var doctor = await SqlReadRetry.RunAsync(_db, () => _db.Doctors.AsNoTracking().SingleOrDefaultAsync(d => d.Id == id && d.IsActive));
         if (doctor is null)
         {
             return NotFound();

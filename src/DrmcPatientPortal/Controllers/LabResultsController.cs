@@ -51,17 +51,15 @@ public class LabResultsController : Controller
         if (category.HasValue && !Enum.IsDefined(category.Value)) category = null;
         var bounds = PatientReportQueries.DateBounds(dateRange, startDate, endDate);
         if (bounds.Error is not null) ViewData["DateRangeError"] = bounds.Error;
-        var owned = await _reports.LaboratoriesAsync(user.Id, HttpContext.RequestAborted);
-        var filtered = category.HasValue ? owned.Where(r => r.Category == category) : owned;
-        var results = PatientReportQueries.Page(filtered, search, status, bounds.Start, bounds.End,
-            dateRange != null && bounds.Error == null, page, legacyPage);
+        var results = await _reports.LaboratoryPageAsync(user.Id, category, search, status, bounds.Start, bounds.End,
+            dateRange != null && bounds.Error == null, page, legacyPage, HttpContext.RequestAborted);
         await _auditLog.LogAsync(user.Id, "VIEW_LAB_LIST", "Patient/LabResults", "Viewed owned laboratory availability.",
             HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
         return View(new LabResultsIndexViewModel
         {
             SelectedCategory = category, SearchTerm = search, SelectedDateRange = dateRange,
             SelectedStartDate = startDate, SelectedEndDate = endDate, SelectedStatus = status,
-            Results = results, TotalCount = owned.Count
+            Results = results.Page, TotalCount = results.Total
         });
     }
 
@@ -70,7 +68,7 @@ public class LabResultsController : Controller
     {
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
-        var result = (await _reports.LaboratoriesAsync(user.Id, HttpContext.RequestAborted))
+        var result = (await _reports.LaboratoriesAsync(user.Id, HttpContext.RequestAborted, id: id, privateIds: []))
             .SingleOrDefault(r => r.Source == "lab" && r.Id == id);
         if (result is null) return NotFound();
         await _auditLog.LogAsync(user.Id, "VIEW_LAB_REPORT", $"LabResult/{id}", "Viewed owned laboratory request metadata.",

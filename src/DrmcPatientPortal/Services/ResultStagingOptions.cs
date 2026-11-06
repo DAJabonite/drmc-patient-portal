@@ -10,7 +10,7 @@ public sealed class RedStarLabReportStorageOptionsValidator(IWebHostEnvironment 
         try
         {
             var root = PrivateStorageRoot.ValidatePath(environment, options.RootPath);
-            var others = new[]
+            var others = new List<string>
             {
                 configuration["AdvisoryImages:RootPath"] ?? "App_Data/AdvisoryImages",
                 configuration["LabReports:RootPath"] ?? "App_Data/LabReports",
@@ -18,11 +18,14 @@ public sealed class RedStarLabReportStorageOptionsValidator(IWebHostEnvironment 
                 configuration["PatientDocuments:RootPath"] ?? "App_Data/PatientIdDocuments",
                 configuration["PatientDocuments:TemporaryPath"] ?? "App_Data/TempUploads",
                 configuration["DataProtection:KeyRingPath"] ?? "App_Data/DataProtectionKeys",
-                configuration["Imports:StagingPath"] ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DRMC", "ImportStaging"),
+                configuration["Imports:StagingPath"] ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DRMC", "ImportStaging")
+            };
+            if (configuration.GetValue<bool>("ResultStaging:Enabled")) others.AddRange(new[]
+            {
                 configuration["ResultStaging:LaboratoryPath"] ?? "App_Data/ResultStaging/Laboratory",
                 configuration["ResultStaging:RadiologyPath"] ?? "App_Data/ResultStaging/Radiology",
                 configuration["ResultStaging:QuarantinePath"] ?? "App_Data/ResultStaging/Quarantine"
-            };
+            });
             return others.Any(path => PrivateStorageRoot.PathsOverlap(root, PrivateStorageRoot.ValidatePath(environment, path)))
                 ? ValidateOptionsResult.Fail("Private clinic report storage must be separate from other private storage.")
                 : ValidateOptionsResult.Success;

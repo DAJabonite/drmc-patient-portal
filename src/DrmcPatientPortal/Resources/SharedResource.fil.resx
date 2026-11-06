@@ -343,4 +343,46 @@
   <data name="PasswordReset_RequestReceivedBody" xml:space="preserve"><value>Kung ang email address na ito ay para sa isang kumpirmadong account, magpapadala kami ng link upang palitan ang password.</value></data>
   <data name="PasswordReset_InboxHelp" xml:space="preserve"><value>Tingnan ang iyong inbox at spam o junk folder. Buksan ang reset link at pumili ng bagong password.</value></data>
   <data name="PasswordReset_RequestAnotherLink" xml:space="preserve"><value>Humiling ng panibagong reset link</value></data>
+  <data name="Report_Encounter" xml:space="preserve"><value>Pagbisita</value></data>
+  <data name="Report_EncounterLabel" xml:space="preserve"><value>Pagbisita:</value></data>
+  <data name="Report_Unassigned" xml:space="preserve"><value>Wala pang nakatalagang pagbisita</value></data>
+  <data name="Report_TestDate" xml:space="preserve"><value>Petsa ng pagsusuri:</value></data>
+  <data name="Report_StudyDate" xml:space="preserve"><value>Petsa ng imaging:</value></data>
+  <data name="Report_NoTestDate" xml:space="preserve"><value>Hindi naitala ang petsa ng pagsusuri</value></data>
+  <data name="Report_Status" xml:space="preserve"><value>Katayuan:</value></data>
+  <data name="Report_RequestReference" xml:space="preserve"><value>Sanggunian ng kahilingan:</value></data>
+  <data name="Report_Cancelled" xml:space="preserve"><value>Kinansela ang kahilingang ito.</value></data>
+  <data name="Report_UnavailablePdf" xml:space="preserve"><value>Hindi pa maaaring tingnan ang PDF.</value></data>
+  <data name="Report_PendingPdf" xml:space="preserve"><value>Hindi pa handa ang PDF ng resulta.</value></data>
+  <data name="Report_Details" xml:space="preserve"><value>Mga detalye ng kahilingan</value></data>
+  <data name="Report_CountSummary" xml:space="preserve"><value>{0} pagbisita · {1} kahilingan · {2} kalakip na PDF. Nauuna ang mga pagbisitang kamakailang na-update.</value></data>
+  <data name="Report_GroupCounts" xml:space="preserve"><value>{0} kahilingan · {1} PDF</value></data>
+  <data name="Report_NoMatch" xml:space="preserve"><value>Walang kahilingang tumutugma sa mga filter</value></data>
+  <data name="Report_TryFilters" xml:space="preserve"><value>Subukan ang ibang petsa ng pagbisita, paglalarawan o katayuan.</value></data>
+  <data name="Report_ClearFilters" xml:space="preserve"><value>Alisin ang mga filter at tingnan ang lahat ng kahilingan</value></data>
+  <data name="Report_LegacyExcluded" xml:space="preserve"><value>Hindi kasama sa filter ng petsa ang mga rekord na wala pang nakatalagang pagbisita. Alisin ang filter ng petsa upang makita ang mga ito.</value></data>
+  <data name="Report_LegacyHelp" xml:space="preserve"><value>Makikita pa rin ang mga lumang rekord habang hindi pa naitatalaga ang pinagmulang pagbisita.</value></data>
+  <data name="Report_Password" xml:space="preserve"><value>Password ng account</value></data>
+  <data name="Report_ForDescription" xml:space="preserve"><value>para sa {0}</value></data>
+  <data name="Report_PdfPasswordHelp" xml:space="preserve"><value>Ilagay muli ang iyong password tuwing titingin o magda-download ng PDF na ito.</value></data>
+  <data name="Report_ViewPdf" xml:space="preserve"><value>Tingnan ang PDF</value></data>
+  <data name="Report_DownloadPdf" xml:space="preserve"><value>I-download ang PDF</value></data>
+  <data name="Report_NewTab" xml:space="preserve"><value>para sa {0} (magbubukas sa bagong tab)</value></data>
+  <data name="Report_BackPrevious" xml:space="preserve"><value>Bumalik sa nakaraang pahina</value></data>
+  <data name="Report_BackLab" xml:space="preserve"><value>Bumalik sa mga kahilingan sa laboratoryo</value></data>
+  <data name="Report_BackImaging" xml:space="preserve"><value>Bumalik sa mga kahilingan sa imaging</value></data>
+  <data name="Report_LabRequest" xml:space="preserve"><value>Kahilingan sa laboratoryo</value></data>
+  <data name="Report_RadiologyRequest" xml:space="preserve"><value>Kahilingan sa radiology</value></data>
+  <data name="Report_RequestActions" xml:space="preserve"><value>Mga aksiyon sa kahilingan</value></data>
+  <data name="Report_BackEncounter" xml:space="preserve"><value>Bumalik sa pagbisita</value></data>
+  <data name="ReportStatus_requested" xml:space="preserve"><value>Hiniling</value></data>
+  <data name="ReportStatus_awaiting report" xml:space="preserve"><value>Naghihintay ng resulta</value></data>
+  <data name="ReportStatus_in progress" xml:space="preserve"><value>Isinasagawa</value></data>
+  <data name="ReportStatus_pending verification" xml:space="preserve"><value>Naghihintay ng beripikasyon</value></data>
+  <data name="ReportStatus_available" xml:space="preserve"><value>Handa na</value></data>
+  <data name="ReportStatus_cancelled" xml:space="preserve"><value>Kinansela</value></data>
+  <data name="ReportStatus_final" xml:space="preserve"><value>Pinal</value></data>
+  <data name="ReportStatus_amended" xml:space="preserve"><value>Binago</value></data>
+  <data name="ReportStatus_unknown" xml:space="preserve"><value>Hindi alam</value></data>
+  <data name="ReportStatus_withdrawn" xml:space="preserve"><value>Binawi</value></data>
 </root>

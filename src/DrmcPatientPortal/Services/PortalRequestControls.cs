@@ -86,6 +86,10 @@ public sealed class PortalRequestControls(RequestDelegate next)
             path.Equals("/Identity/Account/Register", StringComparison.OrdinalIgnoreCase) ||
             path.Equals("/Identity/Account/ResetPassword", StringComparison.OrdinalIgnoreCase) ||
             path.Equals("/Identity/Account/Manage/EnableAuthenticator", StringComparison.OrdinalIgnoreCase) ||
+            path.Equals("/Identity/Account/Manage/ResetAuthenticator", StringComparison.OrdinalIgnoreCase) ||
+            path.Equals("/Identity/Account/Manage/Disable2fa", StringComparison.OrdinalIgnoreCase) ||
+            path.Equals("/Identity/Account/Manage/TwoFactorAuthentication", StringComparison.OrdinalIgnoreCase) ||
+            path.Equals("/Identity/Account/Manage/GenerateRecoveryCodes", StringComparison.OrdinalIgnoreCase) ||
             path.Equals("/Identity/Account/Manage/ChangePassword", StringComparison.OrdinalIgnoreCase) ||
             path.Equals("/Identity/Account/Manage/SetPassword", StringComparison.OrdinalIgnoreCase)) return PortalRequestKind.Authentication;
         return PortalRequestKind.None;
@@ -160,7 +164,10 @@ public sealed class PortalRequestControls(RequestDelegate next)
         // String model binding selects the first value, even when a field is repeated.
         // PDF passwords always belong to the authenticated account. Posted email fields
         // must not create a fresh rate-limit bucket for another guess.
-        string accountKey = kind == PortalRequestKind.Pdf ? userId ?? "anonymous" : form?["Input.Email"].FirstOrDefault() ?? "";
+        var manageAuthentication = kind == PortalRequestKind.Authentication &&
+            (context.Request.Path.Value ?? "").StartsWith("/Identity/Account/Manage/", StringComparison.OrdinalIgnoreCase);
+        string accountKey = kind == PortalRequestKind.Pdf || manageAuthentication
+            ? userId ?? "anonymous" : form?["Input.Email"].FirstOrDefault() ?? "";
         if (string.IsNullOrEmpty(accountKey)) accountKey = context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Request.Query["userId"].ToString();
         if (string.IsNullOrEmpty(accountKey) && kind == PortalRequestKind.Authentication)
         {

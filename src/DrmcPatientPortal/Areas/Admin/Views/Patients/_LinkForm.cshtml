@@ -7,7 +7,7 @@
         <p class="form-text">The account's saved name and birth date must match this hospital record.</p>
         <div class="mb-3"><label asp-for="HospitalNumber" class="form-label">Hospital number (required)</label><input asp-for="HospitalNumber" class="form-control" maxlength="450" required aria-required="true" /><span asp-validation-for="HospitalNumber" class="text-danger"></span></div>
         <div class="mb-3"><label asp-for="HospitalRecordCode" class="form-label">Hospital record code (required)</label><input asp-for="HospitalRecordCode" class="form-control" maxlength="64" autocomplete="off" spellcheck="false" required aria-required="true" /><span asp-validation-for="HospitalRecordCode" class="text-danger"></span><div class="form-text">Enter the active code issued to this patient. Linking uses the code once.</div></div>
-        <div class="form-check"><input asp-for="IdentityVerified" class="form-check-input" /><label asp-for="IdentityVerified" class="form-check-label">Staff checked the patient's identity</label></div>
+        <div class="form-check"><input asp-for="IdentityVerified" class="form-check-input" required /><label asp-for="IdentityVerified" class="form-check-label">Staff checked the patient's identity</label></div>
         <span asp-validation-for="IdentityVerified" class="text-danger"></span>
     </div>
     <div class="admin-form-actions">

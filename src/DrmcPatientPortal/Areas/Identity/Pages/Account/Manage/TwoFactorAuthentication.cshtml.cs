@@ -1,27 +1,33 @@
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace DrmcPatientPortal.Areas.Identity.Pages.Account.Manage;
 
+[Authorize]
+[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
 public class TwoFactorAuthenticationModel : PageModel
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly MfaManagement _management;
 
     public TwoFactorAuthenticationModel(
         UserManager<ApplicationUser> userManager,
-        SignInManager<ApplicationUser> signInManager)
+        SignInManager<ApplicationUser> signInManager, MfaManagement management)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+        _management = management;
     }
 
     public bool HasAuthenticator { get; set; }
     public int RecoveryCodesLeft { get; set; }
-    [BindProperty]
     public bool Is2faEnabled { get; set; }
+    [BindProperty] public MfaPasswordInput Input { get; set; } = new();
     public bool IsMachineRemembered { get; set; }
     [TempData]
     public string? StatusMessage { get; set; }
@@ -63,12 +69,18 @@ public class TwoFactorAuthenticationModel : PageModel
             return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
         }
 
-        var disable2faResult = await _userManager.SetTwoFactorEnabledAsync(user, false);
-        if (!disable2faResult.Succeeded)
+        var result = await _management.RunAsync(User, Input.Password, MfaOperation.Disable, token: HttpContext.RequestAborted);
+        Input.Password = "";
+        ModelState.Remove("Input.Password");
+        if (!result.Succeeded)
         {
-            throw new InvalidOperationException($"Unexpected error occurred disabling 2FA.");
+            ModelState.AddModelError("", result.Error!);
+            return await OnGetAsync();
         }
-
+        TempData.Remove("RecoveryCodes");
+        TempData.Remove("RecoveryCodesOwner");
+        if (!await _management.RefreshSignInAsync(result.User!, HttpContext.RequestAborted))
+            return RedirectToPage("/Account/Login", new { area = "Identity" });
         StatusMessage = "2FA has been disabled. You can re-enable it at any time.";
         return RedirectToPage();
     }

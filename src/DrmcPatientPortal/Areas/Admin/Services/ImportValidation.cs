@@ -2,6 +2,7 @@ using System.Globalization;
 using DrmcPatientPortal.Areas.Admin.Models;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
+using DrmcPatientPortal.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace DrmcPatientPortal.Areas.Admin.Services;
@@ -11,13 +12,16 @@ public sealed record ImportPlan(ImportReport Report, List<ImportNode> Nodes);
 
 public static class ImportValidation
 {
+    internal static bool TrySourceBirthDate(string value, out DateTime date) =>
+        DateTime.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out date);
+
     public static List<ImportGroup> Groups(IEnumerable<ImportRow> rows) => rows.Where(row => ImportTemplates.Get(row.Template).Clinical)
         .GroupBy(row => row.Fields["SourcePatientKey"].Trim(), StringComparer.Ordinal).OrderBy(group => group.Key, StringComparer.Ordinal)
         .Select(group =>
         {
             var source = group.FirstOrDefault(row => row.Template == "Patients") ?? group.First();
             return new ImportGroup(group.Key, source.Fields["SourcePatientName"],
-                source.Fields.GetValueOrDefault("DateOfBirth") ?? source.Fields["SourceBirthDate"], group.Count(), source.Template == "Patients", source.Fields.GetValueOrDefault("HospitalNumber") ?? "");
+                source.Fields["SourceBirthDate"], group.Count(), source.Template == "Patients", source.Fields.GetValueOrDefault("HospitalNumber") ?? "");
         }).ToList();
 
     public static async Task<ImportPlan> BuildAsync(ApplicationDbContext db, ImportEnvelope envelope, CancellationToken token)
@@ -50,6 +54,18 @@ public static class ImportValidation
         foreach (var group in groups)
         {
             var errors = new List<string>(); var mappings = mappingGroups.GetValueOrDefault(group.Key) ?? [];
+            var sourceName = group.First().Fields["SourcePatientName"];
+            var sourceDate = group.First().Fields["SourceBirthDate"];
+            var validDate = TrySourceBirthDate(sourceDate, out var sourceBirthDate);
+            if (group.Any(row => !PatientNames.MatchesImportedFullName(row.Fields["SourcePatientName"], row.Fields["SourcePatientName"]) ||
+                !TrySourceBirthDate(row.Fields["SourceBirthDate"], out _)))
+                errors.Add("Every clinical row requires SourcePatientName in first/middle/last/suffix order and SourceBirthDate in yyyy-MM-dd format.");
+            if (group.Any(row => !PatientNames.MatchesImportedFullName(sourceName, row.Fields["SourcePatientName"]) ||
+                row.Fields["SourceBirthDate"] != sourceDate))
+                errors.Add("The source patient names and birth dates conflict within this group. Correct the file before importing.");
+            var matches = validDate ? lookups.IdentityPatients.Where(patient => patient.DateOfBirth?.Date == sourceBirthDate &&
+                PatientNames.MatchesImportedFullName(patient, sourceName)).ToArray() : [];
+            if (matches.Length > 1) errors.Add("More than one hospital record matches this source identity. Reconcile the hospital records before importing.");
             if (group.Key.Length == 0 || mappings.Length != 1) errors.Add("Choose exactly one explicit patient mapping for this source group.");
             else
             {
@@ -60,6 +76,12 @@ public static class ImportValidation
                 {
                     var input = registry.Length == 1 ? (PatientInput)ImportTemplates.Input(registry[0], errors) : mapping.Patient;
                     ImportTemplates.Validate(input, errors);
+                    if (registry.Length == 1 && !TrySourceBirthDate(registry[0].Fields["DateOfBirth"], out _))
+                        errors.Add("DateOfBirth must use yyyy-MM-dd format and match SourceBirthDate.");
+                    if (input.DateOfBirth?.Date != sourceBirthDate || !PatientNames.MatchesImportedFullName(new PatientRecord
+                        { FirstName = input.FirstName, MiddleName = input.MiddleName, LastName = input.LastName, Suffix = input.Suffix }, sourceName))
+                        errors.Add("The new patient's full name and birth date must exactly match every source row.");
+                    if (matches.Length != 0) errors.Add("A hospital record already matches this source identity. Select that record instead of creating a duplicate.");
                     var patient = new PatientRecord { Id = nextId-- };
                     if (errors.Count == 0)
                     {
@@ -67,13 +89,17 @@ public static class ImportValidation
                         if (!result.Succeeded) errors.Add(result.Error!);
                         if (patient.HospitalNumber is not null && !duplicates.Add("Hospital:" + patient.HospitalNumber)) errors.Add("Duplicate hospital numbers in this batch block execution.");
                     }
-                    if (errors.Count == 0) { db.Add(patient); patients[group.Key] = patient; nodes.Add(new("Patients", patient, patient)); }
+                    if (errors.Count == 0) { db.Add(patient); patients[group.Key] = patient; lookups.IdentityPatients.Add(patient); nodes.Add(new("Patients", patient, patient)); }
                 }
                 else
                 {
                     if (registry.Length != 0) errors.Add("Patient template rows only create new records; existing records cannot be updated or skipped.");
                     var patient = mapping.PatientRecordId is { } patientId ? lookups.Patients.GetValueOrDefault(patientId) : null;
                     if (patient is null) errors.Add("The selected patient record no longer exists.");
+                    else if (patient.NeedsNameReview || !patient.DateOfBirth.HasValue)
+                        errors.Add("Verify the selected hospital record's separate name fields and birth date before importing.");
+                    else if (!validDate || patient.DateOfBirth.Value.Date != sourceBirthDate || !PatientNames.MatchesImportedFullName(patient, sourceName))
+                        errors.Add("The selected hospital record's full name and birth date do not match the source identity.");
                     else if (errors.Count == 0) patients[group.Key] = patient;
                 }
             }

@@ -4,171 +4,102 @@ using System.Text;
 using System.Text.Encodings.Web;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace DrmcPatientPortal.Areas.Identity.Pages.Account.Manage;
 
-public class EnableAuthenticatorModel : PageModel
+[Authorize]
+[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
+public class EnableAuthenticatorModel(UserManager<ApplicationUser> users, MfaManagement management,
+    IQrCodeService qrCodes, UrlEncoder encoder,
+    ILogger<EnableAuthenticatorModel> logger) : PageModel
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly ILogger<EnableAuthenticatorModel> _logger;
-    private readonly UrlEncoder _urlEncoder;
-    private readonly IQrCodeService _qrCodeService;
-    private readonly StaffInvitationActivator _invitations;
-    private readonly SignInManager<ApplicationUser> _signIn;
+    public string SharedKey { get; private set; } = "";
+    public string QrCodeSvg { get; private set; } = "";
+    public bool ShowSetup => SharedKey.Length > 0;
 
-    private const string AuthenticatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
+    [TempData] public string[]? RecoveryCodes { get; set; }
+    [TempData] public string? RecoveryCodesOwner { get; set; }
+    [TempData] public string? StatusMessage { get; set; }
+    [BindProperty] public InputModel Input { get; set; } = new();
 
-    public EnableAuthenticatorModel(
-        UserManager<ApplicationUser> userManager,
-        ILogger<EnableAuthenticatorModel> logger,
-        UrlEncoder urlEncoder,
-        IQrCodeService qrCodeService,
-        StaffInvitationActivator invitations, SignInManager<ApplicationUser> signIn)
+    public sealed class InputModel
     {
-        _userManager = userManager;
-        _logger = logger;
-        _urlEncoder = urlEncoder;
-        _qrCodeService = qrCodeService;
-        _invitations = invitations;
-        _signIn = signIn;
-    }
-
-    public string SharedKey { get; set; } = string.Empty;
-    public string AuthenticatorUri { get; set; } = string.Empty;
-    public string QrCodeSvg { get; set; } = string.Empty;
-
-    [TempData]
-    public string[]? RecoveryCodes { get; set; }
-
-    [TempData]
-    public string? RecoveryCodesOwner { get; set; }
-
-    [TempData]
-    public string? StatusMessage { get; set; }
-
-    [BindProperty]
-    public InputModel Input { get; set; } = new();
-
-    public class InputModel
-    {
-        [Required]
-        [StringLength(7, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
-        [DataType(DataType.Text)]
-        [Display(Name = "6-Digit Verification Code")]
-        public string Code { get; set; } = string.Empty;
+        [Required, DataType(DataType.Password), Display(Name = "Current password")]
+        public string Password { get; set; } = "";
+        [Required, StringLength(7, MinimumLength = 6), Display(Name = "6-Digit Verification Code")]
+        public string Code { get; set; } = "";
     }
 
     public async Task<IActionResult> OnGetAsync()
     {
-        var user = await _userManager.GetUserAsync(User);
-        if (user == null)
-        {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
-        }
+        var user = await users.GetUserAsync(User);
+        if (user is null) return NotFound();
+        return user.TwoFactorEnabled ? RedirectToPage("./TwoFactorAuthentication") : Page();
+    }
 
-        await LoadSharedKeyAndQrCodeUriAsync(user);
+    public async Task<IActionResult> OnPostShowSetupAsync()
+    {
+        ModelState.Remove("Input.Code");
+        var result = await management.RunAsync(User, Input.Password, MfaOperation.ShowSetup, token: HttpContext.RequestAborted);
+        ClearPassword();
+        if (!result.Succeeded) { ModelState.AddModelError("", result.Error!); return Page(); }
+        RecoveryCodes = null;
+        RecoveryCodesOwner = null;
+        if (!await management.RefreshSignInAsync(result.User!, HttpContext.RequestAborted))
+            return RedirectToPage("/Account/Login", new { area = "Identity" });
+        await LoadQrAsync(result.User!, result.SetupKey!);
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var user = await _userManager.GetUserAsync(User);
-        if (user == null)
+        var result = await management.RunAsync(User, Input.Password, MfaOperation.Enable, Input.Code, HttpContext.RequestAborted);
+        ClearPassword();
+        if (!result.Succeeded)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
-        }
-
-        if (!ModelState.IsValid)
-        {
-            await LoadSharedKeyAndQrCodeUriAsync(user);
+            ModelState.AddModelError("", result.Error!);
+            if (result.SetupKey is not null)
+            {
+                var user = await users.GetUserAsync(User);
+                if (user is not null) await LoadQrAsync(user, result.SetupKey);
+            }
             return Page();
         }
 
-        // Strip spaces and hyphens
-        var verificationCode = Input.Code.Replace(" ", string.Empty).Replace("-", string.Empty);
-
-        var is2faTokenValid = await _userManager.VerifyTwoFactorTokenAsync(
-            user, TokenOptions.DefaultAuthenticatorProvider, verificationCode);
-
-        if (!is2faTokenValid)
-        {
-            ModelState.AddModelError("Input.Code", "Verification code is invalid. Please check your authenticator app and try again.");
-            await LoadSharedKeyAndQrCodeUriAsync(user);
-            return Page();
-        }
-
-        await _userManager.SetTwoFactorEnabledAsync(user, true);
-        var userId = await _userManager.GetUserIdAsync(user);
-        _logger.LogInformation("User with ID '{UserId}' has enabled 2FA with an authenticator app.", userId);
-
+        // Invitation activation owns a separate transaction and can update the stamp again.
+        var role = await management.ActivateInvitationAsync(result.User!, HttpContext.RequestAborted);
+        if (!await management.RefreshSignInAsync(result.User!, HttpContext.RequestAborted))
+            return RedirectToPage("/Account/Login", new { area = "Identity" });
         StatusMessage = "Your authenticator app has been verified and 2FA is now active.";
-
-        // Invited staff with a confirmed email get their role now. Staff pages need a sign-in
-        // with an authenticator code, so they sign in again to open Administration.
-        var role = await _invitations.TryActivateAsync(user, HttpContext.RequestAborted);
-        await _signIn.RefreshSignInAsync(user);
         if (role is not null)
             StatusMessage += $" Your {DrmcPatientPortal.Areas.Admin.Security.StaffRoles.Label(role).ToLowerInvariant()} role is now active. Sign out, then sign in with your authenticator code to open Administration.";
-
-        if (await _userManager.CountRecoveryCodesAsync(user) == 0)
-        {
-            var codes = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10)
-                ?? throw new InvalidOperationException("Unable to generate two-factor recovery codes.");
-            RecoveryCodes = codes.ToArray();
-            // Keep GUID-shaped Identity IDs as strings when TempData is deserialized.
-            RecoveryCodesOwner = $"user:{userId}";
-            return RedirectToPage("./ShowRecoveryCodes");
-        }
-
-        return RedirectToPage("./TwoFactorAuthentication");
+        RecoveryCodes = result.RecoveryCodes;
+        RecoveryCodesOwner = $"user:{result.User!.Id}";
+        logger.LogInformation("User with ID '{UserId}' enabled 2FA with an authenticator app.", result.User.Id);
+        return RedirectToPage("./ShowRecoveryCodes");
     }
 
-    private async Task LoadSharedKeyAndQrCodeUriAsync(ApplicationUser user)
+    private void ClearPassword()
     {
-        var unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
-        if (string.IsNullOrEmpty(unformattedKey))
-        {
-            await _userManager.ResetAuthenticatorKeyAsync(user);
-            await _signIn.RefreshSignInAsync(user);
-            unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
-        }
-
-        SharedKey = FormatKey(unformattedKey!);
-
-        var email = await _userManager.GetEmailAsync(user);
-        AuthenticatorUri = GenerateQrCodeUri(email!, unformattedKey!);
-
-        // Generate vector SVG QR code in-process
-        QrCodeSvg = _qrCodeService.GenerateSvgQrCode(AuthenticatorUri);
+        Input.Password = "";
+        ModelState.Remove("Input.Password");
     }
 
-    private string FormatKey(string unformattedKey)
+    private async Task LoadQrAsync(ApplicationUser user, string key)
     {
-        var result = new StringBuilder();
-        int currentPosition = 0;
-        while (currentPosition + 4 < unformattedKey.Length)
+        var formatted = new StringBuilder();
+        for (var offset = 0; offset < key.Length; offset += 4)
         {
-            result.Append(unformattedKey.AsSpan(currentPosition, 4)).Append(' ');
-            currentPosition += 4;
+            if (offset > 0) formatted.Append(' ');
+            formatted.Append(key.AsSpan(offset, Math.Min(4, key.Length - offset)));
         }
-        if (currentPosition < unformattedKey.Length)
-        {
-            result.Append(unformattedKey.AsSpan(currentPosition));
-        }
-
-        return result.ToString().ToLowerInvariant();
-    }
-
-    private string GenerateQrCodeUri(string email, string unformattedKey)
-    {
-        return string.Format(
-            CultureInfo.InvariantCulture,
-            AuthenticatorUriFormat,
-            _urlEncoder.Encode("DRMC Patient Portal"),
-            _urlEncoder.Encode(email),
-            unformattedKey);
+        SharedKey = formatted.ToString().ToLowerInvariant();
+        var uri = string.Format(CultureInfo.InvariantCulture, "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6",
+            encoder.Encode("DRMC Patient Portal"), encoder.Encode(await users.GetEmailAsync(user) ?? ""), key);
+        QrCodeSvg = qrCodes.GenerateSvgQrCode(uri);
     }
 }

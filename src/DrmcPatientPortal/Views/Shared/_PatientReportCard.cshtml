@@ -8,26 +8,26 @@
     <h2 class="h6 fw-bold text-dark text-break">@Model.Description</h2>
     @if (Model.ClinicalEncounterId.HasValue)
     {
-        <p class="small mb-1">Encounter: <a asp-controller="Visits" asp-action="Details" asp-route-id="@Model.ClinicalEncounterId">@Model.EncounterReference</a>
+        <p class="small mb-1">@Loc["Report_EncounterLabel"] <a asp-controller="Visits" asp-action="Details" asp-route-id="@Model.ClinicalEncounterId">@Model.EncounterReference</a>
             · <time datetime="@Model.EncounterDate?.ToString("yyyy-MM-dd")">@Model.EncounterDate?.ToString("MMM d, yyyy")</time></p>
     }
-    else { <p class="small mb-1">Encounter not assigned</p> }
+    else { <p class="small mb-1">@Loc["Report_Unassigned"]</p> }
     <p class="small text-muted mb-1">
-        @(Model.Source == "radiology" ? "Study date:" : "Test date:")
+        @(Model.Source == "radiology" ? Loc["Report_StudyDate"] : Loc["Report_TestDate"])
         @if (Model.ExamDate.HasValue)
         { <time datetime="@Model.ExamDate.Value.ToString("yyyy-MM-dd")">@Model.ExamDate.Value.ToString("MMM d, yyyy")</time> }
-        else { <span>Test date not recorded</span> }
+        else { <span>@Loc["Report_NoTestDate"]</span> }
     </p>
-    <p class="small mb-2">Status: <strong>@Model.Status</strong></p>
-    @if (!string.IsNullOrEmpty(Model.RequestReference)) { <p class="small text-muted text-break mb-2">Request reference: @Model.RequestReference</p> }
+    <p class="small mb-2">@Loc["Report_Status"] <strong>@Loc["ReportStatus_" + Model.Status.ToLowerInvariant()]</strong></p>
+    @if (!string.IsNullOrEmpty(Model.RequestReference)) { <p class="small text-muted text-break mb-2">@Loc["Report_RequestReference"] @Model.RequestReference</p> }
     @if (Model.CanOpenPdf)
     {
         <partial name="_PdfReportActions" model='new PdfReportActionsViewModel(Model.ControllerName, Model.Id, Model.Description, Model.Source)' />
     }
     else
     {
-        <p class="small text-muted mb-2">@(Model.Status == "Cancelled" ? "This request was cancelled." : Model.HasPdf ? "The PDF is not currently available to view." : "The report PDF is not available yet.")</p>
+        <p class="small text-muted mb-2">@(Model.Status == "Cancelled" ? Loc["Report_Cancelled"] : Model.HasPdf ? Loc["Report_UnavailablePdf"] : Loc["Report_PendingPdf"])</p>
     }
     @if (ViewContext.RouteData.Values["controller"]?.ToString() == "Visits" || ViewContext.RouteData.Values["action"]?.ToString() != "Details")
-    { <a href="@detailsUrl" class="small fw-semibold">Request details</a> }
+    { <a href="@detailsUrl" class="small fw-semibold">@Loc["Report_Details"]</a> }
 </article>

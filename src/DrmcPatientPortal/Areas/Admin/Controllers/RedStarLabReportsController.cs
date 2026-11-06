@@ -210,6 +210,11 @@ public sealed class RedStarLabReportsController(ApplicationDbContext db, AdminWr
             catch (InvalidDataException error) { ModelState.AddModelError("", error.Message); }
         }
         if (input.RemoveReport && input.Report is not null) ModelState.AddModelError("", "Choose either replacement or removal.");
+        if (input.Report is not null && original.ReportFileName is not null)
+        {
+            input.Status = "Pending Verification";
+            input.ReleasedAt = null;
+        }
         var hasPdf = input.Report is not null || !input.RemoveReport && original.ReportFileName is not null;
         if (hasPdf && input.Status == "In progress") input.Status = "Pending Verification";
         ValidateRelease(input.Status, input.CollectedAt, input.ReleasedAt, hasPdf);

@@ -78,6 +78,11 @@ public sealed class RadiologyStudiesController(ApplicationDbContext db, AdminWri
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         { return WriteResult.Invalid("The PDF could not be stored. Choose the file again and try saving."); }
         previousReport = entity.ReportFileName;
+        if (previousReport is not null)
+        {
+            entity.Status = RadiologyStatus.PendingVerification;
+            entity.ReleasedAt = null;
+        }
         ReportAttachments.Apply(entity, stored, clock.GetUtcNow().UtcDateTime);
         await database.SaveChangesAsync(token);
         return WriteResult.Success;

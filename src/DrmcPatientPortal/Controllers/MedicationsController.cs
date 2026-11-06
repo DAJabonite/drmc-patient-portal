@@ -38,25 +38,32 @@ public class MedicationsController : Controller
 
         var owned = _db.Prescriptions.AsNoTracking().Where(p => p.Patient.PortalUserId == user.Id
             && (p.ClinicalEncounterId == null || p.Encounter!.PatientRecordId == p.PatientRecordId));
-        var allPrescriptions = await SqlReadRetry.RunAsync(_db, () => owned.Include(p => p.Encounter).ToListAsync());
         dateRange = dateRange is "30d" or "6m" or "year" or "custom" ? dateRange : null;
         var bounds = PatientReportQueries.DateBounds(dateRange, startDate, endDate);
         if (bounds.Error != null) ViewData["DateRangeError"] = bounds.Error;
-        var filtered = allPrescriptions.Where(p => p.Encounter != null
+        var filtered = owned.Where(p => p.Encounter != null
             && (!bounds.Start.HasValue || p.Encounter.EncounterDate >= bounds.Start)
-            && (!bounds.End.HasValue || p.Encounter.EncounterDate < bounds.End)).ToList();
-        var groups = filtered.GroupBy(p => p.ClinicalEncounterId!.Value)
-            .OrderByDescending(g => g.Any(p => p.Status == PrescriptionStatus.Active))
-            .ThenByDescending(g => g.Max(p => p.PatientActivityAtUtc ?? p.PrescribedAt))
-            .ThenByDescending(g => g.First().Encounter!.EncounterDate).ThenByDescending(g => g.Key).ToList();
-        var pagination = PatientReportQueries.Pagination(groups.Count, page);
-        var legacy = dateRange == null || bounds.Error != null ? allPrescriptions.Where(p => p.ClinicalEncounterId == null)
-            .OrderByDescending(p => p.Status == PrescriptionStatus.Active).ThenByDescending(p => p.PrescribedAt).ThenByDescending(p => p.Id).ToList() : [];
-        var legacyPagination = PatientReportQueries.Pagination(legacy.Count, legacyPage, "legacyPage");
-        var prescriptionGroups = groups.Skip(pagination.Offset).Take(PortalPagination.Size).Select(g =>
-            new PrescriptionEncounterGroup(g.Key, g.First().Encounter!.EncounterReference, g.First().Encounter!.EncounterDate,
-                g.OrderByDescending(p => p.Status == PrescriptionStatus.Active).ThenByDescending(p => p.PrescribedAt).ThenByDescending(p => p.Id).ToList())).ToList();
-        var prescriptions = legacy.Skip(legacyPagination.Offset).Take(PortalPagination.Size).ToList();
+            && (!bounds.End.HasValue || p.Encounter.EncounterDate < bounds.End));
+        var groups = filtered.GroupBy(p => p.ClinicalEncounterId).Select(g => new
+        {
+            Id = g.Key, Active = g.Any(p => p.Status == PrescriptionStatus.Active),
+            Activity = g.Max(p => p.PatientActivityAtUtc ?? p.PrescribedAt), Date = g.Max(p => p.Encounter!.EncounterDate)
+        });
+        var pagination = await PortalPagination.CreateAsync(groups, _db, page);
+        var encounterIds = await SqlReadRetry.RunAsync(_db, () => groups.OrderByDescending(g => g.Active)
+            .ThenByDescending(g => g.Activity).ThenByDescending(g => g.Date).ThenByDescending(g => g.Id)
+            .Skip(pagination.Offset).Take(PortalPagination.Size).Select(g => g.Id).ToArrayAsync());
+        var selected = await SqlReadRetry.RunAsync(_db, () => filtered.Include(p => p.Encounter)
+            .Where(p => EF.Parameter(encounterIds).Contains(p.ClinicalEncounterId)).ToListAsync());
+        var prescriptionGroups = encounterIds.Select(id => selected.Where(p => p.ClinicalEncounterId == id)
+            .OrderByDescending(p => p.Status == PrescriptionStatus.Active).ThenByDescending(p => p.PrescribedAt).ThenByDescending(p => p.Id).ToList())
+            .Where(prescriptions => prescriptions.Count > 0).Select(prescriptions => new PrescriptionEncounterGroup(
+                prescriptions[0].ClinicalEncounterId, prescriptions[0].Encounter!.EncounterReference,
+                prescriptions[0].Encounter!.EncounterDate, prescriptions)).ToList();
+        var legacy = owned.Where(p => p.ClinicalEncounterId == null && (dateRange == null || bounds.Error != null));
+        var legacyPagination = await PortalPagination.CreateAsync(legacy, _db, legacyPage, "legacyPage");
+        var prescriptions = await SqlReadRetry.RunAsync(_db, () => legacy.OrderByDescending(p => p.Status == PrescriptionStatus.Active)
+            .ThenByDescending(p => p.PrescribedAt).ThenByDescending(p => p.Id).Skip(legacyPagination.Offset).Take(PortalPagination.Size).ToListAsync());
 
         var allergyQuery = _db.PatientAllergies.AsNoTracking().Where(a => a.Patient.PortalUserId == user.Id);
         var allergyPagination = await PortalPagination.CreateAsync(allergyQuery, _db, allergyPage, "allergyPage");
@@ -76,10 +83,10 @@ public class MedicationsController : Controller
             Prescriptions = prescriptions,
             Allergies = allergies,
             ActiveCount = await SqlReadRetry.RunAsync(_db, () => owned.CountAsync(p => p.Status == PrescriptionStatus.Active)),
-            PrescriptionTotal = filtered.Count + legacy.Count,
+            PrescriptionTotal = await SqlReadRetry.RunAsync(_db, () => filtered.CountAsync()) + legacyPagination.Total,
             PrescriptionGroups = prescriptionGroups, Pagination = pagination, LegacyPagination = legacyPagination,
             SelectedDateRange = dateRange, SelectedStartDate = startDate, SelectedEndDate = endDate,
-            LegacyExcluded = dateRange != null && bounds.Error == null && allPrescriptions.Any(p => p.ClinicalEncounterId == null),
+            LegacyExcluded = dateRange != null && bounds.Error == null && await SqlReadRetry.RunAsync(_db, () => owned.AnyAsync(p => p.ClinicalEncounterId == null)),
             Schedules = schedules, SchedulePagination = schedulePagination, AllergyPagination = allergyPagination
         };
 

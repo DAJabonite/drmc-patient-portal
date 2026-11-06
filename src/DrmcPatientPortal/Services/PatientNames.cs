@@ -37,6 +37,18 @@ public static class PatientNames
         catch (ArgumentException) { return false; }
     }
 
+    // Imports must include every recorded name part, in first/middle/last/suffix order.
+    public static bool MatchesImportedFullName(PatientRecord record, string? fullName) =>
+        !record.NeedsNameReview && MatchesImportedFullName(record.FirstName, record.FirstName) &&
+        MatchesImportedFullName(record.LastName, record.LastName) && MatchesImportedFullName(
+            string.Join(' ', record.FirstName, record.MiddleName, record.LastName, record.Suffix), fullName);
+
+    public static bool MatchesImportedFullName(string? expected, string? submitted)
+    {
+        try { return RequiredMatch(expected, submitted); }
+        catch (ArgumentException) { return false; }
+    }
+
     private static bool RequiredMatch(string? record, string? submitted)
     {
         var expected = ComparisonValue(record);

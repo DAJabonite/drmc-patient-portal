@@ -1,0 +1,17 @@
+@page
+@model Disable2faModel
+@{
+    ViewData["Title"] = "Disable Two-Factor Authentication";
+    ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
+}
+<h2 class="h5 fw-bold text-primary-drmc mb-3">@ViewData["Title"]</h2>
+<p>Disabling 2FA replaces your authenticator key and removes your recovery codes. Enter your current password to continue.</p>
+<form method="post" style="max-width: 380px;">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+    <div class="mb-3">
+        <label asp-for="Input.Password" class="form-label"></label>
+        <input asp-for="Input.Password" value="" class="form-control" autocomplete="current-password" />
+    </div>
+    <button type="submit" class="btn btn-danger rounded-pill px-4">Disable 2FA</button>
+    <a asp-page="./TwoFactorAuthentication" class="btn btn-outline-secondary rounded-pill px-3">Cancel</a>
+</form>

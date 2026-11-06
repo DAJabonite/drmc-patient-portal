@@ -136,10 +136,8 @@ public class VisitsController : Controller
         }
 
         var token = HttpContext.RequestAborted;
-        ViewData["LaboratoryRequests"] = (await _reports.LaboratoriesAsync(user.Id, token))
-            .Where(r => r.ClinicalEncounterId == encounter.Id).ToList();
-        ViewData["RadiologyRequests"] = (await _reports.RadiologyAsync(user.Id, token))
-            .Where(r => r.ClinicalEncounterId == encounter.Id).ToList();
+        ViewData["LaboratoryRequests"] = await _reports.LaboratoriesAsync(user.Id, token, encounterId: encounter.Id);
+        ViewData["RadiologyRequests"] = await _reports.RadiologyAsync(user.Id, token, encounterId: encounter.Id);
         encounter.Prescriptions = await SqlReadRetry.RunAsync(_db, () => _db.Prescriptions.AsNoTracking()
             .Where(p => p.ClinicalEncounterId == encounter.Id && p.PatientRecordId == encounter.PatientRecordId
                 && p.Patient.PortalUserId == user.Id).OrderByDescending(p => p.PrescribedAt).ThenByDescending(p => p.Id).ToListAsync(token), token);

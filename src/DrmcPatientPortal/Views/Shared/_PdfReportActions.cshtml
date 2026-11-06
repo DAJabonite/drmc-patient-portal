@@ -11,19 +11,19 @@
     @Html.AntiForgeryToken()
     <div asp-validation-summary="All" class="text-danger" role="alert"></div>
     <label for="@passwordId" class="form-label small fw-semibold">
-        Account password <span class="visually-hidden">for @Model.Description</span>
+        @Loc["Report_Password"] <span class="visually-hidden">@Loc["Report_ForDescription", Model.Description]</span>
     </label>
     <input id="@passwordId" name="password" type="password" autocomplete="current-password"
            maxlength="1024" required class="form-control" aria-describedby="@helpId" />
-    <p id="@helpId" class="small text-muted mt-2">Confirm your password each time you view or download this PDF.</p>
+    <p id="@helpId" class="small text-muted mt-2">@Loc["Report_PdfPasswordHelp"]</p>
     <div class="d-flex flex-wrap gap-2">
         <button type="submit" name="intent" value="view" formtarget="_blank" class="btn btn-primary-drmc">
-            <i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>View PDF
-            <span class="visually-hidden">for @Model.Description (opens in a new tab)</span>
+            <i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>@Loc["Report_ViewPdf"]
+            <span class="visually-hidden">@Loc["Report_NewTab", Model.Description]</span>
         </button>
         <button type="submit" name="intent" value="download" class="btn btn-outline-drmc">
-            <i class="bi bi-download me-1" aria-hidden="true"></i>Download PDF
-            <span class="visually-hidden">for @Model.Description</span>
+            <i class="bi bi-download me-1" aria-hidden="true"></i>@Loc["Report_DownloadPdf"]
+            <span class="visually-hidden">@Loc["Report_ForDescription", Model.Description]</span>
         </button>
     </div>
 </form>

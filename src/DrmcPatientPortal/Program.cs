@@ -4,6 +4,8 @@ using DrmcPatientPortal;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Localization;
@@ -27,13 +29,15 @@ if (args is ["--ocr-worker"])
 }
 
 var builder = WebApplication.CreateBuilder(args);
+ProductionConfiguration.Validate(builder.Configuration, builder.Environment);
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
-builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+if (builder.Environment.IsDevelopment()) builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+builder.Services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(60));
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<PortalWorkerHealth>();
 builder.Services.AddOptions<PortalOperationsOptions>().Bind(builder.Configuration.GetSection("PortalOperations"))
@@ -74,6 +78,7 @@ builder.Services.AddHostedService<OutboundNotificationWorker>();
 builder.Services.AddOptions<RedStarOptions>().Bind(builder.Configuration.GetSection("RedStar"))
     .Validate(x => x.MaximumAttempts is >= 1 and <= 10, "Appointment reminder attempts must be 1–10.").ValidateOnStart();
 builder.Services.AddScoped<RedStarPatientService>();
+builder.Services.AddScoped<MfaManagement>();
 builder.Services.AddScoped<RedStarImports>();
 builder.Services.AddSingleton<RedStarReminderService>();
 builder.Services.AddHostedService<RedStarReminderWorker>();
@@ -140,6 +145,18 @@ builder.Services.Configure<SecurityStampValidatorOptions>(options =>
     options.OnRefreshingPrincipal = PortalCookieEvents.PreserveClaims;
 });
 
+builder.Services.Configure<CookieAuthenticationOptions>(IdentityConstants.TwoFactorRememberMeScheme, options =>
+{
+    // A previous authenticator must stop authorizing remembered browsers as soon as its stamp changes.
+    options.Events.OnValidatePrincipal = async context =>
+    {
+        var signIn = context.HttpContext.RequestServices.GetRequiredService<SignInManager<ApplicationUser>>();
+        if (await signIn.ValidateTwoFactorSecurityStampAsync(context.Principal) is not null) return;
+        context.RejectPrincipal();
+        await context.HttpContext.SignOutAsync(IdentityConstants.TwoFactorRememberMeScheme);
+    };
+});
+
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.HttpOnly = true;
@@ -149,6 +166,16 @@ builder.Services.ConfigureApplicationCookie(options =>
         : CookieSecurePolicy.Always;
     options.EventsType = typeof(PortalCookieEvents);
 });
+if (!builder.Environment.IsDevelopment())
+{
+    builder.Services.PostConfigureAll<CookieAuthenticationOptions>(options =>
+    {
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+    });
+    builder.Services.AddAntiforgery(options => options.Cookie.SecurePolicy = CookieSecurePolicy.Always);
+}
 
 var emailSection = builder.Configuration.GetSection(EmailDeliveryOptions.SectionName);
 builder.Services.AddOptions<EmailDeliveryOptions>().Bind(emailSection).ValidateOnStart();
@@ -204,12 +231,6 @@ builder.Services.AddHostedService<StagedResultIngestionService>();
 builder.Services.Configure<AdvisoryImageStorageOptions>(builder.Configuration.GetSection("AdvisoryImages"));
 builder.Services.AddScoped<IAdvisoryImageStorage, AdvisoryImageStorage>();
 builder.Services.AddHostedService<TemporaryDocumentCleanupService>();
-
-// Validate the public origin before evaluating production key protection or touching storage.
-var portalValidation = new PortalOptionsValidator(builder.Environment, builder.Configuration)
-    .Validate(Options.DefaultName, builder.Configuration.GetSection("Portal").Get<PortalOptions>() ?? new());
-if (portalValidation.Failed)
-    throw new OptionsValidationException(Options.DefaultName, typeof(PortalOptions), portalValidation.Failures);
 
 var keyRingPath = builder.Configuration["DataProtection:KeyRingPath"] ?? Path.Combine(builder.Environment.ContentRootPath, "App_Data", "DataProtectionKeys");
 if (!Path.IsPathRooted(keyRingPath)) keyRingPath = Path.Combine(builder.Environment.ContentRootPath, keyRingPath);
@@ -287,6 +308,7 @@ await using (var protectionScope = app.Services.CreateAsyncScope())
         app.Logger.LogInformation("Private registry protection upgrade verified and complete.");
         return;
     }
+    if (!app.Environment.IsDevelopment()) await ProductionConfiguration.VerifySchemaAsync(protectionDb);
     await RedStarProtectionUpgrade.VerifyReadyAsync(protectionDb);
     if (args is ["patient-documents", "upgrade" or "verify"])
     {
