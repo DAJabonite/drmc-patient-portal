@@ -83,28 +83,23 @@
             </div>
 
             @foreach (var reportSection in new[] {
-                (Title: "Laboratory requests and reports", Key: "LaboratoryRequests"),
-                (Title: "Radiology requests and reports", Key: "RadiologyRequests") })
+                (Title: Loc["Rx_EncounterLabs"].Value, Key: "LaboratoryRequests"),
+                (Title: Loc["Rx_EncounterRadiology"].Value, Key: "RadiologyRequests") })
             {
                 var requests = ViewData[reportSection.Key] as IReadOnlyList<PatientReportCard> ?? Array.Empty<PatientReportCard>();
                 <section class="mb-4" aria-label="@reportSection.Title">
                     <h3 class="h6 fw-bold text-primary-drmc">@reportSection.Title (@requests.Count)</h3>
-                    @if (requests.Count == 0) { <p class="small text-muted">No requests recorded for this encounter.</p> }
+                    @if (requests.Count == 0) { <p class="small text-muted">@Loc["Rx_EncounterNoRequests"]</p> }
                     @foreach (var request in requests.OrderByDescending(r => r.ActivityAt).ThenBy(r => r.Source).ThenByDescending(r => r.Id))
                     { <partial name="_PatientReportCard" model="request" /> }
                 </section>
             }
             <section class="mb-4" aria-labelledby="encounterPrescriptionsHeading">
-                <h3 id="encounterPrescriptionsHeading" class="h6 fw-bold text-primary-drmc">Prescriptions (@Model.Prescriptions.Count)</h3>
-                @if (Model.Prescriptions.Count == 0) { <p class="small text-muted">No prescriptions recorded for this encounter.</p> }
+                <h3 id="encounterPrescriptionsHeading" class="h6 fw-bold text-primary-drmc">@Loc["Rx_Tagubilin"] (@Model.Prescriptions.Count)</h3>
+                @if (Model.Prescriptions.Count == 0) { <p class="small text-muted">@Loc["Rx_EncounterNoPrescriptions"]</p> }
                 @foreach (var rx in Model.Prescriptions)
                 {
-                    <div class="border rounded-3 p-3 mb-2">
-                        <strong>@rx.GenericName @rx.Dosage</strong>
-                        <span class="badge bg-light text-dark border">@rx.Status</span>
-                        <p class="small mb-1">@rx.Frequency · Prescribed @rx.PrescribedAt.ToString("MMM d, yyyy")</p>
-                        <a asp-controller="Medications" asp-action="Details" asp-route-id="@rx.Id" class="small fw-semibold">Prescription details</a>
-                    </div>
+                    <partial name="_PrescriptionCard" model="rx" />
                 }
             </section>
 

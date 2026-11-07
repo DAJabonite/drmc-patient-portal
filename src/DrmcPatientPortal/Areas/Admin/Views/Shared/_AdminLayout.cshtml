@@ -8,7 +8,7 @@
     var isIndex = action is "Index" or null;
 }
 <!DOCTYPE html>
-<html lang="en">
+<html lang="@System.Globalization.CultureInfo.CurrentUICulture.Name">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -44,7 +44,7 @@
                             var active = string.Equals(item.Controller, controller, StringComparison.OrdinalIgnoreCase);
                             <li>
                                 <a asp-area="Admin" asp-controller="@item.Controller" asp-action="Index" class="admin-nav-link @(active ? "active" : null)" aria-current="@(active ? "page" : null)">
-                                    <i class="bi @item.Icon" aria-hidden="true"></i><span>@item.Label</span>
+                                    <i class="bi @item.Icon" aria-hidden="true"></i><span>@Loc[item.Label]</span>
                                 </a>
                             </li>
                         }
@@ -68,7 +68,7 @@
                         {
                             if (isIndex)
                             {
-                                <li class="breadcrumb-item active" aria-current="page">@found.Item.Label</li>
+                                <li class="breadcrumb-item active" aria-current="page">@Loc[found.Item.Label]</li>
                             }
                             else
                             {

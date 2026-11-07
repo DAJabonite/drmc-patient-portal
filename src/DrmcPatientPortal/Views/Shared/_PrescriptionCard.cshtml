@@ -1,0 +1,45 @@
+@model Prescription
+<article class="card shadow-sm rounded-4 p-4 bg-white tagubilin-card @(Model.IsRedStar ? "tagubilin-card-redstar" : "tagubilin-card-regular")" data-prescription-id="@Model.Id" data-redstar="@Model.IsRedStar.ToString().ToLowerInvariant()">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+        <div class="min-w-0">
+            <p class="small fw-semibold text-primary-drmc mb-1">@Loc["Rx_Tagubilin"] @if (Model.IsRedStar) { <span>· @Loc["RS_Title"]</span> }</p>
+            <h3 class="h5 fw-bold text-dark text-break mb-1">@Model.GenericName @if (!string.IsNullOrWhiteSpace(Model.BrandName)) { <span class="text-muted fw-normal fs-6">(@Model.BrandName)</span> }</h3>
+            <p class="small text-muted mb-0">@Loc["Rx_Number"]: <strong>@Model.RxNumber</strong></p>
+        </div>
+        <partial name="_PrescriptionRefillBadge" model="Model" />
+    </div>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <span class="badge @(Model.Status == PrescriptionStatus.Active ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary")">@Loc["Rx_Status_" + Model.Status]</span>
+        <span class="badge bg-light text-dark border">@Loc["Rx_Fulfillment_" + Model.FulfillmentStatus]</span>
+    </div>
+    <dl class="row small mb-2 tagubilin-details">
+        <dt class="col-sm-4">@Loc["Rx_StrengthForm"]</dt><dd class="col-sm-8">@Model.Dosage @Model.DosageForm</dd>
+        <dt class="col-sm-4">@Loc["Rx_Frequency"]</dt><dd class="col-sm-8">
+            @if (Model.FrequencyMode == PrescriptionFrequencyMode.TimesPerDay) { @Loc["Rx_TimesDaily", Model.FrequencyValue.GetValueOrDefault()] }
+            else if (Model.FrequencyMode == PrescriptionFrequencyMode.EveryHours) { @Loc["Rx_EveryHours", Model.FrequencyValue.GetValueOrDefault()] }
+            else if (Model.FrequencyMode == PrescriptionFrequencyMode.AsNeeded) { @Loc["Rx_AsNeeded"] }
+            else { @Model.Frequency }
+        </dd>
+        @if (Model.DosePerIntake.HasValue) { <dt class="col-sm-4">@Loc["Rx_DosePerIntake"]</dt><dd class="col-sm-8">@Model.DosePerIntake.Value.ToString("0.####") @Model.DoseUnit</dd> }
+        @if (Model.DurationCount.HasValue) { <dt class="col-sm-4">@Loc["Rx_Duration"]</dt><dd class="col-sm-8">@Loc[Model.DurationUnit == PrescriptionDurationUnit.Months ? "Rx_DurationMonths" : "Rx_DurationDays", Model.DurationCount.Value]</dd> }
+        @if (Model.PrescribedQuantity.HasValue) { <dt class="col-sm-4">@Loc["Rx_PrescribedQuantity"]</dt><dd class="col-sm-8">@Model.PrescribedQuantity.Value.ToString("0.####") @Model.DoseUnit</dd> }
+        @if (Model.FulfillmentStatus == PrescriptionFulfillmentStatus.Served)
+        {
+            <dt class="col-sm-4">@Loc["Rx_DispensedQuantity"]</dt><dd class="col-sm-8">@(Model.DispensedQuantity?.ToString("0.####") ?? Loc["RS_NotRecorded"].Value) @Model.DoseUnit</dd>
+            <dt class="col-sm-4">@Loc["Rx_ServedDate"]</dt><dd class="col-sm-8">@(Model.ServedDate?.ToString("MMM d, yyyy") ?? Loc["RS_NotRecorded"].Value)</dd>
+        }
+        @if (Model.NextRefillDate.HasValue) { <dt class="col-sm-4">@Loc[Model.Status == PrescriptionStatus.Active ? "RS_NextRefill" : "Rx_LastCalculatedRefill"]</dt><dd class="col-sm-8"><time datetime="@Model.NextRefillDate.Value.ToString("yyyy-MM-dd")">@Model.NextRefillDate.Value.ToString("MMMM d, yyyy")</time></dd> }
+        <dt class="col-sm-4">@Loc["Rx_Route"]</dt><dd class="col-sm-8">@(Model.RouteOfAdministration is null ? Loc["Rx_NotSpecified"].Value : Loc["Rx_Route_" + Model.RouteOfAdministration].Value)</dd>
+        <dt class="col-sm-4">@Loc["Rx_Prescriber"]</dt><dd class="col-sm-8">@Model.PrescribingDoctor · @Model.Department</dd>
+        <dt class="col-sm-4">@Loc["Rx_PrescribedAt"]</dt><dd class="col-sm-8">@Model.PrescribedAt.ToString("MMM d, yyyy")</dd>
+        <dt class="col-sm-4">@Loc["Rx_ValidUntil"]</dt><dd class="col-sm-8">@Model.ValidUntil.ToString("MMM d, yyyy")</dd>
+    </dl>
+    @if (!string.IsNullOrWhiteSpace(Model.Instructions)) { <div class="p-3 bg-light rounded-3 mb-3"><strong class="small d-block mb-1">@Loc["Rx_Instructions"]</strong><p class="small mb-0 text-break" style="white-space:pre-line">@Model.Instructions</p></div> }
+    <div class="small text-muted">
+        @if (Model.ClinicalEncounterId.HasValue && Model.Encounter is not null)
+        { <span>@Loc["Enc_CaseReference"]: <a asp-controller="Visits" asp-action="Details" asp-route-id="@Model.ClinicalEncounterId">@Model.Encounter.EncounterReference</a> · @Model.Encounter.EncounterDate.ToString("MMM d, yyyy")</span> }
+        else { <span>@Loc["Report_Unassigned"]</span> }
+    </div>
+    @if (ViewContext.RouteData.Values["controller"]?.ToString() != "Medications" || ViewContext.RouteData.Values["action"]?.ToString() != "Details")
+    { <div class="mt-3"><a asp-controller="Medications" asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary rounded-pill btn-sm">@Loc["Rx_Details"]</a></div> }
+</article>

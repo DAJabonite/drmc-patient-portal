@@ -72,7 +72,7 @@
   <data name="Enc_None"><value>No visits recorded</value></data>
   <data name="Enc_NoneBody"><value>No visits match the selected filters.</value></data>
   <data name="Enc_ViewAll"><value>View All Visits</value></data>
-  <data name="Enc_Reference"><value>Reference</value></data>
+  <data name="Enc_Reference" xml:space="preserve"><value>Case number</value></data>
   <data name="Enc_VisitDate"><value>Visit Date</value></data>
   <data name="Enc_Attending"><value>Attending</value></data>
   <data name="Enc_ViewSummary"><value>View Summary</value></data>
@@ -85,7 +85,7 @@
   <data name="Enc_CarePlan"><value>Physician Care Plan &amp; Patient Home Instructions</value></data>
   <data name="Enc_Labs"><value>Lab Results from this Visit</value></data>
   <data name="Enc_NoLabs"><value>No lab results were ordered during this visit.</value></data>
-  <data name="Rx_Title"><value>Active Prescriptions &amp; Medications</value></data>
+  <data name="Rx_Title" xml:space="preserve"><value>DRMC Tagubilin / Prescriptions</value></data>
   <data name="Rx_Pharmacy"><value>DRMC Outpatient Pharmacy</value></data>
   <data name="Rx_Active"><value>Active Prescriptions</value></data>
   <data name="Rx_SafetyAlert"><value>Patient Safety Alert</value></data>
@@ -220,8 +220,8 @@
   <data name="RS_Title" xml:space="preserve"><value>Red Star</value></data>
   <data name="RS_Private" xml:space="preserve"><value>Your private clinic schedule</value></data>
   <data name="RS_Saved" xml:space="preserve"><value>Your update has been saved.</value></data>
-  <data name="RS_NextRefill" xml:space="preserve"><value>Next medicine pickup</value></data>
-  <data name="RS_NoRefill" xml:space="preserve"><value>No refill date has been scheduled. Contact the clinic for help.</value></data>
+  <data name="RS_NextRefill" xml:space="preserve"><value>Next medicine refill</value></data>
+  <data name="RS_NoRefill" xml:space="preserve"><value>No medicine refill date is available. Contact the clinic for help.</value></data>
   <data name="RS_ViewSchedule" xml:space="preserve"><value>View Red Star schedule</value></data>
   <data name="RS_OverdueDays" xml:space="preserve"><value>{0} days overdue</value></data>
   <data name="RS_InDays" xml:space="preserve"><value>In {0} days</value></data>
@@ -230,7 +230,7 @@
   <data name="RS_Scheduled" xml:space="preserve"><value>Scheduled</value></data>
   <data name="RS_Appointments" xml:space="preserve"><value>Your appointments</value></data>
   <data name="RS_NoAppointments" xml:space="preserve"><value>No upcoming appointments have been recorded.</value></data>
-  <data name="RS_Kind_Refill" xml:space="preserve"><value>Medicine pickup</value></data>
+  <data name="RS_Kind_Refill" xml:space="preserve"><value>Medicine refill</value></data>
   <data name="RS_Kind_Lab" xml:space="preserve"><value>Laboratory appointment</value></data>
   <data name="RS_Kind_Consultation" xml:space="preserve"><value>Consultation</value></data>
   <data name="RS_Program_ART" xml:space="preserve"><value>ART</value></data>
@@ -245,9 +245,9 @@
   <data name="RS_Reason" xml:space="preserve"><value>Reason (optional)</value></data>
   <data name="RS_ChangeHelp" xml:space="preserve"><value>Your current appointment remains in place until the clinic approves a change.</value></data>
   <data name="RS_SendRequest" xml:space="preserve"><value>Send request</value></data>
-  <data name="RS_History" xml:space="preserve"><value>Medicine pickup history</value></data>
-  <data name="RS_NoHistory" xml:space="preserve"><value>No medicine pickups have been recorded yet.</value></data>
-  <data name="RS_PickupDate" xml:space="preserve"><value>Pickup date</value></data>
+  <data name="RS_History" xml:space="preserve"><value>Medicine refill history</value></data>
+  <data name="RS_NoHistory" xml:space="preserve"><value>No medicine refills have been recorded yet.</value></data>
+  <data name="RS_PickupDate" xml:space="preserve"><value>Refill date</value></data>
   <data name="RS_Medicines" xml:space="preserve"><value>Medicines supplied</value></data>
   <data name="RS_DaysSupplied" xml:space="preserve"><value>Days supplied</value></data>
   <data name="RS_NotRecorded" xml:space="preserve"><value>Not recorded</value></data>
@@ -258,20 +258,20 @@
   <data name="RS_Request_Approved" xml:space="preserve"><value>Approved</value></data>
   <data name="RS_Request_Declined" xml:space="preserve"><value>Declined; contact the clinic</value></data>
   <data name="RS_Reminders" xml:space="preserve"><value>Appointment reminders</value></data>
-  <data name="RS_ReminderHelp" xml:space="preserve"><value>Reminders appear seven days before, on the date, seven days overdue, and monthly while a pickup remains outstanding.</value></data>
+  <data name="RS_ReminderHelp" xml:space="preserve"><value>Refill reminders appear seven days before, on the due date, seven days overdue, and monthly while a refill remains outstanding.</value></data>
   <data name="RS_AppointmentReminder" xml:space="preserve"><value>DRMC appointment reminder: {0}.</value></data>
   <data name="RS_MarkRead" xml:space="preserve"><value>Mark as read</value></data>
   <data name="RS_EmailOptIn" xml:space="preserve"><value>Send appointment reminders to my confirmed account email</value></data>
-  <data name="RS_EmailHelp" xml:space="preserve"><value>Emails use neutral DRMC wording and contain no program or medicine details. You can turn them off here anytime.</value></data>
+  <data name="RS_EmailHelp" xml:space="preserve"><value>The email can show the Red Star Clinic name and address as the sender. Messages use general DRMC wording without program or medicine details. Use an inbox you can access privately. You can turn reminders off here at any time.</value></data>
   <data name="RS_SavePreferences" xml:space="preserve"><value>Save reminder settings</value></data>
   <data name="RS_ClinicHelp" xml:space="preserve"><value>Clinic contact and help</value></data>
-  <data name="RS_MissedHelp" xml:space="preserve"><value>If you missed a pickup or may run out before your appointment, contact the clinic promptly to arrange help.</value></data>
+  <data name="RS_MissedHelp" xml:space="preserve"><value>If you missed a refill or may run out before your appointment, contact the clinic promptly.</value></data>
   <data name="RS_LocationHours" xml:space="preserve"><value>Second floor, Outpatient Department (OPD). Monday–Friday, 8 AM–5 PM, as published by DRMC. Contact the clinic to confirm availability.</value></data>
   <data name="RS_OfficialInfo" xml:space="preserve"><value>Official clinic information</value></data>
   <data name="RS_Notifications" xml:space="preserve"><value>DRMC appointment notifications</value></data>
   <data name="Guide_EffectiveOn" xml:space="preserve"><value>Effective:</value></data>
   <data name="Guide_LastReviewed" xml:space="preserve"><value>Last reviewed:</value></data>
-  <data name="RS_ReplenishmentReminder" xml:space="preserve"><value>Medicine replenishment reminder</value></data>
+  <data name="RS_ReplenishmentReminder" xml:space="preserve"><value>Medicine refill reminder</value></data>
   <data name="RS_DateUnverified" xml:space="preserve"><value>Refill date awaiting clinic verification</value></data>
   <data name="IdCamera_Title" xml:space="preserve"><value>Scan your ID</value></data>
   <data name="IdCamera_FrontHint" xml:space="preserve"><value>Fit the front of your ID inside the guide. Keep all corners visible and avoid glare.</value></data>
@@ -343,8 +343,8 @@
   <data name="PasswordReset_RequestReceivedBody" xml:space="preserve"><value>If this email address belongs to a confirmed account, we’ll send a password-reset link.</value></data>
   <data name="PasswordReset_InboxHelp" xml:space="preserve"><value>Check your inbox and spam or junk folder. Open the reset link and choose a new password.</value></data>
   <data name="PasswordReset_RequestAnotherLink" xml:space="preserve"><value>Request another reset link</value></data>
-  <data name="Report_Encounter" xml:space="preserve"><value>Encounter</value></data>
-  <data name="Report_EncounterLabel" xml:space="preserve"><value>Encounter:</value></data>
+  <data name="Report_Encounter" xml:space="preserve"><value>Encounter / Case</value></data>
+  <data name="Report_EncounterLabel" xml:space="preserve"><value>Encounter / Case number:</value></data>
   <data name="Report_Unassigned" xml:space="preserve"><value>Encounter not assigned</value></data>
   <data name="Report_TestDate" xml:space="preserve"><value>Test date:</value></data>
   <data name="Report_StudyDate" xml:space="preserve"><value>Study date:</value></data>
@@ -385,4 +385,260 @@
   <data name="ReportStatus_amended" xml:space="preserve"><value>Amended</value></data>
   <data name="ReportStatus_unknown" xml:space="preserve"><value>Unknown</value></data>
   <data name="ReportStatus_withdrawn" xml:space="preserve"><value>Withdrawn</value></data>
+  <data name="Rx_Tagubilin" xml:space="preserve"><value>DRMC Tagubilin</value></data>
+  <data name="Rx_DetailTitle" xml:space="preserve"><value>Tagubilin prescription details</value></data>
+  <data name="Rx_Back" xml:space="preserve"><value>Back to Tagubilin</value></data>
+  <data name="Rx_ViewTagubilin" xml:space="preserve"><value>View prescription in Tagubilin</value></data>
+  <data name="Rx_UnifiedHelp" xml:space="preserve"><value>Red Star medicines use the same Tagubilin prescriptions, served quantities, and refill dates.</value></data>
+  <data name="Rx_NoMatches" xml:space="preserve"><value>No prescriptions to display.</value></data>
+  <data name="Rx_Fulfillment_Prescribed" xml:space="preserve"><value>Prescribed</value></data>
+  <data name="Rx_Fulfillment_Served" xml:space="preserve"><value>Served</value></data>
+  <data name="Rx_Status_Active" xml:space="preserve"><value>Active</value></data>
+  <data name="Rx_Status_Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="Rx_Status_Discontinued" xml:space="preserve"><value>Discontinued</value></data>
+  <data name="Rx_Status_Expired" xml:space="preserve"><value>Expired</value></data>
+  <data name="Rx_NotServed" xml:space="preserve"><value>Not yet served</value></data>
+  <data name="Rx_NoCalculatedRefill" xml:space="preserve"><value>No automatic refill date</value></data>
+  <data name="Rx_GenericName" xml:space="preserve"><value>Generic medicine name</value></data>
+  <data name="Rx_BrandName" xml:space="preserve"><value>Brand name</value></data>
+  <data name="Rx_Strength" xml:space="preserve"><value>Medicine strength</value></data>
+  <data name="Rx_DosageForm" xml:space="preserve"><value>Dosage form</value></data>
+  <data name="Rx_StrengthForm" xml:space="preserve"><value>Strength and dosage form</value></data>
+  <data name="Rx_Route" xml:space="preserve"><value>Route of administration</value></data>
+  <data name="Rx_NotSpecified" xml:space="preserve"><value>Not specified</value></data>
+  <data name="Rx_DosageSchedule" xml:space="preserve"><value>Dosage schedule</value></data>
+  <data name="Rx_Frequency" xml:space="preserve"><value>Frequency</value></data>
+  <data name="Rx_ModeTimesPerDay" xml:space="preserve"><value>Times per day</value></data>
+  <data name="Rx_ModeEveryHours" xml:space="preserve"><value>Every X hours</value></data>
+  <data name="Rx_TimesDaily" xml:space="preserve"><value>{0} times per day</value></data>
+  <data name="Rx_EveryHours" xml:space="preserve"><value>Every {0} hours</value></data>
+  <data name="Rx_AsNeeded" xml:space="preserve"><value>As needed / PRN</value></data>
+  <data name="Rx_FrequencyValue" xml:space="preserve"><value>Times per day / interval in hours</value></data>
+  <data name="Rx_DosePerIntake" xml:space="preserve"><value>Dose per intake</value></data>
+  <data name="Rx_DoseUnit" xml:space="preserve"><value>Dose unit</value></data>
+  <data name="Rx_DoseUnitHelp" xml:space="preserve"><value>Use the same unit for each intake and both quantities, for example tablet, capsule, or mL.</value></data>
+  <data name="Rx_Duration" xml:space="preserve"><value>Duration</value></data>
+  <data name="Rx_DurationUnit" xml:space="preserve"><value>Duration unit</value></data>
+  <data name="Rx_Days" xml:space="preserve"><value>Days</value></data>
+  <data name="Rx_Months" xml:space="preserve"><value>Calendar months</value></data>
+  <data name="Rx_DurationDays" xml:space="preserve"><value>{0} days</value></data>
+  <data name="Rx_DurationMonths" xml:space="preserve"><value>{0} calendar months</value></data>
+  <data name="Rx_PrescribedQuantity" xml:space="preserve"><value>Total prescribed quantity</value></data>
+  <data name="Rx_DispensedQuantity" xml:space="preserve"><value>Dispensed / served quantity</value></data>
+  <data name="Rx_ServedDate" xml:space="preserve"><value>Date served</value></data>
+  <data name="Rx_Serving" xml:space="preserve"><value>Prescription and dispensing</value></data>
+  <data name="Rx_FulfillmentStatus" xml:space="preserve"><value>Prescribed or served</value></data>
+  <data name="Rx_ServedHelp" xml:space="preserve"><value>Only served prescriptions calculate a refill date. Record the actual quantity supplied, including a partial supply.</value></data>
+  <data name="Rx_QuantityHelp" xml:space="preserve"><value>Calculated from frequency, dose, and duration. For PRN, enter the prescribed quantity manually. Months use the prescription date and actual calendar days.</value></data>
+  <data name="Rx_PRNHelp" xml:space="preserve"><value>PRN requires a manual quantity; refill dates cannot be calculated automatically.</value></data>
+  <data name="Rx_CalculatorWait" xml:space="preserve"><value>Complete the dosage inputs and dates.</value></data>
+  <data name="Rx_CalculatorPreview" xml:space="preserve"><value>Calculation preview</value></data>
+  <data name="Rx_ServerCalculationHelp" xml:space="preserve"><value>The final quantity and refill date are recalculated when saved. An edited served quantity is kept.</value></data>
+  <data name="Rx_LegacyFrequency" xml:space="preserve"><value>Previously recorded frequency</value></data>
+  <data name="Rx_LegacyHelp" xml:space="preserve"><value>Historical text is preserved. Enter all structured dosage inputs before recording dispensing or calculating refills.</value></data>
+  <data name="Rx_IsRedStar" xml:space="preserve"><value>Is Red Star medicine</value></data>
+  <data name="Rx_Enrollment" xml:space="preserve"><value>Verified Red Star enrollment</value></data>
+  <data name="Rx_EnrollmentHelp" xml:space="preserve"><value>Select this patient's verified program enrollment for a Red Star prescription.</value></data>
+  <data name="Rx_Instructions" xml:space="preserve"><value>Patient instructions</value></data>
+  <data name="Rx_Department" xml:space="preserve"><value>Clinical department</value></data>
+  <data name="Rx_Lifecycle" xml:space="preserve"><value>Prescription lifecycle</value></data>
+  <data name="Rx_PrescribedAt" xml:space="preserve"><value>Prescribed date</value></data>
+  <data name="Rx_PrescribedAtManila" xml:space="preserve"><value>Prescribed at (Manila)</value></data>
+  <data name="Rx_ValidUntilManila" xml:space="preserve"><value>Valid until (Manila)</value></data>
+  <data name="Rx_ViewEncounter" xml:space="preserve"><value>View encounter</value></data>
+  <data name="Rx_PhysicianSource" xml:space="preserve"><value>Physician source</value></data>
+  <data name="Rx_DirectoryPhysician" xml:space="preserve"><value>Directory physician</value></data>
+  <data name="Rx_HistoricalPhysician" xml:space="preserve"><value>Historical physician name</value></data>
+  <data name="Rx_Directory" xml:space="preserve"><value>Directory</value></data>
+  <data name="Rx_HistoricalName" xml:space="preserve"><value>Historical name</value></data>
+  <data name="Rx_AllergyCount" xml:space="preserve"><value>{0} documented drug allergies</value></data>
+  <data name="Rx_ReactionDetails" xml:space="preserve"><value>View reaction details</value></data>
+  <data name="Rx_Reaction" xml:space="preserve"><value>Reaction</value></data>
+  <data name="Rx_Severity" xml:space="preserve"><value>Severity</value></data>
+  <data name="Rx_Severity_Mild" xml:space="preserve"><value>Mild</value></data>
+  <data name="Rx_Severity_Moderate" xml:space="preserve"><value>Moderate</value></data>
+  <data name="Rx_Severity_Severe" xml:space="preserve"><value>Severe</value></data>
+  <data name="Rx_EncounterLabs" xml:space="preserve"><value>Laboratory requests and reports</value></data>
+  <data name="Rx_EncounterRadiology" xml:space="preserve"><value>Radiology requests and reports</value></data>
+  <data name="Rx_EncounterNoRequests" xml:space="preserve"><value>No requests recorded for this encounter.</value></data>
+  <data name="Rx_EncounterNoPrescriptions" xml:space="preserve"><value>No prescriptions recorded for this encounter.</value></data>
+  <data name="Rx_HomeHelp" xml:space="preserve"><value>Review dose times, served quantities, refill dates, and prescription instructions.</value></data>
+  <data name="Rx_OpenTagubilin" xml:space="preserve"><value>Open Tagubilin</value></data>
+  <data name="Common_Select" xml:space="preserve"><value>Select</value></data>
+  <data name="Enc_CaseReference" xml:space="preserve"><value>Encounter Reference (Case Number)</value></data>
+  <data name="Enc_CaseReferenceHelp" xml:space="preserve"><value>Enter the hospital's case or encounter number exactly as recorded in the source.</value></data>
+  <data name="Enc_SelectPatientEncounter" xml:space="preserve"><value>Select this patient's encounter / case number</value></data>
+  <data name="Enc_SelectOriginEncounter" xml:space="preserve"><value>Select the originating encounter / case number</value></data>
+  <data name="Enc_OriginHelp" xml:space="preserve"><value>Use the originating encounter, even when the result returns weeks later. If missing, ask an encounter encoder to create it first.</value></data>
+  <data name="Report_EncounterDate" xml:space="preserve"><value>Encounter date</value></data>
+  <data name="Report_AnyDate" xml:space="preserve"><value>Any encounter date</value></data>
+  <data name="Report_Last30Days" xml:space="preserve"><value>Last 30 days</value></data>
+  <data name="Report_Last6Months" xml:space="preserve"><value>Last 6 months</value></data>
+  <data name="Report_ThisYear" xml:space="preserve"><value>This year</value></data>
+  <data name="Report_CustomRange" xml:space="preserve"><value>Custom date range</value></data>
+  <data name="Report_From" xml:space="preserve"><value>From (custom range)</value></data>
+  <data name="Report_To" xml:space="preserve"><value>To (custom range)</value></data>
+  <data name="Report_Apply" xml:space="preserve"><value>Apply</value></data>
+  <data name="Rx_InvalidRegimen" xml:space="preserve"><value>Complete the frequency, dose, unit, and duration using valid positive values.</value></data>
+  <data name="Rx_InvalidFrequency" xml:space="preserve"><value>Enter a valid frequency; leave its numeric value blank for PRN.</value></data>
+  <data name="Rx_InvalidQuantity" xml:space="preserve"><value>Enter a valid positive prescribed quantity with up to four decimal places.</value></data>
+  <data name="Rx_InvalidDispensedQuantity" xml:space="preserve"><value>Enter the actual positive quantity served, no greater than the prescribed quantity.</value></data>
+  <data name="Rx_InvalidServedDate" xml:space="preserve"><value>Enter a valid served date on or after the prescription date and no later than today.</value></data>
+  <data name="Rx_InvalidCalendar" xml:space="preserve"><value>The dosage or dates are outside the supported calculation range.</value></data>
+  <data name="Rx_AccessDenied" xml:space="preserve"><value>This prescription is outside your permitted access.</value></data>
+  <data name="Rx_InvalidEnrollment" xml:space="preserve"><value>Select a verified Red Star program enrollment belonging to this patient.</value></data>
+  <data name="Rx_HistoryBlocksDelete" xml:space="preserve"><value>Discontinue this prescription to stop future refills and retain its history.</value></data>
+  <data name="Prescriptions" xml:space="preserve"><value>Prescriptions</value></data>
+  <data name="Rx_RedStarEncodingHelp" xml:space="preserve"><value>Encode medicines, dosing, and served quantities in Prescriptions / Tagubilin. Refill dates are calculated from the quantity served.</value></data>
+  <data name="Rx_AddPrescription" xml:space="preserve"><value>Add prescription</value></data>
+  <data name="Rx_VerifyHospitalMapping" xml:space="preserve"><value>Verify hospital patient mapping</value></data>
+  <data name="Rx_NoUnifiedPrescriptions" xml:space="preserve"><value>No linked Tagubilin prescriptions.</value></data>
+  <data name="Rx_RedStarImportHelp" xml:space="preserve"><value>Medicine regimens and refill dates remain in the protected original. Enter them as structured prescriptions in Tagubilin; registry imports do not create medication schedules.</value></data>
+  <data name="Rx_RedStarImportUploadHelp" xml:space="preserve"><value>Upload XLSX or UTF-8 CSV, up to 10 MB and 5,000 rows. Review and approve registry records; encode medicines in Tagubilin.</value></data>
+  <data name="Rx_RedStarImported" xml:space="preserve"><value>Registry records imported. Encode medicines and dispensing in Prescriptions / Tagubilin.</value></data>
+  <data name="Rx_Route_Oral" xml:space="preserve"><value>Oral</value></data>
+  <data name="Rx_Route_Sublingual" xml:space="preserve"><value>Sublingual</value></data>
+  <data name="Rx_Route_Buccal" xml:space="preserve"><value>Buccal</value></data>
+  <data name="Rx_Route_Rectal" xml:space="preserve"><value>Rectal</value></data>
+  <data name="Rx_Route_Intramuscular" xml:space="preserve"><value>Intramuscular</value></data>
+  <data name="Rx_Route_Intravenous" xml:space="preserve"><value>Intravenous</value></data>
+  <data name="Rx_Route_Subcutaneous" xml:space="preserve"><value>Subcutaneous</value></data>
+  <data name="Rx_Route_Inhalation" xml:space="preserve"><value>Inhalation</value></data>
+  <data name="Rx_Route_Nasal" xml:space="preserve"><value>Nasal</value></data>
+  <data name="Rx_Route_Ophthalmic" xml:space="preserve"><value>Ophthalmic</value></data>
+  <data name="Rx_Route_Otic" xml:space="preserve"><value>Otic</value></data>
+  <data name="Rx_Route_Topical" xml:space="preserve"><value>Topical</value></data>
+  <data name="Rx_Route_Transdermal" xml:space="preserve"><value>Transdermal</value></data>
+  <data name="Rx_Route_Vaginal" xml:space="preserve"><value>Vaginal</value></data>
+  <data name="Admin_RecordDetails" xml:space="preserve"><value>Record details</value></data>
+  <data name="Admin_LinkedRecords" xml:space="preserve"><value>Linked records</value></data>
+  <data name="Rx_RefillHistory" xml:space="preserve"><value>Refill history</value></data>
+  <data name="Rx_FrequencyMode_TimesPerDay" xml:space="preserve"><value>Times per day</value></data>
+  <data name="Rx_FrequencyMode_EveryHours" xml:space="preserve"><value>Every X hours</value></data>
+  <data name="Rx_FrequencyMode_AsNeeded" xml:space="preserve"><value>As needed / PRN</value></data>
+  <data name="Rx_DurationUnit_Days" xml:space="preserve"><value>Days</value></data>
+  <data name="Rx_DurationUnit_Months" xml:space="preserve"><value>Calendar months</value></data>
+  <data name="True" xml:space="preserve"><value>Yes</value></data>
+  <data name="False" xml:space="preserve"><value>No</value></data>
+  <data name="unassigned" xml:space="preserve"><value>Not assigned</value></data>
+  <data name="Dose schedules" xml:space="preserve"><value>Dose schedules</value></data>
+  <data name="Select a clinical department." xml:space="preserve"><value>Select a clinical department.</value></data>
+  <data name="Validity cannot end before the prescription date." xml:space="preserve"><value>Validity cannot end before the prescription date.</value></data>
+  <data name="Enter Manila wall time without a time-zone suffix." xml:space="preserve"><value>Enter Manila wall time without a time-zone suffix.</value></data>
+  <data name="Select a directory physician." xml:space="preserve"><value>Select a directory physician.</value></data>
+  <data name="Enter the historical physician name." xml:space="preserve"><value>Enter the historical physician name.</value></data>
+  <data name="Use either the directory physician or the historical name, not both." xml:space="preserve"><value>Use either the directory physician or the historical name, not both.</value></data>
+  <data name="Select an existing encounter belonging to this patient." xml:space="preserve"><value>Select an existing encounter belonging to this patient.</value></data>
+  <data name="Select a listed route of administration." xml:space="preserve"><value>Select a listed route of administration.</value></data>
+  <data name="A prescription already uses this Rx number." xml:space="preserve"><value>A prescription already uses this Rx number.</value></data>
+  <data name="Select an existing directory physician or enter an explicit historical name." xml:space="preserve"><value>Select an existing directory physician or enter an explicit historical name.</value></data>
+  <data name="The patient record no longer exists." xml:space="preserve"><value>The patient record no longer exists.</value></data>
+  <data name="Enter a valid value." xml:space="preserve"><value>Enter a valid value.</value></data>
+  <data name="The {0} field is required." xml:space="preserve"><value>The {0} field is required.</value></data>
+  <data name="The field {0} must be a string with a maximum length of {1}." xml:space="preserve"><value>The field {0} must be a string with a maximum length of {1}.</value></data>
+  <data name="The field {0} must be between {1} and {2}." xml:space="preserve"><value>The field {0} must be between {1} and {2}.</value></data>
+  <data name="The field {0} is invalid." xml:space="preserve"><value>The field {0} is invalid.</value></data>
+  <data name="The value '{0}' is invalid." xml:space="preserve"><value>The value '{0}' is invalid.</value></data>
+  <data name="Choose both custom dates with the end on or after the start." xml:space="preserve"><value>Choose both custom dates with the end on or after the start.</value></data>
+  <data name="RxNumber" xml:space="preserve"><value>Rx Number</value></data>
+  <data name="Rx number" xml:space="preserve"><value>Rx Number</value></data>
+  <data name="GenericName" xml:space="preserve"><value>Generic medicine name</value></data>
+  <data name="Generic name" xml:space="preserve"><value>Generic medicine name</value></data>
+  <data name="BrandName" xml:space="preserve"><value>Brand name</value></data>
+  <data name="Brand name" xml:space="preserve"><value>Brand name</value></data>
+  <data name="Dosage" xml:space="preserve"><value>Medicine strength</value></data>
+  <data name="DosageForm" xml:space="preserve"><value>Dosage form</value></data>
+  <data name="Dosage form" xml:space="preserve"><value>Dosage form</value></data>
+  <data name="RouteOfAdministration" xml:space="preserve"><value>Route of administration</value></data>
+  <data name="Route of administration" xml:space="preserve"><value>Route of administration</value></data>
+  <data name="Frequency" xml:space="preserve"><value>Frequency</value></data>
+  <data name="Instructions" xml:space="preserve"><value>Patient instructions</value></data>
+  <data name="Department" xml:space="preserve"><value>Clinical department</value></data>
+  <data name="PrescribingDoctor" xml:space="preserve"><value>Prescriber</value></data>
+  <data name="PrescribedAt" xml:space="preserve"><value>Prescribed date</value></data>
+  <data name="Prescribed at (Manila)" xml:space="preserve"><value>Prescribed at (Manila)</value></data>
+  <data name="ValidUntil" xml:space="preserve"><value>Valid Until</value></data>
+  <data name="Valid until (Manila)" xml:space="preserve"><value>Valid until (Manila)</value></data>
+  <data name="Status" xml:space="preserve"><value>Status</value></data>
+  <data name="ClinicalEncounterId" xml:space="preserve"><value>Encounter Reference (Case Number)</value></data>
+  <data name="Encounter Reference (Case Number)" xml:space="preserve"><value>Encounter Reference (Case Number)</value></data>
+  <data name="Encounter reference" xml:space="preserve"><value>Encounter Reference (Case Number)</value></data>
+  <data name="EncounterReference" xml:space="preserve"><value>Encounter Reference (Case Number)</value></data>
+  <data name="FulfillmentStatus" xml:space="preserve"><value>Prescribed or served</value></data>
+  <data name="FrequencyMode" xml:space="preserve"><value>Frequency</value></data>
+  <data name="FrequencyValue" xml:space="preserve"><value>Times per day / interval in hours</value></data>
+  <data name="DosePerIntake" xml:space="preserve"><value>Dose per intake</value></data>
+  <data name="DoseUnit" xml:space="preserve"><value>Dose unit</value></data>
+  <data name="DurationCount" xml:space="preserve"><value>Duration</value></data>
+  <data name="DurationUnit" xml:space="preserve"><value>Duration unit</value></data>
+  <data name="PrescribedQuantity" xml:space="preserve"><value>Total prescribed quantity</value></data>
+  <data name="DispensedQuantity" xml:space="preserve"><value>Dispensed / served quantity</value></data>
+  <data name="ServedDate" xml:space="preserve"><value>Date served</value></data>
+  <data name="NextRefillDate" xml:space="preserve"><value>Next medicine refill</value></data>
+  <data name="IsRedStar" xml:space="preserve"><value>Is Red Star medicine</value></data>
+  <data name="RedStarEnrollmentId" xml:space="preserve"><value>Verified Red Star enrollment</value></data>
+  <data name="Physician source" xml:space="preserve"><value>Physician source</value></data>
+  <data name="Directory physician" xml:space="preserve"><value>Directory physician</value></data>
+  <data name="Historical physician name" xml:space="preserve"><value>Historical physician name</value></data>
+  <data name="RS_CareDateVerified" xml:space="preserve"><value>Clinic staff verified this care date.</value></data>
+  <data name="Choose both a start date and an end date." xml:space="preserve"><value>Choose both a start date and an end date.</value></data>
+  <data name="The start date must be on or before the end date." xml:space="preserve"><value>The start date must be on or before the end date.</value></data>
+  <data name="Encounter dates cannot be in the future." xml:space="preserve"><value>Encounter dates cannot be in the future.</value></data>
+  <data name="PatientRecordId" xml:space="preserve"><value>Patient record</value></data>
+  <data name="PatientActivityAtUtc" xml:space="preserve"><value>Last patient-visible update (UTC)</value></data>
+  <data name="This record changed. Reload it and review the latest version before trying again." xml:space="preserve"><value>This record changed. Reload it and review the latest version before trying again.</value></data>
+  <data name="Reload the current record before saving." xml:space="preserve"><value>Reload the current record before saving.</value></data>
+  <data name="Patient and parent ownership cannot be changed by the form." xml:space="preserve"><value>Patient and parent ownership cannot be changed by the form.</value></data>
+  <data name="Rx_LastCalculatedRefill" xml:space="preserve"><value>Last calculated refill date</value></data>
+  <data name="Rx_ImportReupload" xml:space="preserve"><value>Cancel this batch and upload a file using the current template. Prescription files use Prescriptions_v3.</value></data>
+  <!-- Data privacy notice, portal terms, and signup consent -->
+  <data name="Privacy_Title" xml:space="preserve"><value>Data privacy notice</value></data>
+  <data name="Privacy_Law" xml:space="preserve"><value>Republic Act No. 10173 (Data Privacy Act of 2012)</value></data>
+  <data name="Privacy_ReturnHome" xml:space="preserve"><value>Return to home</value></data>
+  <data name="Privacy_Registration" xml:space="preserve"><value>Continue to registration</value></data>
+  <data name="Privacy_Introduction" xml:space="preserve"><value>Davao Regional Medical Center (DRMC) handles your personal and health information when you use the DRMC Patient Portal. This notice explains what information the portal uses, how we protect it, and whom you can contact about your privacy.</value></data>
+  <data name="Privacy_InformationHeading" xml:space="preserve"><value>Information the portal uses</value></data>
+  <data name="Privacy_IdentityHeading" xml:space="preserve"><value>Identity and account information.</value></data>
+  <data name="Privacy_Identity" xml:space="preserve"><value>Your name, date of birth, contact details, and hospital record number. If you submit a government ID, the portal also processes the ID details and photos you provide.</value></data>
+  <data name="Privacy_ClinicalHeading" xml:space="preserve"><value>Clinical information.</value></data>
+  <data name="Privacy_Clinical" xml:space="preserve"><value>Hospital encounters, lab and radiology results, prescriptions, and appointments, including Red Star clinic information where applicable.</value></data>
+  <data name="Privacy_ActivityHeading" xml:space="preserve"><value>Security and activity information.</value></data>
+  <data name="Privacy_Activity" xml:space="preserve"><value>Sign-in times, network addresses, and audit records of certain account and clinical record activity.</value></data>
+  <data name="Privacy_PurposeHeading" xml:space="preserve"><value>Why we use this information</value></data>
+  <data name="Privacy_Purpose" xml:space="preserve"><value>We use this information to verify your identity, link your portal account to your hospital record, give you access to your records, support your care, protect the portal, and meet legal reporting obligations.</value></data>
+  <data name="Privacy_Notifications" xml:space="preserve"><value>We use your email address for account messages, such as confirmation and password reset. You can choose to receive refill reminders by email and turn them off in the portal. The sender can show the Red Star Clinic name and email address.</value></data>
+  <data name="Privacy_UsageHeading" xml:space="preserve"><value>Daily website usage reporting</value></data>
+  <data name="Privacy_UsageCollection" xml:space="preserve"><value>When usage reporting is enabled, DRMC measures daily website reach and portal use. The portal makes temporary daily identifiers from network and browser information and uses a separate daily identifier for signed-in accounts. Usage reporting omits the original values, page addresses, and clinical information. It uses no analytics cookies or identifiers that follow you across days.</value></data>
+  <data name="Privacy_UsageRetention" xml:space="preserve"><value>The temporary identifiers and their daily key are scheduled for removal five minutes after the next midnight in Manila. The reporting system keeps daily totals and information about collection coverage for 13 months by default. Authorized administrators can see the reports. You can enable Do Not Track or Global Privacy Control in your browser to opt out without affecting portal access.</value></data>
+  <data name="Privacy_SecurityHeading" xml:space="preserve"><value>Data protection and security</value></data>
+  <data name="Privacy_PdfAccess" xml:space="preserve"><value>After signing in, you can see basic report details when available. Enter your portal password again each time you view or download a released laboratory or radiology PDF, including a Red Star laboratory PDF.</value></data>
+  <data name="Privacy_StorageAndAudit" xml:space="preserve"><value>The portal encrypts sensitive fields in Red Star records and stores report PDFs in encrypted private storage. Staff access depends on their assigned permissions. The portal logs report views and downloads, and certain administrative and account actions.</value></data>
+  <data name="Privacy_HivConfidentiality" xml:space="preserve"><value>Republic Act No. 11166 (Philippine HIV and AIDS Policy Act) protects the confidentiality of HIV testing, exposure, status, and related care. Disclosure of confidential HIV information requires written consent unless an exception under that law applies.</value></data>
+  <data name="Privacy_RightsHeading" xml:space="preserve"><value>Your privacy rights</value></data>
+  <data name="Privacy_Rights" xml:space="preserve"><value>Under the Data Privacy Act of 2012, you have the right to be informed and can request access to or correction of your personal data. Where the law allows, you can object to processing or request blocking or deletion. You can raise a concern with the DRMC Data Protection Officer or file a complaint with the National Privacy Commission.</value></data>
+  <data name="Privacy_ContactHeading" xml:space="preserve"><value>Contact DRMC</value></data>
+  <data name="Privacy_DpoContact" xml:space="preserve"><value>Privacy questions and requests</value></data>
+  <data name="Privacy_ClinicContact" xml:space="preserve"><value>Red Star Clinic inquiries</value></data>
+  <data name="Privacy_EmailSafety" xml:space="preserve"><value>Keep passwords, verification codes, and medical records out of email. Ask DRMC how to share sensitive information securely.</value></data>
+  <data name="Privacy_TermsHeading" xml:space="preserve"><value>Portal terms of use</value></data>
+  <data name="Privacy_TermsAccountHeading" xml:space="preserve"><value>Your account and information</value></data>
+  <data name="Privacy_TermsAccount" xml:space="preserve"><value>Use accurate registration details and your own identity documents. Review any information extracted from your ID and correct errors before submitting. Keep your password and verification codes private and sign out when you use a shared device.</value></data>
+  <data name="Privacy_TermsServicesHeading" xml:space="preserve"><value>Using patient services</value></data>
+  <data name="Privacy_TermsServices" xml:space="preserve"><value>Use your account to access your own records and public hospital guidance. Respect the privacy of other patients and keep their accounts and records private.</value></data>
+  <data name="Privacy_TermsCareHeading" xml:space="preserve"><value>Medical care and emergencies</value></data>
+  <data name="Privacy_TermsCare" xml:space="preserve"><value>Follow your healthcare team’s instructions. Discuss your results and treatment questions with them. For urgent symptoms or an emergency, seek immediate in-person care.</value></data>
+  <data name="Privacy_TermsChoiceHeading" xml:space="preserve"><value>Privacy and your choice</value></data>
+  <data name="Privacy_TermsChoice" xml:space="preserve"><value>Registration requires the processing described in the privacy notice, including identity verification and storage of any ID photos you submit. You can leave signup and continue to browse public information.</value></data>
+  <data name="Privacy_ConsentAccepted" xml:space="preserve"><value>You accepted the privacy notice and portal terms.</value></data>
+  <data name="Privacy_ConsentReview" xml:space="preserve"><value>Review privacy and terms</value></data>
+  <data name="Privacy_ConsentTitle" xml:space="preserve"><value>Before you create an account</value></data>
+  <data name="Privacy_ConsentHint" xml:space="preserve"><value>Read the privacy notice and portal terms to enable the agreement checkbox.</value></data>
+  <data name="Privacy_ConsentDocument" xml:space="preserve"><value>Privacy notice and portal terms</value></data>
+  <data name="Privacy_ConsentEnd" xml:space="preserve"><value>End of the privacy notice and portal terms.</value></data>
+  <data name="Privacy_ConsentScroll" xml:space="preserve"><value>Scroll to the end to continue.</value></data>
+  <data name="Privacy_ConsentScrollComplete" xml:space="preserve"><value>You reached the end. Check the agreement box to continue.</value></data>
+  <data name="Privacy_ConsentAgreement" xml:space="preserve"><value>I agree to the portal terms and consent to the data processing described in the privacy notice.</value></data>
+  <data name="Privacy_ConsentLeave" xml:space="preserve"><value>Leave signup</value></data>
+  <data name="Privacy_ConsentContinue" xml:space="preserve"><value>Agree and continue</value></data>
+  <data name="Privacy_ConsentJavaScript" xml:space="preserve"><value>You need JavaScript to sign up. You can still read the following document.</value></data>
 </root>

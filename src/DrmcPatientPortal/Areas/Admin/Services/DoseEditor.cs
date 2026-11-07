@@ -36,8 +36,7 @@ public sealed class DoseEditor : AdminEntity<MedicationDoseSchedule, DoseInput>
     public override async Task<AdminList> SelectContextAsync(ApplicationDbContext db, string? search, int page, CancellationToken token)
     {
         var query = db.Prescriptions.AsQueryable();
-        if (!string.IsNullOrWhiteSpace(search)) query = query.Where(p => EF.Functions.Collate(p.RxNumber, "Latin1_General_100_CI_AS").Contains(search) ||
-            EF.Functions.Collate(p.GenericName, "Latin1_General_100_CI_AS").Contains(search));
+        if (!string.IsNullOrWhiteSpace(search)) query = await PrescriptionQueries.SearchAsync(query, search, token);
         var count = await SqlReadRetry.RunAsync(db, () => query.CountAsync(token), token); page = Math.Clamp(page, 1, Math.Max(1, (count + 24) / 25));
         var prescriptions = await SqlReadRetry.RunAsync(db, () => query.OrderByDescending(p => p.Id).Skip((page - 1) * 25).Take(25).ToListAsync(token), token);
         return new("Select prescription", prescriptions.Select(p => new AdminRow(p.Id, p.RxNumber, p.GenericName + " | Patient #" + p.PatientRecordId, p.PatientRecordId)).ToArray(), search, page, count);

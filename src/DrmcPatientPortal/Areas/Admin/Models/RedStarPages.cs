@@ -4,31 +4,34 @@ using DrmcPatientPortal.Models;
 namespace DrmcPatientPortal.Areas.Admin.Models;
 
 public sealed record RedStarRegistryRow(int EnrollmentId, int PatientId, string PatientCode, string CodeName,
-    RedStarProgram Program, RedStarStatus Status, DateTime? NextRefill, int PendingRequests, bool FollowUpReview,
-    bool? NextRefillVerified = null, DateTime? StatusDate = null);
+    string FullName, string? HospitalNumber, RedStarProgram Program, RedStarStatus Status, DateTime? NextRefill,
+    int PendingRequests, bool FollowUpReview, bool? NextRefillVerified, DateTime? StatusDate, DateTimeOffset? ConfirmedUtc,
+    int ConfirmedRefillCount);
 public sealed record RedStarMonthlySummary(int ActiveCount, int LivingCount, int ExpiredThisMonthCount, DateTime MonthStart);
 public sealed record RedStarRegistryPage(IReadOnlyList<RedStarRegistryRow> Rows, string? Search, string Worklist,
     RedStarProgram? Program, RedStarRegistryStatusFilter? Status, int Page, int Total, IReadOnlyDictionary<string, int> Counts,
     DateTime Today, string Month, RedStarMonthlySummary Summary);
+public sealed record RedStarPrescriptionHistoryRow(Prescription Prescription, DateTime? RefillDueDate, DateTimeOffset? ConfirmedUtc);
 public sealed record RedStarDetailsPage(RedStarEnrollment Enrollment, IReadOnlyList<RedStarAppointment> Appointments,
-    IReadOnlyList<RedStarDispense> Dispenses, IReadOnlyList<RedStarRescheduleRequest> Requests,
+    IReadOnlyList<RedStarPrescriptionHistoryRow> Prescriptions, IReadOnlyList<RedStarRescheduleRequest> Requests,
     int AppointmentPage, int AppointmentTotal, int HistoryPage, int HistoryTotal, int RequestPage, int RequestTotal);
 public sealed record RedStarAuditPage(IReadOnlyList<RedStarAudit> Rows, int Page, int Total);
-public sealed record RedStarDeliveryRow(Guid Id, string PatientCode, DateTime DueDate, string Stage,
+public sealed record RedStarDeliveryRow(Guid Id, int EnrollmentId, string PatientCode, string FullName, string? HospitalNumber, DateTime DueDate, string Stage,
     RedStarReminderChannel Channel, RedStarDeliveryState State, int Attempts, DateTimeOffset CreatedUtc, DateTimeOffset? CompletedUtc,
-    bool Current, bool Verified);
-public sealed record RedStarRefillWorklistRow(int EnrollmentId, string PatientCode, string CodeName, DateTime DueDate, bool Verified);
-public sealed record RedStarRefillBadge(DateTime DueDate, DateTime Today, bool Verified);
+    bool Current, bool Verified, DateTimeOffset? ConfirmedUtc);
+public sealed record RedStarRefillWorklistRow(int EnrollmentId, string PatientCode, string FullName, string? HospitalNumber,
+    DateTime DueDate, bool Verified, DateTimeOffset? ConfirmedUtc);
+public sealed record RedStarRefillBadge(DateTime DueDate, DateTime Today, bool Verified, DateTimeOffset? ConfirmedUtc);
 public sealed record RedStarDeliveriesPage(IReadOnlyList<RedStarDeliveryRow> Rows, int Page, int Total,
     IReadOnlyList<RedStarRefillWorklistRow> Refills, int RefillPage, int RefillTotal, DateTime Today);
 
 public sealed class RedStarEnrollmentInput
 {
     [StringLength(31)] public string? WorksheetLayout { get; set; }
-    [Required, StringLength(80)] public string PatientCode { get; set; } = "";
-    [StringLength(120)] public string? CodeName { get; set; }
+    [Required(ErrorMessage = "Enter the patient code."), StringLength(80)] public string PatientCode { get; set; } = "";
+    [Required(ErrorMessage = "Enter the code name."), StringLength(120)] public string CodeName { get; set; } = "";
     [Required, StringLength(200)] public string FullName { get; set; } = "";
-    [StringLength(80)] public string? HospitalNumber { get; set; }
+    [Required(ErrorMessage = "Enter the hospital record number (HRN)."), StringLength(80)] public string HospitalNumber { get; set; } = "";
     [StringLength(40)] public string? ContactNumber { get; set; }
     [StringLength(500)] public string? Address { get; set; }
     public RedStarProgram Program { get; set; } = RedStarProgram.ART;

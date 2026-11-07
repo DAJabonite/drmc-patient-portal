@@ -5,12 +5,12 @@
 }
 <input asp-for="RowVersion" type="hidden" />
 <div class="mb-3">
-    <label asp-for="ClinicalEncounterId" class="form-label"></label>
+    <label asp-for="ClinicalEncounterId" class="form-label">@Loc["Enc_CaseReference"]</label>
     <select asp-for="ClinicalEncounterId" asp-items='@(ViewData["Encounters"] as IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)' class="form-select" aria-describedby="encounterHelp">
-        <option value="">Select this patient's encounter</option>
+        <option value="">@Loc["Enc_SelectPatientEncounter"]</option>
     </select>
     <span asp-validation-for="ClinicalEncounterId" class="text-danger"></span>
-    <div id="encounterHelp" class="form-text">Use the originating encounter, even when the result returns weeks later. If it is missing, have an encounter encoder create it first.</div>
+    <div id="encounterHelp" class="form-text">@Loc["Enc_OriginHelp"]</div>
 </div>
 <div class="mb-3"><label asp-for="StudyName" class="form-label"></label><input asp-for="StudyName" maxlength="200" class="form-control" /><span asp-validation-for="StudyName" class="text-danger"></span></div>
 

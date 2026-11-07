@@ -78,9 +78,9 @@ public sealed class RedStarImports(IDataProtectionProvider protection, AdminWrit
         Key = row.Key, FullName = row.FullName,
         PatientCode = string.IsNullOrEmpty(row.PatientCode) ? $"REVIEW-{batch.Id:N}-{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(row.Key)))[..8]}" : row.PatientCode,
         CodeName = row.CodeName, HospitalNumber = row.HospitalNumber, ContactNumber = row.ContactNumber,
-        Address = row.Address, Medicines = row.Medicines, Program = row.Program, Status = row.Status,
+        Address = row.Address, Program = row.Program, Status = row.Status,
         ReceivingHub = row.ReceivingHub, EnrolledDate = row.EnrolledDate, StartDate = row.StartDate,
-        StatusDate = row.StatusDate, DispensedDate = row.DispensedDate, NextRefillDate = row.NextRefillDate
+        StatusDate = row.StatusDate
     };
 
     public Task<WriteResult> ReconcileAsync(Guid id, RedStarReconcileInput input, string actor, CancellationToken token) => writes.RunAsync(async db =>
@@ -126,7 +126,9 @@ public sealed class RedStarImports(IDataProtectionProvider protection, AdminWrit
     private static void Normalize(RedStarImportChoice choice)
     {
         choice.PatientCode = choice.PatientCode.Trim(); choice.FullName = choice.FullName.Trim();
-        choice.CodeName = choice.CodeName.Trim(); choice.Medicines = choice.Medicines.Trim();
+        choice.CodeName = choice.CodeName.Trim();
+        // Old staged previews cannot re-enable the retired medication writer.
+        choice.Medicines = ""; choice.DispensedDate = null; choice.NextRefillDate = null;
         choice.HospitalNumber = choice.HospitalNumber?.Trim(); choice.ContactNumber = choice.ContactNumber?.Trim();
         choice.Address = choice.Address?.Trim(); choice.ReceivingHub = choice.ReceivingHub?.Trim();
         choice.EnrolledDate = choice.EnrolledDate?.Date; choice.StartDate = choice.StartDate?.Date;
@@ -148,7 +150,7 @@ public sealed class RedStarImports(IDataProtectionProvider protection, AdminWrit
             return "Record the effective date for transferred, discontinued, completed or deceased status.";
         if (choice.Status == RedStarStatus.TransferredOut && string.IsNullOrWhiteSpace(choice.ReceivingHub)) return "Record the receiving hub for a transfer.";
         if (choice.Program == RedStarProgram.Unverified && choice.Status == RedStarStatus.Active) return "Verify the program before creating an active clinical enrollment.";
-        if (new[] { choice.EnrolledDate, choice.StartDate, choice.StatusDate, choice.DispensedDate, choice.NextRefillDate }
+        if (new[] { choice.EnrolledDate, choice.StartDate, choice.StatusDate }
             .Any(x => x.HasValue && (x.Value.Year < 1900 || x.Value.Year > 2200))) return "Dates must be between 1900 and 2200.";
         return null;
     }
@@ -168,6 +170,7 @@ public sealed class RedStarImports(IDataProtectionProvider protection, AdminWrit
         if (choices.Length == 0) return WriteResult.Invalid("Save at least one included row before approval.");
         var targetKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var newCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var changedPatientIds = new HashSet<int>();
         foreach (var choice in choices)
         {
             var row = envelope.Rows.Single(x => x.Key == choice.Key);
@@ -186,6 +189,7 @@ public sealed class RedStarImports(IDataProtectionProvider protection, AdminWrit
                 var expected = AdminAudit.Version(choice.ExistingPatientVersion);
                 if (existing is null || expected is null || !expected.SequenceEqual(existing.RowVersion)) return WriteResult.Stale;
                 patient = existing;
+                changedPatientIds.Add(patient.Id);
                 enrollment = patient.Enrollments.SingleOrDefault(x => x.Program == choice.Program);
                 if (enrollment?.Id != choice.ExistingEnrollmentId || (enrollment is not null &&
                     (!(AdminAudit.Version(choice.ExistingEnrollmentVersion)?.SequenceEqual(enrollment.RowVersion) ?? false) ||
@@ -214,27 +218,12 @@ public sealed class RedStarImports(IDataProtectionProvider protection, AdminWrit
             if (choice.StartDate.HasValue) enrollment.StartDate = choice.StartDate;
             if (choice.StatusDate.HasValue) enrollment.StatusDate = choice.StatusDate;
             if (!string.IsNullOrEmpty(choice.ReceivingHub)) enrollment.ReceivingHub = choice.ReceivingHub;
-            if (!string.IsNullOrEmpty(choice.Medicines)) enrollment.Medicines = choice.Medicines;
             if (choice.Status != RedStarStatus.Active && enrollment.Id != 0)
                 await InvalidateSchedulesAsync(db, enrollment, null, true, token);
-            // A spreadsheet date provides no evidence of days supplied or supply end.
-            if (choice.DispensedDate.HasValue && !enrollment.Dispenses.Any(x => x.DispensedDate == choice.DispensedDate.Value))
-                db.RedStarDispenses.Add(new RedStarDispense { Enrollment = enrollment, DispensedDate = choice.DispensedDate.Value,
-                    Medicines = choice.Medicines, RecordedById = actor });
-            if (choice.NextRefillDate.HasValue)
-            {
-                var same = enrollment.Appointments.SingleOrDefault(x => x.Kind == RedStarAppointmentKind.Refill &&
-                    x.DueDate == choice.NextRefillDate.Value && x.State == RedStarAppointmentState.Scheduled);
-                if (enrollment.Id != 0) await InvalidateSchedulesAsync(db, enrollment, RedStarAppointmentKind.Refill, false, token);
-                foreach (var old in enrollment.Appointments.Where(x => x.Kind == RedStarAppointmentKind.Refill && x.State == RedStarAppointmentState.Scheduled && x != same))
-                    old.State = RedStarAppointmentState.Cancelled;
-                if (same is null)
-                    db.RedStarAppointments.Add(new RedStarAppointment { Enrollment = enrollment, Kind = RedStarAppointmentKind.Refill,
-                        DueDate = choice.NextRefillDate.Value, State = choice.Status == RedStarStatus.Active ? RedStarAppointmentState.Scheduled : RedStarAppointmentState.Cancelled, RemindersVerified = false });
-            }
         }
         batch.ApprovedUtc = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(token);
+        await PrescriptionRefills.SynchronizePatientsAsync(db, changedPatientIds, token);
         await RedStarAuditTrail.RecordAsync(db, actor, "ImportApprove", id.ToString("N"), token);
         return WriteResult.Success;
     }, token);
@@ -299,7 +288,15 @@ public static class RedStarRegistryParser
                     // The supplied registry stores regimen components in adjacent unlabeled cells.
                     var medicine = Array.IndexOf(fields, "medicines");
                     if (medicine >= 0) for (var c = medicine + 1; c < fields.Length && c <= medicine + 2 && string.IsNullOrWhiteSpace(header[c]); c++) fields[c] = "medicines";
-                    for (var c = 0; c < fields.Length; c++) if (fields[c] is null && !string.IsNullOrWhiteSpace(header[c])) deferred.Add(sheet + ": " + header[c]);
+                    for (var c = 0; c < fields.Length; c++)
+                    {
+                        if (fields[c] is "medicines" or "dispensed" or "next")
+                        {
+                            deferred.Add(sheet + ": " + (string.IsNullOrWhiteSpace(header[c]) ? "regimen component" : header[c]));
+                            fields[c] = null;
+                        }
+                        else if (fields[c] is null && !string.IsNullOrWhiteSpace(header[c])) deferred.Add(sheet + ": " + header[c]);
+                    }
                 }
                 var number = headerless ? 0 : 1;
                 do
@@ -344,8 +341,7 @@ public static class RedStarRegistryParser
                     if (row.FullName.Length == 0) row.Warnings.Add("Missing patient name: reconcile it before including this row.");
                     if (row.Program == RedStarProgram.Unverified || headerless)
                     { row.Program = RedStarProgram.Unverified; row.Status = RedStarStatus.AwaitingVerification; row.Warnings.Add("This row does not establish a test result or treatment enrollment."); }
-                    if (!row.NextRefillDate.HasValue) row.Warnings.Add("No next refill date is recorded; no schedule will be created.");
-                    if (row.NextRefillDate.HasValue) row.Warnings.Add("Imported schedules remain inactive for reminders until clinic staff verify them.");
+                    row.Warnings.Add("Rx_RedStarImportHelp");
                     result.Rows.Add(row);
                 } while (reader.Read());
             } while (reader.NextResult());
@@ -525,7 +521,8 @@ public static class RedStarRegistryParser
     }
     private static XmlReaderSettings SafeXml() => new() { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null, MaxCharactersInDocument = 20L * 1024 * 1024 };
 
-    public static byte[] Export(IReadOnlyList<RedStarEnrollment> enrollments)
+    public static byte[] Export(IReadOnlyList<RedStarEnrollment> enrollments,
+        IReadOnlyDictionary<int, RedStarMedicationSummary>? medicationSummaries = null)
     {
         var groups = enrollments.ToLookup(RedStarRegistryLayout.SheetFor, StringComparer.Ordinal);
         var sheets = RedStarRegistryLayout.Sheets.Select(sheet =>
@@ -533,6 +530,7 @@ public static class RedStarRegistryParser
             var columns = RedStarRegistryLayout.ExportColumns(sheet);
             var rows = groups[sheet.Name].Select(enrollment =>
             {
+                var medication = medicationSummaries?.GetValueOrDefault(enrollment.Id);
                 var values = new Dictionary<string, string>(StringComparer.Ordinal)
                 {
                     ["FullName"] = enrollment.Patient.FullName, ["Address"] = enrollment.Patient.Address ?? "",
@@ -541,12 +539,9 @@ public static class RedStarRegistryParser
                     ["Program"] = enrollment.Program.ToString(), ["Status"] = enrollment.Status.ToString(),
                     ["EnrolledDate"] = FormatDate(enrollment.EnrolledDate), ["StartDate"] = FormatDate(enrollment.StartDate),
                     ["StatusDate"] = FormatDate(enrollment.StatusDate), ["ReceivingHub"] = enrollment.ReceivingHub ?? "",
-                    ["Medicines"] = enrollment.Medicines,
-                    ["DispensedDate"] = FormatDate(enrollment.Dispenses.OrderByDescending(dispense => dispense.DispensedDate)
-                        .Select(dispense => (DateTime?)dispense.DispensedDate).FirstOrDefault()),
-                    ["NextRefillDate"] = FormatDate(enrollment.Appointments.Where(appointment => appointment.Kind == RedStarAppointmentKind.Refill &&
-                        appointment.State == RedStarAppointmentState.Scheduled).OrderBy(appointment => appointment.DueDate)
-                        .Select(appointment => (DateTime?)appointment.DueDate).FirstOrDefault())
+                    ["Medicines"] = medication?.Medicines ?? "",
+                    ["DispensedDate"] = FormatDate(medication?.ServedDate),
+                    ["NextRefillDate"] = FormatDate(medication?.NextRefillDate)
                 };
                 return columns.Select(column => column.Field.Length == 0 ? "" : values[column.Field]).ToArray();
             }).Prepend(columns.Select(column => column.Header).ToArray()).ToArray();

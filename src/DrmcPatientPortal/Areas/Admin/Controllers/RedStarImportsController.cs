@@ -8,6 +8,7 @@ using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 
 namespace DrmcPatientPortal.Areas.Admin.Controllers;
 
@@ -108,7 +109,8 @@ public sealed class RedStarImportsController(ApplicationDbContext db, RedStarImp
         try
         {
             var result = await imports.ApproveAsync(id, version, Actor, cancellationToken);
-            TempData["RedStarImportMessage"] = result.Succeeded ? "Included records imported. Verify current schedules in the registry before enabling reminders." : result.Error;
+            TempData["RedStarImportMessage"] = result.Succeeded ?
+                HttpContext.RequestServices.GetRequiredService<IStringLocalizer<SharedResource>>()["Rx_RedStarImported"].Value : result.Error;
         }
         catch (ImportRejectedException error) { TempData["RedStarImportMessage"] = error.Message; }
         return RedirectToAction(nameof(Reconcile), new { id });
@@ -136,10 +138,28 @@ public sealed class RedStarImportsController(ApplicationDbContext db, RedStarImp
         var total = await db.RedStarEnrollments.CountAsync(cancellationToken);
         if (total > RedStarRegistryParser.MaxRows)
         { TempData["RedStarImportMessage"] = "The registry exceeds the 5,000-record export limit. Contact the system maintainer for a protected bulk export."; return RedirectToAction(nameof(Index)); }
-        var records = await db.RedStarEnrollments.AsNoTracking().Include(x => x.Patient).Include(x => x.Dispenses).Include(x => x.Appointments)
+        var records = await db.RedStarEnrollments.AsNoTracking().Include(x => x.Patient)
             .ToListAsync(cancellationToken);
         var rows = records.OrderBy(x => x.Patient.PatientCode, RedStarPhiProtection.RegistryOrder).ThenBy(x => x.Program).ToList();
+        var enrollmentIds = rows.Select(e => e.Id).ToArray();
+        var prescriptions = await db.Prescriptions.AsNoTracking().Where(p => p.IsRedStar && p.RedStarEnrollmentId != null &&
+            EF.Parameter(enrollmentIds).Contains(p.RedStarEnrollmentId.Value) && p.ClinicalEncounterId != null &&
+            p.Encounter!.PatientRecordId == p.PatientRecordId).ToListAsync(cancellationToken);
+        var hospitalIds = records.Where(e => e.Patient.HospitalPatientRecordId.HasValue).Select(e => e.Patient.HospitalPatientRecordId!.Value).Distinct().ToArray();
+        var hospitals = await db.PatientRecords.AsNoTracking().Where(p => EF.Parameter(hospitalIds).Contains(p.Id)).ToDictionaryAsync(p => p.Id, cancellationToken);
+        var medications = new Dictionary<int, RedStarMedicationSummary>();
+        foreach (var enrollment in records)
+        {
+            if (enrollment.Program == RedStarProgram.Unverified || enrollment.Patient.HospitalPatientRecordId is not int hospitalId || !hospitals.TryGetValue(hospitalId, out var hospital) ||
+                !RedStarReportAccess.MappingValid(enrollment.Patient, hospital)) continue;
+            var linked = prescriptions.Where(p => p.RedStarEnrollmentId == enrollment.Id && p.PatientRecordId == hospitalId).ToList();
+            var active = linked.Where(p => p.Status == PrescriptionStatus.Active).ToList();
+            medications[enrollment.Id] = new(string.Join(" / ", active.OrderBy(p => p.Id).Select(p => p.GenericName)),
+                linked.Where(p => p.FulfillmentStatus == PrescriptionFulfillmentStatus.Served).Max(p => p.ServedDate),
+                enrollment.Status == RedStarStatus.Active && enrollment.Program != RedStarProgram.Unverified
+                    ? active.Where(p => p.FulfillmentStatus == PrescriptionFulfillmentStatus.Served).Min(p => p.NextRefillDate) : null);
+        }
         await RedStarAuditTrail.RecordAsync(db, Actor, "RegistryExport", "PrivateRegistry", cancellationToken);
-        return File(RedStarRegistryParser.Export(rows), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Registry-core.xlsx");
+        return File(RedStarRegistryParser.Export(rows, medications), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Registry-core.xlsx");
     }
 }

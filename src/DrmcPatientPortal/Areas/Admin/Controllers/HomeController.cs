@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DrmcPatientPortal.Areas.Admin.Controllers;
 
 [Area("Admin")]
-public sealed class HomeController(ApplicationDbContext db, AdminAccessScope scope, ImportStaging staging, WebsiteUsageReports usage) : Controller
+public sealed class HomeController(ApplicationDbContext db, AdminAccessScope scope, ImportStaging staging, WebsiteUsageReports usage, PrescriptionAccess prescriptionAccess) : Controller
 {
     private static readonly ImportStatus[] OpenImportStatuses =
     [
@@ -25,6 +25,8 @@ public sealed class HomeController(ApplicationDbContext db, AdminAccessScope sco
     {
         var roles = await scope.RolesAsync();
         bool Can(string controller) => AdminPolicies.Allows(controller, roles);
+        await prescriptionAccess.InitializeAsync(db, cancellationToken);
+        var prescriptions = prescriptionAccess.Query(db);
         var counters = new (string Controller, Func<Task<int>> Count)[]
         {
             ("Patients", () => db.PatientRecords.CountAsync(cancellationToken)),
@@ -33,7 +35,7 @@ public sealed class HomeController(ApplicationDbContext db, AdminAccessScope sco
             ("LabResults", () => db.LabResults.CountAsync(cancellationToken)),
             ("LabResultItems", () => db.LabResultItems.CountAsync(cancellationToken)),
             ("RadiologyStudies", () => db.RadiologyStudies.CountAsync(cancellationToken)),
-            ("Prescriptions", () => db.Prescriptions.CountAsync(cancellationToken)),
+            ("Prescriptions", () => prescriptions.CountAsync(cancellationToken)),
             ("MedicationDoseSchedules", () => db.MedicationDoseSchedules.CountAsync(cancellationToken)),
             ("PatientAllergies", () => db.PatientAllergies.CountAsync(cancellationToken)),
             ("Doctors", () => db.Doctors.CountAsync(cancellationToken)),
@@ -62,7 +64,7 @@ public sealed class HomeController(ApplicationDbContext db, AdminAccessScope sco
                     c.RedeemedAtUtc == null && c.RevokedAtUtc == null && c.LockedAtUtc == null &&
                     c.FailedAttemptCount < PatientRegistrationCode.MaximumFailedAttempts && c.ExpiresAtUtc > utcNow, cancellationToken);
                 return new AdminMetric("Active registration codes", n, "bi-qr-code", "RegistrationCodes", "Issued and waiting for patient signup"); }),
-            ("Prescriptions", async () => { var n = await db.Prescriptions.CountAsync(p => p.Status == PrescriptionStatus.Active, cancellationToken);
+            ("Prescriptions", async () => { var n = await prescriptions.CountAsync(p => p.Status == PrescriptionStatus.Active, cancellationToken);
                 return new AdminMetric("Active prescriptions", n, "bi-capsule", "Prescriptions", "Visible on patient medication lists"); }),
         };
         var attention = new List<AdminMetric>();

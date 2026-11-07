@@ -12,16 +12,18 @@ namespace DrmcPatientPortal.Services;
 public sealed class EmailDeliveryOptions
 {
     public const string SectionName = "Notifications:Email";
+    public const string DefaultFromAddress = "redstarclinic@drmc.doh.gov.ph";
+    public const string DefaultFromName = "DRMC Red Star Clinic / Patient Portal";
     public string? Provider { get; set; }
     public string Host { get; set; } = string.Empty;
     public int Port { get; set; } = 587;
     public bool UseSsl { get; set; } = true;
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
-    public string FromAddress { get; set; } = string.Empty;
-    public string? FromName { get; set; } = "DRMC Patient Portal";
+    public string FromAddress { get; set; } = DefaultFromAddress;
+    public string? FromName { get; set; } = DefaultFromName;
 
-    internal string SenderName => string.IsNullOrWhiteSpace(FromName) ? "DRMC Patient Portal" : FromName;
+    internal string SenderName => string.IsNullOrWhiteSpace(FromName) ? DefaultFromName : FromName;
     internal bool HasMultilineFromName => FromName?.IndexOfAny(['\r', '\n', '\u0085', '\u2028', '\u2029']) is >= 0;
 
     internal string SelectedProvider(bool development) => string.IsNullOrWhiteSpace(Provider)

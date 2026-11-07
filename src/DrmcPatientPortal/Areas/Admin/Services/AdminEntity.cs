@@ -17,6 +17,7 @@ public abstract class AdminEntity<TEntity, TInput> where TEntity : class, new() 
     public virtual IQueryable<TEntity> Query(ApplicationDbContext db, int? contextId = null) => db.Set<TEntity>();
     public virtual IQueryable<TEntity> Search(IQueryable<TEntity> query, string search) => query.Where(e =>
         EF.Functions.Collate(EF.Property<string>(e, SearchColumn), "Latin1_General_100_CI_AS").Contains(search));
+    public virtual Task<IQueryable<TEntity>> SearchAsync(IQueryable<TEntity> query, string search, CancellationToken token) => Task.FromResult(Search(query, search));
     public virtual string Label(ApplicationDbContext db, TEntity entity) => db.Entry(entity).Property(SearchColumn).CurrentValue?.ToString() ?? "";
     public virtual string Summary(TEntity entity) => "";
     public virtual int? PatientId(TEntity entity) => null;

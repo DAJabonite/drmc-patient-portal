@@ -60,10 +60,11 @@ public static class ImportExamples
                 case "Prescriptions":
                     Set(("SourceRecordKey", "RX" + number), ("SourceEncounterKey", Parent("ENC", "EXAMPLE-ENC-")), ("RxNumber", "EXAMPLE-RX-" + number),
                         ("GenericName", "Fictional Example Medication"), ("BrandName", "Example brand"),
-                        ("Dosage", "Example dose only"), ("DosageForm", "Tablet"), ("Frequency", "Once daily"),
+                        ("Dosage", "Example dose only"), ("DosageForm", "Tablet"),
                         ("Instructions", "Fictional example; not prescribing instructions."),
                         ("PrescribedAt", "2026-01-10T08:00:00"), ("ValidUntil", "2026-02-10T08:00:00"),
-                        ("RefillsTotal", "1"), ("RefillsRemaining", "1"), ("Status", "Active")); break;
+                        ("FrequencyMode", "TimesPerDay"), ("FrequencyValue", "1"), ("DosePerIntake", "1"), ("DoseUnit", "tablet"),
+                        ("DurationCount", "10"), ("DurationUnit", "Days"), ("FulfillmentStatus", "Prescribed"), ("Status", "Active")); break;
                 case "MedicationDoseSchedules":
                     Set(("SourcePrescriptionKey", Parent("RX", "EXAMPLE-RX-")), ("DoseTime", "08:00"), ("DisplayOrder", "0")); break;
                 case "PatientAllergies":

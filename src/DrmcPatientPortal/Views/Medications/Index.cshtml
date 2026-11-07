@@ -33,7 +33,7 @@
                     <div class="min-w-0">
                         <p class="text-danger fw-semibold mb-1">@Loc["Rx_SafetyAlert"]</p>
                         <h2 class="h5 fw-bold text-dark mb-1" id="medicationSafetyHeading">
-                            @(Model.AllergyPagination.Total == 1 ? "1 documented drug allergy" : $"{Model.AllergyPagination.Total} documented drug allergies")
+                            @Loc["Rx_AllergyCount", Model.AllergyPagination.Total]
                         </h2>
                         <p class="small text-muted mb-0 text-wrap-pretty">
                             @string.Join(", ", Model.Allergies.Select(a => a.Allergen))
@@ -41,13 +41,13 @@
                     </div>
                 </div>
                 <details class="medication-allergy-details">
-                    <summary>View reaction details</summary>
+                    <summary>@Loc["Rx_ReactionDetails"]</summary>
                     <div class="medication-allergy-body">
                         <ul class="mb-0 small ps-3">
                             @foreach (var a in Model.Allergies)
                             {
                                 <li>
-                                    <strong>@a.Allergen</strong> &mdash; <span>Reaction: @a.Reaction</span> (Severity: <em>@a.Severity</em>)
+                                    <strong>@a.Allergen</strong> &mdash; <span>@Loc["Rx_Reaction"]: @a.Reaction</span> (@Loc["Rx_Severity"]: <em>@Loc["Rx_Severity_" + a.Severity]</em>)
                                 </li>
                             }
                         </ul>
@@ -89,87 +89,46 @@
         </div>
 
         <form asp-action="Index" method="get" class="card border-0 shadow-sm rounded-4 p-4 mb-4">
-            <label for="medicationEncounterDate" class="form-label fw-semibold">Encounter date</label>
+            <label for="medicationEncounterDate" class="form-label fw-semibold">@Loc["Report_EncounterDate"]</label>
             <select id="medicationEncounterDate" name="dateRange" class="form-select mb-2">
-                <option value="" selected="@(Model.SelectedDateRange == null)">Any encounter date</option>
-                <option value="30d" selected="@(Model.SelectedDateRange == "30d")">Last 30 days</option>
-                <option value="6m" selected="@(Model.SelectedDateRange == "6m")">Last 6 months</option>
-                <option value="year" selected="@(Model.SelectedDateRange == "year")">This year</option>
-                <option value="custom" selected="@(Model.SelectedDateRange == "custom")">Custom date range</option>
+                <option value="" selected="@(Model.SelectedDateRange == null)">@Loc["Report_AnyDate"]</option>
+                <option value="30d" selected="@(Model.SelectedDateRange == "30d")">@Loc["Report_Last30Days"]</option>
+                <option value="6m" selected="@(Model.SelectedDateRange == "6m")">@Loc["Report_Last6Months"]</option>
+                <option value="year" selected="@(Model.SelectedDateRange == "year")">@Loc["Report_ThisYear"]</option>
+                <option value="custom" selected="@(Model.SelectedDateRange == "custom")">@Loc["Report_CustomRange"]</option>
             </select>
             <div class="row g-2 mb-3">
-                <div class="col-sm-6"><label for="medicationStartDate" class="form-label small">From (custom range)</label><input id="medicationStartDate" type="date" name="startDate" value="@Model.SelectedStartDate?.ToString("yyyy-MM-dd")" class="form-control" /></div>
-                <div class="col-sm-6"><label for="medicationEndDate" class="form-label small">To (custom range)</label><input id="medicationEndDate" type="date" name="endDate" value="@Model.SelectedEndDate?.ToString("yyyy-MM-dd")" class="form-control" /></div>
+                <div class="col-sm-6"><label for="medicationStartDate" class="form-label small">@Loc["Report_From"]</label><input id="medicationStartDate" type="date" name="startDate" value="@Model.SelectedStartDate?.ToString("yyyy-MM-dd")" class="form-control" /></div>
+                <div class="col-sm-6"><label for="medicationEndDate" class="form-label small">@Loc["Report_To"]</label><input id="medicationEndDate" type="date" name="endDate" value="@Model.SelectedEndDate?.ToString("yyyy-MM-dd")" class="form-control" /></div>
             </div>
-            @if (ViewData["DateRangeError"] is string error) { <p class="small text-danger" role="alert">@error</p> }
-            <div><button class="btn btn-primary-drmc">Apply</button> <a asp-action="Index" class="btn btn-outline-secondary">Clear</a></div>
+            @if (ViewData["DateRangeError"] is string error) { <p class="small text-danger" role="alert">@Loc[error]</p> }
+            <div><button class="btn btn-primary-drmc">@Loc["Report_Apply"]</button> <a asp-action="Index" class="btn btn-outline-secondary">@Loc["Report_ClearFilters"]</a></div>
         </form>
 
         <!-- Prescriptions List -->
         <div class="mb-3 d-flex align-items-center justify-content-between">
-            <h2 class="h5 fw-bold text-primary-drmc mb-0">@Loc["Rx_ActiveOrders"] (@Model.PrescriptionTotal)</h2>
+            <h2 class="h5 fw-bold text-primary-drmc mb-0">@Loc["Rx_Tagubilin"] (@Model.PrescriptionTotal)</h2>
         </div>
 
         <div class="d-flex flex-column gap-3">
             @{ var displayGroups = Model.PrescriptionGroups.ToList();
-               if (Model.Prescriptions.Count > 0) displayGroups.Add(new PrescriptionEncounterGroup(null, "Encounter not assigned", null, Model.Prescriptions)); }
+               if (Model.Prescriptions.Count > 0) displayGroups.Add(new PrescriptionEncounterGroup(null, Loc["Report_Unassigned"].Value, null, Model.Prescriptions)); }
             @foreach (var group in displayGroups)
             {
                 <section aria-label="@group.Reference" data-testid="prescription-encounter-group" data-encounter-id="@group.EncounterId">
                     <h3 class="h6 fw-bold text-primary-drmc mt-3">@group.Reference @if (group.Date.HasValue) { <span>· @group.Date.Value.ToString("MMM d, yyyy")</span> }</h3>
-                    @if (group.EncounterId.HasValue) { <a asp-controller="Visits" asp-action="Details" asp-route-id="@group.EncounterId" class="small fw-semibold">View encounter</a> }
+                    @if (group.EncounterId.HasValue) { <a asp-controller="Visits" asp-action="Details" asp-route-id="@group.EncounterId" class="small fw-semibold">@Loc["Rx_ViewEncounter"]</a> }
                     @foreach (var rx in group.Prescriptions)
                     {
-                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                    <div class="row align-items-center g-3">
-                        <div class="col-md-7">
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <span class="badge @(rx.Status == PrescriptionStatus.Active ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary") rounded-pill small">
-                                    @rx.Status
-                                </span>
-                                <span class="small text-muted">
-                                    @Loc["Rx_Number"]: <strong>@rx.RxNumber</strong>
-                                </span>
-                            </div>
-
-                            <h3 class="h5 fw-bold text-dark mb-1">
-                                @rx.GenericName
-                                @if (!string.IsNullOrEmpty(rx.BrandName))
-                                {
-                                    <span class="text-muted fw-normal fs-6">(@rx.BrandName)</span>
-                                }
-                            </h3>
-
-                            <div class="text-primary-drmc fw-semibold mb-2">
-                                <i class="bi bi-prescription2 me-1"></i> @rx.Dosage &middot; @rx.DosageForm &middot; @rx.Frequency
-                            </div>
-
-                            <p class="text-muted mb-2">@rx.Instructions</p>
-                            <p class="text-muted mb-2">Route of administration: <strong>@(rx.RouteOfAdministration ?? "Not specified")</strong></p>
-
-                            <div class="small text-muted d-flex flex-wrap gap-3">
-                                <span><i class="bi bi-person-badge me-1"></i> @Loc["Rx_Prescriber"]: @rx.PrescribingDoctor</span>
-                                <span><i class="bi bi-calendar3 me-1"></i> @Loc["Rx_ValidUntil"]: @rx.ValidUntil.ToString("d")</span>
-                            </div>
-                        </div>
-
-                        <div class="col-md-5 text-md-end">
-                            <div class="d-flex flex-wrap gap-2 justify-content-md-end">
-                                <a asp-action="Details" asp-route-id="@rx.Id" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold btn-sm">
-                                    @Loc["Rx_Details"]
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                        <partial name="_PrescriptionCard" model="rx" />
                     }
                     @if (!group.EncounterId.HasValue) { <partial name="_Pagination" model="Model.LegacyPagination" /> }
                 </section>
             }
         </div>
         @if (Model.Pagination.Total > 0) { <partial name="_Pagination" model="Model.Pagination" /> }
-        @if (Model.LegacyExcluded) { <p class="small text-muted">Records with an encounter not assigned are excluded from encounter-date filters. Clear the date filter to see them.</p> }
-        @if (displayGroups.Count == 0) { <p class="text-muted">No prescriptions match this encounter date.</p> }
+        @if (Model.LegacyExcluded) { <p class="small text-muted">@Loc["Report_LegacyExcluded"]</p> }
+        @if (displayGroups.Count == 0) { <p class="text-muted">@Loc["Rx_NoMatches"]</p> }
 
     </div>
 </section>

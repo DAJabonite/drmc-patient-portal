@@ -27,7 +27,8 @@ public sealed class RedStarPhiProtection(IDataProtectionProvider provider, strin
         new(typeof(RedStarRescheduleRequest), "RedStarRescheduleRequests", "Reason"),
         new(typeof(RedStarReminder), "RedStarReminders", "PortalUserId"),
         new(typeof(RedStarAudit), "RedStarAudits", "ActorId", "Details"),
-        new(typeof(RedStarImportBatch), "RedStarImportBatches", "CreatedById")
+        new(typeof(RedStarImportBatch), "RedStarImportBatches", "CreatedById"),
+        new(typeof(Prescription), "Prescriptions", "GenericName", "BrandName", "Dosage", "DosageForm", "RouteOfAdministration", "Frequency", "Instructions", "PrescribingDoctor", "Department", "DoseUnit")
     ];
     private readonly object gate = new();
     private byte[]? key;

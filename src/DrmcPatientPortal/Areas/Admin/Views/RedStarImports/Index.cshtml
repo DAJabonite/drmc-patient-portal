@@ -8,7 +8,7 @@
         <div class="admin-card-body">
             <label for="registry-file" class="form-label">Red Star registry (.xlsx or .csv)</label>
             <input id="registry-file" name="file" type="file" accept=".xlsx,.csv" class="form-control" required aria-describedby="registry-upload-help" />
-            <p id="registry-upload-help" class="small text-muted mt-2">Upload XLSX or UTF-8 CSV (comma-separated), up to 10 MB and 5,000 rows total. Review and approve before import. Verify schedules before enabling reminders.</p>
+            <p id="registry-upload-help" class="small text-muted mt-2">@Loc["Rx_RedStarImportUploadHelp"]</p>
             <p class="small mb-0"><a asp-action="DownloadTemplate">Download CSV template</a> <span class="text-muted">Delete the two sample rows before uploading.</span></p>
         </div>
         <div class="admin-form-actions"><button type="submit" class="btn btn-primary">Upload and preview</button></div>

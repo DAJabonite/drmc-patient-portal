@@ -3148,3 +3148,9 @@ code,
     margin-left: 0;
     margin-right: 0;
 }
+/* Tagubilin cards identify the program with text as well as a border. */
+.tagubilin-card { border: 1px solid #dee2e6; }
+.tagubilin-card-redstar { border: 2px solid #b42331; }
+.tagubilin-card-regular { border-color: #dee2e6; }
+.tagubilin-refill { flex-shrink: 0; max-width: 48%; white-space: normal; line-height: 1.4; text-align: right; }
+.tagubilin-details dd { overflow-wrap: anywhere; }

@@ -14,14 +14,13 @@
             else
             {
                 <p class="h4 fw-bold mb-2">@Model.DueDate.ToString("MMMM d, yyyy")</p>
-                @if (Model.Verified && urgency != RedStarRefillUrgency.Scheduled)
+                @if (urgency != RedStarRefillUrgency.Scheduled)
                 {
                     <div class="alert @(urgency == RedStarRefillUrgency.Overdue ? "alert-danger" : "alert-warning") py-2 mb-2" role="status"><strong>@Loc["RS_ReplenishmentReminder"]</strong><br />@Loc["RS_MissedHelp"]</div>
                 }
                 <span class="badge @badgeCss">@(days < 0 ? Loc["RS_OverdueDays", -days] : days == 0 ? Loc["RS_DueToday"] : Loc["RS_InDays", days])</span>
-                @if (!Model.Verified) { <span class="badge bg-secondary">@Loc["RS_DateUnverified"]</span> }
                 <span class="small ms-2">@Loc[Model.Confirmed ? "RS_Confirmed" : "RS_Scheduled"]</span>
-                @if (!string.IsNullOrWhiteSpace(Model.Medicines)) { <p class="small mt-3 mb-0 text-break">@Model.Medicines</p> }
+                <p class="mt-3 mb-0"><a asp-controller="Medications" asp-action="Details" asp-route-id="@Model.PrescriptionId">@Loc["Rx_ViewTagubilin"]</a></p>
             }
         </div><a asp-area="" asp-controller="RedStarPatient" asp-action="Index" class="btn btn-outline-drmc rounded-pill">@Loc["RS_ViewSchedule"]</a>
     </div>

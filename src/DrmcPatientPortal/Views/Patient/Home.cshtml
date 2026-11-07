@@ -42,6 +42,8 @@
             </nav>
         </section>
 
+        @if (Model.RedStarEnrolled) { <partial name="_RedStarRefillCard" model="Model.RedStarRefill" /> }
+
         <div class="row g-3">
             <div class="col-md-6 col-xl-3">
                 <article class="card summary-card h-100">
@@ -112,12 +114,12 @@
                         <div class="summary-card-heading">
                             <span class="card-icon"><i class="bi bi-capsule" aria-hidden="true"></i></span>
                             <div>
-                                <h2 class="h5 fw-bold mb-0">Medications</h2>
+                                <h2 class="h5 fw-bold mb-0">@Loc["Rx_Tagubilin"]</h2>
                             </div>
                             <span class="summary-count">@Model.ActivePrescriptionsCount</span>
                         </div>
-                        <p class="text-muted mb-3">Review dose times, safety instructions, and prescription details.</p>
-                        <a asp-controller="Medications" asp-action="Index" class="btn btn-primary-drmc dashboard-summary-button mt-auto">Open medications <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                        <p class="text-muted mb-3">@Loc["Rx_HomeHelp"]</p>
+                        <a asp-controller="Medications" asp-action="Index" class="btn btn-primary-drmc dashboard-summary-button mt-auto">@Loc["Rx_OpenTagubilin"] <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                     </div>
                 </article>
             </div>

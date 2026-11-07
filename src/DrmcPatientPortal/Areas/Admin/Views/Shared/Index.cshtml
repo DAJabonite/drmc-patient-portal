@@ -1,4 +1,5 @@
 @model AdminList
+@inject DrmcPatientPortal.Areas.Admin.Security.AdminAccessScope AccessScope
 @{
     ViewData["Title"] = Model.Title;
     var controller = ViewContext.RouteData.Values["controller"]?.ToString();
@@ -16,7 +17,7 @@
 }
 <div class="admin-page-header">
     <div>
-        <h1 class="admin-title">@Model.Title</h1>
+        <h1 class="admin-title">@Loc[Model.Title]</h1>
     </div>
     <div class="admin-page-actions">
         @if (controller is "LabResults" or "RadiologyStudies")
@@ -67,7 +68,8 @@
                         <td class="text-end text-nowrap" data-label="Actions">
                             <span class="admin-row-actions">
                                 <a asp-area="Admin" asp-action="Edit" asp-route-id="@row.Id" class="btn btn-sm btn-outline-primary" title="Edit" aria-label="Edit @row.Label"><i class="bi bi-pencil" aria-hidden="true"></i></a>
-                                <a asp-area="Admin" asp-action="Delete" asp-route-id="@row.Id" class="btn btn-sm btn-outline-danger" title="Delete" aria-label="Delete @row.Label"><i class="bi bi-trash" aria-hidden="true"></i></a>
+                                @if (controller != "Prescriptions" || (await AccessScope.RolesAsync()).Contains(DrmcPatientPortal.Areas.Admin.Security.StaffRoles.Admin))
+                                { <a asp-area="Admin" asp-action="Delete" asp-route-id="@row.Id" class="btn btn-sm btn-outline-danger" title="Delete" aria-label="Delete @row.Label"><i class="bi bi-trash" aria-hidden="true"></i></a> }
                             </span>
                         </td>
                     </tr>

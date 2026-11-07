@@ -12,3 +12,11 @@
 }
 <span class="badge @css">@label</span>
 @if (!Model.Verified) { <span class="badge bg-secondary">Needs verification</span> }
+@if (Model.ConfirmedUtc is { } confirmed)
+{
+    <div class="small text-success">Patient confirmed attendance · @ClinicalClock.WallTime(confirmed).ToString("dd MMM yyyy HH:mm")</div>
+}
+else
+{
+    <div class="small text-muted">No patient confirmation</div>
+}

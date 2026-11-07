@@ -6,6 +6,7 @@ namespace DrmcPatientPortal.Services;
 
 public sealed record RedStarRegistryColumn(string Field, string Header);
 public sealed record RedStarRegistrySheet(string Name, IReadOnlyList<RedStarRegistryColumn> Columns);
+public sealed record RedStarMedicationSummary(string Medicines, DateTime? ServedDate, DateTime? NextRefillDate);
 
 // Supported registry fields follow the clinic's worksheet order. Other saved portal
 // fields are appended so a core export can be imported again without losing values.
@@ -23,6 +24,7 @@ public static class RedStarRegistryLayout
     ];
 
     public static readonly IReadOnlyList<RedStarRegistryColumn> ImportColumns = Core
+        .Where(column => column.Field is not ("Medicines" or "DispensedDate" or "NextRefillDate"))
         .Select(column => column.Field == "Status" ? column with { Header = "Status" } : column).ToArray();
 
     public static byte[] CsvTemplate()

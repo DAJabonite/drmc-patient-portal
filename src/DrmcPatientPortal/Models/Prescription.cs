@@ -28,8 +28,27 @@ public class Prescription
     public int RefillsRemaining { get; set; } = 2;
     public DateTime? LastRefillDate { get; set; }
 
+    public PrescriptionFulfillmentStatus FulfillmentStatus { get; set; }
+    public PrescriptionFrequencyMode? FrequencyMode { get; set; }
+    public decimal? FrequencyValue { get; set; }
+    public decimal? DosePerIntake { get; set; }
+    public string? DoseUnit { get; set; }
+    public int? DurationCount { get; set; }
+    public PrescriptionDurationUnit? DurationUnit { get; set; }
+    public decimal? PrescribedQuantity { get; set; }
+    public decimal? DispensedQuantity { get; set; }
+    public DateTime? ServedDate { get; set; }
+    public DateTime? NextRefillDate { get; set; }
+    public bool IsRedStar { get; set; }
+    public int? RedStarEnrollmentId { get; set; }
+    public RedStarEnrollment? RedStarEnrollment { get; set; }
+
     public ICollection<MedicationDoseSchedule> DoseSchedules { get; set; } = new List<MedicationDoseSchedule>();
 }
+
+public enum PrescriptionFulfillmentStatus { Prescribed, Served }
+public enum PrescriptionFrequencyMode { TimesPerDay, EveryHours, AsNeeded }
+public enum PrescriptionDurationUnit { Days, Months }
 
 public enum PrescriptionStatus
 {

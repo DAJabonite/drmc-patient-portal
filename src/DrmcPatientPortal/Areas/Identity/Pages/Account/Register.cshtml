@@ -378,8 +378,8 @@
 
                             <div class="col-12 mt-3">
                                 <div class="registration-consent-summary p-3 rounded-3 bg-light border">
-                                    <p class="small mb-1"><i class="bi bi-check-circle me-1" aria-hidden="true"></i> Privacy notice and portal terms accepted.</p>
-                                    <button type="button" class="btn btn-link p-0 text-primary-drmc" id="reviewConsent">Review privacy and terms</button>
+                                    <p class="small mb-1"><i class="bi bi-check-circle me-1" aria-hidden="true"></i> @Loc["Privacy_ConsentAccepted"]</p>
+                                    <button type="button" class="btn btn-link p-0 text-primary-drmc" id="reviewConsent">@Loc["Privacy_ConsentReview"]</button>
                                 </div>
                                 <span asp-validation-for="Input.PrivacyConsent" class="field-validation-error"></span>
                             </div>
@@ -413,31 +413,32 @@
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header d-block">
-                <h2 class="modal-title h4" id="consentTitle">Before you create an account</h2>
-                <p class="small text-muted mb-0" id="consentHint">Please read through the privacy notice and portal terms to enable the agreement checkbox.</p>
+                <h2 class="modal-title h4" id="consentTitle">@Loc["Privacy_ConsentTitle"]</h2>
+                <p class="small text-muted mb-0" id="consentHint">@Loc["Privacy_ConsentHint"]</p>
             </div>
-            <div class="modal-body" id="consentDocument" tabindex="0" role="region" aria-label="Privacy notice and portal terms">
-                <h3 class="h5 text-primary-drmc">Data privacy notice</h3>
+            <div class="modal-body" id="consentDocument" tabindex="0" role="region" aria-label="@Loc["Privacy_ConsentDocument"]">
+                <h3 class="h5 text-primary-drmc">@Loc["Privacy_Title"]</h3>
                 <partial name="_PrivacyNotice" />
                 <partial name="_PortalTerms" />
-                <p class="fw-semibold mb-0" id="consentEnd">End of privacy notice and portal terms.</p>
+                <p class="fw-semibold mb-0" id="consentEnd">@Loc["Privacy_ConsentEnd"]</p>
             </div>
             <div class="modal-footer d-block">
-                <p class="small text-muted mb-2" id="consentReadStatus" role="status">Scroll to the end to continue.</p>
+                <p class="small text-muted mb-2" id="consentReadStatus" role="status"
+                   data-scroll-required="@Loc["Privacy_ConsentScroll"]" data-scroll-complete="@Loc["Privacy_ConsentScrollComplete"]">@Loc["Privacy_ConsentScroll"]</p>
                 <div class="form-check mb-3">
                     <input class="form-check-input" type="checkbox" id="regConsent" disabled aria-describedby="consentReadStatus" />
-                    <label class="form-check-label small" for="regConsent">I agree to the portal terms and consent to the data processing described in the privacy notice.</label>
+                    <label class="form-check-label small" for="regConsent">@Loc["Privacy_ConsentAgreement"]</label>
                 </div>
                 <div class="registration-actions">
-                    <a asp-controller="Home" asp-action="Index" class="btn btn-outline-danger" id="leaveRegistration">Leave signup</a>
-                    <button type="button" class="btn btn-primary-drmc" id="acceptConsent" disabled>Agree and continue</button>
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-outline-danger" id="leaveRegistration">@Loc["Privacy_ConsentLeave"]</a>
+                    <button type="button" class="btn btn-primary-drmc" id="acceptConsent" disabled>@Loc["Privacy_ConsentContinue"]</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 <partial name="_IdCameraModal" />
-<noscript><p class="container alert alert-info">Signup requires JavaScript to guide you through the form. You can <a asp-controller="Home" asp-action="Privacy">read the privacy notice and portal terms</a> without JavaScript.</p></noscript>
+<noscript><p class="container alert alert-info">@Loc["Privacy_ConsentJavaScript"] <a asp-controller="Home" asp-action="Privacy">@Loc["Privacy_ConsentDocument"]</a></p></noscript>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
