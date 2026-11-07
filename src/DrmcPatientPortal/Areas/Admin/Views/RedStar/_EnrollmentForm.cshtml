@@ -5,7 +5,7 @@
     var existing = ViewData["PatientId"] is int patientId && patientId > 0;
     var selectedSheet = RedStarRegistryLayout.Find(Model.WorksheetLayout)
         ?? RedStarRegistryLayout.Find(RedStarRegistryLayout.SheetFor(Model.Program, Model.Status))!;
-    var optionalFields = new[] { "Address", "HospitalNumber", "CodeName", "EnrolledDate", "StartDate", "ContactNumber", "Medicines" };
+    var optionalFields = new[] { "Address", "HospitalNumber", "CodeName", "EnrolledDate", "StartDate", "ContactNumber" };
 }
 <div data-redstar-enrollment>
     <div asp-validation-summary="All" class="text-danger mb-3" role="alert"></div>
@@ -23,20 +23,13 @@
         <p id="redstar-worksheet-help" class="form-text mb-2">Choose a tab from the staff workbook to match its headings and field order. Your entries are kept when you switch. Verify the program and treatment status separately.</p>
         <p id="redstar-worksheet-description" class="small mb-0" data-registry-description role="status" aria-live="polite">Following the @selectedSheet.Name worksheet's supported column order.</p>
     </div>
-    <p class="small text-muted mb-4">Refill dates are recorded in appointments and dispensing after enrollment. Other saved portal fields follow the selected worksheet's fields.</p>
+    <p class="small text-muted mb-4">@Loc["Rx_RedStarEncodingHelp"]</p>
     <fieldset class="mb-4">
         <legend class="h5">Registry fields</legend>
         <div class="row g-3" data-registry-fields>
-            @foreach (var column in selectedSheet.Columns)
+            @foreach (var column in selectedSheet.Columns.Where(c => c.Field is not ("Medicines" or "DispensedDate" or "NextRefillDate")))
             {
-                <div class="@(column.Field == "Medicines" ? "col-12" : "col-md-6")" data-registry-field="@column.Field">
-                    @if (column.Field is "DispensedDate" or "NextRefillDate")
-                    {
-                        <h3 class="h6 mb-2" data-registry-header>@column.Header</h3>
-                        <p class="form-text mb-0">@(column.Field == "DispensedDate" ? "Recorded in dispensing history after enrollment." : "Scheduled in appointments after enrollment.")</p>
-                    }
-                    else
-                    {
+                <div class="col-md-6" data-registry-field="@column.Field">
                         <label for="@column.Field" class="form-label"><span data-registry-header>@column.Header</span>@if (optionalFields.Contains(column.Field)) { <span class="small text-muted"> (optional)</span> }</label>
                         @switch (column.Field)
                         {
@@ -64,10 +57,6 @@
                             case "ContactNumber":
                                 <input asp-for="ContactNumber" class="form-control" readonly="@existing" autocomplete="off" />
                                 break;
-                            case "Medicines":
-                                <textarea asp-for="Medicines" rows="3" class="form-control"></textarea>
-                                <div class="form-text">Use the patient's prescribed treatment information. Refill dates are approved separately from the days of supply.</div>
-                                break;
                             case "Status":
                                 <select asp-for="Status" asp-items="Html.GetEnumSelectList<RedStarStatus>()" class="form-select"></select>
                                 break;
@@ -83,7 +72,6 @@
                                 <div class="form-text">Required for transferred-out status.</div>
                                 break;
                         }
-                    }
                 </div>
             }
         </div>

@@ -87,7 +87,7 @@ public static class ImportParser
         do
         {
             var template = ImportTemplates.All.SingleOrDefault(t => t.Sheet == reader.Name)
-                ?? throw new ImportRejectedException(reader.Name == "Prescriptions_v1" ? "Prescription imports now require an encounter. Download the current workbook with Prescriptions_v2 and provide SourceEncounterKey." : "The workbook contains an unknown sheet. Download the current workbook template.");
+                ?? throw new ImportRejectedException(ImportTemplates.IsObsoletePrescription(reader.Name) ? ImportTemplates.PrescriptionUpgradeMessage : "The workbook contains an unknown sheet. Download the current workbook template.");
             if (!sheets.Add(reader.Name) || !reader.Read()) throw new ImportRejectedException("Each sheet needs exactly one template header.");
             Header(Enumerable.Range(0, reader.FieldCount).Select(i => Convert.ToString(reader.GetValue(i), CultureInfo.InvariantCulture) ?? "").ToArray(), template);
             var number = 1;

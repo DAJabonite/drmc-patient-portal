@@ -24,15 +24,17 @@ public static class ImportValidation
                 source.Fields["SourceBirthDate"], group.Count(), source.Template == "Patients", source.Fields.GetValueOrDefault("HospitalNumber") ?? "");
         }).ToList();
 
-    public static async Task<ImportPlan> BuildAsync(ApplicationDbContext db, ImportEnvelope envelope, CancellationToken token)
+    public static async Task<ImportPlan> BuildAsync(ApplicationDbContext db, ImportEnvelope envelope, CancellationToken token, PrescriptionActor? actor = null)
     {
+        var access = new PrescriptionAccess(actor);
+        if (!await access.InitializeAsync(db, token) || !access.IsAdmin) throw new ImportRejectedException("ActorAccessRevoked");
         var detect = db.ChangeTracker.AutoDetectChangesEnabled;
         db.ChangeTracker.AutoDetectChangesEnabled = false;
-        try { return await BuildCoreAsync(db, envelope, token); }
+        try { return await BuildCoreAsync(db, envelope, access, token); }
         finally { db.ChangeTracker.AutoDetectChangesEnabled = detect; }
     }
 
-    private static async Task<ImportPlan> BuildCoreAsync(ApplicationDbContext db, ImportEnvelope envelope, CancellationToken token)
+    private static async Task<ImportPlan> BuildCoreAsync(ApplicationDbContext db, ImportEnvelope envelope, PrescriptionAccess access, CancellationToken token)
     {
         var rows = ImportParser.Parse(envelope.Content, envelope.Format, envelope.Template);
         var lookups = await ImportLookups.LoadAsync(db, rows, envelope, token);
@@ -177,7 +179,7 @@ public static class ImportValidation
                         if (prescriptionEncounter.PatientRecordId != patient?.Id) reviews[row].Add("The encounter belongs to another patient.");
                         prescription.ClinicalEncounterId = prescriptionEncounter.Id;
                     }
-                    await Add(row, prescription, new PrescriptionEditor(), context, patient); break;
+                    await Add(row, prescription, new PrescriptionEditor(access), context, patient); break;
                 case LabItemInput item:
                     var labParent = Parent<LabResult>(row, "SourceLabKey", "LabResults");
                     if (labParent is not null && labParent.PatientRecordId != patient?.Id) reviews[row].Add("The lab belongs to another patient.");

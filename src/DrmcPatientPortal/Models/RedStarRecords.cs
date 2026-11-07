@@ -59,6 +59,9 @@ public sealed class RedStarAppointment
     public int Id { get; set; }
     public int EnrollmentId { get; set; }
     public RedStarEnrollment Enrollment { get; set; } = null!;
+    public int? PrescriptionId { get; set; }
+    public Prescription? Prescription { get; set; }
+    public string? PrescriptionScheduleFingerprint { get; set; }
     public RedStarAppointmentKind Kind { get; set; }
     public DateTime DueDate { get; set; }
     [StringLength(200)] public string? Label { get; set; }

@@ -260,6 +260,7 @@ builder.Services.AddScoped<IAuthorizationHandler, AdminAuthorizationHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, StaffAuthorizationHandler>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<AdminAccessScope>();
+builder.Services.AddScoped(sp => new PrescriptionAccess(PrescriptionActor.FromPrincipal(sp.GetRequiredService<IHttpContextAccessor>().HttpContext?.User)));
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, AdminAuthorizationResultHandler>();
 builder.Services.AddScoped<AdminWrites>();
 builder.Services.AddSingleton<ImportStaging>();

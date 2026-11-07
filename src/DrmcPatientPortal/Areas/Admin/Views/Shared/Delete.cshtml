@@ -16,7 +16,11 @@
     <div class="admin-card-header"><h2 class="admin-card-title"><i class="bi bi-exclamation-octagon me-2" aria-hidden="true"></i>Danger zone</h2></div>
     <div class="admin-card-body">
         <input type="hidden" name="rowVersion" value="@Model.RowVersion" />
-        @if (blocked)
+        @if (Model.Dependents.GetValueOrDefault("Rx_RefillHistory") > 0)
+        {
+            <p class="mb-0">@Loc["Rx_HistoryBlocksDelete"]</p>
+        }
+        else if (blocked)
         {
             <p class="mb-0">This record still has linked records. Remove or reassign them first; deletion is disabled.</p>
         }

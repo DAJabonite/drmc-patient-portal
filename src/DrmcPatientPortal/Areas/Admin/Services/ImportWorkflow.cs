@@ -99,7 +99,7 @@ public sealed class ImportWorkflow(IServiceScopeFactory scopes, ImportStaging st
             }
             else if (ImportStaging.ApprovalHash(envelope) != batch.ValidationHash || batch.ApprovalHash != batch.ValidationHash || envelope.Report?.Hash != batch.ValidationHash)
                 throw new ImportRejectedException("ApprovalChanged");
-            var plan = await ImportValidation.BuildAsync(db, envelope, token);
+            var plan = await ImportValidation.BuildAsync(db, envelope, token, new PrescriptionActor(actor.Id, true));
             // Validation tracks proposed rows for relationship fixup, but must never persist them.
             db.ChangeTracker.Clear();
             envelope.Report = plan.Report; await staging.SaveAsync(id, envelope, token);
@@ -137,7 +137,7 @@ public sealed class ImportWorkflow(IServiceScopeFactory scopes, ImportStaging st
                 throw new ImportRejectedException("ApprovalChanged");
             var timer = System.Diagnostics.Stopwatch.StartNew();
             void Profile(string step) { logger.LogInformation("Import execution {Step} for batch {BatchId} took {ElapsedMilliseconds} ms", step, id, timer.ElapsedMilliseconds); timer.Restart(); }
-            var plan = await ImportValidation.BuildAsync(db, envelope, token);
+            var plan = await ImportValidation.BuildAsync(db, envelope, token, new PrescriptionActor(actor.Id, true));
             Profile("BuildAndTrack");
             if (!plan.Report.Valid) throw new ImportRejectedException("ValidationChanged");
             foreach (var entry in db.ChangeTracker.Entries().Where(entry => entry.State == EntityState.Added).ToArray())

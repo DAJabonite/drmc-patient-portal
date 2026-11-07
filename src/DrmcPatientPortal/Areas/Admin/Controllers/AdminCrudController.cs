@@ -31,7 +31,7 @@ public abstract class AdminCrudController<TEntity, TInput>(ApplicationDbContext 
         search = search?.Trim();
         if (search?.Length > 450) { ModelState.AddModelError(nameof(search), "Search must be at most 450 characters."); search = null; }
         var query = editor.Query(db, contextId);
-        if (!string.IsNullOrEmpty(search)) query = editor.Search(query, search);
+        if (!string.IsNullOrEmpty(search)) query = await editor.SearchAsync(query, search, cancellationToken);
         var total = await SqlReadRetry.RunAsync(db, () => query.CountAsync(cancellationToken), cancellationToken);
         page = Math.Clamp(page, 1, Math.Max(1, (total + 24) / 25));
         var entities = await SqlReadRetry.RunAsync(db, () => query.OrderByDescending(e => EF.Property<int>(e, "Id")).Skip((page - 1) * 25).Take(25).ToListAsync(cancellationToken), cancellationToken);
@@ -157,7 +157,11 @@ public abstract class AdminCrudController<TEntity, TInput>(ApplicationDbContext 
             var entity = await Find(database, id, cancellationToken);
             if (entity is null || !version.SequenceEqual(AdminEntity<TEntity, TInput>.Version(database, entity))) return WriteResult.Stale;
             var dependents = await editor.DependentsAsync(database, entity, cancellationToken);
-            if (dependents.Any(pair => pair.Value > 0)) return WriteResult.Invalid("Deletion is blocked: " + string.Join(", ", dependents.Select(pair => pair.Key + ": " + pair.Value)));
+            if (dependents.Any(pair => pair.Value > 0))
+            {
+                var localizer = HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Localization.IStringLocalizer<SharedResource>>();
+                return WriteResult.Invalid(string.Join(", ", dependents.Where(pair => pair.Value > 0).Select(pair => localizer[pair.Key] + ": " + pair.Value)));
+            }
             var before = AdminAudit.Values(database, entity); var patient = editor.PatientId(entity);
             if (editor.NeedsContext) contextId = (await editor.RecordContextAsync(database, entity, cancellationToken))?.RouteId;
             database.Entry(entity).Property("RowVersion").OriginalValue = version;
@@ -200,7 +204,8 @@ public abstract class AdminCrudController<TEntity, TInput>(ApplicationDbContext 
     private void AddError(WriteResult result)
     {
         if (result.Conflict) Response.StatusCode = StatusCodes.Status409Conflict;
-        ModelState.AddModelError("", result.Error!);
+        var localizer = HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Localization.IStringLocalizer<SharedResource>>();
+        ModelState.AddModelError("", localizer[result.Error!]);
     }
     private void RejectOwnershipFields()
     {

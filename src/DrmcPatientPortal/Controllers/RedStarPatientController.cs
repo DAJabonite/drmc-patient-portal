@@ -26,12 +26,12 @@ public sealed class RedStarPatientController(ApplicationDbContext db, RedStarPat
     [HttpPost("Confirm/{id:int}")]
     public async Task<IActionResult> Confirm(int id, string? rowVersion, CancellationToken token)
     {
-        if (!await OwnedAppointments(id).AnyAsync(token)) return NotFound();
+        if (!await (await ConfirmableAppointmentsAsync(db, id, token)).AnyAsync(token)) return NotFound();
         var version = AdminAudit.Version(rowVersion);
         if (version is null) return BadRequest();
         var result = await writes.RunAsync(async database =>
         {
-            var appointment = await OwnedAppointments(id, database).SingleOrDefaultAsync(token);
+            var appointment = await (await ConfirmableAppointmentsAsync(database, id, token)).AsTracking().SingleOrDefaultAsync(token);
             if (appointment is null) return WriteResult.Invalid("The appointment is no longer available.");
             if (!version.SequenceEqual(appointment.RowVersion)) return WriteResult.Stale;
             appointment.ConfirmedUtc = DateTimeOffset.UtcNow;
@@ -97,20 +97,32 @@ public sealed class RedStarPatientController(ApplicationDbContext db, RedStarPat
     {
         var ownedIds = patients.OwnedPatients(Actor).Select(p => p.Id);
         var accountIndex = db.Phi.AccountIndex(Actor);
-        var reminder = await db.RedStarReminders.SingleOrDefaultAsync(r => r.Id == id && r.PortalUserIdBlindIndex == accountIndex &&
-            ownedIds.Contains(r.Appointment.Enrollment.PatientId) && r.Channel == RedStarReminderChannel.InApp, token);
+        var prescriptions = await PrescriptionQueries.OwnedAsync(db, Actor, token);
+        var refills = PrescriptionRefills.EligibleQuery(db).Where(a => prescriptions.Select(p => p.Id).Contains(a.PrescriptionId!.Value));
+        var reminder = await db.RedStarReminders.Where(r => r.Id == id && r.PortalUserIdBlindIndex == accountIndex &&
+            ownedIds.Contains(r.Appointment.Enrollment.PatientId) && r.Channel == RedStarReminderChannel.InApp &&
+            r.State == RedStarDeliveryState.Delivered && r.AppointmentRevision == r.Appointment.Revision &&
+            refills.Select(a => a.Id).Contains(r.AppointmentId)).AsTracking().SingleOrDefaultAsync(token);
         if (reminder is null) return NotFound();
         reminder.IsRead = true;
         await RedStarAuditTrail.RecordAsync(db, Actor, "ReadReminder", "Notification/" + id, token);
         return RedirectToAction(nameof(Index));
     }
 
-    private IQueryable<RedStarAppointment> OwnedAppointments(int id, ApplicationDbContext? database = null)
+    private async Task<IQueryable<RedStarAppointment>> ConfirmableAppointmentsAsync(ApplicationDbContext database, int id, CancellationToken token)
+    {
+        var prescriptions = await PrescriptionQueries.OwnedAsync(database, Actor, token);
+        var refills = PrescriptionRefills.EligibleQuery(database).Where(a => prescriptions.Select(p => p.Id).Contains(a.PrescriptionId!.Value));
+        return OwnedAppointments(id, database, includeRefills: true).Where(a =>
+            a.Kind != RedStarAppointmentKind.Refill || refills.Select(r => r.Id).Contains(a.Id));
+    }
+
+    private IQueryable<RedStarAppointment> OwnedAppointments(int id, ApplicationDbContext? database = null, bool includeRefills = false)
     {
         database ??= db;
         var ownedIds = RedStarAccountAccess.OwnedPatients(database, Actor).Select(p => p.Id);
         return database.RedStarAppointments.Where(a => a.Id == id && ownedIds.Contains(a.Enrollment.PatientId) &&
-            a.State == RedStarAppointmentState.Scheduled && a.Enrollment.Status == RedStarStatus.Active);
+            (includeRefills || a.Kind != RedStarAppointmentKind.Refill) && a.State == RedStarAppointmentState.Scheduled && a.Enrollment.Status == RedStarStatus.Active);
     }
 
     private IActionResult Finished(WriteResult result)

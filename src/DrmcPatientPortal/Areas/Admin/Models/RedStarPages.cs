@@ -11,7 +11,7 @@ public sealed record RedStarRegistryPage(IReadOnlyList<RedStarRegistryRow> Rows,
     RedStarProgram? Program, RedStarRegistryStatusFilter? Status, int Page, int Total, IReadOnlyDictionary<string, int> Counts,
     DateTime Today, string Month, RedStarMonthlySummary Summary);
 public sealed record RedStarDetailsPage(RedStarEnrollment Enrollment, IReadOnlyList<RedStarAppointment> Appointments,
-    IReadOnlyList<RedStarDispense> Dispenses, IReadOnlyList<RedStarRescheduleRequest> Requests,
+    IReadOnlyList<Prescription> Prescriptions, IReadOnlyList<RedStarRescheduleRequest> Requests,
     int AppointmentPage, int AppointmentTotal, int HistoryPage, int HistoryTotal, int RequestPage, int RequestTotal);
 public sealed record RedStarAuditPage(IReadOnlyList<RedStarAudit> Rows, int Page, int Total);
 public sealed record RedStarDeliveryRow(Guid Id, string PatientCode, DateTime DueDate, string Stage,

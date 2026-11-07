@@ -12,7 +12,9 @@ public sealed record ImportTemplate(string Name, Type InputType, string[] Column
 
 public static class ImportTemplates
 {
-    public const string ValidationVersion = "3.0.0";
+    public const string ValidationVersion = "4.0.0";
+    public const string PrescriptionUpgradeMessage = "Download Prescriptions_v3 and provide the encounter, structured dosing and fulfillment fields. Cancel and re-upload older queued batches.";
+    public static bool IsObsoletePrescription(string name) => name is "Prescriptions_v1" or "Prescriptions_v2";
     private static string[] Columns(string fields, bool clinical = false, string context = "") =>
         (clinical ? new[] { "SourcePatientKey", "SourcePatientName", "SourceBirthDate" } : Array.Empty<string>())
         .Concat(context.Split(',', StringSplitOptions.RemoveEmptyEntries)).Concat(fields.Split(',')).ToArray();
@@ -24,12 +26,12 @@ public static class ImportTemplates
         new("ClinicalEncounters", typeof(EncounterInput), Columns("EncounterReference,EncounterDate,Department,Type,HistoricalDoctorName,ChiefComplaint,PrimaryDiagnosis,SecondaryDiagnosis,ClinicalSummary,CarePlanAndInstructions,VitalSignsRecorded,FollowUpDate,FollowUpNotes", true, "SourceRecordKey"), true),
         new("LabResults", typeof(LabInput), Columns("AccessionNumber,TestName,Category,CollectedAt,ReleasedAt,Status,HistoricalDoctorName,Pathologist.HistoricalDoctorName,ResultSummary,PerformingUnit,ClinicalNotes", true, "SourceRecordKey,SourceEncounterKey"), true),
         new("LabResultItems", typeof(LabItemInput), Columns("ParameterName,Value,Unit,ReferenceRange,Flag", true, "SourceLabKey"), true),
-        new("Prescriptions", typeof(PrescriptionInput), Columns("RxNumber,GenericName,BrandName,Dosage,DosageForm,Frequency,Instructions,Department,PrescribedAt,ValidUntil,LastRefillDate,RefillsTotal,RefillsRemaining,Status,HistoricalDoctorName", true, "SourceRecordKey,SourceEncounterKey"), true, 2),
+        new("Prescriptions", typeof(PrescriptionInput), Columns("RxNumber,GenericName,BrandName,Dosage,DosageForm,RouteOfAdministration,Instructions,Department,PrescribedAt,ValidUntil,Status,FulfillmentStatus,FrequencyMode,FrequencyValue,DosePerIntake,DoseUnit,DurationCount,DurationUnit,PrescribedQuantity,DispensedQuantity,ServedDate,IsRedStar,RedStarEnrollmentId,HistoricalDoctorName", true, "SourceRecordKey,SourceEncounterKey"), true, 3),
         new("MedicationDoseSchedules", typeof(DoseInput), Columns("DoseTime,DisplayOrder", true, "SourcePrescriptionKey"), true),
         new("PatientAllergies", typeof(AllergyInput), Columns("Allergen,Reaction,Severity,RecordedAt", true), true)
     ];
     public static ImportTemplate Get(string name) => All.SingleOrDefault(t => t.Name == name || t.Sheet == name)
-        ?? throw new ImportRejectedException(name == "Prescriptions_v1" ? "Prescription imports now require an encounter. Download the current Prescriptions_v2 template and provide SourceEncounterKey." : "Download and select a current supported import template.");
+        ?? throw new ImportRejectedException(IsObsoletePrescription(name) ? PrescriptionUpgradeMessage : "Download and select a current supported import template.");
 
     public static object Input(ImportRow row, List<string> errors)
     {
@@ -58,6 +60,7 @@ public static class ImportTemplates
         if (string.IsNullOrWhiteSpace(text)) return nullable is not null ? null : type == typeof(bool) ? false : throw new FormatException();
         if (type == typeof(bool)) return bool.Parse(text);
         if (type == typeof(int)) return int.Parse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
+        if (type == typeof(decimal)) return decimal.Parse(text, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture);
         if (type.IsEnum) return Enum.Parse(type, text, false);
         if (type == typeof(DateTime))
         {

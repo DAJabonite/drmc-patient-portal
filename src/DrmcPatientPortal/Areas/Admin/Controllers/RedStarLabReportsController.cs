@@ -93,6 +93,7 @@ public sealed class RedStarLabReportsController(ApplicationDbContext db, AdminWr
             database.Entry(clinic).Property(p => p.RowVersion).OriginalValue = AdminAudit.Version(input.PatientVersion)!;
             await RedStarAuditTrail.RecordAsync(database, Actor, "Verify hospital mapping", $"Patient/{id}", token,
                 JsonSerializer.Serialize(new { PreviousHospitalRecord = previous, HospitalRecord = hospital.Id, IdentityAttested = true }));
+            await PrescriptionRefills.SynchronizeClinicPatientAsync(database, id, token);
             return WriteResult.Success;
         }, token);
         if (result.Succeeded) return RedirectToAction(nameof(Index), new { id });
@@ -113,6 +114,7 @@ public sealed class RedStarLabReportsController(ApplicationDbContext db, AdminWr
             database.Entry(clinic).Property(p => p.RowVersion).OriginalValue = AdminAudit.Version(patientVersion)!;
             await RedStarAuditTrail.RecordAsync(database, Actor, "Remove hospital mapping", $"Patient/{id}", token,
                 JsonSerializer.Serialize(new { PreviousHospitalRecord = previous }));
+            await PrescriptionRefills.SynchronizeClinicPatientAsync(database, id, token);
             return WriteResult.Success;
         }, token);
         if (!result.Succeeded) TempData["RedStarError"] = result.Error;

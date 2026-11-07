@@ -138,9 +138,10 @@ public class VisitsController : Controller
         var token = HttpContext.RequestAborted;
         ViewData["LaboratoryRequests"] = await _reports.LaboratoriesAsync(user.Id, token, encounterId: encounter.Id);
         ViewData["RadiologyRequests"] = await _reports.RadiologyAsync(user.Id, token, encounterId: encounter.Id);
-        encounter.Prescriptions = await SqlReadRetry.RunAsync(_db, () => _db.Prescriptions.AsNoTracking()
-            .Where(p => p.ClinicalEncounterId == encounter.Id && p.PatientRecordId == encounter.PatientRecordId
-                && p.Patient.PortalUserId == user.Id).OrderByDescending(p => p.PrescribedAt).ThenByDescending(p => p.Id).ToListAsync(token), token);
+        var prescriptions = await PrescriptionQueries.OwnedAsync(_db, user.Id, token);
+        encounter.Prescriptions = await SqlReadRetry.RunAsync(_db, () => prescriptions
+            .Where(p => p.ClinicalEncounterId == encounter.Id && p.PatientRecordId == encounter.PatientRecordId)
+            .OrderByDescending(p => p.PrescribedAt).ThenByDescending(p => p.Id).ToListAsync(token), token);
 
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
         await _auditLog.LogAsync(user.Id, "VIEW_ENCOUNTER_SUMMARY", $"ClinicalEncounter/{id}", "Viewed an owned encounter summary.", ip);

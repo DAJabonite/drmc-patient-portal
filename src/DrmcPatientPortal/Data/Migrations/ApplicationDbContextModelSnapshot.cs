@@ -18,7 +18,7 @@ namespace DrmcPatientPortal.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .UseCollation("Latin1_General_100_BIN2")
-                .HasAnnotation("ProductVersion", "10.0.11")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -1227,6 +1227,10 @@ namespace DrmcPatientPortal.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal?>("DispensedQuantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
                     b.Property<string>("Dosage")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -1235,9 +1239,32 @@ namespace DrmcPatientPortal.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal?>("DosePerIntake")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("DoseUnit")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("DurationCount")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DurationUnit")
+                        .HasColumnType("int");
+
                     b.Property<string>("Frequency")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("FrequencyMode")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("FrequencyValue")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("FulfillmentStatus")
+                        .HasColumnType("int");
 
                     b.Property<string>("GenericName")
                         .IsRequired()
@@ -1247,8 +1274,14 @@ namespace DrmcPatientPortal.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsRedStar")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime?>("LastRefillDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("NextRefillDate")
+                        .HasColumnType("date");
 
                     b.Property<DateTime?>("PatientActivityAtUtc")
                         .HasColumnType("datetime2");
@@ -1256,12 +1289,24 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Property<int>("PatientRecordId")
                         .HasColumnType("int");
 
+                    b.Property<int>("PhiProtectionVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<DateTime>("PrescribedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("PrescribedQuantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("PrescribingDoctor")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("RedStarEnrollmentId")
+                        .HasColumnType("int");
 
                     b.Property<int>("RefillsRemaining")
                         .HasColumnType("int");
@@ -1270,8 +1315,7 @@ namespace DrmcPatientPortal.Data.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("RouteOfAdministration")
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -1282,6 +1326,9 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.Property<string>("RxNumber")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("ServedDate")
+                        .HasColumnType("date");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -1295,8 +1342,12 @@ namespace DrmcPatientPortal.Data.Migrations
 
                     b.HasIndex("PatientRecordId");
 
+                    b.HasIndex("RedStarEnrollmentId");
+
                     b.HasIndex("RxNumber")
                         .IsUnique();
+
+                    b.HasIndex("IsRedStar", "FulfillmentStatus", "NextRefillDate");
 
                     b.ToTable("Prescriptions");
                 });
@@ -1566,6 +1617,14 @@ namespace DrmcPatientPortal.Data.Migrations
                         .HasColumnType("int")
                         .HasDefaultValue(0);
 
+                    b.Property<int?>("PrescriptionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PrescriptionScheduleFingerprint")
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
                     b.Property<bool>("RemindersVerified")
                         .HasColumnType("bit");
 
@@ -1584,6 +1643,10 @@ namespace DrmcPatientPortal.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("EnrollmentId");
+
+                    b.HasIndex("PrescriptionId")
+                        .IsUnique()
+                        .HasFilter("[PrescriptionId] IS NOT NULL");
 
                     b.HasIndex("State", "Kind", "DueDate");
 
@@ -2498,9 +2561,16 @@ namespace DrmcPatientPortal.Data.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
+                    b.HasOne("DrmcPatientPortal.Models.RedStarEnrollment", "RedStarEnrollment")
+                        .WithMany()
+                        .HasForeignKey("RedStarEnrollmentId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.Navigation("Encounter");
 
                     b.Navigation("Patient");
+
+                    b.Navigation("RedStarEnrollment");
                 });
 
             modelBuilder.Entity("DrmcPatientPortal.Models.RadiologyStudy", b =>
@@ -2528,7 +2598,14 @@ namespace DrmcPatientPortal.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("DrmcPatientPortal.Models.Prescription", "Prescription")
+                        .WithMany()
+                        .HasForeignKey("PrescriptionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Enrollment");
+
+                    b.Navigation("Prescription");
                 });
 
             modelBuilder.Entity("DrmcPatientPortal.Models.RedStarDispense", b =>

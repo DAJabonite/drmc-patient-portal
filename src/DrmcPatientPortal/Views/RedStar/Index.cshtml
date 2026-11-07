@@ -20,7 +20,9 @@
                     {
                         <form asp-controller="RedStarPatient" asp-action="Confirm" asp-route-id="@appointment.Id" method="post"><input type="hidden" name="rowVersion" value="@version" /><button class="btn btn-drmc btn-sm" type="submit">@Loc["RS_Confirm"]</button></form>
                     }
-                    @if (pending) { <span class="badge bg-info-subtle text-dark align-self-center">@Loc["RS_Pending"]</span> }
+                    @if (appointment.Kind == RedStarAppointmentKind.Refill)
+                    { <a asp-controller="Medications" asp-action="Details" asp-route-id="@appointment.PrescriptionId" class="btn btn-outline-secondary btn-sm">@Loc["Rx_ViewTagubilin"]</a> }
+                    else if (pending) { <span class="badge bg-info-subtle text-dark align-self-center">@Loc["RS_Pending"]</span> }
                     else
                     {
                         <details class="w-100 mt-2"><summary class="text-primary-drmc fw-semibold">@Loc["RS_RequestChange"]</summary>
@@ -38,20 +40,16 @@
             </article>
         }
     </div>
-    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
-        <h2 class="h5">@Loc["RS_History"]</h2>
-        @if (Model.History.Count == 0) { <p class="text-muted mb-0">@Loc["RS_NoHistory"]</p> }
-        else
-        {
-            <div class="table-responsive" tabindex="0" role="region" aria-label="@Loc["RS_History"]"><table class="table align-middle" style="min-width:26rem"><caption class="visually-hidden">@Loc["RS_History"]</caption><thead><tr><th scope="col">@Loc["RS_PickupDate"]</th><th scope="col">@Loc["RS_Medicines"]</th><th scope="col">@Loc["RS_DaysSupplied"]</th></tr></thead><tbody>
-            @foreach (var dispense in Model.History) { <tr><td>@dispense.DispensedDate.ToString("MMM d, yyyy")</td><td class="text-break">@dispense.Medicines</td><td>@(dispense.DaysSupplied?.ToString() ?? Loc["RS_NotRecorded"].Value)</td></tr> }
-            </tbody></table></div>
-            <nav aria-label="@Loc["RS_History"]" class="d-flex gap-3">
+    <section class="mb-4" aria-labelledby="redStarTagubilinHeading">
+        <h2 class="h5" id="redStarTagubilinHeading">@Loc["Rx_Tagubilin"]</h2>
+        <p class="small text-muted">@Loc["Rx_UnifiedHelp"]</p>
+        @if (Model.Prescriptions.Count == 0) { <p class="text-muted">@Loc["Rx_NoMatches"]</p> }
+        <div class="d-flex flex-column gap-3">@foreach (var prescription in Model.Prescriptions) { <partial name="_PrescriptionCard" model="prescription" /> }</div>
+        <nav aria-label="@Loc["Rx_Tagubilin"]" class="d-flex gap-3 mt-3">
             @if (Model.HistoryPage > 1) { <a asp-action="Index" asp-route-historyPage="@(Model.HistoryPage - 1)">@Loc["RS_Previous"]</a> }
             @if (Model.HistoryPage * 25 < Model.HistoryTotal) { <a asp-action="Index" asp-route-historyPage="@(Model.HistoryPage + 1)">@Loc["RS_Next"]</a> }
-            </nav>
-        }
-    </div>
+        </nav>
+    </section>
     @if (Model.Requests.Count > 0)
     {
         <div class="card border-0 shadow-sm rounded-4 p-4 mb-4"><h2 class="h5">@Loc["RS_Requests"]</h2><ul class="list-group list-group-flush">

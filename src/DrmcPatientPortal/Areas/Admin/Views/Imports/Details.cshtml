@@ -6,7 +6,10 @@
     var inFlight = ImportStatusDisplay.Pending(Model.Batch.Status);
     var canCancel = ImportStatusDisplay.CanCancel(Model.Batch.Status);
     var display = ImportStatusDisplay.For(Model.Batch.Status, Model.ReportVerified);
-    var clinical = Model.Report?.Rows.Any(row => ImportTemplates.Get(row.Template).Clinical) ?? (Model.Batch.Template == "Workbook_v1" || ImportTemplates.Get(Model.Batch.Template).Clinical);
+    var outdated = ImportTemplates.IsObsoletePrescription(Model.Batch.Template) ||
+        !string.IsNullOrEmpty(Model.Batch.ValidationVersion) && Model.Batch.ValidationVersion != ImportTemplates.ValidationVersion;
+    var clinical = Model.Report?.Rows.Any(row => ImportTemplates.All.Any(t => t.Clinical && t.Name == row.Template)) ??
+        (Model.Batch.Template == "Workbook_v1" || ImportTemplates.All.Any(t => t.Clinical && t.Sheet == Model.Batch.Template));
 }
 <div class="admin-page-header">
     <div>
@@ -17,10 +20,11 @@
         <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Imports</a>
         @if (inFlight) { <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.Batch.Id"><i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Refresh status</a> }
         @if (canCancel || inFlight) { <form id="import-cancel" asp-action="Cancel" asp-route-id="@Model.Batch.Id" method="post"><input type="hidden" name="rowVersion" value="@version" /><button class="btn btn-outline-danger" disabled="@(!canCancel)"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel batch</button></form> }
-        @if (Model.Batch.Status is ImportStatus.Staged or ImportStatus.Validated) { <a class="btn btn-primary" asp-action="Reconcile" asp-route-id="@Model.Batch.Id"><i class="bi bi-people me-1" aria-hidden="true"></i>@(clinical ? "Match patients" : "Review setup")</a> }
+        @if (!outdated && Model.Batch.Status is ImportStatus.Staged or ImportStatus.Validated) { <a class="btn btn-primary" asp-action="Reconcile" asp-route-id="@Model.Batch.Id"><i class="bi bi-people me-1" aria-hidden="true"></i>@(clinical ? "Match patients" : "Review setup")</a> }
     </div>
 </div>
 @if (TempData["ImportMessage"] is string message) { <div class="alert alert-warning" role="alert">@message</div> }
+@if (outdated && canCancel) { <div class="alert alert-warning" role="alert">@Loc["Rx_ImportReupload"]</div> }
 @if (Model.Batch.FailureCode is not null) { <div class="alert alert-warning" role="alert">The batch did not complete: @Model.Batch.FailureCode. No partial record writes were retained.</div> }
 <div class="admin-card">
     <dl class="admin-dl">

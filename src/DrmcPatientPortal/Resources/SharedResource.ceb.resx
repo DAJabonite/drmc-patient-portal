@@ -72,7 +72,7 @@
   <data name="Enc_None"><value>Walay nakarekord nga pagbisita</value></data>
   <data name="Enc_NoneBody"><value>Walay pagbisita nga motakdo sa gipiling mga filter.</value></data>
   <data name="Enc_ViewAll"><value>Tan-awa ang Tanang Pagbisita</value></data>
-  <data name="Enc_Reference"><value>Reference</value></data>
+  <data name="Enc_Reference" xml:space="preserve"><value>Case number</value></data>
   <data name="Enc_VisitDate"><value>Petsa sa Konsultasyon</value></data>
   <data name="Enc_Attending"><value>Doktor</value></data>
   <data name="Enc_ViewSummary"><value>Tan-awa ang Sumada</value></data>
@@ -85,7 +85,7 @@
   <data name="Enc_CarePlan"><value>Plano sa Pag-atiman ug mga Instruksyon sa Balay</value></data>
   <data name="Enc_Labs"><value>Mga Resulta sa Laboratoryo gikan niini nga Konsultasyon</value></data>
   <data name="Enc_NoLabs"><value>Walay laboratory test nga gimando niini nga konsultasyon.</value></data>
-  <data name="Rx_Title"><value>Aktibong mga Reseta ug Tambal</value></data>
+  <data name="Rx_Title" xml:space="preserve"><value>DRMC Tagubilin / Mga reseta</value></data>
   <data name="Rx_Pharmacy"><value>Outpatient Pharmacy sa DRMC</value></data>
   <data name="Rx_Active"><value>Aktibong mga Reseta</value></data>
   <data name="Rx_SafetyAlert"><value>Pasidaan sa Kaluwasan sa Pasyente</value></data>
@@ -220,8 +220,8 @@
   <data name="RS_Title" xml:space="preserve"><value>Red Star</value></data>
   <data name="RS_Private" xml:space="preserve"><value>Imong pribadong iskedyul sa klinika</value></data>
   <data name="RS_Saved" xml:space="preserve"><value>Na-save ang imong kausaban.</value></data>
-  <data name="RS_NextRefill" xml:space="preserve"><value>Sunod nga pagkuha sa tambal</value></data>
-  <data name="RS_NoRefill" xml:space="preserve"><value>Wala pay iskedyul sa pagkuha sa tambal. Kontaka ang klinika.</value></data>
+  <data name="RS_NextRefill" xml:space="preserve"><value>Sunod nga refill sa tambal</value></data>
+  <data name="RS_NoRefill" xml:space="preserve"><value>Wala pay petsa sa refill sa tambal. Kontaka ang klinika.</value></data>
   <data name="RS_ViewSchedule" xml:space="preserve"><value>Tan-awa ang iskedyul sa Red Star</value></data>
   <data name="RS_OverdueDays" xml:space="preserve"><value>{0} ka adlaw nga nalapas sa iskedyul</value></data>
   <data name="RS_InDays" xml:space="preserve"><value>Sulod sa {0} ka adlaw</value></data>
@@ -230,7 +230,7 @@
   <data name="RS_Scheduled" xml:space="preserve"><value>Naiskedyul</value></data>
   <data name="RS_Appointments" xml:space="preserve"><value>Imong mga appointment</value></data>
   <data name="RS_NoAppointments" xml:space="preserve"><value>Wala pay natala nga umaabot nga appointment.</value></data>
-  <data name="RS_Kind_Refill" xml:space="preserve"><value>Pagkuha sa tambal</value></data>
+  <data name="RS_Kind_Refill" xml:space="preserve"><value>Refill sa tambal</value></data>
   <data name="RS_Kind_Lab" xml:space="preserve"><value>Appointment sa laboratoryo</value></data>
   <data name="RS_Kind_Consultation" xml:space="preserve"><value>Konsultasyon</value></data>
   <data name="RS_Program_ART" xml:space="preserve"><value>ART</value></data>
@@ -245,9 +245,9 @@
   <data name="RS_Reason" xml:space="preserve"><value>Rason (opsyonal)</value></data>
   <data name="RS_ChangeHelp" xml:space="preserve"><value>Magpabilin ang kasamtangang appointment hangtod aprobahan sa klinika ang kausaban.</value></data>
   <data name="RS_SendRequest" xml:space="preserve"><value>Ipadala ang hangyo</value></data>
-  <data name="RS_History" xml:space="preserve"><value>Kasaysayan sa pagkuha sa tambal</value></data>
-  <data name="RS_NoHistory" xml:space="preserve"><value>Wala pay natala nga pagkuha sa tambal.</value></data>
-  <data name="RS_PickupDate" xml:space="preserve"><value>Petsa sa pagkuha</value></data>
+  <data name="RS_History" xml:space="preserve"><value>Kasaysayan sa refill sa tambal</value></data>
+  <data name="RS_NoHistory" xml:space="preserve"><value>Wala pay natalang refill sa tambal.</value></data>
+  <data name="RS_PickupDate" xml:space="preserve"><value>Petsa sa refill</value></data>
   <data name="RS_Medicines" xml:space="preserve"><value>Mga tambal nga gihatag</value></data>
   <data name="RS_DaysSupplied" xml:space="preserve"><value>Mga adlaw sa suplay</value></data>
   <data name="RS_NotRecorded" xml:space="preserve"><value>Wala matala</value></data>
@@ -258,21 +258,21 @@
   <data name="RS_Request_Approved" xml:space="preserve"><value>Giaprobahan</value></data>
   <data name="RS_Request_Declined" xml:space="preserve"><value>Wala aprobahi; kontaka ang klinika</value></data>
   <data name="RS_Reminders" xml:space="preserve"><value>Mga pahinumdom sa appointment</value></data>
-  <data name="RS_ReminderHelp" xml:space="preserve"><value>Adunay pahinumdom pito ka adlaw sa dili pa, sa takdang adlaw, pito ka adlaw pagkahuman, ug matag bulan samtang wala pa makuha ang tambal.</value></data>
+  <data name="RS_ReminderHelp" xml:space="preserve"><value>Adunay pahinumdom pito ka adlaw sa dili pa, sa takdang adlaw, pito ka adlaw pagkahuman, ug matag bulan samtang wala pa mahuman ang refill.</value></data>
   <data name="RS_AppointmentReminder" xml:space="preserve"><value>Pahinumdom sa appointment sa DRMC: {0}.</value></data>
   <data name="RS_MarkRead" xml:space="preserve"><value>Markahi nga nabasa</value></data>
   <data name="RS_EmailOptIn" xml:space="preserve"><value>Ipadala ang mga pahinumdom sa akong gikumpirmang email</value></data>
   <data name="RS_EmailHelp" xml:space="preserve"><value>Yano nga DRMC nga mensahe ang email, walay detalye sa programa o tambal. Mahimo nimo kining palungon dinhi bisan kanus-a.</value></data>
   <data name="RS_SavePreferences" xml:space="preserve"><value>I-save ang mga setting sa pahinumdom</value></data>
   <data name="RS_ClinicHelp" xml:space="preserve"><value>Kontak ug tabang sa klinika</value></data>
-  <data name="RS_MissedHelp" xml:space="preserve"><value>Kon wala ka makakuha o mahimong mahurot ang tambal sa dili pa ang appointment, kontaka dayon ang klinika.</value></data>
+  <data name="RS_MissedHelp" xml:space="preserve"><value>Kon wala ka maka-refill o mahimong mahurot ang tambal sa dili pa ang appointment, kontaka dayon ang klinika.</value></data>
   <data name="RS_LocationHours" xml:space="preserve"><value>Ikaduhang andana, Outpatient Department (OPD). Lunes–Biyernes, 8 AM–5 PM, sumala sa DRMC. Kumpirmaha sa klinika ang oras sa serbisyo.</value></data>
   <data name="RS_OfficialInfo" xml:space="preserve"><value>Opisyal nga impormasyon sa klinika</value></data>
   <data name="RS_Notifications" xml:space="preserve"><value>Mga abiso sa appointment sa DRMC</value></data>
   <data name="Guide_EffectiveOn" xml:space="preserve"><value>Epektibo sukad:</value></data>
   <data name="Guide_LastReviewed" xml:space="preserve"><value>Kataposang gisusi:</value></data>
-  <data name="RS_ReplenishmentReminder" xml:space="preserve"><value>Pahinumdom sa pagkuha pag-usab sa tambal</value></data>
-  <data name="RS_DateUnverified" xml:space="preserve"><value>Gipaabot ang pag-verify sa klinika sa petsa sa pagkuha</value></data>
+  <data name="RS_ReplenishmentReminder" xml:space="preserve"><value>Pahinumdom sa refill sa tambal</value></data>
+  <data name="RS_DateUnverified" xml:space="preserve"><value>Gipaabot ang pag-verify sa klinika sa petsa sa refill</value></data>
   <data name="IdCamera_Title" xml:space="preserve"><value>I-scan ang imong ID</value></data>
   <data name="IdCamera_FrontHint" xml:space="preserve"><value>Ibutang ang atubangan sa ID sulod sa giya. Ipakita ang tanang kanto ug likayi ang silaw.</value></data>
   <data name="IdCamera_BackHint" xml:space="preserve"><value>Ibutang ang likod sa ID sulod sa giya.</value></data>
@@ -343,8 +343,8 @@
   <data name="PasswordReset_RequestReceivedBody" xml:space="preserve"><value>Kung kini nga email address iya sa usa ka nakumpirmang account, magpadala kami og link aron ilisan ang password.</value></data>
   <data name="PasswordReset_InboxHelp" xml:space="preserve"><value>Tan-awa ang imong inbox ug spam o junk folder. Ablihi ang reset link ug pagpili og bag-ong password.</value></data>
   <data name="PasswordReset_RequestAnotherLink" xml:space="preserve"><value>Pangayo og laing reset link</value></data>
-  <data name="Report_Encounter" xml:space="preserve"><value>Pagbisita</value></data>
-  <data name="Report_EncounterLabel" xml:space="preserve"><value>Pagbisita:</value></data>
+  <data name="Report_Encounter" xml:space="preserve"><value>Pagbisita / Case</value></data>
+  <data name="Report_EncounterLabel" xml:space="preserve"><value>Pagbisita / Case number:</value></data>
   <data name="Report_Unassigned" xml:space="preserve"><value>Wala pay gitakdang pagbisita</value></data>
   <data name="Report_TestDate" xml:space="preserve"><value>Petsa sa pagsusi:</value></data>
   <data name="Report_StudyDate" xml:space="preserve"><value>Petsa sa imaging:</value></data>
@@ -385,4 +385,210 @@
   <data name="ReportStatus_amended" xml:space="preserve"><value>Gi-usab</value></data>
   <data name="ReportStatus_unknown" xml:space="preserve"><value>Wala mahibaloi</value></data>
   <data name="ReportStatus_withdrawn" xml:space="preserve"><value>Gibawi</value></data>
+  <data name="Rx_Tagubilin" xml:space="preserve"><value>DRMC Tagubilin</value></data>
+  <data name="Rx_DetailTitle" xml:space="preserve"><value>Mga detalye sa reseta sa Tagubilin</value></data>
+  <data name="Rx_Back" xml:space="preserve"><value>Balik sa Tagubilin</value></data>
+  <data name="Rx_ViewTagubilin" xml:space="preserve"><value>Tan-awa ang reseta sa Tagubilin</value></data>
+  <data name="Rx_UnifiedHelp" xml:space="preserve"><value>Ang mga tambal sa Red Star naa sa Tagubilin uban sa gidaghanong nahatag ug petsa sa refill.</value></data>
+  <data name="Rx_NoMatches" xml:space="preserve"><value>Walay reseta nga ipakita.</value></data>
+  <data name="Rx_Fulfillment_Prescribed" xml:space="preserve"><value>Gireseta</value></data>
+  <data name="Rx_Fulfillment_Served" xml:space="preserve"><value>Nahatag</value></data>
+  <data name="Rx_Status_Active" xml:space="preserve"><value>Aktibo</value></data>
+  <data name="Rx_Status_Completed" xml:space="preserve"><value>Nahuman</value></data>
+  <data name="Rx_Status_Discontinued" xml:space="preserve"><value>Gihunong</value></data>
+  <data name="Rx_Status_Expired" xml:space="preserve"><value>Na-expire</value></data>
+  <data name="Rx_NotServed" xml:space="preserve"><value>Wala pa mahatag</value></data>
+  <data name="Rx_NoCalculatedRefill" xml:space="preserve"><value>Walay awtomatikong petsa sa refill</value></data>
+  <data name="Rx_GenericName" xml:space="preserve"><value>Generic nga ngalan sa tambal</value></data>
+  <data name="Rx_BrandName" xml:space="preserve"><value>Brand sa tambal</value></data>
+  <data name="Rx_Strength" xml:space="preserve"><value>Kusog sa tambal</value></data>
+  <data name="Rx_DosageForm" xml:space="preserve"><value>Porma sa tambal</value></data>
+  <data name="Rx_StrengthForm" xml:space="preserve"><value>Kusog ug porma sa tambal</value></data>
+  <data name="Rx_Route" xml:space="preserve"><value>Paagi sa paggamit</value></data>
+  <data name="Rx_NotSpecified" xml:space="preserve"><value>Wala gitino</value></data>
+  <data name="Rx_DosageSchedule" xml:space="preserve"><value>Iskedyul sa pag-inom o paggamit</value></data>
+  <data name="Rx_Frequency" xml:space="preserve"><value>Kasubsob sa paggamit</value></data>
+  <data name="Rx_ModeTimesPerDay" xml:space="preserve"><value>Ka beses matag adlaw</value></data>
+  <data name="Rx_ModeEveryHours" xml:space="preserve"><value>Matag pila ka oras</value></data>
+  <data name="Rx_TimesDaily" xml:space="preserve"><value>{0} ka beses matag adlaw</value></data>
+  <data name="Rx_EveryHours" xml:space="preserve"><value>Matag {0} ka oras</value></data>
+  <data name="Rx_AsNeeded" xml:space="preserve"><value>Kon gikinahanglan / PRN</value></data>
+  <data name="Rx_FrequencyValue" xml:space="preserve"><value>Ka beses matag adlaw / gilay-on sa oras</value></data>
+  <data name="Rx_DosePerIntake" xml:space="preserve"><value>Gidaghanon matag paggamit</value></data>
+  <data name="Rx_DoseUnit" xml:space="preserve"><value>Yunit sa dosis</value></data>
+  <data name="Rx_DoseUnitHelp" xml:space="preserve"><value>Gamita ang samang yunit sa matag dosis ug sa duha ka gidaghanon, pananglitan tableta, kapsula, o mL.</value></data>
+  <data name="Rx_Duration" xml:space="preserve"><value>Kadugayon</value></data>
+  <data name="Rx_DurationUnit" xml:space="preserve"><value>Yunit sa kadugayon</value></data>
+  <data name="Rx_Days" xml:space="preserve"><value>Mga adlaw</value></data>
+  <data name="Rx_Months" xml:space="preserve"><value>Mga bulan sa kalendaryo</value></data>
+  <data name="Rx_DurationDays" xml:space="preserve"><value>{0} ka adlaw</value></data>
+  <data name="Rx_DurationMonths" xml:space="preserve"><value>{0} ka bulan sa kalendaryo</value></data>
+  <data name="Rx_PrescribedQuantity" xml:space="preserve"><value>Kinatibuk-ang gidaghanon nga gireseta</value></data>
+  <data name="Rx_DispensedQuantity" xml:space="preserve"><value>Gidaghanon nga nahatag</value></data>
+  <data name="Rx_ServedDate" xml:space="preserve"><value>Petsa nga nahatag</value></data>
+  <data name="Rx_Serving" xml:space="preserve"><value>Reseta ug paghatag sa tambal</value></data>
+  <data name="Rx_FulfillmentStatus" xml:space="preserve"><value>Gireseta o nahatag</value></data>
+  <data name="Rx_ServedHelp" xml:space="preserve"><value>Ang nahatag nga reseta lamang ang adunay petsa sa refill. Itala ang aktuwal nga gidaghanon, lakip ang kulang nga suplay.</value></data>
+  <data name="Rx_QuantityHelp" xml:space="preserve"><value>Gikuwenta gikan sa kasubsob, dosis, ug kadugayon. Para sa PRN, isulod ang gidaghanon sa mano-mano. Ang mga bulan gibase sa petsa sa reseta ug aktuwal nga adlaw sa kalendaryo.</value></data>
+  <data name="Rx_PRNHelp" xml:space="preserve"><value>Kinahanglan ang mano-manong gidaghanon para sa PRN; walay awtomatikong petsa sa refill.</value></data>
+  <data name="Rx_CalculatorWait" xml:space="preserve"><value>Kompletoha ang dosis ug mga petsa.</value></data>
+  <data name="Rx_CalculatorPreview" xml:space="preserve"><value>Paunang kuwenta</value></data>
+  <data name="Rx_ServerCalculationHelp" xml:space="preserve"><value>Kuwentahon pag-usab ang kinatibuk-ang gidaghanon ug petsa sa refill inig-save. Huptan ang giusab nga gidaghanong nahatag.</value></data>
+  <data name="Rx_LegacyFrequency" xml:space="preserve"><value>Daang natala nga kasubsob</value></data>
+  <data name="Rx_LegacyHelp" xml:space="preserve"><value>Huptan ang daang teksto. Kompletoha ang bag-ong mga detalye sa dosis sa dili pa magtala sa nahatag o magkuwenta sa refill.</value></data>
+  <data name="Rx_IsRedStar" xml:space="preserve"><value>Tambal sa Red Star</value></data>
+  <data name="Rx_Enrollment" xml:space="preserve"><value>Napamatud-ang pagpalista sa Red Star</value></data>
+  <data name="Rx_EnrollmentHelp" xml:space="preserve"><value>Pilia ang napamatud-ang programa sa pasyente para sa reseta sa Red Star.</value></data>
+  <data name="Rx_Instructions" xml:space="preserve"><value>Mga tagubilin sa pasyente</value></data>
+  <data name="Rx_Department" xml:space="preserve"><value>Klinikal nga departamento</value></data>
+  <data name="Rx_Lifecycle" xml:space="preserve"><value>Kahimtang sa reseta</value></data>
+  <data name="Rx_PrescribedAt" xml:space="preserve"><value>Petsa sa reseta</value></data>
+  <data name="Rx_PrescribedAtManila" xml:space="preserve"><value>Petsa ug oras sa reseta (Manila)</value></data>
+  <data name="Rx_ValidUntilManila" xml:space="preserve"><value>Balido hangtod (Manila)</value></data>
+  <data name="Rx_ViewEncounter" xml:space="preserve"><value>Tan-awa ang pagbisita</value></data>
+  <data name="Rx_PhysicianSource" xml:space="preserve"><value>Gigikanan sa ngalan sa doktor</value></data>
+  <data name="Rx_DirectoryPhysician" xml:space="preserve"><value>Doktor sa direktoryo</value></data>
+  <data name="Rx_HistoricalPhysician" xml:space="preserve"><value>Daang natala nga ngalan sa doktor</value></data>
+  <data name="Rx_Directory" xml:space="preserve"><value>Direktoryo</value></data>
+  <data name="Rx_HistoricalName" xml:space="preserve"><value>Daang natala nga ngalan</value></data>
+  <data name="Rx_AllergyCount" xml:space="preserve"><value>{0} ka natalang alerdyi sa tambal</value></data>
+  <data name="Rx_ReactionDetails" xml:space="preserve"><value>Tan-awa ang detalye sa reaksiyon</value></data>
+  <data name="Rx_Reaction" xml:space="preserve"><value>Reaksiyon</value></data>
+  <data name="Rx_Severity" xml:space="preserve"><value>Kabug-at</value></data>
+  <data name="Rx_Severity_Mild" xml:space="preserve"><value>Gaan</value></data>
+  <data name="Rx_Severity_Moderate" xml:space="preserve"><value>Kasarangan</value></data>
+  <data name="Rx_Severity_Severe" xml:space="preserve"><value>Grabe</value></data>
+  <data name="Rx_EncounterLabs" xml:space="preserve"><value>Mga hangyo ug taho sa laboratoryo</value></data>
+  <data name="Rx_EncounterRadiology" xml:space="preserve"><value>Mga hangyo ug taho sa radiology</value></data>
+  <data name="Rx_EncounterNoRequests" xml:space="preserve"><value>Walay natalang hangyo para niining pagbisita.</value></data>
+  <data name="Rx_EncounterNoPrescriptions" xml:space="preserve"><value>Walay natalang reseta para niining pagbisita.</value></data>
+  <data name="Rx_HomeHelp" xml:space="preserve"><value>Susihon ang oras sa dosis, gidaghanong nahatag, petsa sa refill, ug mga tagubilin.</value></data>
+  <data name="Rx_OpenTagubilin" xml:space="preserve"><value>Ablihi ang Tagubilin</value></data>
+  <data name="Common_Select" xml:space="preserve"><value>Pilia</value></data>
+  <data name="Enc_CaseReference" xml:space="preserve"><value>Reference sa pagbisita (Case Number)</value></data>
+  <data name="Enc_CaseReferenceHelp" xml:space="preserve"><value>Isulod ang case o encounter number sa ospital sumala sa orihinal nga tala.</value></data>
+  <data name="Enc_SelectPatientEncounter" xml:space="preserve"><value>Pilia ang pagbisita / case number sa pasyente</value></data>
+  <data name="Enc_SelectOriginEncounter" xml:space="preserve"><value>Pilia ang gigikanang pagbisita / case number</value></data>
+  <data name="Enc_OriginHelp" xml:space="preserve"><value>Gamita ang orihinal nga pagbisita bisan pila ka semana pa mobalik ang resulta. Kon wala, ipahimo una kini sa encounter encoder.</value></data>
+  <data name="Report_EncounterDate" xml:space="preserve"><value>Petsa sa pagbisita</value></data>
+  <data name="Report_AnyDate" xml:space="preserve"><value>Bisan unsang petsa sa pagbisita</value></data>
+  <data name="Report_Last30Days" xml:space="preserve"><value>Miaging 30 ka adlaw</value></data>
+  <data name="Report_Last6Months" xml:space="preserve"><value>Miaging 6 ka bulan</value></data>
+  <data name="Report_ThisYear" xml:space="preserve"><value>Karong tuiga</value></data>
+  <data name="Report_CustomRange" xml:space="preserve"><value>Kaugalingong gilapdon sa petsa</value></data>
+  <data name="Report_From" xml:space="preserve"><value>Gikan (kaugalingong gilapdon)</value></data>
+  <data name="Report_To" xml:space="preserve"><value>Hangtod (kaugalingong gilapdon)</value></data>
+  <data name="Report_Apply" xml:space="preserve"><value>Ipatuman</value></data>
+  <data name="Rx_InvalidRegimen" xml:space="preserve"><value>Kompletoha ang kasubsob, dosis, yunit, ug kadugayon gamit ang hustong positibong bili.</value></data>
+  <data name="Rx_InvalidFrequency" xml:space="preserve"><value>Isulod ang hustong kasubsob; biyai nga blangko ang numero para sa PRN.</value></data>
+  <data name="Rx_InvalidQuantity" xml:space="preserve"><value>Isulod ang hustong positibong gidaghanon, hangtod upat ka decimal.</value></data>
+  <data name="Rx_InvalidDispensedQuantity" xml:space="preserve"><value>Isulod ang aktuwal nga positibong gidaghanong nahatag, nga dili molapas sa gireseta.</value></data>
+  <data name="Rx_InvalidServedDate" xml:space="preserve"><value>Isulod ang hustong petsa sa paghatag gikan sa petsa sa reseta hangtod karon.</value></data>
+  <data name="Rx_InvalidCalendar" xml:space="preserve"><value>Lapaw sa suportadong gilapdon ang dosis o mga petsa.</value></data>
+  <data name="Rx_AccessDenied" xml:space="preserve"><value>Wala kay pagtugot niining reseta.</value></data>
+  <data name="Rx_InvalidEnrollment" xml:space="preserve"><value>Pilia ang napamatud-ang programa sa Red Star niining pasyente.</value></data>
+  <data name="Rx_HistoryBlocksDelete" xml:space="preserve"><value>Ihunong kining reseta aron mapahunong ang sunod nga mga refill ug mapabilin ang kasaysayan niini.</value></data>
+  <data name="Prescriptions" xml:space="preserve"><value>Mga reseta</value></data>
+  <data name="Rx_RedStarEncodingHelp" xml:space="preserve"><value>Itala ang tambal, dosis, ug gidaghanong nahatag sa Mga reseta / Tagubilin. Ang petsa sa refill gibase sa gidaghanong nahatag.</value></data>
+  <data name="Rx_AddPrescription" xml:space="preserve"><value>Pagdugang og reseta</value></data>
+  <data name="Rx_VerifyHospitalMapping" xml:space="preserve"><value>Pamatud-i ang koneksiyon sa tala sa pasyente sa ospital</value></data>
+  <data name="Rx_NoUnifiedPrescriptions" xml:space="preserve"><value>Walay nalambigit nga reseta sa Tagubilin.</value></data>
+  <data name="Rx_RedStarImportHelp" xml:space="preserve"><value>Ang regimen ug petsa sa refill magpabilin sa protektadong orihinal. Itala kini isip nakahan-ay nga reseta sa Tagubilin; dili maghimo og iskedyul sa tambal ang pag-import sa registry.</value></data>
+  <data name="Rx_RedStarImportUploadHelp" xml:space="preserve"><value>Pag-upload og XLSX o UTF-8 CSV, hangtod 10 MB ug 5,000 ka laray. Susihon ug aprobahan ang tala sa registry; itala ang tambal sa Tagubilin.</value></data>
+  <data name="Rx_RedStarImported" xml:space="preserve"><value>Na-import ang tala sa registry. Itala ang tambal ug paghatag sa Mga reseta / Tagubilin.</value></data>
+  <data name="Rx_Route_Oral" xml:space="preserve"><value>Imnon</value></data>
+  <data name="Rx_Route_Sublingual" xml:space="preserve"><value>Ilalom sa dila</value></data>
+  <data name="Rx_Route_Buccal" xml:space="preserve"><value>Sulod sa aping</value></data>
+  <data name="Rx_Route_Rectal" xml:space="preserve"><value>Sa lubot</value></data>
+  <data name="Rx_Route_Intramuscular" xml:space="preserve"><value>Iniksyon sa kaunoran</value></data>
+  <data name="Rx_Route_Intravenous" xml:space="preserve"><value>Sa ugat</value></data>
+  <data name="Rx_Route_Subcutaneous" xml:space="preserve"><value>Ilalom sa panit</value></data>
+  <data name="Rx_Route_Inhalation" xml:space="preserve"><value>Giginhawa</value></data>
+  <data name="Rx_Route_Nasal" xml:space="preserve"><value>Sa ilong</value></data>
+  <data name="Rx_Route_Ophthalmic" xml:space="preserve"><value>Sa mata</value></data>
+  <data name="Rx_Route_Otic" xml:space="preserve"><value>Sa dunggan</value></data>
+  <data name="Rx_Route_Topical" xml:space="preserve"><value>Ipahid sa panit</value></data>
+  <data name="Rx_Route_Transdermal" xml:space="preserve"><value>Patch sa panit</value></data>
+  <data name="Rx_Route_Vaginal" xml:space="preserve"><value>Sa puwerta</value></data>
+  <data name="Admin_RecordDetails" xml:space="preserve"><value>Mga detalye sa tala</value></data>
+  <data name="Admin_LinkedRecords" xml:space="preserve"><value>Mga nalambigit nga tala</value></data>
+  <data name="Rx_RefillHistory" xml:space="preserve"><value>Kasaysayan sa refill</value></data>
+  <data name="Rx_FrequencyMode_TimesPerDay" xml:space="preserve"><value>Ka beses matag adlaw</value></data>
+  <data name="Rx_FrequencyMode_EveryHours" xml:space="preserve"><value>Matag pila ka oras</value></data>
+  <data name="Rx_FrequencyMode_AsNeeded" xml:space="preserve"><value>Kon gikinahanglan / PRN</value></data>
+  <data name="Rx_DurationUnit_Days" xml:space="preserve"><value>Mga adlaw</value></data>
+  <data name="Rx_DurationUnit_Months" xml:space="preserve"><value>Mga bulan sa kalendaryo</value></data>
+  <data name="True" xml:space="preserve"><value>Oo</value></data>
+  <data name="False" xml:space="preserve"><value>Dili</value></data>
+  <data name="unassigned" xml:space="preserve"><value>Wala natakda</value></data>
+  <data name="Dose schedules" xml:space="preserve"><value>Mga iskedyul sa dosis</value></data>
+  <data name="Select a clinical department." xml:space="preserve"><value>Pagpili og klinikal nga departamento.</value></data>
+  <data name="Validity cannot end before the prescription date." xml:space="preserve"><value>Dili mahimong mauna ang kataposan sa pagkabalido sa petsa sa reseta.</value></data>
+  <data name="Enter Manila wall time without a time-zone suffix." xml:space="preserve"><value>Isulod ang oras sa Manila nga walay time-zone suffix.</value></data>
+  <data name="Select a directory physician." xml:space="preserve"><value>Pagpili og doktor sa direktoryo.</value></data>
+  <data name="Enter the historical physician name." xml:space="preserve"><value>Isulod ang daang natala nga ngalan sa doktor.</value></data>
+  <data name="Use either the directory physician or the historical name, not both." xml:space="preserve"><value>Pilia lamang ang doktor sa direktoryo o ang daang ngalan.</value></data>
+  <data name="Select an existing encounter belonging to this patient." xml:space="preserve"><value>Pagpili og kasamtangang pagbisita niining pasyente.</value></data>
+  <data name="Select a listed route of administration." xml:space="preserve"><value>Pagpili og gilistang paagi sa paggamit.</value></data>
+  <data name="A prescription already uses this Rx number." xml:space="preserve"><value>Adunay reseta nga naggamit na niining Rx number.</value></data>
+  <data name="Select an existing directory physician or enter an explicit historical name." xml:space="preserve"><value>Pagpili og doktor sa direktoryo o isulod ang daang natala nga ngalan.</value></data>
+  <data name="The patient record no longer exists." xml:space="preserve"><value>Wala na ang tala sa pasyente.</value></data>
+  <data name="Enter a valid value." xml:space="preserve"><value>Pagbutang og hustong bili.</value></data>
+  <data name="The {0} field is required." xml:space="preserve"><value>Gikinahanglan ang {0}.</value></data>
+  <data name="The field {0} must be a string with a maximum length of {1}." xml:space="preserve"><value>Dili molapas sa {1} ka karakter ang {0}.</value></data>
+  <data name="The field {0} must be between {1} and {2}." xml:space="preserve"><value>Kinahanglan tali sa {1} ug {2} ang {0}.</value></data>
+  <data name="The field {0} is invalid." xml:space="preserve"><value>Dili husto ang {0}.</value></data>
+  <data name="The value '{0}' is invalid." xml:space="preserve"><value>Dili husto ang bili nga '{0}'.</value></data>
+  <data name="Choose both custom dates with the end on or after the start." xml:space="preserve"><value>Pilia ang duha ka petsa; dili mahimong mauna ang kataposang petsa.</value></data>
+  <data name="RxNumber" xml:space="preserve"><value>Numero sa Reseta</value></data>
+  <data name="Rx number" xml:space="preserve"><value>Numero sa Reseta</value></data>
+  <data name="GenericName" xml:space="preserve"><value>Generic nga ngalan sa tambal</value></data>
+  <data name="Generic name" xml:space="preserve"><value>Generic nga ngalan sa tambal</value></data>
+  <data name="BrandName" xml:space="preserve"><value>Brand sa tambal</value></data>
+  <data name="Brand name" xml:space="preserve"><value>Brand sa tambal</value></data>
+  <data name="Dosage" xml:space="preserve"><value>Kusog sa tambal</value></data>
+  <data name="DosageForm" xml:space="preserve"><value>Porma sa tambal</value></data>
+  <data name="Dosage form" xml:space="preserve"><value>Porma sa tambal</value></data>
+  <data name="RouteOfAdministration" xml:space="preserve"><value>Paagi sa paggamit</value></data>
+  <data name="Route of administration" xml:space="preserve"><value>Paagi sa paggamit</value></data>
+  <data name="Frequency" xml:space="preserve"><value>Kasubsob sa paggamit</value></data>
+  <data name="Instructions" xml:space="preserve"><value>Mga tagubilin sa pasyente</value></data>
+  <data name="Department" xml:space="preserve"><value>Klinikal nga departamento</value></data>
+  <data name="PrescribingDoctor" xml:space="preserve"><value>Nagreseta</value></data>
+  <data name="PrescribedAt" xml:space="preserve"><value>Petsa sa reseta</value></data>
+  <data name="Prescribed at (Manila)" xml:space="preserve"><value>Petsa ug oras sa reseta (Manila)</value></data>
+  <data name="ValidUntil" xml:space="preserve"><value>Balido Hangtod</value></data>
+  <data name="Valid until (Manila)" xml:space="preserve"><value>Balido hangtod (Manila)</value></data>
+  <data name="Status" xml:space="preserve"><value>Kahimtang</value></data>
+  <data name="ClinicalEncounterId" xml:space="preserve"><value>Reference sa pagbisita (Case Number)</value></data>
+  <data name="Encounter Reference (Case Number)" xml:space="preserve"><value>Reference sa pagbisita (Case Number)</value></data>
+  <data name="Encounter reference" xml:space="preserve"><value>Reference sa pagbisita (Case Number)</value></data>
+  <data name="EncounterReference" xml:space="preserve"><value>Reference sa pagbisita (Case Number)</value></data>
+  <data name="FulfillmentStatus" xml:space="preserve"><value>Gireseta o nahatag</value></data>
+  <data name="FrequencyMode" xml:space="preserve"><value>Kasubsob sa paggamit</value></data>
+  <data name="FrequencyValue" xml:space="preserve"><value>Ka beses matag adlaw / gilay-on sa oras</value></data>
+  <data name="DosePerIntake" xml:space="preserve"><value>Gidaghanon matag paggamit</value></data>
+  <data name="DoseUnit" xml:space="preserve"><value>Yunit sa dosis</value></data>
+  <data name="DurationCount" xml:space="preserve"><value>Kadugayon</value></data>
+  <data name="DurationUnit" xml:space="preserve"><value>Yunit sa kadugayon</value></data>
+  <data name="PrescribedQuantity" xml:space="preserve"><value>Kinatibuk-ang gidaghanon nga gireseta</value></data>
+  <data name="DispensedQuantity" xml:space="preserve"><value>Gidaghanon nga nahatag</value></data>
+  <data name="ServedDate" xml:space="preserve"><value>Petsa nga nahatag</value></data>
+  <data name="NextRefillDate" xml:space="preserve"><value>Sunod nga refill sa tambal</value></data>
+  <data name="IsRedStar" xml:space="preserve"><value>Tambal sa Red Star</value></data>
+  <data name="RedStarEnrollmentId" xml:space="preserve"><value>Napamatud-ang pagpalista sa Red Star</value></data>
+  <data name="Physician source" xml:space="preserve"><value>Gigikanan sa ngalan sa doktor</value></data>
+  <data name="Directory physician" xml:space="preserve"><value>Doktor sa direktoryo</value></data>
+  <data name="Historical physician name" xml:space="preserve"><value>Daang natala nga ngalan sa doktor</value></data>
+  <data name="RS_CareDateVerified" xml:space="preserve"><value>Gipamatud-an sa kawani sa klinika kining petsa.</value></data>
+  <data name="Choose both a start date and an end date." xml:space="preserve"><value>Pilia ang pagsugod ug kataposang petsa.</value></data>
+  <data name="The start date must be on or before the end date." xml:space="preserve"><value>Dili mahimong ulahi ang pagsugod kaysa sa kataposang petsa.</value></data>
+  <data name="Encounter dates cannot be in the future." xml:space="preserve"><value>Dili mahimong sa umaabot ang petsa sa pagbisita.</value></data>
+  <data name="PatientRecordId" xml:space="preserve"><value>Tala sa pasyente</value></data>
+  <data name="PatientActivityAtUtc" xml:space="preserve"><value>Kataposang kausaban nga makita sa pasyente (UTC)</value></data>
+  <data name="This record changed. Reload it and review the latest version before trying again." xml:space="preserve"><value>Nausab kining tala. I-reload ug susiha ang pinakabag-o sa dili pa mosulay pag-usab.</value></data>
+  <data name="Reload the current record before saving." xml:space="preserve"><value>I-reload ang kasamtangang tala sa dili pa i-save.</value></data>
+  <data name="Patient and parent ownership cannot be changed by the form." xml:space="preserve"><value>Dili mahimong usbon sa form ang pasyente o ginikanang tala.</value></data>
+  <data name="Rx_LastCalculatedRefill" xml:space="preserve"><value>Kataposang nakuwentang petsa sa refill</value></data>
+  <data name="Rx_ImportReupload" xml:space="preserve"><value>Kanselaha kini nga batch ug i-upload ang file gamit ang kasamtangang template. Gamita ang Prescriptions_v3 alang sa mga reseta.</value></data>
 </root>

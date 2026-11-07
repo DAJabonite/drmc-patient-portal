@@ -7,7 +7,7 @@
 {
     <div class="alert alert-info" role="status">Unrecognized tabs were skipped: @string.Join(", ", Model.Preview.SkippedSheets). Only recognized patient tabs are included in this preview.</div>
 }
-<div class="alert alert-secondary">Existing records require their explicit private record ID. Verify the clinic code and identifying details in the <a asp-controller="RedStar" asp-action="Index">registry</a> before selecting an update. Blank medicine and date fields preserve existing values. Included updates can replace a schedule; reminders remain inactive on newly imported schedules.</div>
+<div class="alert alert-secondary">Existing records require their explicit private record ID. Verify the clinic code and identifying details in the <a asp-controller="RedStar" asp-action="Index">registry</a> before selecting an update. @Loc["Rx_RedStarImportHelp"]</div>
 <details class="admin-card mb-3"><summary class="admin-card-header">Deferred source columns (@Model.Preview.DeferredColumns.Count)</summary><div class="admin-card-body"><p class="small text-muted">These columns remain in the protected original file and are not clinical chart entries in this release.</p><ul>@foreach (var column in Model.Preview.DeferredColumns) { <li>@column</li> }</ul><form asp-action="Source" asp-route-id="@Model.Batch.Id" method="post"><button class="btn btn-outline-secondary" type="submit">Download protected original</button></form></div></details>
 <form asp-action="Reconcile" asp-route-id="@Model.Batch.Id" method="post" class="admin-form">
     <input type="hidden" name="Version" value="@Convert.ToBase64String(Model.Batch.RowVersion)" /><input type="hidden" name="Page" value="@Model.Page" />
@@ -19,7 +19,7 @@
             <div class="admin-card-body">
                 <input type="hidden" name="@(prefix).Key" value="@choice.Key" />
                 <div class="form-check mb-3"><input id="@(uid)-include" name="@(prefix).Include" value="true" type="checkbox" class="form-check-input" checked="@(choice.Include ? "checked" : null)" /><input type="hidden" name="@(prefix).Include" value="false" /><label for="@(uid)-include" class="form-check-label fw-semibold">Include this row on approval</label></div>
-                @if (row.Warnings.Count > 0) { <ul class="small text-muted">@foreach (var warning in row.Warnings) { <li>@warning</li> }</ul> }
+                @if (row.Warnings.Count > 0) { <ul class="small text-muted">@foreach (var warning in row.Warnings) { <li>@Loc[warning]</li> }</ul> }
                 @if (Model.Candidates[row.Key].Count > 0) { <p class="small"><strong>Possible existing records (never auto-selected):</strong> @foreach (var candidate in Model.Candidates[row.Key]) { <span class="d-inline-block me-3">ID @candidate.Id · @candidate.PatientCode @candidate.CodeName</span> }</p> }
                 <div class="row g-3">
                     <div class="col-md-4"><label for="@(uid)-existing" class="form-label">Existing private record ID (blank creates new)</label><input id="@(uid)-existing" name="@(prefix).ExistingPatientId" value="@choice.ExistingPatientId" type="number" min="1" class="form-control" /></div>
@@ -32,12 +32,9 @@
                     <div class="col-md-4"><label for="@(uid)-program" class="form-label">Program</label><select id="@(uid)-program" name="@(prefix).Program" class="form-select">@foreach (var program in Enum.GetValues<RedStarProgram>()) { <option value="@program" selected="@(choice.Program == program ? "selected" : null)">@program</option> }</select></div>
                     <div class="col-md-4"><label for="@(uid)-status" class="form-label">Status</label><select id="@(uid)-status" name="@(prefix).Status" class="form-select">@foreach (var status in Enum.GetValues<RedStarStatus>()) { <option value="@status" selected="@(choice.Status == status ? "selected" : null)">@status</option> }</select></div>
                     <div class="col-md-4"><label for="@(uid)-hub" class="form-label">Receiving hub</label><input id="@(uid)-hub" name="@(prefix).ReceivingHub" value="@choice.ReceivingHub" maxlength="200" class="form-control" /></div>
-                    <div class="col-12"><label for="@(uid)-medicines" class="form-label">Recorded medicines</label><textarea id="@(uid)-medicines" name="@(prefix).Medicines" maxlength="2000" class="form-control" rows="2">@choice.Medicines</textarea></div>
                     <div class="col-md-4"><label for="@(uid)-enrolled" class="form-label">Enrollment date</label><input id="@(uid)-enrolled" name="@(prefix).EnrolledDate" value="@choice.EnrolledDate?.ToString("yyyy-MM-dd")" type="date" class="form-control" /></div>
                     <div class="col-md-4"><label for="@(uid)-start" class="form-label">Treatment/course start</label><input id="@(uid)-start" name="@(prefix).StartDate" value="@choice.StartDate?.ToString("yyyy-MM-dd")" type="date" class="form-control" /></div>
                     <div class="col-md-4"><label for="@(uid)-statusdate" class="form-label">Status effective date</label><input id="@(uid)-statusdate" name="@(prefix).StatusDate" value="@choice.StatusDate?.ToString("yyyy-MM-dd")" type="date" class="form-control" /></div>
-                    <div class="col-md-6"><label for="@(uid)-dispensed" class="form-label">Recorded refill/pickup date</label><input id="@(uid)-dispensed" name="@(prefix).DispensedDate" value="@choice.DispensedDate?.ToString("yyyy-MM-dd")" type="date" class="form-control" /></div>
-                    <div class="col-md-6"><label for="@(uid)-next" class="form-label">Next refill date</label><input id="@(uid)-next" name="@(prefix).NextRefillDate" value="@choice.NextRefillDate?.ToString("yyyy-MM-dd")" type="date" class="form-control" /></div>
                 </div>
                 @if (row.SourceStatus is not null) { <p class="small text-muted mt-3 mb-0">Source status: @row.SourceStatus</p> }
             </div>

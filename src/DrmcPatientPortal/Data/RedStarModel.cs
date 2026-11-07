@@ -42,6 +42,9 @@ public static class RedStarModel
         });
         builder.Entity<RedStarAppointment>(e =>
         {
+            e.HasOne(x => x.Prescription).WithMany().HasForeignKey(x => x.PrescriptionId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.PrescriptionId).IsUnique().HasFilter("[PrescriptionId] IS NOT NULL");
+            e.Property(x => x.PrescriptionScheduleFingerprint).HasMaxLength(64).IsUnicode(false);
             e.HasOne(x => x.Enrollment).WithMany(x => x.Appointments).HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
             e.Property(x => x.DueDate).HasColumnType("date");
             e.HasIndex(x => new { x.State, x.Kind, x.DueDate });

@@ -1,19 +1,28 @@
 @model AdminDetails
+@{ var prescription = ViewContext.RouteData.Values["controller"]?.ToString() == "Prescriptions"; }
 @if (Model.Context is not null) { <partial name="_Context" model="Model.Context" /> }
 <div class="admin-card">
-    <div class="admin-card-header"><h2 class="admin-card-title">Record details</h2></div>
+    <div class="admin-card-header"><h2 class="admin-card-title">@Loc["Admin_RecordDetails"]</h2></div>
     <dl class="admin-dl">
         @foreach (var field in Model.Fields)
         {
             var wide = field.Value.Length > 80 || field.Value.Contains('\n');
-            <div class="@(wide ? "admin-dl-wide" : null)"><dt>@AdminChips.Label(field.Label)</dt><dd>@if (field.Label.Contains("Status", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(field.Value)) { <span class="@AdminChips.Css(field.Value)">@field.Value</span> } else { @(string.IsNullOrEmpty(field.Value) ? "—" : AdminChips.Value(field.Value)) }</dd></div>
+            var localizedLabel = Loc[prescription && field.Label == "Status" ? "Rx_Lifecycle" : field.Label];
+            string? valueKey = prescription ? field.Label switch {
+                "FulfillmentStatus" => "Rx_Fulfillment_" + field.Value, "Status" => "Rx_Status_" + field.Value,
+                "FrequencyMode" => "Rx_FrequencyMode_" + field.Value, "DurationUnit" => "Rx_DurationUnit_" + field.Value,
+                "RouteOfAdministration" => "Rx_Route_" + field.Value, "IsRedStar" => field.Value, _ => null } : null;
+            if (field.Value == "unassigned") valueKey = "unassigned";
+            var localizedValue = valueKey is null ? null : Loc[valueKey];
+            var displayValue = localizedValue is null || localizedValue.ResourceNotFound ? AdminChips.Value(field.Value) : localizedValue.Value;
+            <div class="@(wide ? "admin-dl-wide" : null)"><dt>@(localizedLabel.ResourceNotFound ? AdminChips.Label(field.Label) : localizedLabel.Value)</dt><dd>@if (field.Label.Contains("Status", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(field.Value)) { <span class="@AdminChips.Css(field.Value)">@displayValue</span> } else { @(string.IsNullOrEmpty(field.Value) ? "—" : displayValue) }</dd></div>
         }
     </dl>
 </div>
 @if (Model.Dependents.Count > 0)
 {
     <div class="admin-card">
-        <div class="admin-card-header"><h2 class="admin-card-title">Linked records</h2></div>
-        <dl class="admin-dl">@foreach (var count in Model.Dependents) { <div><dt>@count.Key</dt><dd class="tabular">@count.Value</dd></div> }</dl>
+        <div class="admin-card-header"><h2 class="admin-card-title">@Loc["Admin_LinkedRecords"]</h2></div>
+        <dl class="admin-dl">@foreach (var count in Model.Dependents) { <div><dt>@Loc[count.Key]</dt><dd class="tabular">@count.Value</dd></div> }</dl>
     </div>
 }

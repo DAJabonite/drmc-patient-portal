@@ -1,38 +1,70 @@
 @model PrescriptionInput
+@using DrmcPatientPortal.Services
+@{
+    var redStarOnly = ViewData["RedStarOnly"] is true;
+}
 <input asp-for="RowVersion" type="hidden" />
+<input asp-for="Frequency" type="hidden" />
+<div data-prescription-calculator
+     data-times-mode="@((int)PrescriptionFrequencyMode.TimesPerDay)" data-hours-mode="@((int)PrescriptionFrequencyMode.EveryHours)" data-prn-mode="@((int)PrescriptionFrequencyMode.AsNeeded)"
+     data-days-unit="@((int)PrescriptionDurationUnit.Days)" data-months-unit="@((int)PrescriptionDurationUnit.Months)" data-served-status="@((int)PrescriptionFulfillmentStatus.Served)"
+     data-wait="@Loc["Rx_CalculatorWait"]" data-prn="@Loc["Rx_PRNHelp"]" data-not-served="@Loc["Rx_NotServed"]"
+     data-today="@ClinicalClock.Today.ToString("yyyy-MM-dd")">
 <div class="mb-3">
-    <label asp-for="ClinicalEncounterId" class="form-label"></label>
+    <label asp-for="ClinicalEncounterId" class="form-label">@Loc["Enc_CaseReference"]</label>
     <select asp-for="ClinicalEncounterId" asp-items='@(ViewData["Encounters"] as IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)' class="form-select" aria-describedby="encounterHelp">
-        <option value="">Select this patient's encounter</option>
+        <option value="">@Loc["Enc_SelectPatientEncounter"]</option>
     </select>
     <span asp-validation-for="ClinicalEncounterId" class="text-danger"></span>
-    <div id="encounterHelp" class="form-text">Use the originating encounter, even when the result returns weeks later. If it is missing, have an encounter encoder create it first.</div>
-</div>
-
-<div class="mb-3">
-    <label asp-for="RouteOfAdministration" class="form-label"></label>
-    <select asp-for="RouteOfAdministration" class="form-select">
-        <option value="">Not specified</option>
-        @foreach (var route in AdministrationRoutes.All) { <option value="@route">@route</option> }
-    </select>
-    <span asp-validation-for="RouteOfAdministration" class="text-danger"></span>
+    <div id="encounterHelp" class="form-text">@Loc["Enc_OriginHelp"]</div>
 </div>
 <div class="row g-3 mb-3">
-    <div class="col-md-6"><label asp-for="RxNumber" class="form-label"></label><input asp-for="RxNumber" class="form-control" /><span asp-validation-for="RxNumber" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="GenericName" class="form-label"></label><input asp-for="GenericName" class="form-control" /><span asp-validation-for="GenericName" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="BrandName" class="form-label"></label><input asp-for="BrandName" class="form-control" /><span asp-validation-for="BrandName" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="Dosage" class="form-label"></label><input asp-for="Dosage" class="form-control" /><span asp-validation-for="Dosage" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="DosageForm" class="form-label"></label><input asp-for="DosageForm" class="form-control" /><span asp-validation-for="DosageForm" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="Frequency" class="form-label"></label><input asp-for="Frequency" class="form-control" /><span asp-validation-for="Frequency" class="text-danger"></span></div>
-    <div class="col-12"><label asp-for="Instructions" class="form-label"></label><textarea asp-for="Instructions" class="form-control"></textarea><span asp-validation-for="Instructions" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="Department" class="form-label"></label><select asp-for="Department" class="form-select"><option value="">Select</option>@foreach (var department in ClinicalDepartments.All) { <option>@department.Name</option> }</select><span asp-validation-for="Department" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="Status" class="form-label"></label><select asp-for="Status" asp-items="Html.GetEnumSelectList<PrescriptionStatus>()" class="form-select"></select><span asp-validation-for="Status" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="RxNumber" class="form-label">@Loc["Rx_Number"]</label><input asp-for="RxNumber" class="form-control" /><span asp-validation-for="RxNumber" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="GenericName" class="form-label">@Loc["Rx_GenericName"]</label><input asp-for="GenericName" class="form-control" /><span asp-validation-for="GenericName" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="BrandName" class="form-label">@Loc["Rx_BrandName"]</label><input asp-for="BrandName" class="form-control" /><span asp-validation-for="BrandName" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Dosage" class="form-label">@Loc["Rx_Strength"]</label><input asp-for="Dosage" class="form-control" /><span asp-validation-for="Dosage" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="DosageForm" class="form-label">@Loc["Rx_DosageForm"]</label><input asp-for="DosageForm" class="form-control" /><span asp-validation-for="DosageForm" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="RouteOfAdministration" class="form-label">@Loc["Rx_Route"]</label><select asp-for="RouteOfAdministration" class="form-select"><option value="">@Loc["Rx_NotSpecified"]</option>@foreach (var route in AdministrationRoutes.All) { <option value="@route">@Loc["Rx_Route_" + route]</option> }</select><span asp-validation-for="RouteOfAdministration" class="text-danger"></span></div>
+</div>
+<fieldset class="border rounded-3 p-3 mb-3">
+    <legend class="h6 float-none w-auto px-2">@Loc["Rx_DosageSchedule"]</legend>
+    @if (Model.FrequencyMode is null && !string.IsNullOrWhiteSpace(Model.Frequency)) { <p class="small text-muted">@Loc["Rx_LegacyFrequency"]: @Model.Frequency<br />@Loc["Rx_LegacyHelp"]</p> }
+    <div class="row g-3">
+        <div class="col-md-6"><label asp-for="FrequencyMode" class="form-label">@Loc["Rx_Frequency"]</label><select asp-for="FrequencyMode" class="form-select"><option value="">@Loc["Common_Select"]</option><option value="@((int)PrescriptionFrequencyMode.TimesPerDay)">@Loc["Rx_ModeTimesPerDay"]</option><option value="@((int)PrescriptionFrequencyMode.EveryHours)">@Loc["Rx_ModeEveryHours"]</option><option value="@((int)PrescriptionFrequencyMode.AsNeeded)">@Loc["Rx_AsNeeded"]</option></select><span asp-validation-for="FrequencyMode" class="text-danger"></span></div>
+        <div class="col-md-6" data-frequency-value><label asp-for="FrequencyValue" class="form-label">@Loc["Rx_FrequencyValue"]</label><input asp-for="FrequencyValue" type="number" min="0.0001" step="0.0001" class="form-control" /><span asp-validation-for="FrequencyValue" class="text-danger"></span></div>
+        <div class="col-md-6"><label asp-for="DosePerIntake" class="form-label">@Loc["Rx_DosePerIntake"]</label><input asp-for="DosePerIntake" type="number" min="0.0001" step="0.0001" class="form-control" /><span asp-validation-for="DosePerIntake" class="text-danger"></span></div>
+        <div class="col-md-6"><label asp-for="DoseUnit" class="form-label">@Loc["Rx_DoseUnit"]</label><input asp-for="DoseUnit" maxlength="40" class="form-control" aria-describedby="doseUnitHelp" /><span asp-validation-for="DoseUnit" class="text-danger"></span><p class="form-text" id="doseUnitHelp">@Loc["Rx_DoseUnitHelp"]</p></div>
+        <div class="col-md-6"><label asp-for="DurationCount" class="form-label">@Loc["Rx_Duration"]</label><input asp-for="DurationCount" type="number" min="1" step="1" class="form-control" /><span asp-validation-for="DurationCount" class="text-danger"></span></div>
+        <div class="col-md-6"><label asp-for="DurationUnit" class="form-label">@Loc["Rx_DurationUnit"]</label><select asp-for="DurationUnit" class="form-select"><option value="">@Loc["Common_Select"]</option><option value="@((int)PrescriptionDurationUnit.Days)">@Loc["Rx_Days"]</option><option value="@((int)PrescriptionDurationUnit.Months)">@Loc["Rx_Months"]</option></select><span asp-validation-for="DurationUnit" class="text-danger"></span></div>
+        <div class="col-12"><label asp-for="PrescribedQuantity" class="form-label">@Loc["Rx_PrescribedQuantity"]</label><input asp-for="PrescribedQuantity" type="number" min="0.0001" step="0.0001" class="form-control" aria-describedby="quantityHelp" /><span asp-validation-for="PrescribedQuantity" class="text-danger"></span><p class="form-text" id="quantityHelp">@Loc["Rx_QuantityHelp"]</p></div>
+    </div>
+</fieldset>
+<fieldset class="border rounded-3 p-3 mb-3">
+    <legend class="h6 float-none w-auto px-2">@Loc["Rx_Serving"]</legend>
+    <div class="row g-3">
+        <div class="col-12"><label asp-for="FulfillmentStatus" class="form-label">@Loc["Rx_FulfillmentStatus"]</label><select asp-for="FulfillmentStatus" class="form-select"><option value="@((int)PrescriptionFulfillmentStatus.Prescribed)">@Loc["Rx_Fulfillment_Prescribed"]</option><option value="@((int)PrescriptionFulfillmentStatus.Served)">@Loc["Rx_Fulfillment_Served"]</option></select><span asp-validation-for="FulfillmentStatus" class="text-danger"></span><p class="form-text">@Loc["Rx_ServedHelp"]</p></div>
+        <div class="col-md-6" data-served-field><label asp-for="DispensedQuantity" class="form-label">@Loc["Rx_DispensedQuantity"]</label><input asp-for="DispensedQuantity" type="number" min="0.0001" step="0.0001" class="form-control" /><span asp-validation-for="DispensedQuantity" class="text-danger"></span></div>
+        <div class="col-md-6" data-served-field><label asp-for="ServedDate" class="form-label">@Loc["Rx_ServedDate"]</label><input asp-for="ServedDate" type="date" max="@ClinicalClock.Today.ToString("yyyy-MM-dd")" class="form-control" /><span asp-validation-for="ServedDate" class="text-danger"></span></div>
+    </div>
+</fieldset>
+<div class="alert alert-info" aria-live="polite" role="status"><strong>@Loc["Rx_CalculatorPreview"]</strong><p class="small mb-1">@Loc["Rx_ServerCalculationHelp"]</p><div>@Loc["Rx_PrescribedQuantity"]: <output data-calculated-quantity>—</output></div><div>@Loc["RS_NextRefill"]: <output data-calculated-refill>—</output></div></div>
+<fieldset class="border rounded-3 p-3 mb-3">
+    <legend class="h6 float-none w-auto px-2">@Loc["RS_Title"]</legend>
+    <div class="form-check mb-3">
+        @if (redStarOnly) { <input type="hidden" name="IsRedStar" value="true" /><input class="form-check-input" id="redStarRequired" type="checkbox" checked disabled /><label class="form-check-label" for="redStarRequired">@Loc["Rx_IsRedStar"]</label> }
+        else { <input asp-for="IsRedStar" class="form-check-input" /><label asp-for="IsRedStar" class="form-check-label">@Loc["Rx_IsRedStar"]</label> }
+    </div>
+    <label asp-for="RedStarEnrollmentId" class="form-label">@Loc["Rx_Enrollment"]</label><select asp-for="RedStarEnrollmentId" asp-items='@(ViewData["RedStarEnrollments"] as IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)' class="form-select"><option value="">@Loc["Common_Select"]</option></select><span asp-validation-for="RedStarEnrollmentId" class="text-danger"></span><p class="form-text">@Loc["Rx_EnrollmentHelp"]</p>
+</fieldset>
+<div class="row g-3 mb-3">
+    <div class="col-12"><label asp-for="Instructions" class="form-label">@Loc["Rx_Instructions"]</label><textarea asp-for="Instructions" class="form-control"></textarea><span asp-validation-for="Instructions" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Department" class="form-label">@Loc["Rx_Department"]</label><select asp-for="Department" class="form-select"><option value="">@Loc["Common_Select"]</option>@foreach (var department in ClinicalDepartments.All) { <option>@department.Name</option> }</select><span asp-validation-for="Department" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="Status" class="form-label">@Loc["Rx_Lifecycle"]</label><select asp-for="Status" class="form-select">@foreach (var status in Enum.GetValues<PrescriptionStatus>()) { <option value="@((int)status)">@Loc["Rx_Status_" + status]</option> }</select><span asp-validation-for="Status" class="text-danger"></span></div>
 </div>
 <partial name="_Physician" model="@(new PhysicianForm(Model, (IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewData["Doctors"]!))" />
 <div class="row g-3 mt-1">
-    <div class="col-md-6"><label asp-for="PrescribedAt" class="form-label"></label><input asp-for="PrescribedAt" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="PrescribedAt" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="ValidUntil" class="form-label"></label><input asp-for="ValidUntil" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="ValidUntil" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="RefillsTotal" class="form-label"></label><input asp-for="RefillsTotal" class="form-control" min="0" /><span asp-validation-for="RefillsTotal" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="RefillsRemaining" class="form-label"></label><input asp-for="RefillsRemaining" class="form-control" min="0" /><span asp-validation-for="RefillsRemaining" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="LastRefillDate" class="form-label"></label><input asp-for="LastRefillDate" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="LastRefillDate" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="PrescribedAt" class="form-label">@Loc["Rx_PrescribedAtManila"]</label><input asp-for="PrescribedAt" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="PrescribedAt" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="ValidUntil" class="form-label">@Loc["Rx_ValidUntilManila"]</label><input asp-for="ValidUntil" type="datetime-local" step="any" class="form-control" /><span asp-validation-for="ValidUntil" class="text-danger"></span></div>
 </div>
+</div>
+<script src="~/js/prescription-form.js" asp-append-version="true" defer></script>

@@ -36,8 +36,7 @@ public class MedicationsController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
 
-        var owned = _db.Prescriptions.AsNoTracking().Where(p => p.Patient.PortalUserId == user.Id
-            && (p.ClinicalEncounterId == null || p.Encounter!.PatientRecordId == p.PatientRecordId));
+        var owned = await PrescriptionQueries.OwnedAsync(_db, user.Id, HttpContext.RequestAborted);
         dateRange = dateRange is "30d" or "6m" or "year" or "custom" ? dateRange : null;
         var bounds = PatientReportQueries.DateBounds(dateRange, startDate, endDate);
         if (bounds.Error != null) ViewData["DateRangeError"] = bounds.Error;
@@ -53,7 +52,7 @@ public class MedicationsController : Controller
         var encounterIds = await SqlReadRetry.RunAsync(_db, () => groups.OrderByDescending(g => g.Active)
             .ThenByDescending(g => g.Activity).ThenByDescending(g => g.Date).ThenByDescending(g => g.Id)
             .Skip(pagination.Offset).Take(PortalPagination.Size).Select(g => g.Id).ToArrayAsync());
-        var selected = await SqlReadRetry.RunAsync(_db, () => filtered.Include(p => p.Encounter)
+        var selected = await SqlReadRetry.RunAsync(_db, () => filtered
             .Where(p => EF.Parameter(encounterIds).Contains(p.ClinicalEncounterId)).ToListAsync());
         var prescriptionGroups = encounterIds.Select(id => selected.Where(p => p.ClinicalEncounterId == id)
             .OrderByDescending(p => p.Status == PrescriptionStatus.Active).ThenByDescending(p => p.PrescribedAt).ThenByDescending(p => p.Id).ToList())
@@ -70,7 +69,7 @@ public class MedicationsController : Controller
         var allergies = await SqlReadRetry.RunAsync(_db, () => allergyQuery.OrderBy(a => a.Allergen).ThenBy(a => a.Id)
             .Skip(allergyPagination.Offset).Take(PortalPagination.Size).ToListAsync());
         var scheduleQuery = _db.MedicationDoseSchedules.AsNoTracking()
-            .Where(s => s.Prescription.Patient.PortalUserId == user.Id && s.Prescription.Status == PrescriptionStatus.Active);
+            .Where(s => owned.Select(p => p.Id).Contains(s.PrescriptionId) && s.Prescription.Status == PrescriptionStatus.Active);
         var schedulePagination = await PortalPagination.CreateAsync(scheduleQuery, _db, schedulePage, "schedulePage");
         var schedules = await SqlReadRetry.RunAsync(_db, () => scheduleQuery.OrderBy(s => s.DoseTime).ThenBy(s => s.DisplayOrder).ThenBy(s => s.Id)
             .Skip(schedulePagination.Offset).Take(PortalPagination.Size)
@@ -101,9 +100,8 @@ public class MedicationsController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user is null) return Challenge();
 
-        var rx = await SqlReadRetry.RunAsync(_db, () => _db.Prescriptions.AsNoTracking().Include(p => p.Encounter)
-            .FirstOrDefaultAsync(p => p.Id == id && p.Patient.PortalUserId == user.Id
-                && (p.ClinicalEncounterId == null || p.Encounter!.PatientRecordId == p.PatientRecordId)));
+        var owned = await PrescriptionQueries.OwnedAsync(_db, user.Id, HttpContext.RequestAborted);
+        var rx = await SqlReadRetry.RunAsync(_db, () => owned.FirstOrDefaultAsync(p => p.Id == id));
 
         if (rx is null)
         {

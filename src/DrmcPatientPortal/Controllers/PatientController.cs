@@ -15,14 +15,16 @@ public class PatientController : Controller
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IAuditLogService _auditLog;
     private readonly PatientReportQueries _reports;
+    private readonly RedStarPatientService _redStar;
 
     public PatientController(ApplicationDbContext db, UserManager<ApplicationUser> userManager, IAuditLogService auditLog,
-        PatientReportQueries reports)
+        PatientReportQueries reports, RedStarPatientService redStar)
     {
         _db = db;
         _userManager = userManager;
         _auditLog = auditLog;
         _reports = reports;
+        _redStar = redStar;
     }
 
     public async Task<IActionResult> Home()
@@ -41,8 +43,8 @@ public class PatientController : Controller
 
         var visibleLabs = await _reports.LaboratoryPreviewAsync(user.Id, HttpContext.RequestAborted);
 
-        var activePrescriptions = await SqlReadRetry.RunAsync(_db, () => _db.Prescriptions
-            .CountAsync(p => p.Patient.PortalUserId == user.Id && p.Status == PrescriptionStatus.Active));
+        var ownedPrescriptions = await PrescriptionQueries.OwnedAsync(_db, user.Id, HttpContext.RequestAborted);
+        var activePrescriptions = await SqlReadRetry.RunAsync(_db, () => ownedPrescriptions.CountAsync(p => p.Status == PrescriptionStatus.Active));
 
         var model = new PatientDashboardViewModel
         {
@@ -55,6 +57,8 @@ public class PatientController : Controller
             EncountersCount = await SqlReadRetry.RunAsync(_db, () => _db.ClinicalEncounters.CountAsync(e => e.Patient.PortalUserId == user.Id)),
             LabResultsCount = visibleLabs.Total,
             ActivePrescriptionsCount = activePrescriptions,
+            RedStarEnrolled = (await _redStar.PortalStateAsync()).Enrolled,
+            RedStarRefill = await _redStar.NextRefillAsync(user.Id, HttpContext.RequestAborted),
             Departments = ClinicalDepartments.All,
         };
 
@@ -91,6 +95,8 @@ public class PatientController : Controller
 
 public class PatientDashboardViewModel
 {
+    public bool RedStarEnrolled { get; set; }
+    public RedStarRefillCard? RedStarRefill { get; set; }
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string ContactNumber { get; set; } = string.Empty;

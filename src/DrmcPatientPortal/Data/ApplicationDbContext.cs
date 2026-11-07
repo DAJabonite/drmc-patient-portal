@@ -378,7 +378,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<Prescription>(e =>
         {
-            e.Property(x => x.RouteOfAdministration).HasMaxLength(32);
+            foreach (var name in new[] { nameof(Prescription.FrequencyValue), nameof(Prescription.DosePerIntake), nameof(Prescription.PrescribedQuantity), nameof(Prescription.DispensedQuantity) })
+                e.Property<decimal?>(name).HasPrecision(18, 4);
+            e.Property(x => x.ServedDate).HasColumnType("date");
+            e.Property(x => x.NextRefillDate).HasColumnType("date");
+            e.HasOne(x => x.RedStarEnrollment).WithMany().HasForeignKey(x => x.RedStarEnrollmentId).OnDelete(DeleteBehavior.NoAction);
             e.HasOne(x => x.Encounter).WithMany(x => x.Prescriptions)
                 .HasForeignKey(x => x.ClinicalEncounterId).OnDelete(DeleteBehavior.NoAction);
             e.HasIndex(x => x.ClinicalEncounterId);
@@ -389,6 +393,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             e.HasIndex(x => x.PatientRecordId);
             e.HasIndex(x => x.RxNumber).IsUnique();
+            e.HasIndex(x => new { x.IsRedStar, x.FulfillmentStatus, x.NextRefillDate });
         });
 
         builder.Entity<MedicationDoseSchedule>(e =>

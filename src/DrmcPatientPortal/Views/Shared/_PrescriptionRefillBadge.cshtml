@@ -1,0 +1,13 @@
+@model Prescription
+@using DrmcPatientPortal.Services
+@if (Model.IsRedStar)
+{
+    var active = Model.Status == PrescriptionStatus.Active;
+    var days = active && Model.NextRefillDate.HasValue ? (Model.NextRefillDate.Value.Date - ClinicalClock.Today).Days : (int?)null;
+    <span class="tagubilin-refill badge @(days < 0 ? "bg-danger" : days <= 7 ? "bg-warning text-dark" : "bg-danger-subtle text-danger")" data-testid="refill-countdown">
+        @if (!active) { @Loc["Rx_Status_" + Model.Status] }
+        else if (days.HasValue)
+        { @(days < 0 ? Loc["RS_OverdueDays", -days.Value] : days == 0 ? Loc["RS_DueToday"] : Loc["RS_InDays", days.Value]) }
+        else { @Loc[Model.FulfillmentStatus == PrescriptionFulfillmentStatus.Prescribed ? "Rx_NotServed" : "Rx_NoCalculatedRefill"] }
+    </span>
+}

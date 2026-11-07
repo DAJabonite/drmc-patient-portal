@@ -46,7 +46,7 @@ public static class StaffRoles
 public static class AdminPolicies
 {
     public const string Admin = "AdminAccess", Lab = "LabStaffAccess", Radiology = "RadiologyStaffAccess", Console = "StaffConsoleAccess",
-        PatientServices = "PatientServicesAccess", RedStar = "RedStarAccess";
+        PatientServices = "PatientServicesAccess", RedStar = "RedStarAccess", Prescriptions = "PrescriptionStaffAccess";
 
     public static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> Roles = new Dictionary<string, IReadOnlyList<string>>
     {
@@ -55,6 +55,7 @@ public static class AdminPolicies
         [Radiology] = [StaffRoles.Admin, StaffRoles.Radiology],
         [PatientServices] = [StaffRoles.Admin, StaffRoles.PatientServices],
         [RedStar] = [StaffRoles.RedStar],
+        [Prescriptions] = [StaffRoles.Admin, StaffRoles.RedStar],
         [Console] = [StaffRoles.Admin, StaffRoles.Lab, StaffRoles.Radiology, StaffRoles.PatientServices, StaffRoles.RedStar],
     };
 
@@ -69,6 +70,7 @@ public static class AdminPolicies
         ["RedStar"] = RedStar,
         ["RedStarImports"] = RedStar,
         ["RedStarLabReports"] = RedStar,
+        ["Prescriptions"] = Prescriptions,
     };
 
     public static string For(string? controller) => controller is not null && Controllers.TryGetValue(controller, out var policy) ? policy : Admin;
@@ -78,7 +80,7 @@ public static class AdminPolicies
     public static void Register(AuthorizationOptions options)
     {
         options.AddPolicy(Admin, policy => policy.RequireAuthenticatedUser().RequireRole(StaffRoles.Admin).AddRequirements(new AdminRequirement()));
-        foreach (var name in new[] { Lab, Radiology, PatientServices, RedStar, Console })
+        foreach (var name in new[] { Lab, Radiology, PatientServices, RedStar, Prescriptions, Console })
             options.AddPolicy(name, policy => policy.RequireAuthenticatedUser().AddRequirements(new StaffRequirement(Roles[name])));
     }
 }
