@@ -1,5 +1,9 @@
 @model RedStarUploadPage
-@{ ViewData["Title"] = "OHASIS requests and PDFs"; var input = Model.Input; }
+@{
+    ViewData["Title"] = "OHASIS requests and PDFs";
+    var input = Model.Input;
+    var encountersById = Model.Encounters.ToDictionary(e => e.Id);
+}
 <h1 class="h3">OHASIS requests and PDFs</h1>
 <p>@Model.Clinic.PatientCode · @Model.Hospital.FullName · @Model.Hospital.HospitalNumber</p>
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
@@ -12,7 +16,7 @@ else
 <form asp-action="Upload" asp-route-id="@Model.Clinic.Id" method="post" enctype="multipart/form-data" id="private-lab-upload">
     <input name="PatientVersion" type="hidden" value="@input.PatientVersion" />
     <div class="card card-body mb-3"><div class="row g-3">
-        <div class="col-md-6"><label for="private-encounter" class="form-label">Encounter Reference</label><select id="private-encounter" name="ClinicalEncounterId" required class="form-select"><option value="">Select the originating encounter</option>@foreach (var encounter in Model.Encounters) { <option value="@encounter.Id" selected="@(encounter.Id == input.ClinicalEncounterId)">@encounter.EncounterReference · @encounter.EncounterDate.ToString("MMM d, yyyy") · @encounter.Department</option> }</select></div>
+        <div class="col-md-6"><label for="private-encounter" class="form-label">@Loc["Enc_CaseReference"]</label><select id="private-encounter" name="ClinicalEncounterId" required class="form-select"><option value="">@Loc["Enc_SelectPatientEncounter"]</option>@foreach (var encounter in Model.Encounters) { <option value="@encounter.Id" selected="@(encounter.Id == input.ClinicalEncounterId)">@encounter.EncounterReference · @encounter.EncounterDate.ToString("MMM d, yyyy") · @encounter.Department</option> }</select></div>
         <div class="col-md-6"><label for="private-test-date" class="form-label">Actual test date (Manila)</label><input id="private-test-date" name="CollectedAt" type="date" max="@DrmcPatientPortal.Services.ClinicalClock.Today.ToString("yyyy-MM-dd")" value="@input.CollectedAt?.ToString("yyyy-MM-dd")" class="form-control" /><p class="small text-muted">Required for PDFs. Leave empty for a request made before testing.</p></div>
         <div class="col-md-6"><label for="private-status" class="form-label">Uploaded report status</label><select id="private-status" name="Status" class="form-select">@foreach (var status in new[] { "In progress", "Pending Verification", "Available" }) { <option selected="@(input.Status == status)">@status</option> }</select></div>
         <div class="col-md-6"><label for="private-release" class="form-label">Released at (Manila)</label><input id="private-release" name="ReleasedAt" type="datetime-local" value="@input.ReleasedAt?.ToString("yyyy-MM-ddTHH:mm")" class="form-control" /></div>
@@ -26,7 +30,11 @@ else
             <label for="private-pending-@i" class="form-label">Existing pending request (optional)</label>
             <select id="private-pending-@i" name="Rows[@i].PendingRequestId" class="form-select mb-2 private-pending-select">
                 <option value="">Create a new request or report</option>
-                @foreach (var pending in Model.Pending) { <option value="@pending.Id" data-version="@Convert.ToBase64String(pending.RowVersion)" data-description="@pending.Description" selected="@(pending.Id == row.PendingRequestId)">#@pending.Id · @pending.Description · Encounter #@pending.ClinicalEncounterId</option> }
+                @foreach (var pending in Model.Pending)
+                {
+                    if (!encountersById.TryGetValue(pending.ClinicalEncounterId, out var originatingEncounter)) continue;
+                    <option value="@pending.Id" data-version="@Convert.ToBase64String(pending.RowVersion)" data-description="@pending.Description" selected="@(pending.Id == row.PendingRequestId)">#@pending.Id · @pending.Description · @originatingEncounter.EncounterReference · @originatingEncounter.EncounterDate.ToString("MMM d, yyyy")</option>
+                }
             </select>
             <input name="Rows[@i].RowVersion" value="@row.RowVersion" type="hidden" class="private-request-version" />
             <label for="private-description-@i" class="form-label">Exam description</label><input id="private-description-@i" name="Rows[@i].Description" value="@row.Description" maxlength="200" list="private-exam-types" class="form-control mb-2 private-request-description" />
