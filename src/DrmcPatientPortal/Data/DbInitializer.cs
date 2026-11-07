@@ -1,3 +1,4 @@
+using DrmcPatientPortal.Areas.Admin.Models;
 using DrmcPatientPortal.Models;
 using DrmcPatientPortal.Services;
 using Microsoft.AspNetCore.Identity;
@@ -11,6 +12,13 @@ namespace DrmcPatientPortal.Data;
 // Existing rows are retained so repeated Development startup does not reset accounts or patient data.
 public static class DbInitializer
 {
+    private const string PrimaryFixtureUserId = "drmc-development-patient";
+    private const string PrimaryFixtureFirstName = "Maria Clara";
+    private const string PrimaryFixtureMiddleName = "D.";
+    private const string PrimaryFixtureLastName = "Santos";
+    private const string PrimaryFixtureFullName = PrimaryFixtureFirstName + " " + PrimaryFixtureMiddleName + " " + PrimaryFixtureLastName;
+    private const string PrimaryFixtureHospitalNumber = "DEMO-HRN-001";
+
     public static void Initialize(ApplicationDbContext db, UserManager<ApplicationUser> userManager,
         IConfiguration configuration, TimeProvider? clock = null)
     {
@@ -20,6 +28,7 @@ public static class DbInitializer
         InitializeFixtureAccounts(db, userManager, configuration, now);
         InitializeGeneralFixtures(db, ClinicalClock.WallTime(now));
         InitializeRedStarFixtures(db, now);
+        InitializeDemoRefill(db, now);
         transaction.Commit();
     }
 
@@ -354,7 +363,7 @@ public static class DbInitializer
         }
 
         // 3. Patient-owned example records for the current dashboard, Visits, Labs, and Medications.
-        var primary = db.Users.FirstOrDefault(u => u.Id == "drmc-development-patient");
+        var primary = db.Users.FirstOrDefault(u => u.Id == PrimaryFixtureUserId);
         if (primary is not null)
         {
             if (string.IsNullOrWhiteSpace(primary.FirstName) || string.IsNullOrWhiteSpace(primary.LastName))
@@ -751,11 +760,10 @@ public static class DbInitializer
         var emptyPassword = Required("DevelopmentFixtures:Empty:Password");
 
         // Reviewer accounts. Production authentication and identity proofing require DRMC policy.
-        const string primaryFixtureUserId = "drmc-development-patient";
         const string secondFixtureUserId = "drmc-development-juan";
         var seededUsers = new List<(string id, string email, string password, string firstName, string? middleName, string lastName, string contact, string idType, string idNumber)>
         {
-            (primaryFixtureUserId, primaryEmail, primaryPassword, "Maria Clara", "D.", "Santos", "0917 123 4567", "Philippine National ID (PhilSys)", "1234-5678-9012-3456"),
+            (PrimaryFixtureUserId, primaryEmail, primaryPassword, PrimaryFixtureFirstName, PrimaryFixtureMiddleName, PrimaryFixtureLastName, "0917 123 4567", "Philippine National ID (PhilSys)", "1234-5678-9012-3456"),
             (secondFixtureUserId, emptyEmail, emptyPassword, "Juan Miguel", "A.", "Dela Cruz", "0918 765 4321", "PhilHealth ID", "12-345678901-2"),
         };
 
@@ -795,7 +803,7 @@ public static class DbInitializer
         // Entirely fictional demonstration records; never copy rows from a clinic workbook.
         var today = ClinicalClock.WallTime(now).Date;
         var monthStart = new DateTime(today.Year, today.Month, 1);
-        string[] names = ["Maria Clara D. Santos", "Rafael Mendoza", "Isabel Navarro", "Paolo Villanueva",
+        string[] names = [PrimaryFixtureFullName, "Rafael Mendoza", "Isabel Navarro", "Paolo Villanueva",
             "Camille Reyes", "Adrian Bautista", "Elena Mercado", "Marco Salazar", "Nina Castillo",
             "Gabriel Ramos", "Sofia Aguilar", "Luis Fernandez", "Mikaela Torres", "Daniel Flores",
             "Bianca Domingo", "Carlo Santiago", "Teresa Valdez", "Emilio Pascual", "Clara Gutierrez",
@@ -810,7 +818,7 @@ public static class DbInitializer
         var indexes = codes.Select(db.Phi.PatientCodeIndex).ToArray();
         var existing = db.RedStarPatients.Where(p => indexes.Contains(p.PatientCodeBlindIndex!))
             .Select(p => p.PatientCodeBlindIndex!).ToHashSet(StringComparer.Ordinal);
-        var primary = db.Users.Single(u => u.Id == "drmc-development-patient");
+        var primary = db.Users.Single(u => u.Id == PrimaryFixtureUserId);
         var primaryIndex = db.Phi.AccountIndex(primary.Id);
         var primaryAlreadyLinked = db.RedStarPatients.Any(p => p.PortalUserIdBlindIndex == primaryIndex);
         var histories = new List<(RedStarAppointment Appointment, RedStarDispense Dispense)>();
@@ -849,7 +857,7 @@ public static class DbInitializer
                 RemindersVerified = true, Label = "Fictional demo medicine pickup"
             };
             enrollment.Appointments.Add(pickup);
-            if (active)
+            if (active && i != 0)
                 enrollment.Appointments.Add(new RedStarAppointment
                 {
                     Enrollment = enrollment, Kind = RedStarAppointmentKind.Refill,
@@ -871,6 +879,90 @@ public static class DbInitializer
             dispense.AppointmentId = appointment.Id;
             db.RedStarDispenses.Add(dispense);
         }
+        db.SaveChanges();
+    }
+
+    private static void InitializeDemoRefill(ApplicationDbContext db, DateTimeOffset now)
+    {
+        const string rxNumber = "DEMO-RX-001";
+        const string encounterReference = "DEMO-ENC-001";
+        const int supplyDays = 30;
+        if (db.Prescriptions.Any(p => p.RxNumber == rxNumber)) return;
+
+        var codeIndex = db.Phi.PatientCodeIndex("RS-DEMO-001");
+        var accountIndex = db.Phi.AccountIndex(PrimaryFixtureUserId);
+        var enrollment = db.RedStarEnrollments.Include(e => e.Patient).SingleOrDefault(e =>
+            e.Program == RedStarProgram.ART && e.Status == RedStarStatus.Active &&
+            e.Patient.PatientCodeBlindIndex == codeIndex && e.Patient.PortalUserIdBlindIndex == accountIndex);
+        if (enrollment is null || db.Prescriptions.Any(p => p.RedStarEnrollmentId == enrollment.Id)) return;
+
+        var clinic = enrollment.Patient;
+        var hospital = db.PatientRecords.SingleOrDefault(p => p.PortalUserId == PrimaryFixtureUserId);
+        var hasVerifiedMapping = hospital is not null && RedStarReportAccess.MappingValid(clinic, hospital);
+        // Only backfill stock synthetic identities. Keep an existing mapping or identity edit as entered by staff.
+        if (!hasVerifiedMapping)
+        {
+            if (clinic.HospitalPatientRecordId.HasValue || clinic.HospitalMappingVerifiedAtUtc.HasValue ||
+                clinic.HospitalMappingFingerprint is not null || clinic.FullName != PrimaryFixtureFullName ||
+                clinic.HospitalNumber != PrimaryFixtureHospitalNumber) return;
+            if (hospital is not null && (hospital.FirstName != PrimaryFixtureFirstName || hospital.MiddleName != PrimaryFixtureMiddleName ||
+                hospital.LastName != PrimaryFixtureLastName || !string.IsNullOrEmpty(hospital.Suffix) ||
+                hospital.HasHospitalNumber && hospital.HospitalNumber != PrimaryFixtureHospitalNumber)) return;
+            if (db.PatientRecords.Any(p => p.HospitalNumber == PrimaryFixtureHospitalNumber && p.PortalUserId != PrimaryFixtureUserId) ||
+                hospital is not null && db.RedStarPatients.Any(p => p.Id != clinic.Id && p.HospitalPatientRecordId == hospital.Id)) return;
+        }
+
+        var today = ClinicalClock.WallTime(now).Date;
+        var servedDate = today.AddDays(RedStarReminderService.ReminderWindowDays - supplyDays);
+        var encounter = db.ClinicalEncounters.SingleOrDefault(e => e.EncounterReference == encounterReference);
+        if (encounter is not null && (encounter.PatientRecordId != hospital?.Id || encounter.EncounterDate != servedDate)) return;
+
+        if (hospital is null)
+        {
+            hospital = new PatientRecord { PortalUserId = PrimaryFixtureUserId, FirstName = PrimaryFixtureFirstName,
+                MiddleName = PrimaryFixtureMiddleName, LastName = PrimaryFixtureLastName };
+            db.PatientRecords.Add(hospital);
+        }
+        if (encounter is null)
+        {
+            encounter = new ClinicalEncounter { Patient = hospital, EncounterReference = encounterReference,
+                EncounterDate = servedDate, Department = "Internal Medicine", AttendingPhysician = "Dr. Arthur Llanos, MD, FPCP",
+                Type = EncounterType.OpdConsultation };
+            db.ClinicalEncounters.Add(encounter);
+        }
+        if (!hasVerifiedMapping)
+        {
+            hospital.HospitalNumber = PrimaryFixtureHospitalNumber;
+            hospital.DateOfBirth ??= new DateTime(1988, 4, 12);
+            db.SaveChanges();
+            clinic.HospitalPatientRecordId = hospital.Id;
+            clinic.HospitalMappingVerifiedAtUtc = now.UtcDateTime;
+            clinic.HospitalMappingFingerprint = RedStarReportAccess.Fingerprint(clinic, hospital);
+        }
+
+        var regimen = new PrescriptionInput { FulfillmentStatus = PrescriptionFulfillmentStatus.Served,
+            FrequencyMode = PrescriptionFrequencyMode.TimesPerDay, FrequencyValue = 1, DosePerIntake = 1, DoseUnit = "tablet",
+            DurationCount = supplyDays, DurationUnit = PrescriptionDurationUnit.Days, DispensedQuantity = supplyDays,
+            PrescribedAt = servedDate, ServedDate = servedDate };
+        var calculation = PrescriptionCalculations.Calculate(regimen, today);
+        if (calculation.NextRefillDate is not DateTime refillDate)
+            throw new InvalidOperationException("The fictional demo refill could not be calculated.");
+        var prescription = new Prescription
+        {
+            Patient = hospital, Encounter = encounter, RedStarEnrollmentId = enrollment.Id, IsRedStar = true,
+            RxNumber = rxNumber, GenericName = "Tenofovir / Lamivudine / Dolutegravir", Dosage = "One tablet",
+            DosageForm = "Tablet", RouteOfAdministration = "Oral", Frequency = "Once daily",
+            Instructions = "Fictional fixture. Take one tablet daily.", Department = encounter.Department,
+            PrescribingDoctor = encounter.AttendingPhysician, PrescribedAt = servedDate, ServedDate = servedDate,
+            ValidUntil = refillDate, NextRefillDate = refillDate, Status = PrescriptionStatus.Active,
+            FulfillmentStatus = regimen.FulfillmentStatus, FrequencyMode = regimen.FrequencyMode, FrequencyValue = regimen.FrequencyValue,
+            DosePerIntake = regimen.DosePerIntake, DoseUnit = regimen.DoseUnit, DurationCount = regimen.DurationCount,
+            DurationUnit = regimen.DurationUnit, PrescribedQuantity = calculation.Quantity, DispensedQuantity = regimen.DispensedQuantity,
+            RefillsTotal = 0, RefillsRemaining = 0
+        };
+        db.Prescriptions.Add(prescription);
+        db.SaveChanges();
+        PrescriptionRefills.SynchronizeAsync(db, prescription).GetAwaiter().GetResult();
         db.SaveChanges();
     }
 }

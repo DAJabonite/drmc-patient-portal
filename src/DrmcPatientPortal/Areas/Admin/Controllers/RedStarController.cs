@@ -45,7 +45,7 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
             ["week"] = await all.CountAsync(e => refills.Any(a => a.EnrollmentId == e.Id && a.DueDate >= today && a.DueDate <= end), cancellationToken),
             ["overdue"] = await all.CountAsync(e => refills.Any(a => a.EnrollmentId == e.Id && a.DueDate < today), cancellationToken),
             ["followup"] = await all.CountAsync(e => e.Program == RedStarProgram.ART && refills.Any(a => a.EnrollmentId == e.Id && a.DueDate <= followupCutoff), cancellationToken),
-            ["verification"] = await all.CountAsync(e => e.Status == RedStarStatus.AwaitingVerification || e.Appointments.Any(a => a.Kind != RedStarAppointmentKind.Refill && a.State == RedStarAppointmentState.Scheduled && !a.RemindersVerified), cancellationToken),
+            ["verification"] = await VerificationQueue(all).CountAsync(cancellationToken),
             ["requests"] = await all.CountAsync(e => db.RedStarRescheduleRequests.Any(r => r.Appointment.EnrollmentId == e.Id && r.Appointment.Kind != RedStarAppointmentKind.Refill && r.State == RedStarRequestState.Pending), cancellationToken),
             ["living"] = summary.LivingCount,
             ["expired"] = summary.ExpiredThisMonthCount
@@ -114,8 +114,9 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
             else if (!int.TryParse(month, NumberStyles.None, CultureInfo.InvariantCulture, out selectedMonth)) return false;
         }
         if (selectedYear is < 1900 or > 2200 || selectedMonth is < 1 or > 12) return false;
-        filters = new(search, worklist, program, status == RedStarRegistryStatusFilter.Deceased ? RedStarRegistryStatusFilter.Expired : status,
-            new DateTime(selectedYear, selectedMonth, 1));
+        if (status == RedStarRegistryStatusFilter.Deceased) status = RedStarRegistryStatusFilter.Expired;
+        if (worklist == "all") status ??= RedStarRegistryStatusFilter.Active;
+        filters = new(search, worklist, program, status, new DateTime(selectedYear, selectedMonth, 1));
         return true;
     }
 
@@ -123,8 +124,9 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
     {
         var all = db.RedStarEnrollments.AsNoTracking();
         var monthEnd = monthStart.AddMonths(1);
-        var active = await all.CountAsync(e => e.Status == RedStarStatus.Active, cancellationToken);
-        var living = await all.CountAsync(e => e.Program == RedStarProgram.ART && e.Status == RedStarStatus.Active, cancellationToken);
+        var coded = WithPatientCode(all).Where(e => e.Status == RedStarStatus.Active);
+        var active = await coded.CountAsync(cancellationToken);
+        var living = await coded.CountAsync(e => e.Program == RedStarProgram.ART, cancellationToken);
         var expired = await all.CountAsync(e => e.Status == RedStarStatus.Deceased && e.StatusDate >= monthStart && e.StatusDate < monthEnd, cancellationToken);
         return new(active, living, expired, monthStart);
     }
@@ -143,12 +145,14 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
             "week" => all.Where(e => refills.Any(a => a.EnrollmentId == e.Id && a.DueDate >= today && a.DueDate <= end)),
             "overdue" => all.Where(e => refills.Any(a => a.EnrollmentId == e.Id && a.DueDate < today)),
             "followup" => all.Where(e => e.Program == RedStarProgram.ART && refills.Any(a => a.EnrollmentId == e.Id && a.DueDate <= followupCutoff)),
-            "verification" => all.Where(e => e.Status == RedStarStatus.AwaitingVerification || e.Appointments.Any(a => a.Kind != RedStarAppointmentKind.Refill && a.State == RedStarAppointmentState.Scheduled && !a.RemindersVerified)),
+            "verification" => VerificationQueue(all),
             "requests" => all.Where(e => db.RedStarRescheduleRequests.Any(r => r.Appointment.EnrollmentId == e.Id && r.Appointment.Kind != RedStarAppointmentKind.Refill && r.State == RedStarRequestState.Pending)),
             "expired" => all.Where(e => e.Status == RedStarStatus.Deceased && e.StatusDate >= monthStart && e.StatusDate < monthEnd),
             _ => all
         };
         if (filters.Program.HasValue) query = query.Where(e => e.Program == filters.Program);
+        if (filters.Status is RedStarRegistryStatusFilter.Active or RedStarRegistryStatusFilter.Living)
+            query = WithPatientCode(query);
         if (filters.Status == RedStarRegistryStatusFilter.Living)
             query = query.Where(e => e.Program == RedStarProgram.ART && e.Status == RedStarStatus.Active);
         else if (filters.Status == RedStarRegistryStatusFilter.Expired)
@@ -161,17 +165,35 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
         return query;
     }
 
+    private IQueryable<RedStarEnrollment> WithPatientCode(IQueryable<RedStarEnrollment> query)
+    {
+        var blankCodeIndex = db.Phi.PatientCodeIndex("");
+        return query.Where(e => e.Patient.PatientCodeBlindIndex != null && e.Patient.PatientCodeBlindIndex != blankCodeIndex);
+    }
+
+    private IQueryable<RedStarEnrollment> VerificationQueue(IQueryable<RedStarEnrollment> query)
+    {
+        var blankCodeIndex = db.Phi.PatientCodeIndex("");
+        return query.Where(e => e.Status == RedStarStatus.AwaitingVerification ||
+            e.Status == RedStarStatus.Active && (e.Patient.PatientCodeBlindIndex == null || e.Patient.PatientCodeBlindIndex == blankCodeIndex) ||
+            e.Appointments.Any(a => a.Kind != RedStarAppointmentKind.Refill && a.State == RedStarAppointmentState.Scheduled && !a.RemindersVerified));
+    }
+
     private IQueryable<RedStarRegistryRow> RegistryProjection(IQueryable<RedStarEnrollment> query, DateTime today)
     {
         var refills = OutstandingRefills();
         var followupCutoff = MonthOverdueCutoff(today);
-        return query.Select(e => new RedStarRegistryRow(e.Id, e.PatientId, e.Patient.PatientCode, e.Patient.CodeName, e.Program, e.Status,
+        return query.Select(e => new RedStarRegistryRow(e.Id, e.PatientId, e.Patient.PatientCode, e.Patient.CodeName,
+                e.Patient.FullName, e.Patient.HospitalNumber, e.Program, e.Status,
                 refills.Where(a => a.EnrollmentId == e.Id).OrderBy(a => a.DueDate).ThenBy(a => a.Id)
                     .Select(a => (DateTime?)a.DueDate).FirstOrDefault(),
                 db.RedStarRescheduleRequests.Count(r => r.Appointment.EnrollmentId == e.Id && r.Appointment.Kind != RedStarAppointmentKind.Refill && r.State == RedStarRequestState.Pending),
                 e.Program == RedStarProgram.ART && refills.Any(a => a.EnrollmentId == e.Id && a.DueDate <= followupCutoff),
                 refills.Where(a => a.EnrollmentId == e.Id).OrderBy(a => a.DueDate).ThenBy(a => a.Id)
-                    .Select(a => (bool?)a.RemindersVerified).FirstOrDefault(), e.StatusDate));
+                    .Select(a => (bool?)a.RemindersVerified).FirstOrDefault(), e.StatusDate,
+                refills.Where(a => a.EnrollmentId == e.Id).OrderBy(a => a.DueDate).ThenBy(a => a.Id)
+                    .Select(a => a.ConfirmedUtc).FirstOrDefault(),
+                refills.Count(a => a.EnrollmentId == e.Id && a.ConfirmedUtc.HasValue)));
     }
 
     private async Task<List<RedStarRegistryRow>> RegistryRowsAsync(RegistryFilters filters, DateTime today, CancellationToken cancellationToken)
@@ -220,7 +242,7 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
         return View(new RedStarEnrollmentInput
         {
             PatientCode = patient.PatientCode, CodeName = patient.CodeName, FullName = patient.FullName,
-            HospitalNumber = patient.HospitalNumber, Address = patient.Address, ContactNumber = patient.ContactNumber,
+            HospitalNumber = patient.HospitalNumber ?? "", Address = patient.Address, ContactNumber = patient.ContactNumber,
             PatientVersion = Version(patient.RowVersion), EnrolledDate = ClinicalClock.Today
         });
     }
@@ -248,6 +270,9 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
             {
                 patient = await database.RedStarPatients.SingleOrDefaultAsync(p => p.Id == patientId, cancellationToken);
                 if (patient is null || !Matches(patient.RowVersion, input.PatientVersion)) return WriteResult.Stale;
+                if (string.IsNullOrWhiteSpace(patient.PatientCode) || string.IsNullOrWhiteSpace(patient.HospitalNumber) ||
+                    string.IsNullOrWhiteSpace(patient.CodeName))
+                    return WriteResult.Invalid("Enter the missing HRN, patient code or code name on the existing enrollment before adding another program.");
                 if (await database.RedStarEnrollments.AnyAsync(e => e.PatientId == patientId && e.Program == input.Program, cancellationToken))
                     return WriteResult.Invalid("This patient already has an enrollment in that program. Update its existing record.");
             }
@@ -279,8 +304,10 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
             p.PatientRecordId == p.RedStarEnrollment!.Patient.HospitalPatientRecordId && p.RedStarEnrollment.Program != RedStarProgram.Unverified);
         var hospital = enrollment.Patient.HospitalPatientRecordId.HasValue
             ? await db.PatientRecords.AsNoTracking().SingleOrDefaultAsync(p => p.Id == enrollment.Patient.HospitalPatientRecordId, cancellationToken) : null;
-        if (hospital is null || !RedStarReportAccess.MappingValid(enrollment.Patient, hospital)) prescriptions = prescriptions.Where(p => false);
-        ViewData["HospitalPatientRecordId"] = hospital is not null && RedStarReportAccess.MappingValid(enrollment.Patient, hospital) ? hospital.Id : null;
+        var mapped = hospital is not null && RedStarReportAccess.MappingValid(enrollment.Patient, hospital);
+        if (!mapped) prescriptions = prescriptions.Where(p => false);
+        ViewData["HospitalPatientRecordId"] = mapped ? hospital!.Id : null;
+        var currentRefills = PrescriptionRefills.EligibleQuery(db).Where(a => a.EnrollmentId == id);
         var requests = db.RedStarRescheduleRequests.AsNoTracking().Include(r => r.Appointment).Where(r => r.Appointment.EnrollmentId == id && r.Appointment.Kind != RedStarAppointmentKind.Refill);
         var appointmentTotal = await appointments.CountAsync(cancellationToken);
         var historyTotal = await prescriptions.CountAsync(cancellationToken);
@@ -290,7 +317,11 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
             await appointments.OrderBy(a => a.State != RedStarAppointmentState.Scheduled).ThenBy(a => a.DueDate).ThenBy(a => a.Id)
                 .Skip((appointmentPage - 1) * PageSize).Take(PageSize).ToListAsync(cancellationToken),
             await prescriptions.OrderByDescending(p => p.PrescribedAt).ThenByDescending(p => p.Id)
-                .Skip((historyPage - 1) * PageSize).Take(PageSize).ToListAsync(cancellationToken),
+                .Skip((historyPage - 1) * PageSize).Take(PageSize)
+                .Select(p => new RedStarPrescriptionHistoryRow(p,
+                    currentRefills.Where(a => a.PrescriptionId == p.Id).Select(a => (DateTime?)a.DueDate).FirstOrDefault(),
+                    currentRefills.Where(a => a.PrescriptionId == p.Id).Select(a => a.ConfirmedUtc).FirstOrDefault()))
+                .ToListAsync(cancellationToken),
             await requests.OrderBy(r => r.State != RedStarRequestState.Pending).ThenByDescending(r => r.CreatedUtc).ThenByDescending(r => r.Id)
                 .Skip((requestPage - 1) * PageSize).Take(PageSize).ToListAsync(cancellationToken),
             appointmentPage, appointmentTotal, historyPage, historyTotal, requestPage, requestTotal);
@@ -308,7 +339,7 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
         return View(new RedStarEnrollmentInput
         {
             PatientCode = enrollment.Patient.PatientCode, CodeName = enrollment.Patient.CodeName, FullName = enrollment.Patient.FullName,
-            HospitalNumber = enrollment.Patient.HospitalNumber, ContactNumber = enrollment.Patient.ContactNumber, Address = enrollment.Patient.Address,
+            HospitalNumber = enrollment.Patient.HospitalNumber ?? "", ContactNumber = enrollment.Patient.ContactNumber, Address = enrollment.Patient.Address,
             Program = enrollment.Program, Status = enrollment.Status, EnrolledDate = enrollment.EnrolledDate, StartDate = enrollment.StartDate,
             StatusDate = enrollment.StatusDate, ReceivingHub = enrollment.ReceivingHub,
             PatientVersion = Version(enrollment.Patient.RowVersion), EnrollmentVersion = Version(enrollment.RowVersion)
@@ -532,18 +563,20 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
         var currentRefillIds = OutstandingRefills().Select(a => a.Id);
         var total = await query.CountAsync(cancellationToken); page = Page(page, total);
         var rows = await query.OrderByDescending(r => r.CreatedUtc).ThenBy(r => r.Id).Skip((page - 1) * PageSize).Take(PageSize)
-            .Select(r => new RedStarDeliveryRow(r.Id, r.Appointment.Enrollment.Patient.PatientCode, r.Appointment.DueDate, r.Stage,
+            .Select(r => new RedStarDeliveryRow(r.Id, r.Appointment.EnrollmentId, r.Appointment.Enrollment.Patient.PatientCode,
+                r.Appointment.Enrollment.Patient.FullName, r.Appointment.Enrollment.Patient.HospitalNumber, r.Appointment.DueDate, r.Stage,
                 r.Channel, r.State, r.Attempts, r.CreatedUtc, r.CompletedUtc,
-                 currentRefillIds.Contains(r.AppointmentId) &&
+                currentRefillIds.Contains(r.AppointmentId) &&
                 r.Appointment.Enrollment.Status == RedStarStatus.Active && r.Appointment.Enrollment.Program != RedStarProgram.Unverified &&
                 r.AppointmentRevision == r.Appointment.Revision && r.State != RedStarDeliveryState.Cancelled &&
                 r.PortalUserIdBlindIndex != null && r.PortalUserIdBlindIndex == r.Appointment.Enrollment.Patient.PortalUserIdBlindIndex,
-                r.Appointment.RemindersVerified)).ToListAsync(cancellationToken);
+                r.Appointment.RemindersVerified, r.Appointment.ConfirmedUtc)).ToListAsync(cancellationToken);
         var refills = OutstandingRefills();
         var refillTotal = await refills.CountAsync(cancellationToken); refillPage = Page(refillPage, refillTotal);
         var refillRows = await refills.OrderBy(a => a.DueDate).ThenBy(a => a.Id).Skip((refillPage - 1) * PageSize).Take(PageSize)
             .Select(a => new RedStarRefillWorklistRow(a.EnrollmentId, a.Enrollment.Patient.PatientCode,
-                a.Enrollment.Patient.CodeName, a.DueDate, a.RemindersVerified)).ToListAsync(cancellationToken);
+                a.Enrollment.Patient.FullName, a.Enrollment.Patient.HospitalNumber, a.DueDate, a.RemindersVerified, a.ConfirmedUtc))
+            .ToListAsync(cancellationToken);
         await RedStarAuditTrail.RecordAsync(db, Actor, "View delivery status", "Deliveries", cancellationToken);
         return View(new RedStarDeliveriesPage(rows, page, total, refillRows, refillPage, refillTotal, ClinicalClock.Today));
     }
@@ -604,8 +637,8 @@ public sealed class RedStarController(ApplicationDbContext db, AdminWrites write
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     private static void ApplyPatient(RedStarEnrollmentInput input, RedStarPatient patient)
     {
-        patient.PatientCode = input.PatientCode.Trim(); patient.CodeName = input.CodeName?.Trim() ?? ""; patient.FullName = input.FullName.Trim();
-        patient.HospitalNumber = Clean(input.HospitalNumber); patient.Address = Clean(input.Address); patient.ContactNumber = Clean(input.ContactNumber);
+        patient.PatientCode = input.PatientCode.Trim(); patient.CodeName = input.CodeName.Trim(); patient.FullName = input.FullName.Trim();
+        patient.HospitalNumber = input.HospitalNumber.Trim(); patient.Address = Clean(input.Address); patient.ContactNumber = Clean(input.ContactNumber);
     }
     private static void ApplyEnrollment(RedStarEnrollmentInput input, RedStarEnrollment enrollment)
     {

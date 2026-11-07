@@ -5,7 +5,7 @@
     var existing = ViewData["PatientId"] is int patientId && patientId > 0;
     var selectedSheet = RedStarRegistryLayout.Find(Model.WorksheetLayout)
         ?? RedStarRegistryLayout.Find(RedStarRegistryLayout.SheetFor(Model.Program, Model.Status))!;
-    var optionalFields = new[] { "Address", "HospitalNumber", "CodeName", "EnrolledDate", "StartDate", "ContactNumber" };
+    var optionalFields = new[] { "Address", "EnrolledDate", "StartDate", "ContactNumber" };
 }
 <div data-redstar-enrollment>
     <div asp-validation-summary="All" class="text-danger mb-3" role="alert"></div>
@@ -24,6 +24,11 @@
         <p id="redstar-worksheet-description" class="small mb-0" data-registry-description role="status" aria-live="polite">Following the @selectedSheet.Name worksheet's supported column order.</p>
     </div>
     <p class="small text-muted mb-4">@Loc["Rx_RedStarEncodingHelp"]</p>
+    @if (existing && (string.IsNullOrWhiteSpace(Model.HospitalNumber) || string.IsNullOrWhiteSpace(Model.PatientCode)
+        || string.IsNullOrWhiteSpace(Model.CodeName)))
+    {
+        <p class="small text-muted">To fill in missing identity fields, edit the existing enrollment before adding another program.</p>
+    }
     <fieldset class="mb-4">
         <legend class="h5">Registry fields</legend>
         <div class="row g-3" data-registry-fields>
@@ -40,13 +45,16 @@
                                 <input asp-for="Address" class="form-control" readonly="@existing" autocomplete="off" />
                                 break;
                             case "HospitalNumber":
-                                <input asp-for="HospitalNumber" class="form-control" readonly="@existing" />
+                                <input asp-for="HospitalNumber" class="form-control" readonly="@existing" required="@(!existing)" pattern=".*\S.*" />
+                                <span asp-validation-for="HospitalNumber" class="text-danger"></span>
                                 break;
                             case "PatientCode":
-                                <input asp-for="PatientCode" class="form-control" readonly="@existing" />
+                                <input asp-for="PatientCode" class="form-control" readonly="@existing" required="@(!existing)" pattern=".*\S.*" />
+                                <span asp-validation-for="PatientCode" class="text-danger"></span>
                                 break;
                             case "CodeName":
-                                <input asp-for="CodeName" class="form-control" readonly="@existing" />
+                                <input asp-for="CodeName" class="form-control" readonly="@existing" required="@(!existing)" pattern=".*\S.*" />
+                                <span asp-validation-for="CodeName" class="text-danger"></span>
                                 break;
                             case "EnrolledDate":
                                 <input asp-for="EnrolledDate" type="date" class="form-control" />

@@ -6,12 +6,18 @@
 <h2 id="refill-worklist-heading" class="h5">Current medicine replenishment</h2>
 <p class="text-muted small">Outstanding refill dates remain visible here while notification delivery is disabled. Dates needing verification do not enable automatic reminders.</p>
 <div class="card"><div class="table-responsive" tabindex="0" role="region" aria-label="Current refill worklist"><table class="table align-middle mb-0">
-<thead><tr><th scope="col">Patient code</th><th scope="col">Code name</th><th scope="col">Refill due date</th><th scope="col">Replenishment</th></tr></thead><tbody>
+<thead><tr><th scope="col">Actual full name</th><th scope="col">Patient code</th><th scope="col">HRN</th><th scope="col">Refill due date</th><th scope="col">Replenishment</th></tr></thead><tbody>
 @foreach (var row in Model.Refills)
 {
-    <tr><td data-label="Patient code"><a asp-action="Details" asp-route-id="@row.EnrollmentId">@row.PatientCode</a></td><td data-label="Code name">@row.CodeName</td><td data-label="Refill due date">@row.DueDate.ToString("dd MMM yyyy")</td><td data-label="Replenishment"><partial name="_RefillBadge" model="@(new RedStarRefillBadge(row.DueDate, Model.Today, row.Verified))" /></td></tr>
+    <tr>
+        <td data-label="Actual full name"><a asp-action="Details" asp-route-id="@row.EnrollmentId">@row.FullName</a></td>
+        <td data-label="Patient code">@row.PatientCode</td>
+        <td data-label="HRN">@(row.HospitalNumber ?? "Not recorded")</td>
+        <td data-label="Refill due date">@row.DueDate.ToString("dd MMM yyyy")</td>
+        <td data-label="Replenishment"><partial name="_RefillBadge" model="@(new RedStarRefillBadge(row.DueDate, Model.Today, row.Verified, row.ConfirmedUtc))" /></td>
+    </tr>
 }
-@if (Model.Refills.Count == 0) { <tr><td colspan="4" class="text-muted p-4">No outstanding medicine refill schedules.</td></tr> }
+@if (Model.Refills.Count == 0) { <tr><td colspan="5" class="text-muted p-4">No outstanding medicine refill schedules.</td></tr> }
 </tbody></table></div></div>
 <nav aria-label="Refill worklist pages" class="d-flex justify-content-between align-items-center mt-3"><span class="small text-muted">@Model.RefillTotal refill appointments · page @Model.RefillPage of @refillPages</span><div class="d-flex gap-2">
 @if (Model.RefillPage > 1) { <a asp-action="Deliveries" asp-route-page="@Model.Page" asp-route-refillPage="@(Model.RefillPage - 1)" class="btn btn-outline-secondary btn-sm">Previous refills</a> }
@@ -19,12 +25,12 @@
 </div></nav>
 </section>
 <h2 class="h5">Notification delivery history</h2>
-<div class="card"><div class="table-responsive redstar-log-scroll" tabindex="0" role="region" aria-label="Scrollable Red Star delivery requests table"><table class="table mb-0"><thead><tr><th scope="col">Patient code</th><th scope="col">Scheduled date</th><th scope="col">Stage</th><th scope="col">Channel</th><th scope="col">Status</th><th scope="col">Attempts</th><th scope="col">Created (Philippines)</th><th scope="col">Completed</th></tr></thead><tbody>
-@foreach (var row in Model.Rows) { <tr><td data-label="Patient code">@row.PatientCode</td><td data-label="Scheduled date">@row.DueDate.ToString("dd MMM yyyy")
-    @if (row.Current) { <div class="mt-1"><partial name="_RefillBadge" model="@(new RedStarRefillBadge(row.DueDate, Model.Today, row.Verified))" /></div> }
+<div class="card"><div class="table-responsive redstar-log-scroll" tabindex="0" role="region" aria-label="Scrollable Red Star delivery requests table"><table class="table mb-0"><thead><tr><th scope="col">Actual full name</th><th scope="col">Patient code</th><th scope="col">HRN</th><th scope="col">Scheduled date</th><th scope="col">Stage</th><th scope="col">Channel</th><th scope="col">Status</th><th scope="col">Attempts</th><th scope="col">Created (Philippines)</th><th scope="col">Completed</th></tr></thead><tbody>
+@foreach (var row in Model.Rows) { <tr><td data-label="Actual full name"><a asp-action="Details" asp-route-id="@row.EnrollmentId">@row.FullName</a></td><td data-label="Patient code">@row.PatientCode</td><td data-label="HRN">@(row.HospitalNumber ?? "Not recorded")</td><td data-label="Scheduled date">@row.DueDate.ToString("dd MMM yyyy")
+    @if (row.Current) { <div class="mt-1"><partial name="_RefillBadge" model="@(new RedStarRefillBadge(row.DueDate, Model.Today, row.Verified, row.ConfirmedUtc))" /></div> }
     else { <div class="small text-muted">Historical reminder</div> }
 </td><td data-label="Stage">@row.Stage</td><td data-label="Channel">@row.Channel</td><td data-label="Status">@row.State</td><td data-label="Attempts">@row.Attempts</td><td data-label="Created (Philippines)">@ClinicalClock.WallTime(row.CreatedUtc).ToString("dd MMM yyyy HH:mm")</td><td data-label="Completed">@(row.CompletedUtc.HasValue ? ClinicalClock.WallTime(row.CompletedUtc.Value).ToString("dd MMM yyyy HH:mm") : "—")</td></tr> }
-@if (Model.Rows.Count == 0) { <tr><td colspan="8" class="text-muted p-4">No reminder deliveries yet.</td></tr> }
+@if (Model.Rows.Count == 0) { <tr><td colspan="10" class="text-muted p-4">No reminder deliveries yet.</td></tr> }
 </tbody></table></div></div>
 <nav aria-label="Reminder pages" class="d-flex justify-content-between align-items-center mt-3"><span class="small text-muted">@Model.Total reminders · page @Model.Page of @pages</span><div class="d-flex gap-2">
 @if (Model.Page > 1) { <a asp-action="Deliveries" asp-route-page="@(Model.Page - 1)" asp-route-refillPage="@Model.RefillPage" class="btn btn-outline-secondary btn-sm">Previous</a> }
