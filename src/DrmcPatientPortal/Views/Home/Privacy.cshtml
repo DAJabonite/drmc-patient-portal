@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "Data Privacy Notice";
+    ViewData["Title"] = Loc["Privacy_Title"];
 }
 
 <div class="container py-5">
@@ -9,11 +9,11 @@
                 <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
                     <picture>
                         <source srcset="@Url.Content("~/images/drmc-seal.webp")" type="image/webp" />
-                        <img src="~/images/drmc-seal.png" width="100" height="97" decoding="async" alt="DRMC Seal" style="height: 52px; width: auto;" />
+                        <img src="~/images/drmc-seal.png" width="100" height="97" decoding="async" alt="" style="height: 52px; width: auto;" />
                     </picture>
                     <div>
-                        <h1 class="h3 fw-bold text-primary-drmc mb-0">Data Privacy Notice</h1>
-                        <span class="text-muted small">In compliance with Republic Act No. 10173 (Data Privacy Act of 2012)</span>
+                        <h1 class="h3 fw-bold text-primary-drmc mb-0">@Loc["Privacy_Title"]</h1>
+                        <span class="text-muted small">@Loc["Privacy_Law"]</span>
                     </div>
                 </div>
 
@@ -22,10 +22,10 @@
 
                 <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <a asp-controller="Home" asp-action="Index" class="btn btn-outline-drmc">
-                        <i class="bi bi-arrow-left me-1"></i> Return to Home
+                        <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> @Loc["Privacy_ReturnHome"]
                     </a>
                     <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-drmc">
-                        Proceed to Registration <i class="bi bi-arrow-right ms-1"></i>
+                        @Loc["Privacy_Registration"] <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
                     </a>
                 </div>
             </div>

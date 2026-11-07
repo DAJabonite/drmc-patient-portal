@@ -246,7 +246,7 @@ try {
     }
     # Older helpers could leave higher array indices. Remove only exact known property shapes.
     $owned += @($existing.Keys | Where-Object { $_ -match '^(?:Proxy__KnownProxies__\d+|DataProtection__DecryptionCertificates__\d+__(?:Path|PasswordFile))$' })
-    foreach ($required in @('ConnectionStrings__DefaultConnection','AllowedHosts','Portal__PublicOrigin','Notifications__Email__Host','Notifications__Email__FromAddress','Notifications__Email__Username','Notifications__Email__Password')) {
+    foreach ($required in @('ConnectionStrings__DefaultConnection','AllowedHosts','Portal__PublicOrigin','Notifications__Email__Host','Notifications__Email__Username','Notifications__Email__Password')) {
         if ([string]::IsNullOrWhiteSpace($settings[$required])) { Fail "Missing required deployment setting: $required" }
     }
     try { $sql = [System.Data.SqlClient.SqlConnectionStringBuilder]::new($settings['ConnectionStrings__DefaultConnection']) }
@@ -259,7 +259,9 @@ try {
     if ($hosts -notcontains $HostName -or @($hosts | Where-Object { $_.Contains('*') -or [Uri]::CheckHostName($_) -eq [UriHostNameType]::Unknown }).Count) { Fail 'AllowedHosts must explicitly contain HostName and valid hosts, without wildcards or ports.' }
     if ($settings.ContainsKey('Notifications__Email__Provider') -and $settings['Notifications__Email__Provider'].Trim() -ine 'Smtp') { Fail 'Production email delivery must use Smtp.' }
     $null = IntegerSetting $settings 'Notifications__Email__Port' 587 1 65535
-    try { $null = [Net.Mail.MailAddress]::new($settings['Notifications__Email__FromAddress']) } catch { Fail 'Notifications__Email__FromAddress must be a valid sender address.' }
+    if ($settings.ContainsKey('Notifications__Email__FromAddress')) {
+        try { $null = [Net.Mail.MailAddress]::new($settings['Notifications__Email__FromAddress']) } catch { Fail 'Notifications__Email__FromAddress must be a valid sender address.' }
+    }
     if ($settings.ContainsKey('Notifications__Email__FromName') -and $settings['Notifications__Email__FromName'] -match '[\r\n\u0085\u2028\u2029]') { Fail 'Notifications__Email__FromName must be a single line.' }
     if (-not (BooleanSetting $settings 'Notifications__Email__UseSsl' $true)) { Fail 'Production SMTP requires TLS.' }
     if (BooleanSetting $settings 'Notifications__Sms__Enabled' $false) {

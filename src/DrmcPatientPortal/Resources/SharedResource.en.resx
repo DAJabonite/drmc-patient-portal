@@ -262,7 +262,7 @@
   <data name="RS_AppointmentReminder" xml:space="preserve"><value>DRMC appointment reminder: {0}.</value></data>
   <data name="RS_MarkRead" xml:space="preserve"><value>Mark as read</value></data>
   <data name="RS_EmailOptIn" xml:space="preserve"><value>Send appointment reminders to my confirmed account email</value></data>
-  <data name="RS_EmailHelp" xml:space="preserve"><value>Emails use neutral DRMC wording and contain no program or medicine details. You can turn them off here anytime.</value></data>
+  <data name="RS_EmailHelp" xml:space="preserve"><value>The email can show the Red Star Clinic name and address as the sender. Messages use general DRMC wording without program or medicine details. Use an inbox you can access privately. You can turn reminders off here at any time.</value></data>
   <data name="RS_SavePreferences" xml:space="preserve"><value>Save reminder settings</value></data>
   <data name="RS_ClinicHelp" xml:space="preserve"><value>Clinic contact and help</value></data>
   <data name="RS_MissedHelp" xml:space="preserve"><value>If you missed a refill or may run out before your appointment, contact the clinic promptly.</value></data>
@@ -591,4 +591,54 @@
   <data name="Patient and parent ownership cannot be changed by the form." xml:space="preserve"><value>Patient and parent ownership cannot be changed by the form.</value></data>
   <data name="Rx_LastCalculatedRefill" xml:space="preserve"><value>Last calculated refill date</value></data>
   <data name="Rx_ImportReupload" xml:space="preserve"><value>Cancel this batch and upload a file using the current template. Prescription files use Prescriptions_v3.</value></data>
+  <!-- Data privacy notice, portal terms, and signup consent -->
+  <data name="Privacy_Title" xml:space="preserve"><value>Data privacy notice</value></data>
+  <data name="Privacy_Law" xml:space="preserve"><value>Republic Act No. 10173 (Data Privacy Act of 2012)</value></data>
+  <data name="Privacy_ReturnHome" xml:space="preserve"><value>Return to home</value></data>
+  <data name="Privacy_Registration" xml:space="preserve"><value>Continue to registration</value></data>
+  <data name="Privacy_Introduction" xml:space="preserve"><value>Davao Regional Medical Center (DRMC) handles your personal and health information when you use the DRMC Patient Portal. This notice explains what information the portal uses, how we protect it, and whom you can contact about your privacy.</value></data>
+  <data name="Privacy_InformationHeading" xml:space="preserve"><value>Information the portal uses</value></data>
+  <data name="Privacy_IdentityHeading" xml:space="preserve"><value>Identity and account information.</value></data>
+  <data name="Privacy_Identity" xml:space="preserve"><value>Your name, date of birth, contact details, and hospital record number. If you submit a government ID, the portal also processes the ID details and photos you provide.</value></data>
+  <data name="Privacy_ClinicalHeading" xml:space="preserve"><value>Clinical information.</value></data>
+  <data name="Privacy_Clinical" xml:space="preserve"><value>Hospital encounters, lab and radiology results, prescriptions, and appointments, including Red Star clinic information where applicable.</value></data>
+  <data name="Privacy_ActivityHeading" xml:space="preserve"><value>Security and activity information.</value></data>
+  <data name="Privacy_Activity" xml:space="preserve"><value>Sign-in times, network addresses, and audit records of certain account and clinical record activity.</value></data>
+  <data name="Privacy_PurposeHeading" xml:space="preserve"><value>Why we use this information</value></data>
+  <data name="Privacy_Purpose" xml:space="preserve"><value>We use this information to verify your identity, link your portal account to your hospital record, give you access to your records, support your care, protect the portal, and meet legal reporting obligations.</value></data>
+  <data name="Privacy_Notifications" xml:space="preserve"><value>We use your email address for account messages, such as confirmation and password reset. You can choose to receive refill reminders by email and turn them off in the portal. The sender can show the Red Star Clinic name and email address.</value></data>
+  <data name="Privacy_UsageHeading" xml:space="preserve"><value>Daily website usage reporting</value></data>
+  <data name="Privacy_UsageCollection" xml:space="preserve"><value>When usage reporting is enabled, DRMC measures daily website reach and portal use. The portal makes temporary daily identifiers from network and browser information and uses a separate daily identifier for signed-in accounts. Usage reporting omits the original values, page addresses, and clinical information. It uses no analytics cookies or identifiers that follow you across days.</value></data>
+  <data name="Privacy_UsageRetention" xml:space="preserve"><value>The temporary identifiers and their daily key are scheduled for removal five minutes after the next midnight in Manila. The reporting system keeps daily totals and information about collection coverage for 13 months by default. Authorized administrators can see the reports. You can enable Do Not Track or Global Privacy Control in your browser to opt out without affecting portal access.</value></data>
+  <data name="Privacy_SecurityHeading" xml:space="preserve"><value>Data protection and security</value></data>
+  <data name="Privacy_PdfAccess" xml:space="preserve"><value>After signing in, you can see basic report details when available. Enter your portal password again each time you view or download a released laboratory or radiology PDF, including a Red Star laboratory PDF.</value></data>
+  <data name="Privacy_StorageAndAudit" xml:space="preserve"><value>The portal encrypts sensitive fields in Red Star records and stores report PDFs in encrypted private storage. Staff access depends on their assigned permissions. The portal logs report views and downloads, and certain administrative and account actions.</value></data>
+  <data name="Privacy_HivConfidentiality" xml:space="preserve"><value>Republic Act No. 11166 (Philippine HIV and AIDS Policy Act) protects the confidentiality of HIV testing, exposure, status, and related care. Disclosure of confidential HIV information requires written consent unless an exception under that law applies.</value></data>
+  <data name="Privacy_RightsHeading" xml:space="preserve"><value>Your privacy rights</value></data>
+  <data name="Privacy_Rights" xml:space="preserve"><value>Under the Data Privacy Act of 2012, you have the right to be informed and can request access to or correction of your personal data. Where the law allows, you can object to processing or request blocking or deletion. You can raise a concern with the DRMC Data Protection Officer or file a complaint with the National Privacy Commission.</value></data>
+  <data name="Privacy_ContactHeading" xml:space="preserve"><value>Contact DRMC</value></data>
+  <data name="Privacy_DpoContact" xml:space="preserve"><value>Privacy questions and requests</value></data>
+  <data name="Privacy_ClinicContact" xml:space="preserve"><value>Red Star Clinic inquiries</value></data>
+  <data name="Privacy_EmailSafety" xml:space="preserve"><value>Keep passwords, verification codes, and medical records out of email. Ask DRMC how to share sensitive information securely.</value></data>
+  <data name="Privacy_TermsHeading" xml:space="preserve"><value>Portal terms of use</value></data>
+  <data name="Privacy_TermsAccountHeading" xml:space="preserve"><value>Your account and information</value></data>
+  <data name="Privacy_TermsAccount" xml:space="preserve"><value>Use accurate registration details and your own identity documents. Review any information extracted from your ID and correct errors before submitting. Keep your password and verification codes private and sign out when you use a shared device.</value></data>
+  <data name="Privacy_TermsServicesHeading" xml:space="preserve"><value>Using patient services</value></data>
+  <data name="Privacy_TermsServices" xml:space="preserve"><value>Use your account to access your own records and public hospital guidance. Respect the privacy of other patients and keep their accounts and records private.</value></data>
+  <data name="Privacy_TermsCareHeading" xml:space="preserve"><value>Medical care and emergencies</value></data>
+  <data name="Privacy_TermsCare" xml:space="preserve"><value>Follow your healthcare team’s instructions. Discuss your results and treatment questions with them. For urgent symptoms or an emergency, seek immediate in-person care.</value></data>
+  <data name="Privacy_TermsChoiceHeading" xml:space="preserve"><value>Privacy and your choice</value></data>
+  <data name="Privacy_TermsChoice" xml:space="preserve"><value>Registration requires the processing described in the privacy notice, including identity verification and storage of any ID photos you submit. You can leave signup and continue to browse public information.</value></data>
+  <data name="Privacy_ConsentAccepted" xml:space="preserve"><value>You accepted the privacy notice and portal terms.</value></data>
+  <data name="Privacy_ConsentReview" xml:space="preserve"><value>Review privacy and terms</value></data>
+  <data name="Privacy_ConsentTitle" xml:space="preserve"><value>Before you create an account</value></data>
+  <data name="Privacy_ConsentHint" xml:space="preserve"><value>Read the privacy notice and portal terms to enable the agreement checkbox.</value></data>
+  <data name="Privacy_ConsentDocument" xml:space="preserve"><value>Privacy notice and portal terms</value></data>
+  <data name="Privacy_ConsentEnd" xml:space="preserve"><value>End of the privacy notice and portal terms.</value></data>
+  <data name="Privacy_ConsentScroll" xml:space="preserve"><value>Scroll to the end to continue.</value></data>
+  <data name="Privacy_ConsentScrollComplete" xml:space="preserve"><value>You reached the end. Check the agreement box to continue.</value></data>
+  <data name="Privacy_ConsentAgreement" xml:space="preserve"><value>I agree to the portal terms and consent to the data processing described in the privacy notice.</value></data>
+  <data name="Privacy_ConsentLeave" xml:space="preserve"><value>Leave signup</value></data>
+  <data name="Privacy_ConsentContinue" xml:space="preserve"><value>Agree and continue</value></data>
+  <data name="Privacy_ConsentJavaScript" xml:space="preserve"><value>You need JavaScript to sign up. You can still read the following document.</value></data>
 </root>

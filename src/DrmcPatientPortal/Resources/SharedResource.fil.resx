@@ -262,7 +262,7 @@
   <data name="RS_AppointmentReminder" xml:space="preserve"><value>Paalala sa appointment sa DRMC: {0}.</value></data>
   <data name="RS_MarkRead" xml:space="preserve"><value>Markahang nabasa</value></data>
   <data name="RS_EmailOptIn" xml:space="preserve"><value>Magpadala ng paalala sa aking kumpirmadong email</value></data>
-  <data name="RS_EmailHelp" xml:space="preserve"><value>Pangkalahatang DRMC na mensahe ang email, walang detalye ng programa o gamot. Maaari mo itong patayin dito anumang oras.</value></data>
+  <data name="RS_EmailHelp" xml:space="preserve"><value>Maaaring makita ang pangalan at email address ng Red Star Clinic bilang nagpadala. Pangkalahatan ang mga mensahe ng DRMC at walang detalye tungkol sa programa o gamot. Gumamit ng inbox na pribado mong naa-access. Maaari mong ihinto ang mga paalala dito anumang oras.</value></data>
   <data name="RS_SavePreferences" xml:space="preserve"><value>I-save ang mga setting ng paalala</value></data>
   <data name="RS_ClinicHelp" xml:space="preserve"><value>Kontak at tulong ng klinika</value></data>
   <data name="RS_MissedHelp" xml:space="preserve"><value>Kung hindi ka nakapag-refill o maaaring maubos ang gamot bago ang appointment, makipag-ugnayan agad sa klinika.</value></data>
@@ -591,4 +591,54 @@
   <data name="Patient and parent ownership cannot be changed by the form." xml:space="preserve"><value>Hindi maaaring baguhin sa form ang pasyente o magulang na tala.</value></data>
   <data name="Rx_LastCalculatedRefill" xml:space="preserve"><value>Huling nakalkulang petsa ng refill</value></data>
   <data name="Rx_ImportReupload" xml:space="preserve"><value>Kanselahin ang batch na ito at mag-upload ng file gamit ang kasalukuyang template. Gamitin ang Prescriptions_v3 para sa mga reseta.</value></data>
+  <!-- Data privacy notice, portal terms, and signup consent -->
+  <data name="Privacy_Title" xml:space="preserve"><value>Abiso sa pagkapribado ng datos</value></data>
+  <data name="Privacy_Law" xml:space="preserve"><value>Republic Act No. 10173 (Data Privacy Act of 2012)</value></data>
+  <data name="Privacy_ReturnHome" xml:space="preserve"><value>Bumalik sa pangunahing pahina</value></data>
+  <data name="Privacy_Registration" xml:space="preserve"><value>Magpatuloy sa pagpaparehistro</value></data>
+  <data name="Privacy_Introduction" xml:space="preserve"><value>Pinangangasiwaan ng Davao Regional Medical Center (DRMC) ang iyong personal na impormasyon at impormasyon sa kalusugan kapag ginagamit mo ang DRMC Patient Portal. Ipinapaliwanag dito kung anong impormasyon ang ginagamit ng portal, kung paano namin ito pinoprotektahan, at kung sino ang maaari mong kontakin tungkol sa iyong pagkapribado.</value></data>
+  <data name="Privacy_InformationHeading" xml:space="preserve"><value>Impormasyong ginagamit ng portal</value></data>
+  <data name="Privacy_IdentityHeading" xml:space="preserve"><value>Pagkakakilanlan at impormasyon ng account.</value></data>
+  <data name="Privacy_Identity" xml:space="preserve"><value>Kabilang dito ang iyong pangalan, petsa ng kapanganakan, mga detalye sa pakikipag-ugnayan, at numero ng rekord sa ospital. Kung magsusumite ka ng ID na inisyu ng pamahalaan, pinoproseso rin ng portal ang mga detalye at larawang ibinigay mo.</value></data>
+  <data name="Privacy_ClinicalHeading" xml:space="preserve"><value>Impormasyong klinikal.</value></data>
+  <data name="Privacy_Clinical" xml:space="preserve"><value>Mga konsultasyon at pagbisita sa ospital, resulta ng laboratoryo at radyolohiya, reseta, at iskedyul ng appointment, kabilang ang impormasyon mula sa Red Star Clinic kung naaangkop.</value></data>
+  <data name="Privacy_ActivityHeading" xml:space="preserve"><value>Impormasyon tungkol sa seguridad at aktibidad.</value></data>
+  <data name="Privacy_Activity" xml:space="preserve"><value>Mga oras ng pag-sign in, address ng network, at mga tala ng audit sa ilang aktibidad sa account at mga rekord na klinikal.</value></data>
+  <data name="Privacy_PurposeHeading" xml:space="preserve"><value>Bakit namin ginagamit ang impormasyong ito</value></data>
+  <data name="Privacy_Purpose" xml:space="preserve"><value>Ginagamit namin ang impormasyong ito upang beripikahin ang iyong pagkakakilanlan, iugnay ang iyong account sa rekord mo sa ospital, bigyan ka ng access sa iyong mga rekord, suportahan ang pangangalaga sa iyo, protektahan ang portal, at tuparin ang mga tungkulin sa pag-uulat na itinakda ng batas.</value></data>
+  <data name="Privacy_Notifications" xml:space="preserve"><value>Ginagamit namin ang iyong email address para sa mga mensahe tungkol sa account, gaya ng pagkumpirma at pag-reset ng password. Maaari kang pumiling makatanggap ng mga paalala sa pagkuha ng panibagong suplay ng gamot sa email at ihinto ang mga ito sa portal. Maaaring makita ang pangalan at email address ng Red Star Clinic bilang nagpadala.</value></data>
+  <data name="Privacy_UsageHeading" xml:space="preserve"><value>Pang-araw-araw na pag-uulat sa paggamit ng website</value></data>
+  <data name="Privacy_UsageCollection" xml:space="preserve"><value>Kapag naka-enable ang pag-uulat ng paggamit, sinusukat ng DRMC kung gaano karami ang gumagamit ng website at portal bawat araw. Gumagawa ang portal ng mga pansamantalang pagkakakilanlan para sa bawat araw mula sa impormasyon ng network at browser, at gumagamit ng hiwalay na pagkakakilanlan para sa mga account na naka-sign in. Hindi kasama sa pag-uulat ang mga orihinal na detalye, address ng mga pahina, o impormasyong klinikal. Hindi ito gumagamit ng analytics cookies o pagkakakilanlang sumusubaybay sa iyo sa ibang mga araw.</value></data>
+  <data name="Privacy_UsageRetention" xml:space="preserve"><value>Nakatakdang alisin ang mga pansamantalang pagkakakilanlan at ang susi para sa araw na iyon limang minuto pagkalipas ng susunod na hatinggabi sa Maynila. Sa karaniwang setting, pinananatili ng sistema ang mga kabuuang bilang kada araw at impormasyon tungkol sa saklaw ng pangangalap sa loob ng 13 buwan. Makikita ng mga awtorisadong administrador ang mga ulat. Maaari mong paganahin ang Do Not Track o Global Privacy Control sa iyong browser upang hindi mapasama sa pagsukat habang patuloy mong nagagamit ang portal.</value></data>
+  <data name="Privacy_SecurityHeading" xml:space="preserve"><value>Proteksyon at seguridad ng datos</value></data>
+  <data name="Privacy_PdfAccess" xml:space="preserve"><value>Pagkatapos mag-sign in, makikita mo ang mga pangunahing detalye ng ulat kung mayroon na. Ilagay muli ang password mo sa portal sa tuwing titingin o magda-download ka ng inilabas na PDF mula sa laboratoryo o radyolohiya, kabilang ang PDF ng laboratoryo ng Red Star.</value></data>
+  <data name="Privacy_StorageAndAudit" xml:space="preserve"><value>Ini-encrypt ng portal ang mga sensitibong detalye sa mga rekord ng Red Star at iniimbak ang mga PDF ng ulat sa pribado at naka-encrypt na imbakan. Nakabatay ang access ng kawani sa kanilang nakatalagang pahintulot. Itinatala ng portal ang pagtingin at pag-download ng mga ulat, pati ang ilang pagkilos sa pangangasiwa at sa mga account.</value></data>
+  <data name="Privacy_HivConfidentiality" xml:space="preserve"><value>Pinoprotektahan ng Republic Act No. 11166 (Philippine HIV and AIDS Policy Act) ang pagiging kumpidensyal ng impormasyon tungkol sa pagsusuri sa HIV, pagkakalantad sa HIV, HIV status, at kaugnay na pangangalaga. Kailangan ang nakasulat na pahintulot upang ibunyag ang kumpidensyal na impormasyon tungkol sa HIV, maliban kung may naaangkop na eksepsiyon sa batas na iyon.</value></data>
+  <data name="Privacy_RightsHeading" xml:space="preserve"><value>Ang iyong mga karapatan sa pagkapribado</value></data>
+  <data name="Privacy_Rights" xml:space="preserve"><value>Sa ilalim ng Data Privacy Act of 2012, may karapatan kang malaman kung paano ginagamit ang iyong personal na datos at humiling na ma-access o maitama ito. Kung pinahihintulutan ng batas, maaari kang tumutol sa pagproseso o humiling na harangan o burahin ang datos. Maaari mong ilapit ang iyong alalahanin sa Data Protection Officer ng DRMC o magsampa ng reklamo sa National Privacy Commission.</value></data>
+  <data name="Privacy_ContactHeading" xml:space="preserve"><value>Makipag-ugnayan sa DRMC</value></data>
+  <data name="Privacy_DpoContact" xml:space="preserve"><value>Mga tanong at kahilingan tungkol sa pagkapribado</value></data>
+  <data name="Privacy_ClinicContact" xml:space="preserve"><value>Mga tanong para sa Red Star Clinic</value></data>
+  <data name="Privacy_EmailSafety" xml:space="preserve"><value>Iwasang magpadala ng password, mga code sa beripikasyon, at mga medikal na rekord sa email. Tanungin ang DRMC kung paano ligtas na maibabahagi ang sensitibong impormasyon.</value></data>
+  <data name="Privacy_TermsHeading" xml:space="preserve"><value>Mga tuntunin sa paggamit ng portal</value></data>
+  <data name="Privacy_TermsAccountHeading" xml:space="preserve"><value>Ang iyong account at impormasyon</value></data>
+  <data name="Privacy_TermsAccount" xml:space="preserve"><value>Gumamit ng tamang impormasyon sa pagpaparehistro at ng sarili mong mga dokumento ng pagkakakilanlan. Suriin ang anumang impormasyong nakuha mula sa iyong ID at itama ang mga pagkakamali bago isumite. Ingatan ang iyong password at mga code sa beripikasyon at mag-sign out kapag gumagamit ng device na ginagamit din ng iba.</value></data>
+  <data name="Privacy_TermsServicesHeading" xml:space="preserve"><value>Paggamit ng mga serbisyo para sa pasyente</value></data>
+  <data name="Privacy_TermsServices" xml:space="preserve"><value>Gamitin ang iyong account para ma-access ang sarili mong mga rekord at mga gabay ng ospital para sa publiko. Igalang ang pagkapribado ng ibang mga pasyente at panatilihing pribado ang kanilang mga account at rekord.</value></data>
+  <data name="Privacy_TermsCareHeading" xml:space="preserve"><value>Pangangalagang medikal at mga emerhensiya</value></data>
+  <data name="Privacy_TermsCare" xml:space="preserve"><value>Sundin ang mga tagubilin ng pangkat na nangangalaga sa iyo. Talakayin sa kanila ang iyong mga resulta at tanong tungkol sa paggamot. Kung may agarang sintomas o emerhensiya, magpatingin kaagad nang personal.</value></data>
+  <data name="Privacy_TermsChoiceHeading" xml:space="preserve"><value>Pagkapribado at ang iyong pasya</value></data>
+  <data name="Privacy_TermsChoice" xml:space="preserve"><value>Kailangan sa pagpaparehistro ang pagproseso na inilalarawan sa abiso sa pagkapribado, kabilang ang pagberipika sa pagkakakilanlan at pag-iimbak ng anumang larawan ng ID na isusumite mo. Maaari kang lumabas sa pagpaparehistro at magpatuloy sa pagtingin sa impormasyong para sa publiko.</value></data>
+  <data name="Privacy_ConsentAccepted" xml:space="preserve"><value>Tinanggap mo ang abiso sa pagkapribado at ang mga tuntunin ng portal.</value></data>
+  <data name="Privacy_ConsentReview" xml:space="preserve"><value>Suriin ang abiso at mga tuntunin</value></data>
+  <data name="Privacy_ConsentTitle" xml:space="preserve"><value>Bago ka gumawa ng account</value></data>
+  <data name="Privacy_ConsentHint" xml:space="preserve"><value>Basahin ang abiso sa pagkapribado at ang mga tuntunin ng portal para mapili ang kahon ng pagsang-ayon.</value></data>
+  <data name="Privacy_ConsentDocument" xml:space="preserve"><value>Abiso sa pagkapribado at mga tuntunin ng portal</value></data>
+  <data name="Privacy_ConsentEnd" xml:space="preserve"><value>Katapusan ng abiso sa pagkapribado at mga tuntunin ng portal.</value></data>
+  <data name="Privacy_ConsentScroll" xml:space="preserve"><value>Mag-scroll hanggang dulo para magpatuloy.</value></data>
+  <data name="Privacy_ConsentScrollComplete" xml:space="preserve"><value>Nasa dulo ka na. Lagyan ng tsek ang kahon ng pagsang-ayon para magpatuloy.</value></data>
+  <data name="Privacy_ConsentAgreement" xml:space="preserve"><value>Sumasang-ayon ako sa mga tuntunin ng portal at pumapayag sa pagproseso ng datos na inilalarawan sa abiso sa pagkapribado.</value></data>
+  <data name="Privacy_ConsentLeave" xml:space="preserve"><value>Umalis sa pagpaparehistro</value></data>
+  <data name="Privacy_ConsentContinue" xml:space="preserve"><value>Sumang-ayon at magpatuloy</value></data>
+  <data name="Privacy_ConsentJavaScript" xml:space="preserve"><value>Kailangan ang JavaScript para magparehistro. Maaari mo pa ring basahin ang sumusunod na dokumento.</value></data>
 </root>

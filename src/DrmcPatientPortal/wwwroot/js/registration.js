@@ -80,6 +80,7 @@ $(function () {
     const consentElement = document.getElementById('registrationConsent');
     const consentModal = new bootstrap.Modal(consentElement);
     const consentDocument = document.getElementById('consentDocument');
+    const consentReadStatus = document.getElementById('consentReadStatus');
     const acceptConsent = document.getElementById('acceptConsent');
     let accepted = consentValue.value.toLowerCase() === 'true';
     let readToEnd = accepted;
@@ -146,8 +147,8 @@ $(function () {
         if (consentDocument.scrollHeight - consentDocument.clientHeight - consentDocument.scrollTop <= 3) readToEnd = true;
         consent.disabled = !readToEnd;
         acceptConsent.disabled = !readToEnd || !consent.checked;
-        document.getElementById('consentReadStatus').textContent = readToEnd
-            ? 'You reached the end. Check the agreement box to continue.' : 'Scroll to the end to continue.';
+        consentReadStatus.textContent = readToEnd
+            ? consentReadStatus.dataset.scrollComplete : consentReadStatus.dataset.scrollRequired;
     }
     consentDocument.addEventListener('scroll', updateConsentGate);
     consentDocument.addEventListener('keydown', event => {
@@ -165,11 +166,10 @@ $(function () {
     consentToggle?.addEventListener('click', event => {
         if (readToEnd) return;
         event.preventDefault();
-        const status = document.getElementById('consentReadStatus');
-        status.classList.remove('consent-read-attention');
-        void status.offsetWidth;
-        status.classList.add('consent-read-attention');
-        window.setTimeout(() => status.classList.remove('consent-read-attention'), 700);
+        consentReadStatus.classList.remove('consent-read-attention');
+        void consentReadStatus.offsetWidth;
+        consentReadStatus.classList.add('consent-read-attention');
+        window.setTimeout(() => consentReadStatus.classList.remove('consent-read-attention'), 700);
     });
     consentElement.addEventListener('shown.bs.modal', () => {
         consentDocument.focus();

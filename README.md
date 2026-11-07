@@ -41,8 +41,9 @@ Prepare a restricted **flat JSON object of environment-variable names and string
 | `LabReports__RootPath`, `RadiologyReports__RootPath`, `RedStarLabReports__RootPath` | Separate persistent encrypted report stores. |
 | `AdvisoryImages__RootPath`, `Imports__StagingPath` | Advisory images and encrypted spreadsheet-import staging. |
 | `ResultStaging__Enabled`, `ResultStaging__LaboratoryPath`, `ResultStaging__RadiologyPath`, `ResultStaging__QuarantinePath` | Optional automated result ingestion; all three separate paths are required when enabled. |
-| `Notifications__Email__Host`, `Notifications__Email__Username`, `Notifications__Email__Password`, `Notifications__Email__FromAddress` | Required authenticated SMTP connection and sender. |
-| `Notifications__Email__Port`, `Notifications__Email__UseSsl`, `Notifications__Email__Provider`, `Notifications__Email__FromName` | SMTP transport and sender presentation. Production requires SMTP with STARTTLS; Console delivery is rejected. |
+| `Notifications__Email__Host`, `Notifications__Email__Username`, `Notifications__Email__Password` | Required authenticated SMTP connection. Supply these in restricted deployment settings. |
+| `Notifications__Email__Port`, `Notifications__Email__UseSsl`, `Notifications__Email__Provider` | SMTP transport. Production requires authenticated SMTP with STARTTLS. |
+| `Notifications__Email__FromAddress`, `Notifications__Email__FromName` | Optional sender overrides. Defaults are `redstarclinic@drmc.doh.gov.ph` and `DRMC Red Star Clinic / Patient Portal`. |
 | `Notifications__Sms__Enabled`, `Notifications__Sms__Endpoint`, `Notifications__Sms__ApiKey`, `Notifications__Sms__SenderId` | Optional HTTPS SMS webhook delivery. |
 | `AdminBootstrap__Enabled`, `AdminBootstrap__Email` | Temporary first-Admin signup for one bare email address. |
 | `PatientResults__ShowFullResults` | Institution-approved disclosure of full laboratory/radiology PDFs; disabled by default. |
@@ -50,6 +51,8 @@ Prepare a restricted **flat JSON object of environment-variable names and string
 | `Ocr__NativeLibraryPath`, `Ocr__TessDataPath` | Optional overrides for bundled native OCR libraries and language data. |
 
 Use separate absolute mutable roots outside publish. Define their paths explicitly in the settings file so offline maintenance uses the same paths. The helper can also create non-overlapping child directories beneath `StorageRoot` for omitted storage settings; if using those defaults, resolve and reuse the resulting pool settings for maintenance. Retain those paths on subsequent deployments. Certificate/password files must also be outside `StorageRoot` and every mutable directory. The HTTPS certificate selected by `CertificateThumbprint` and the RSA key-protection certificate serve separate purposes.
+
+The configured sender is used for account verification, staff invitations and opted-in Red Star refill reminders. Confirm that the production SMTP account is authorized to send as the configured address and verify the received From header before launch. Review the clinic-identifying sender and patient disclosure with DRMC privacy staff before enabling live refill email reminders. Keep `RedStar__RemindersEnabled=false` until that review is complete. This pauses both in-portal and email reminders. Omit both sender overrides from the desired IIS settings to adopt both application defaults.
 
 Production rejects missing required configuration, unsafe or overlapping storage paths, invalid notification configuration and development fixtures. The helper treats `SettingsFile` as desired configuration: omitted stale application-owned settings are removed, while unrelated variables and existing storage/protection bindings are preserved. Include every intended nondefault setting. Indexed certificate/proxy settings support indices 0 through 31.
 
@@ -81,7 +84,7 @@ Keep existing storage and certificate bindings. `-AllowStoragePathChange` acknow
 
 Follow this order for installation or upgrade:
 
-1. For an existing installation, prevent new imports, drain active workers and cancel queued/review-pending imports created before validation **3.0.0**. Retain original files for re-upload.
+1. For an existing installation, prevent new imports, drain active import and reminder workers, and cancel queued or review-pending imports that predate validation **3.0.0** or use the old prescription template. Retain the originals for re-upload using `Prescriptions_v3` for prescriptions.
 2. Stop every portal instance. Back up the database, private files, full key ring including `redstar-blind-index-v1.protected`, certificate material and configuration as one consistent set. For a new installation, create an empty database with `Latin1_General_100_BIN2` collation.
 3. Publish/copy the application and configure IIS as above. Preserve existing external paths, or complete the planned offline file/key transfer. Leave the pool stopped.
 4. In a restricted maintenance process, load the **same Production, storage, key and certificate settings** and the maintenance SQL connection. From the publish directory run:
@@ -92,7 +95,7 @@ Follow this order for installation or upgrade:
 
    This command applies migrations and initializes/verifies protection. It is safe to rerun after success or interruption. Normal Production web startup verifies preparation and does **not** apply migrations. Return to the intended runtime SQL identity before starting IIS.
 5. For the first Admin only, configure `AdminBootstrap__Enabled` and `AdminBootstrap__Email` in the settings file, apply the helper, then start the dedicated pool. Verify `/health/ready`. Register that email through the portal, follow the delivered confirmation link and enroll an authenticator. Restart the pool to promote the fully enrolled account. Incomplete enrollment survives restart; an existing Admin prevents promotion of another configured account.
-6. Disable bootstrap in the settings file, apply the helper and start the pool again. Sign out and complete a fresh password-plus-authenticator login. Verify Admin access and readiness. Existing installations use their existing Admin. Re-upload canceled imports under validation 3.0.0.
+6. Disable bootstrap in the settings file, apply the helper and start the pool again. Sign out and complete a fresh password-plus-authenticator login. Verify Admin access and readiness. Existing installations use their existing Admin. Re-upload canceled imports using the current templates.
 
 Admin creates email-bound invitations for scoped staff roles. Each invited user must confirm email, enroll MFA and complete a fresh MFA login before staff access activates. Patient accounts link through issued registration codes and matching hospital identity details. Red Star account linking and hospital mapping require its separately authorized clinic role.
 
