@@ -71,10 +71,13 @@
                 <p class="text-dark mb-3 leading-relaxed">
                     @doc.Biography
                 </p>
-                <div class="p-2 bg-light rounded-3 border d-inline-flex align-items-center gap-2 small text-muted">
-                    <i class="bi bi-shield-check text-success"></i>
-                    <span>Official Verified DOH Consultant &middot; @doc.PrcLicenseMasked</span>
-                </div>
+                @if (!string.IsNullOrWhiteSpace(doc.PrcLicenseMasked))
+                {
+                    <div class="p-2 bg-light rounded-3 border d-inline-flex align-items-center gap-2 small text-muted">
+                        <i class="bi bi-card-text"></i>
+                        <span>@doc.PrcLicenseMasked</span>
+                    </div>
+                }
             </div>
 
             <!-- Actions -->
