@@ -1,0 +1,50 @@
+.patient-record-header { padding: 2rem 0 1.5rem; background: #f5f7fa; color: #152c49; border-bottom: 1px solid #e2e8ef; }
+.patient-record-header p { max-width: 48rem; }
+.patient-record-eyebrow { font-size: .875rem; color: #53657b; margin: 1rem 0 .5rem; }
+.patient-record-back { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; font-weight: 600; color: #174d7c; }
+.patient-report-section { padding: 2rem 0; background: #f5f7fa; }
+.patient-report-detail-container { max-width: 960px; }
+.patient-report-groups { display: grid; gap: 1.25rem; }
+.patient-report-group, .patient-report-detail { background: #fff; border: 1px solid #dce3ec; border-radius: .75rem; overflow: hidden; }
+.patient-report-group-heading { padding: 1rem 1.5rem; background: #f8fafc; }
+.patient-report-row { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: 1.25rem 1.5rem; border-top: 1px solid #e2e8ef; }
+.patient-report-row-content { min-width: 0; }
+.patient-report-row-date { font-size: .875rem; }
+.patient-report-availability { display: inline-flex; align-items: baseline; gap: .4rem; padding: .25rem .6rem; border-radius: .35rem; background: #eef1f5; color: #42546b; font-size: .875rem; font-weight: 600; }
+.patient-report-availability.is-available { background: #e6f3ee; color: #1b6148; }
+.patient-report-open { display: inline-flex; align-items: center; justify-content: center; gap: .75rem; flex-shrink: 0; min-height: 44px; padding: .5rem .75rem; color: #174d7c; font-weight: 600; }
+.patient-report-detail { padding: 2rem; }
+.patient-report-metadata { margin: 1.5rem 0; }
+.patient-report-metadata > div { display: grid; grid-template-columns: minmax(8rem, 1fr) 2fr; gap: 1rem; padding: .8rem 0; border-bottom: 1px solid #e2e8ef; }
+.patient-report-metadata dt { font-weight: 500; color: #53657b; }
+.patient-report-metadata dd { margin: 0; overflow-wrap: anywhere; }
+.patient-official-report { margin-top: 2rem; }
+.patient-pdf-actions { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
+.patient-pdf-action { flex: 1 1 16rem; min-width: 0; }
+.patient-pdf-action > summary { display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: 48px; list-style: none; cursor: pointer; }
+.patient-pdf-action > summary::-webkit-details-marker { display: none; }
+.patient-pdf-confirmation { background: #f5f7fa; border: 1px solid #dce3ec; border-radius: .5rem; padding: 1.25rem; margin-top: .75rem; }
+.patient-pdf-confirmation .form-control { min-height: 48px; }
+.patient-pdf-confirmation .btn { min-height: 44px; white-space: normal; }
+.patient-report-detail .validation-summary-valid { display: none; }
+.patient-report-detail .validation-summary-errors { padding: 1rem; margin: 1rem 0; border-left: 4px solid #a52b2b; background: #fff3f3; }
+.patient-record-header a:focus-visible, .patient-report-section a:focus-visible, .patient-pdf-action > summary:focus-visible { outline: 3px solid #152c49; outline-offset: 3px; }
+@media (max-width: 575.98px) {
+  .patient-record-header { padding: 1rem 0; }
+  .patient-report-section { padding: 1.25rem 0; }
+  .patient-report-group-heading, .patient-report-row { padding: 1rem; }
+  .patient-report-row { align-items: flex-start; flex-direction: column; gap: .5rem; }
+  .patient-report-open { justify-content: flex-start; padding-left: 0; }
+  .patient-report-detail { padding: 1.25rem; }
+  .patient-report-metadata > div { grid-template-columns: 1fr; gap: .25rem; }
+  .patient-pdf-action { flex-basis: 100%; }
+  .patient-pdf-confirmation { padding: 1rem; }
+}
+
+.patient-report-filter-summary { min-height: 44px; padding: .5rem 0; color: #174d7c; font-weight: 600; cursor: pointer; }
+.patient-report-filter-disclosure[open] > summary { margin-bottom: 1rem; }
+.patient-report-filter-disclosure > summary:focus-visible { outline: 3px solid #152c49; outline-offset: 3px; }
+@media (max-width: 767.98px) {
+  .patient-report-filter-disclosure .lab-date-panel { display: grid; }
+  .patient-report-filter-disclosure .lab-filter-label { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; }
+}

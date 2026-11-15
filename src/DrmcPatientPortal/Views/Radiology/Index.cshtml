@@ -1,84 +1,75 @@
 @model RadiologyIndexViewModel
 @{
-    ViewData["Title"] = "Radiology & Imaging";
+    ViewData["Title"] = Loc["Nav_Radiology"];
     var today = DrmcPatientPortal.Services.ClinicalClock.Today.ToString("yyyy-MM-dd");
     var dateOpen = Model.SelectedDateRange is not null || ViewData["DateRangeError"] is not null;
     var dept = Model.Department;
 }
 
-<section class="page-header">
+<section class="patient-record-header">
     <div class="container">
         <div>
-            <h1 class="display-6 fw-bold mb-0">Radiology &amp; Imaging</h1>
+            <h1 class="h2 fw-bold mb-2">@Loc["Nav_Radiology"]</h1>
+            <p class="text-muted mb-0">@Loc["PatientUX_ImagingHelp"]</p>
         </div>
     </div>
 </section>
 
 <!-- Study filters -->
-<section class="py-3 bg-white border-bottom sticky-top shadow-xs" style="z-index: 1020;">
+<section class="py-3 bg-white border-bottom">
     <div class="container">
-        <form asp-action="Index" method="get" class="lab-filter-form has-search" id="radiologyFilterForm" role="search" aria-label="Filter imaging studies">
+        <details class="patient-report-filter-disclosure" open="@(Model.HasFilters || ViewData["DateRangeError"] is not null)">
+            <summary class="patient-report-filter-summary"><i class="bi bi-funnel" aria-hidden="true"></i> @Loc["PatientUX_FilterResults"]</summary>
+        <form asp-action="Index" method="get" class="lab-filter-form has-search" id="radiologyFilterForm" role="search" aria-label="@Loc["Nav_Radiology"]">
             <div class="radiology-search-field">
-                <label for="radiologySearch" class="form-label small fw-semibold text-dark mb-1">Search</label>
+                <label for="radiologySearch" class="form-label small fw-semibold text-dark mb-1">@Loc["PatientUX_Search"]</label>
                 <input id="radiologySearch" name="search" type="search" class="form-control"
-                       value="@Model.SearchTerm" maxlength="200" placeholder="Exam description or encounter reference" />
+                       value="@Model.SearchTerm" maxlength="200" placeholder="@Loc["PatientUX_ReportSearchHint"]" />
             </div>
             <div class="lab-request-status-field">
-                <label for="requestStatus" class="form-label small fw-semibold">Request status</label>
+                <label for="requestStatus" class="form-label small fw-semibold">@Loc["PatientUX_RequestStatus"]</label>
                 <select id="requestStatus" name="status" class="form-select">
-                    <option value="" selected="@(Model.SelectedStatus == null)">All requests</option>
-                    <option value="pending" selected="@(Model.SelectedStatus == "pending")">Pending requests</option>
-                    <option value="released" selected="@(Model.SelectedStatus == "released")">Released reports</option>
+                    <option value="" selected="@(Model.SelectedStatus == null)">@Loc["PatientUX_AllRequests"]</option>
+                    <option value="pending" selected="@(Model.SelectedStatus == "pending")">@Loc["PatientUX_PendingRequests"]</option>
+                    <option value="released" selected="@(Model.SelectedStatus == "released")">@Loc["PatientUX_ReleasedReports"]</option>
                 </select>
             </div>
             <div class="lab-filter-toolbar">
                 <div class="lab-category-field">
-                    <label for="radiologyModalityFilter" class="form-label small fw-semibold text-dark mb-1 lab-filter-label">Imaging type</label>
-                    <select id="radiologyModalityFilter" name="modality" class="form-select" aria-label="Filter by imaging type">
-                        <option value="" selected="@(!Model.SelectedModality.HasValue)">All imaging (@Model.TotalCount)</option>
+                    <label for="radiologyModalityFilter" class="form-label small fw-semibold text-dark mb-1 lab-filter-label">@Loc["PatientUX_ImagingType"]</label>
+                    <select id="radiologyModalityFilter" name="modality" class="form-select">
+                        <option value="" selected="@(!Model.SelectedModality.HasValue)">@Loc["PatientUX_AllImaging", Model.TotalCount]</option>
                         @foreach (var modality in Enum.GetValues<RadiologyModality>())
                         {
                             <option value="@modality" selected="@(Model.SelectedModality == modality)">@modality.PdfDisplayName()</option>
                         }
                     </select>
                 </div>
-                <button type="button"
-                        class="btn btn-outline-drmc lab-date-toggle d-md-none"
-                        id="radiologyDateToggle"
-                        aria-expanded="@(dateOpen ? "true" : "false")"
-                        aria-controls="radiologyDatePanel">
-                    <i class="bi bi-calendar3" aria-hidden="true"></i>
-                    <span>Date</span>
-                    @if (!string.IsNullOrEmpty(Model.SelectedDateRange))
-                    {
-                        <span class="filter-active-dot" aria-label="Date filter active"></span>
-                    }
-                </button>
             </div>
 
             <div id="radiologyDatePanel" class="lab-date-panel @(dateOpen ? "is-open" : null)">
                 <div class="lab-date-field">
-                    <label for="radiologyDateFilter" class="form-label small fw-semibold text-dark mb-1">Encounter date</label>
+                    <label for="radiologyDateFilter" class="form-label small fw-semibold text-dark mb-1">@Loc["PatientUX_VisitDate"]</label>
                     <select id="radiologyDateFilter" name="dateRange" class="form-select" aria-controls="customRadiologyDateRange">
-                        <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDateRange))">Any date</option>
-                        <option value="30d" selected="@(Model.SelectedDateRange == "30d")">Last 30 days</option>
-                        <option value="6m" selected="@(Model.SelectedDateRange == "6m")">Last 6 months</option>
-                        <option value="year" selected="@(Model.SelectedDateRange == "year")">This year</option>
-                        <option value="custom" selected="@(Model.SelectedDateRange == "custom")">Custom date range</option>
+                        <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDateRange))">@Loc["Report_AnyDate"]</option>
+                        <option value="30d" selected="@(Model.SelectedDateRange == "30d")">@Loc["Report_Last30Days"]</option>
+                        <option value="6m" selected="@(Model.SelectedDateRange == "6m")">@Loc["Report_Last6Months"]</option>
+                        <option value="year" selected="@(Model.SelectedDateRange == "year")">@Loc["Report_ThisYear"]</option>
+                        <option value="custom" selected="@(Model.SelectedDateRange == "custom")">@Loc["Report_CustomRange"]</option>
                     </select>
                 </div>
                 <div id="customRadiologyDateRange" class="lab-custom-date @(Model.SelectedDateRange == "custom" ? null : "d-none")">
                     <fieldset class="custom-date-range">
-                        <legend class="visually-hidden">Custom encounter date range</legend>
+                        <legend class="visually-hidden">@Loc["PatientUX_CustomVisitDate"]</legend>
                         <div>
-                            <label for="radiologyStartDate" class="form-label small fw-semibold text-dark mb-1">From</label>
+                            <label for="radiologyStartDate" class="form-label small fw-semibold text-dark mb-1">@Loc["Report_From"]</label>
                             <input id="radiologyStartDate" name="startDate" type="date"
                                    value="@Model.SelectedStartDate?.ToString("yyyy-MM-dd")"
                                    max="@(Model.SelectedEndDate?.ToString("yyyy-MM-dd") ?? today)"
                                    class="form-control" />
                         </div>
                         <div>
-                            <label for="radiologyEndDate" class="form-label small fw-semibold text-dark mb-1">To</label>
+                            <label for="radiologyEndDate" class="form-label small fw-semibold text-dark mb-1">@Loc["Report_To"]</label>
                             <input id="radiologyEndDate" name="endDate" type="date"
                                    value="@Model.SelectedEndDate?.ToString("yyyy-MM-dd")"
                                    min="@Model.SelectedStartDate?.ToString("yyyy-MM-dd")"
@@ -93,15 +84,16 @@
                 </div>
                 <div class="lab-filter-actions">
                     <button type="submit" class="btn btn-primary-drmc fw-semibold">
-                        <i class="bi bi-funnel me-1" aria-hidden="true"></i> Apply
+                        <i class="bi bi-funnel me-1" aria-hidden="true"></i> @Loc["Report_Apply"]
                     </button>
                     @if (Model.HasFilters)
                     {
-                        <a asp-action="Index" class="btn btn-outline-secondary fw-semibold">Clear</a>
+                        <a asp-action="Index" class="btn btn-outline-secondary fw-semibold">@Loc["PatientUX_Clear"]</a>
                     }
                 </div>
             </div>
         </form>
+        </details>
     </div>
 </section>
 
@@ -114,14 +106,11 @@
             data-custom-range="customRadiologyDateRange"
             data-start="radiologyStartDate"
             data-end="radiologyEndDate"
-            data-toggle="radiologyDateToggle"
-            data-panel="radiologyDatePanel"
             data-today="@today"></script>
 }
 
-<section class="section py-5 bg-light">
+<section class="section patient-report-section">
     <div class="container">
-        <h2 class="h5 fw-bold text-dark mb-3">Your imaging requests and reports</h2>
         @{ ViewData["ReportKind"] = "radiology"; }
         <partial name="_EncounterReportGroups" model="Model.Results" />
 
@@ -129,7 +118,7 @@
 
         <!-- Services overview -->
         <section class="card border-0 shadow-sm rounded-4 p-4 bg-white" aria-labelledby="radiologyServicesHeading">
-            <h2 id="radiologyServicesHeading" class="h5 fw-bold text-dark mb-2">Imaging services at DRMC</h2>
+            <h2 id="radiologyServicesHeading" class="h5 fw-bold text-dark mb-2">@Loc["PatientUX_ImagingServices"]</h2>
             <p class="small text-muted mb-3">@dept.Description</p>
             @if (dept.ServicesOffered is { Count: > 0 })
             {
@@ -145,7 +134,7 @@
                 <i class="bi bi-telephone ms-1 me-1 text-primary-drmc" aria-hidden="true"></i>@dept.LocalExtension
             </p>
             <a asp-controller="Directory" asp-action="Department" asp-route-id="@dept.Name" class="btn btn-outline-drmc fw-semibold align-self-start">
-                <i class="bi bi-building me-1" aria-hidden="true"></i> Radiology department and doctors
+                <i class="bi bi-building me-1" aria-hidden="true"></i> @Loc["PatientUX_ImagingDepartment"]
             </a>
         </section>
     </div>
