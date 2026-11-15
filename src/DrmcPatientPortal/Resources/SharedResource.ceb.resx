@@ -671,8 +671,9 @@
   <data name="PatientUX_CustomVisitDate" xml:space="preserve"><value>Piniling sakop sa petsa sa pagbisita</value></data>
   <data name="PatientUX_Clear" xml:space="preserve"><value>Hawani</value></data>
   <data name="PatientUX_VisitDate" xml:space="preserve"><value>Petsa sa pagbisita</value></data>
-  <data name="PatientUX_ReportListSummary" xml:space="preserve"><value>{0} hangyo · {1} pagbisita. Una ang mga pagbisitang bag-ong gi-update.</value></data>
-  <data name="PatientUX_ReportGroupCount" xml:space="preserve"><value>{0} hangyo</value></data>
+  <data name="PatientUX_ReportListSummary" xml:space="preserve"><value>Mga hangyo: {0} · Mga pagbisita: {1}. Una ang mga pagbisitang bag-ong gi-update.</value></data>
+  <data name="PatientUX_ReportGroupCount" xml:space="preserve"><value>Mga hangyo: {0}</value></data>
   <data name="PatientUX_UnassignedVisit" xml:space="preserve"><value>Walay gitudlong pagbisita</value></data>
   <data name="PatientUX_FilterResults" xml:space="preserve"><value>Sala ang mga resulta</value></data>
+  <data name="PatientUX_DateNotRecorded" xml:space="preserve"><value>Wala matala ang petsa</value></data>
 </root>

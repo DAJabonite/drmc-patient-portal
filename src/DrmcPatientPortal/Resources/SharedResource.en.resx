@@ -671,8 +671,9 @@
   <data name="PatientUX_CustomVisitDate" xml:space="preserve"><value>Custom visit date range</value></data>
   <data name="PatientUX_Clear" xml:space="preserve"><value>Clear</value></data>
   <data name="PatientUX_VisitDate" xml:space="preserve"><value>Visit date</value></data>
-  <data name="PatientUX_ReportListSummary" xml:space="preserve"><value>{0} requests · {1} visits. Recently updated visits appear first.</value></data>
-  <data name="PatientUX_ReportGroupCount" xml:space="preserve"><value>{0} requests</value></data>
+  <data name="PatientUX_ReportListSummary" xml:space="preserve"><value>Requests: {0} · Visits: {1}. Recently updated visits appear first.</value></data>
+  <data name="PatientUX_ReportGroupCount" xml:space="preserve"><value>Requests: {0}</value></data>
   <data name="PatientUX_UnassignedVisit" xml:space="preserve"><value>Visit not assigned</value></data>
   <data name="PatientUX_FilterResults" xml:space="preserve"><value>Filter results</value></data>
+  <data name="PatientUX_DateNotRecorded" xml:space="preserve"><value>Date not recorded</value></data>
 </root>

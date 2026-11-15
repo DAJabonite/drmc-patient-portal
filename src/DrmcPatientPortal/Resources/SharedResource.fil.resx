@@ -671,8 +671,9 @@
   <data name="PatientUX_CustomVisitDate" xml:space="preserve"><value>Piling saklaw ng petsa ng pagbisita</value></data>
   <data name="PatientUX_Clear" xml:space="preserve"><value>I-clear</value></data>
   <data name="PatientUX_VisitDate" xml:space="preserve"><value>Petsa ng pagbisita</value></data>
-  <data name="PatientUX_ReportListSummary" xml:space="preserve"><value>{0} kahilingan · {1} pagbisita. Nauuna ang mga pagbisitang kamakailang na-update.</value></data>
-  <data name="PatientUX_ReportGroupCount" xml:space="preserve"><value>{0} kahilingan</value></data>
+  <data name="PatientUX_ReportListSummary" xml:space="preserve"><value>Mga kahilingan: {0} · Mga pagbisita: {1}. Nauuna ang mga pagbisitang kamakailang na-update.</value></data>
+  <data name="PatientUX_ReportGroupCount" xml:space="preserve"><value>Mga kahilingan: {0}</value></data>
   <data name="PatientUX_UnassignedVisit" xml:space="preserve"><value>Walang nakatalagang pagbisita</value></data>
   <data name="PatientUX_FilterResults" xml:space="preserve"><value>I-filter ang mga resulta</value></data>
+  <data name="PatientUX_DateNotRecorded" xml:space="preserve"><value>Hindi nakatala ang petsa</value></data>
 </root>

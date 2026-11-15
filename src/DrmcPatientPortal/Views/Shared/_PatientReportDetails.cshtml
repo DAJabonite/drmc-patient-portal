@@ -17,7 +17,7 @@
             <dd>
                 @if (Model.ExamDate.HasValue)
                 { <time datetime="@Model.ExamDate.Value.ToString("yyyy-MM-dd")">@Model.ExamDate.Value.ToString("MMM d, yyyy")</time> }
-                else { @Loc["Report_NoTestDate"] }
+                else { @Loc["PatientUX_DateNotRecorded"] }
             </dd>
         </div>
         <div>

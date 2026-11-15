@@ -15,7 +15,7 @@
             @(Model.Source == "radiology" ? Loc["Report_StudyDate"] : Loc["Report_TestDate"])
             @if (Model.ExamDate.HasValue)
             { <time datetime="@Model.ExamDate.Value.ToString("yyyy-MM-dd")">@Model.ExamDate.Value.ToString("MMM d, yyyy")</time> }
-            else { <span>@Loc["Report_NoTestDate"]</span> }
+            else { <span>@Loc["PatientUX_DateNotRecorded"]</span> }
         </p>
         <span class="patient-report-availability @(Model.CanOpenPdf ? "is-available" : null)">
             <i class="bi @(Model.CanOpenPdf ? "bi-file-earmark-check" : "bi-info-circle")" aria-hidden="true"></i>
