@@ -1,29 +1,46 @@
 @model PdfReportActionsViewModel
 @{
     var passwordId = $"pdf-password-{Model.ControllerName}-{Model.Source}-{Model.ReportId}";
-    var helpId = passwordId + "-help";
+    var modalId = $"pdf-password-modal-{Model.ControllerName}-{Model.Source}-{Model.ReportId}";
     var reportUrl = Model.Source == "redstar"
         ? Url.Content($"~/Patient/LabResults/RedStar/Report/{Model.ReportId}")
         : Url.Action("Report", Model.ControllerName, new { area = "", id = Model.ReportId });
 }
-<form action="@reportUrl"
-      method="post" rel="noopener" class="mt-3">
-    @Html.AntiForgeryToken()
-    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
-    <label for="@passwordId" class="form-label small fw-semibold">
-        @Loc["Report_Password"] <span class="visually-hidden">@Loc["Report_ForDescription", Model.Description]</span>
-    </label>
-    <input id="@passwordId" name="password" type="password" autocomplete="current-password"
-           maxlength="1024" required class="form-control" aria-describedby="@helpId" />
-    <p id="@helpId" class="small text-muted mt-2">@Loc["Report_PdfPasswordHelp"]</p>
-    <div class="d-flex flex-wrap gap-2">
-        <button type="submit" name="intent" value="view" formtarget="_blank" class="btn btn-primary-drmc">
-            <i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>@Loc["Report_ViewPdf"]
-            <span class="visually-hidden">@Loc["Report_NewTab", Model.Description]</span>
-        </button>
-        <button type="submit" name="intent" value="download" class="btn btn-outline-drmc">
-            <i class="bi bi-download me-1" aria-hidden="true"></i>@Loc["Report_DownloadPdf"]
-            <span class="visually-hidden">@Loc["Report_ForDescription", Model.Description]</span>
-        </button>
+<div class="d-flex flex-wrap gap-2 mt-3">
+    <button type="button" class="btn btn-primary-drmc" data-pdf-modal="@modalId" data-pdf-intent="view"
+            aria-haspopup="dialog" aria-controls="@modalId">
+        <i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>@Loc["Report_ViewPdf"]
+        <span class="visually-hidden">@Loc["Report_NewTab", Model.Description]</span>
+    </button>
+    <button type="button" class="btn btn-outline-drmc" data-pdf-modal="@modalId" data-pdf-intent="download"
+            aria-haspopup="dialog" aria-controls="@modalId">
+        <i class="bi bi-download me-1" aria-hidden="true"></i>@Loc["Report_DownloadPdf"]
+        <span class="visually-hidden">@Loc["Report_ForDescription", Model.Description]</span>
+    </button>
+</div>
+
+<div class="modal fade pdf-password-modal" id="@modalId" tabindex="-1" aria-label="@Loc["Report_Password"]" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="@reportUrl" method="post" rel="noopener" data-pdf-form>
+                @Html.AntiForgeryToken()
+                <div class="modal-body position-relative">
+                    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+                    <label for="@passwordId" class="form-label fw-semibold">
+                        <span data-pdf-password-label
+                              data-pdf-title-view="@Loc["Report_EnterPasswordView"]"
+                              data-pdf-title-download="@Loc["Report_EnterPasswordDownload"]">@Loc["Report_EnterPasswordView"]</span>
+                        <span class="visually-hidden">@Loc["Report_ForDescription", Model.Description]</span>
+                    </label>
+                    <input id="@passwordId" name="password" type="password" autocomplete="current-password"
+                           maxlength="1024" required class="form-control" data-pdf-password />
+                    <input type="hidden" name="intent" value="view" data-pdf-intent-field />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-drmc" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-drmc">@Loc["Report_Continue"]</button>
+                </div>
+            </form>
+        </div>
     </div>
-</form>
+</div>

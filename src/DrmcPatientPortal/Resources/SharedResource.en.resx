@@ -354,7 +354,7 @@
   <data name="Report_Cancelled" xml:space="preserve"><value>This request was cancelled.</value></data>
   <data name="Report_UnavailablePdf" xml:space="preserve"><value>The PDF is not currently available to view.</value></data>
   <data name="Report_PendingPdf" xml:space="preserve"><value>The report PDF is not available yet.</value></data>
-  <data name="Report_Details" xml:space="preserve"><value>Request details</value></data>
+  <data name="Report_Details" xml:space="preserve"><value>View details</value></data>
   <data name="Report_CountSummary" xml:space="preserve"><value>{0} encounters · {1} requests · {2} attached PDFs. Recently updated encounters appear first.</value></data>
   <data name="Report_GroupCounts" xml:space="preserve"><value>{0} requests · {1} PDFs</value></data>
   <data name="Report_NoMatch" xml:space="preserve"><value>No requests match these filters</value></data>
@@ -365,6 +365,9 @@
   <data name="Report_Password" xml:space="preserve"><value>Account password</value></data>
   <data name="Report_ForDescription" xml:space="preserve"><value>for {0}</value></data>
   <data name="Report_PdfPasswordHelp" xml:space="preserve"><value>Confirm your password each time you view or download this PDF.</value></data>
+  <data name="Report_Continue" xml:space="preserve"><value>Continue</value></data>
+  <data name="Report_EnterPasswordView" xml:space="preserve"><value>Enter password to view PDF</value></data>
+  <data name="Report_EnterPasswordDownload" xml:space="preserve"><value>Enter password to download PDF</value></data>
   <data name="Report_ViewPdf" xml:space="preserve"><value>View PDF</value></data>
   <data name="Report_DownloadPdf" xml:space="preserve"><value>Download PDF</value></data>
   <data name="Report_NewTab" xml:space="preserve"><value>for {0} (opens in a new tab)</value></data>

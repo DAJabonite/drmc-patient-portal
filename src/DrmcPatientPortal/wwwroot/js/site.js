@@ -46,3 +46,26 @@ document.addEventListener("submit", (event) => {
     const form = event.target;
     if (form instanceof HTMLFormElement && form.dataset.confirm && !window.confirm(form.dataset.confirm)) event.preventDefault();
 });
+
+document.addEventListener("click", (event) => {
+    const opener = event.target instanceof Element ? event.target.closest("[data-pdf-modal]") : null;
+    if (!(opener instanceof HTMLElement)) return;
+    const modalId = opener.dataset.pdfModal;
+    const modal = modalId ? document.getElementById(modalId) : null;
+    if (!(modal instanceof HTMLElement) || !window.bootstrap?.Modal) return;
+    const form = modal.querySelector("[data-pdf-form]");
+    const password = modal.querySelector("[data-pdf-password]");
+    const label = modal.querySelector("[data-pdf-password-label]");
+    const intent = opener.dataset.pdfIntent === "download" ? "download" : "view";
+    if (!(form instanceof HTMLFormElement) || !(password instanceof HTMLInputElement) || !(label instanceof HTMLElement)) return;
+    const intentField = form.querySelector("[data-pdf-intent-field]");
+    if (intentField instanceof HTMLInputElement) intentField.value = intent;
+    const titleText = intent === "download" ? label.dataset.pdfTitleDownload : label.dataset.pdfTitleView;
+    if (titleText) label.textContent = titleText;
+    if (intent === "view") form.target = "_blank";
+    else form.removeAttribute("target");
+    password.value = "";
+    const instance = window.bootstrap.Modal.getOrCreateInstance(modal);
+    modal.addEventListener("shown.bs.modal", () => password.focus(), { once: true });
+    instance.show();
+});

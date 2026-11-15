@@ -77,6 +77,14 @@ main {
     color: #a51d2d !important;
 }
 
+.report-status-waiting {
+    color: #F59E0B !important;
+}
+
+.report-status-finished {
+    color: #10B981 !important;
+}
+
 .btn-outline-secondary {
     --bs-btn-color: #536273;
     --bs-btn-border-color: #536273;
@@ -1993,6 +2001,16 @@ code,
 .btn-outline-drmc:focus {
     color: #fff;
     background: var(--drmc-primary);
+}
+
+.pdf-password-modal .modal-footer {
+    padding: .35rem .6rem;
+}
+
+.pdf-password-modal .modal-footer .btn {
+    min-height: 34px;
+    padding-top: .25rem;
+    padding-bottom: .25rem;
 }
 
 /* Footer */
