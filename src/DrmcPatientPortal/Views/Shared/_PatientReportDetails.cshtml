@@ -4,6 +4,12 @@
         : Model.CanOpenPdf ? "PatientUX_PdfAvailable"
         : Model.IsReleased || Model.HasPdf || Model.Status is "Available" or "Final" or "Amended"
             ? "PatientUX_PdfUnavailable" : "PatientUX_AwaitingResult";
+    var reportStatusClass = Model.Status switch
+    {
+        "Requested" or "Awaiting report" or "In progress" or "Pending Verification" => "report-status-waiting",
+        "Available" or "Final" or "Amended" => "report-status-finished",
+        _ => "text-muted"
+    };
 }
 <article class="patient-report-detail" data-report-id="@Model.Id" data-report-source="@Model.Source">
     <h2 class="h5 fw-bold mb-3">@Loc["PatientUX_ReportDetails"]</h2>
@@ -34,7 +40,7 @@
         </div>
         @if (!string.IsNullOrWhiteSpace(Model.RequestReference))
         { <div><dt>@Loc["Report_RequestReference"]</dt><dd>@Model.RequestReference</dd></div> }
-        <div><dt>@Loc["Report_Status"]</dt><dd>@Loc["ReportStatus_" + Model.Status.ToLowerInvariant()]</dd></div>
+        <div><dt>@Loc["Report_Status"]</dt><dd class="@reportStatusClass">@Loc["ReportStatus_" + Model.Status.ToLowerInvariant()]</dd></div>
     </dl>
     <section class="patient-official-report" aria-labelledby="officialReportHeading">
         <h2 id="officialReportHeading" class="h5 fw-bold mb-2">@Loc["PatientUX_OfficialReport"]</h2>

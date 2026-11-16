@@ -354,7 +354,7 @@
   <data name="Report_Cancelled" xml:space="preserve"><value>Kinansela ang kahilingang ito.</value></data>
   <data name="Report_UnavailablePdf" xml:space="preserve"><value>Hindi pa maaaring tingnan ang PDF.</value></data>
   <data name="Report_PendingPdf" xml:space="preserve"><value>Hindi pa handa ang PDF ng resulta.</value></data>
-  <data name="Report_Details" xml:space="preserve"><value>Mga detalye ng kahilingan</value></data>
+  <data name="Report_Details" xml:space="preserve"><value>Tingnan ang detalye</value></data>
   <data name="Report_CountSummary" xml:space="preserve"><value>{0} pagbisita · {1} kahilingan · {2} kalakip na PDF. Nauuna ang mga pagbisitang kamakailang na-update.</value></data>
   <data name="Report_GroupCounts" xml:space="preserve"><value>{0} kahilingan · {1} PDF</value></data>
   <data name="Report_NoMatch" xml:space="preserve"><value>Walang kahilingang tumutugma sa mga filter</value></data>
@@ -365,6 +365,10 @@
   <data name="Report_Password" xml:space="preserve"><value>Password ng account</value></data>
   <data name="Report_ForDescription" xml:space="preserve"><value>para sa {0}</value></data>
   <data name="Report_PdfPasswordHelp" xml:space="preserve"><value>Ilagay muli ang iyong password tuwing titingin o magda-download ng PDF na ito.</value></data>
+  <data name="Report_Continue" xml:space="preserve"><value>Magpatuloy</value></data>
+  <data name="Report_Cancel" xml:space="preserve"><value>Kanselahin</value></data>
+  <data name="Report_EnterPasswordView" xml:space="preserve"><value>Ilagay ang password para tingnan ang PDF</value></data>
+  <data name="Report_EnterPasswordDownload" xml:space="preserve"><value>Ilagay ang password para i-download ang PDF</value></data>
   <data name="Report_ViewPdf" xml:space="preserve"><value>Tingnan ang PDF</value></data>
   <data name="Report_DownloadPdf" xml:space="preserve"><value>I-download ang PDF</value></data>
   <data name="Report_NewTab" xml:space="preserve"><value>para sa {0} (magbubukas sa bagong tab)</value></data>

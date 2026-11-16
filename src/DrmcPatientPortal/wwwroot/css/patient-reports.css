@@ -26,6 +26,11 @@
 .patient-pdf-confirmation { background: #f5f7fa; border: 1px solid #dce3ec; border-radius: .5rem; padding: 1.25rem; margin-top: .75rem; }
 .patient-pdf-confirmation .form-control { min-height: 48px; }
 .patient-pdf-confirmation .btn { min-height: 44px; white-space: normal; }
+.patient-pdf-trigger { min-height: 48px; }
+.pdf-password-modal .form-control { min-height: 48px; }
+.pdf-password-modal .btn { min-height: 44px; }
+.pdf-password-modal .modal-footer { padding: .5rem 1rem; }
+.pdf-password-modal .validation-summary-errors { padding: .75rem; margin-bottom: 1rem; border-left: 4px solid #a52b2b; background: #fff3f3; }
 .patient-report-detail .validation-summary-valid { display: none; }
 .patient-report-detail .validation-summary-errors { padding: 1rem; margin: 1rem 0; border-left: 4px solid #a52b2b; background: #fff3f3; }
 .patient-record-header a:focus-visible, .patient-report-section a:focus-visible, .patient-pdf-action > summary:focus-visible { outline: 3px solid #152c49; outline-offset: 3px; }

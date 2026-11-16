@@ -77,6 +77,14 @@ main {
     color: #a51d2d !important;
 }
 
+.report-status-waiting {
+    color: #8a4b00 !important;
+}
+
+.report-status-finished {
+    color: #1b6148 !important;
+}
+
 .btn-outline-secondary {
     --bs-btn-color: #536273;
     --bs-btn-border-color: #536273;

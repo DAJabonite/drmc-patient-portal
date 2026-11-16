@@ -14,8 +14,11 @@
         var viewing = intent == "view";
         var passwordId = $"{actionId}-{intent}-password";
         var helpId = passwordId + "-help";
+        var titleId = passwordId + "-title";
+        var descriptionId = passwordId + "-description";
+        var errorId = passwordId + "-error";
         var actionHasErrors = hasErrors && (requestedIntent == intent || requestedIntent == "" && viewing);
-        <details class="patient-pdf-action" name="@actionId" open="@actionHasErrors">
+        <details class="patient-pdf-action" name="@actionId" open="@actionHasErrors" data-pdf-action>
             <summary class="btn @(viewing ? "btn-primary-drmc" : "btn-outline-drmc")">
                 <i class="bi @(viewing ? "bi-file-earmark-pdf" : "bi-download")" aria-hidden="true"></i>
                 @(viewing ? Loc["Report_ViewPdf"] : Loc["Report_DownloadPdf"])
@@ -23,23 +26,26 @@
             </summary>
             <form action="@reportUrl" method="post" rel="noopener" class="patient-pdf-confirmation">
                 @Html.AntiForgeryToken()
-                <p class="fw-semibold text-break mb-2">@Model.Description</p>
-                <label for="@passwordId" class="form-label fw-semibold">@Loc["Report_Password"]</label>
-                <input id="@passwordId" name="password" type="password" autocomplete="current-password"
-                       maxlength="1024" required class="form-control" aria-invalid="@(actionHasErrors ? "true" : null)" aria-describedby="@(actionHasErrors ? helpId + " report-access-error" : helpId)" />
-                <p id="@helpId" class="small text-muted mt-2 mb-3">@Loc["Report_PdfPasswordHelp"]</p>
-                @if (viewing)
-                {
-                    <button type="submit" name="intent" value="view" formtarget="_blank" class="btn btn-primary-drmc">
-                        @Loc["PatientUX_ConfirmView"]
-                        <span class="visually-hidden">@Loc["Report_NewTab", Model.Description]</span>
+                <div data-pdf-body>
+                    <label id="@titleId" for="@passwordId" class="form-label fw-semibold" data-pdf-title>
+                        @(viewing ? Loc["Report_EnterPasswordView"] : Loc["Report_EnterPasswordDownload"])
+                    </label>
+                    <p id="@descriptionId" class="small text-muted text-break mb-2" data-pdf-description>@Model.Description</p>
+                    @if (actionHasErrors)
+                    {
+                        <div id="@errorId" asp-validation-summary="All" class="text-danger" role="alert" tabindex="-1" data-pdf-error></div>
+                    }
+                    <input id="@passwordId" name="password" type="password" autocomplete="current-password"
+                           maxlength="1024" required class="form-control" aria-invalid="@(actionHasErrors ? "true" : null)" aria-describedby="@(actionHasErrors ? helpId + " " + errorId : helpId)" />
+                    <p id="@helpId" class="small text-muted mt-2 mb-0" data-pdf-help>@Loc["Report_PdfPasswordHelp"]</p>
+                </div>
+                <div class="d-flex flex-wrap justify-content-end gap-2 mt-3" data-pdf-footer>
+                    <button type="button" class="btn btn-outline-drmc" hidden data-pdf-cancel>@Loc["Report_Cancel"]</button>
+                    <button type="submit" name="intent" value="@intent" formtarget="@(viewing ? "_blank" : null)" class="btn btn-primary-drmc">
+                        @Loc["Report_Continue"]
+                        <span class="visually-hidden">@(viewing ? Loc["Report_NewTab", Model.Description] : Loc["Report_ForDescription", Model.Description])</span>
                     </button>
-                    <p class="small text-muted mt-2 mb-0">@Loc["PatientUX_PdfNewTab"]</p>
-                }
-                else
-                {
-                    <button type="submit" name="intent" value="download" class="btn btn-primary-drmc">@Loc["PatientUX_ConfirmDownload"]</button>
-                }
+                </div>
             </form>
         </details>
     }
