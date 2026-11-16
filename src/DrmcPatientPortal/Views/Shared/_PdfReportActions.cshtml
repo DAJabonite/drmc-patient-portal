@@ -22,7 +22,10 @@
 <div class="modal fade pdf-password-modal" id="@modalId" tabindex="-1" aria-label="@Loc["Report_Password"]" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form action="@reportUrl" method="post" rel="noopener" data-pdf-form>
+            <form action="@reportUrl" method="post" rel="noopener" data-pdf-form
+                  data-pdf-error-default="@Loc["Status_GenericBody"]"
+                  data-pdf-error-unavailable="@Loc["Report_UnavailablePdf"]"
+                  data-pdf-error-rate-limit="@Loc["Report_PdfRateLimit"]">
                 @Html.AntiForgeryToken()
                 <div class="modal-body position-relative">
                     <div asp-validation-summary="All" class="text-danger" role="alert"></div>
@@ -33,7 +36,10 @@
                         <span class="visually-hidden">@Loc["Report_ForDescription", Model.Description]</span>
                     </label>
                     <input id="@passwordId" name="password" type="password" autocomplete="current-password"
-                           maxlength="1024" required class="form-control" data-pdf-password />
+                           maxlength="1024" required class="form-control" aria-describedby="@(passwordId)-error" data-pdf-password />
+                    <div id="@(passwordId)-error" class="text-danger" role="alert" data-pdf-error></div>
+                    <a class="small" target="_blank" rel="noopener noreferrer"
+                       hidden data-pdf-open-link>@Loc["Report_OpenPdfTab"]</a>
                     <input type="hidden" name="intent" value="view" data-pdf-intent-field />
                 </div>
                 <div class="modal-footer">

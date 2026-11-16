@@ -26,7 +26,8 @@ public sealed class RedStarLabResultsController(RedStarReportAccess access, IRed
     }
 
     [HttpPost("Report/{id:int}"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> Report(int id, string? password, string? intent, CancellationToken token)
+    public async Task<IActionResult> Report(int id, string? password, string? intent, [FromServices] PatientPdfDelivery delivery,
+        CancellationToken token)
     {
         Response.Headers.CacheControl = "no-store, private";
         Response.Headers.Pragma = "no-cache";
@@ -39,7 +40,7 @@ public sealed class RedStarLabResultsController(RedStarReportAccess access, IRed
         if (string.IsNullOrEmpty(password) || password.Length > 1024) return await PasswordError(id, "Enter your account password for each View or Download action.", token);
         var locked = await users.IsLockedOutAsync(user);
         if (locked || !await signIn.CanSignInAsync(user) || !await users.CheckPasswordAsync(user, password))
-            return await PasswordError(id, locked ? "Your account is temporarily locked. Try again after the lockout period." : "The password could not be verified. Please try again.", token);
+            return await PasswordError(id, locked ? "Your account is temporarily locked. Try again after the lockout period." : "Invalid password. Please try again", token, locked);
         byte[] bytes;
         try { bytes = await storage.ReadAsync(id, report.ReportFileName!, token); }
         catch (FileNotFoundException) { return NotFound(); }
@@ -51,15 +52,18 @@ public sealed class RedStarLabResultsController(RedStarReportAccess access, IRed
         catch (AuditLogPersistenceException) { return StatusCode(503); }
         fresh = await Eligible(user.Id, id, token);
         if (fresh is null || fresh.ReportFileName != report.ReportFileName || await users.IsLockedOutAsync(user)) return NotFound();
-        return new PrivateFileResult(bytes, "application/pdf", $"lab-report-{id}.pdf", intent == "download");
+        return delivery.Deliver(this, user, PatientPdfSource.RedStar, id, report.ReportFileName!, bytes,
+            $"lab-report-{id}.pdf", intent == "download");
     }
     private async Task<RedStarLabReport?> Eligible(string userId, int id, CancellationToken token)
     {
         var report = await access.GetOwnedReportAsync(userId, id, token);
         return report is not null && RedStarReportAccess.CanOpenPdf(report, options.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow) ? report : null;
     }
-    private async Task<IActionResult> PasswordError(int id, string message, CancellationToken token)
+    private async Task<IActionResult> PasswordError(int id, string message, CancellationToken token, bool locked = false)
     {
+        if (PatientPdfDelivery.WantsJson(Request))
+            return StatusCode(locked ? StatusCodes.Status423Locked : StatusCodes.Status422UnprocessableEntity, new { message });
         ModelState.Clear();
         ModelState.AddModelError("", message);
         return await Details(id, token);

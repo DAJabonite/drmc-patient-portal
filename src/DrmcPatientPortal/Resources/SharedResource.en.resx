@@ -366,6 +366,8 @@
   <data name="Report_ForDescription" xml:space="preserve"><value>for {0}</value></data>
   <data name="Report_PdfPasswordHelp" xml:space="preserve"><value>Confirm your password each time you view or download this PDF.</value></data>
   <data name="Report_Continue" xml:space="preserve"><value>Continue</value></data>
+  <data name="Report_PdfRateLimit" xml:space="preserve"><value>Too many attempts. Wait before trying again.</value></data>
+  <data name="Report_OpenPdfTab" xml:space="preserve"><value>Open PDF in a new tab</value></data>
   <data name="Report_EnterPasswordView" xml:space="preserve"><value>Enter password to view PDF</value></data>
   <data name="Report_EnterPasswordDownload" xml:space="preserve"><value>Enter password to download PDF</value></data>
   <data name="Report_ViewPdf" xml:space="preserve"><value>View PDF</value></data>

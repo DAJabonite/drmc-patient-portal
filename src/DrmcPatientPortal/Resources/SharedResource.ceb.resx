@@ -366,6 +366,8 @@
   <data name="Report_ForDescription" xml:space="preserve"><value>alang sa {0}</value></data>
   <data name="Report_PdfPasswordHelp" xml:space="preserve"><value>Isulod pag-usab ang imong password matag pagtan-aw o pag-download niini nga PDF.</value></data>
   <data name="Report_Continue" xml:space="preserve"><value>Padayon</value></data>
+  <data name="Report_PdfRateLimit" xml:space="preserve"><value>Sobra na ang mga pagsulay. Paghulat una sa pagsulay pag-usab.</value></data>
+  <data name="Report_OpenPdfTab" xml:space="preserve"><value>Ablihi ang PDF sa bag-ong tab</value></data>
   <data name="Report_EnterPasswordView" xml:space="preserve"><value>Isulod ang password aron makita ang PDF</value></data>
   <data name="Report_EnterPasswordDownload" xml:space="preserve"><value>Isulod ang password aron ma-download ang PDF</value></data>
   <data name="Report_ViewPdf" xml:space="preserve"><value>Tan-awa ang PDF</value></data>

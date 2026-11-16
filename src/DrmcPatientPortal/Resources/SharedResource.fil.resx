@@ -366,6 +366,8 @@
   <data name="Report_ForDescription" xml:space="preserve"><value>para sa {0}</value></data>
   <data name="Report_PdfPasswordHelp" xml:space="preserve"><value>Ilagay muli ang iyong password tuwing titingin o magda-download ng PDF na ito.</value></data>
   <data name="Report_Continue" xml:space="preserve"><value>Magpatuloy</value></data>
+  <data name="Report_PdfRateLimit" xml:space="preserve"><value>Masyadong maraming pagsubok. Maghintay bago subukang muli.</value></data>
+  <data name="Report_OpenPdfTab" xml:space="preserve"><value>Buksan ang PDF sa bagong tab</value></data>
   <data name="Report_EnterPasswordView" xml:space="preserve"><value>Ilagay ang password para tingnan ang PDF</value></data>
   <data name="Report_EnterPasswordDownload" xml:space="preserve"><value>Ilagay ang password para i-download ang PDF</value></data>
   <data name="Report_ViewPdf" xml:space="preserve"><value>Tingnan ang PDF</value></data>

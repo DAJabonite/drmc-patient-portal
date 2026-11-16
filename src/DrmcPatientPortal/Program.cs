@@ -206,6 +206,7 @@ builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.Configure<PatientDocumentStorageOptions>(builder.Configuration.GetSection("PatientDocuments"));
 builder.Services.Configure<PatientResultsOptions>(builder.Configuration.GetSection(PatientResultsOptions.SectionName));
+builder.Services.AddSingleton<PatientPdfDelivery>();
 builder.Services.Configure<PatientRegistrationOptions>(builder.Configuration.GetSection(PatientRegistrationOptions.Section));
 builder.Services.Configure<StaffInvitationOptions>(builder.Configuration.GetSection(StaffInvitationOptions.Section));
 builder.Services.AddScoped<StaffInvitationActivator>();

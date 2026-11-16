@@ -78,7 +78,8 @@ public class LabResultsController : Controller
 
     [HttpPost("Report/{id:int}"), ValidateAntiForgeryToken]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-    public async Task<IActionResult> Report(int id, string? password, string? intent, CancellationToken token)
+    public async Task<IActionResult> Report(int id, string? password, string? intent, [FromServices] PatientPdfDelivery delivery,
+        CancellationToken token)
     {
         Response.Headers.CacheControl = "no-store, private";
         Response.Headers.Pragma = "no-cache";
@@ -93,7 +94,7 @@ public class LabResultsController : Controller
         var locked = await _userManager.IsLockedOutAsync(user);
         var verified = !locked && await _signIn.CanSignInAsync(user) && await _userManager.CheckPasswordAsync(user, password);
         if (!verified)
-            return await PasswordError(id, locked ? "Your account is temporarily locked. Try again after the lockout period." : "The password could not be verified. Please try again.");
+            return await PasswordError(id, locked ? "Your account is temporarily locked. Try again after the lockout period." : "Invalid password. Please try again", locked);
         byte[] bytes;
         try { bytes = await _storage.ReadAsync(id, lab!.ReportFileName!, token); }
         catch (FileNotFoundException) { return NotFound(); }
@@ -108,11 +109,14 @@ public class LabResultsController : Controller
         catch (AuditLogPersistenceException) { return StatusCode(503); }
         fresh = await SqlReadRetry.RunAsync(_db, () => _db.LabResults.AsNoTracking().Where(PatientResultsDisclosure.PdfEligibility(_resultsOptions.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow)).SingleOrDefaultAsync(l => l.Id == id && l.Patient.PortalUserId == user.Id, token), token);
         if (fresh is null || fresh.ReportFileName != lab.ReportFileName || await _userManager.IsLockedOutAsync(user)) return NotFound();
-        return new PrivateFileResult(bytes, "application/pdf", $"lab-report-{id}.pdf", intent == "download");
+        return delivery.Deliver(this, user, PatientPdfSource.Laboratory, id, lab.ReportFileName!, bytes,
+            $"lab-report-{id}.pdf", intent == "download");
     }
 
-    private async Task<IActionResult> PasswordError(int id, string message)
+    private async Task<IActionResult> PasswordError(int id, string message, bool locked = false)
     {
+        if (PatientPdfDelivery.WantsJson(Request))
+            return StatusCode(locked ? StatusCodes.Status423Locked : StatusCodes.Status422UnprocessableEntity, new { message });
         ModelState.Clear(); // Never return the submitted password in the page.
         ModelState.AddModelError("", message);
         return await Details(id);
