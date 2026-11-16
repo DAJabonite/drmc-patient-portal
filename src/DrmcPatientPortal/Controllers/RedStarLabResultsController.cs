@@ -22,7 +22,7 @@ public sealed class RedStarLabResultsController(RedStarReportAccess access, IRed
         var report = await access.GetOwnedReportAsync(user.Id, id, token);
         if (report is null) return NotFound();
         await RedStarAuditTrail.RecordAsync(db, user.Id, "View owned lab availability", $"LabReport/{id}", token);
-        return View(new RedStarPatientReportPage(report, RedStarReportAccess.CanOpenPdf(report, options.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow)));
+        return View("Details", new RedStarPatientReportPage(report, RedStarReportAccess.CanOpenPdf(report, options.CurrentValue.ShowFullResults, PatientResultsDisclosure.ManilaNow)));
     }
 
     [HttpPost("Report/{id:int}"), ValidateAntiForgeryToken]

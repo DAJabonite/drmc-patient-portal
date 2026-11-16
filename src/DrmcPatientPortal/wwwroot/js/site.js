@@ -47,25 +47,66 @@ document.addEventListener("submit", (event) => {
     if (form instanceof HTMLFormElement && form.dataset.confirm && !window.confirm(form.dataset.confirm)) event.preventDefault();
 });
 
-document.addEventListener("click", (event) => {
-    const opener = event.target instanceof Element ? event.target.closest("[data-pdf-modal]") : null;
-    if (!(opener instanceof HTMLElement)) return;
-    const modalId = opener.dataset.pdfModal;
-    const modal = modalId ? document.getElementById(modalId) : null;
-    if (!(modal instanceof HTMLElement) || !window.bootstrap?.Modal) return;
-    const form = modal.querySelector("[data-pdf-form]");
-    const password = modal.querySelector("[data-pdf-password]");
-    const label = modal.querySelector("[data-pdf-password-label]");
-    const intent = opener.dataset.pdfIntent === "download" ? "download" : "view";
-    if (!(form instanceof HTMLFormElement) || !(password instanceof HTMLInputElement) || !(label instanceof HTMLElement)) return;
-    const intentField = form.querySelector("[data-pdf-intent-field]");
-    if (intentField instanceof HTMLInputElement) intentField.value = intent;
-    const titleText = intent === "download" ? label.dataset.pdfTitleDownload : label.dataset.pdfTitleView;
-    if (titleText) label.textContent = titleText;
-    if (intent === "view") form.target = "_blank";
-    else form.removeAttribute("target");
-    password.value = "";
-    const instance = window.bootstrap.Modal.getOrCreateInstance(modal);
-    modal.addEventListener("shown.bs.modal", () => password.focus(), { once: true });
-    instance.show();
-});
+// Keep the server-rendered confirmations usable when JavaScript or Bootstrap is unavailable.
+(() => {
+    if (!window.bootstrap?.Modal) return;
+    document.querySelectorAll("details[data-pdf-action]").forEach((action) => {
+        const summary = action.querySelector("summary");
+        const form = action.querySelector("form");
+        const password = form?.querySelector('input[type="password"]');
+        const title = form?.querySelector("[data-pdf-title]");
+        const description = form?.querySelector("[data-pdf-description]");
+        const help = form?.querySelector("[data-pdf-help]");
+        const cancel = form?.querySelector("[data-pdf-cancel]");
+        if (!summary || !form || !password || !title || !description || !help || !cancel) return;
+
+        const reopen = action.open;
+        const modal = document.createElement("div");
+        modal.id = password.id + "-modal";
+        modal.className = "modal fade pdf-password-modal";
+        modal.tabIndex = -1;
+        modal.setAttribute("aria-hidden", "true");
+        modal.setAttribute("aria-labelledby", title.id);
+        modal.setAttribute("aria-describedby", description.id + " " + help.id);
+        const dialog = document.createElement("div");
+        dialog.className = "modal-dialog modal-dialog-centered";
+        const content = document.createElement("div");
+        content.className = "modal-content";
+        modal.append(dialog);
+        dialog.append(content);
+        content.append(form);
+        form.classList.remove("patient-pdf-confirmation");
+        form.querySelector("[data-pdf-body]").classList.add("modal-body");
+        const footer = form.querySelector("[data-pdf-footer]");
+        footer.classList.remove("mt-3");
+        footer.classList.add("modal-footer");
+        cancel.hidden = false;
+        cancel.setAttribute("data-bs-dismiss", "modal");
+        document.body.append(modal);
+
+        const opener = document.createElement("button");
+        opener.type = "button";
+        opener.className = summary.className + " patient-pdf-trigger";
+        opener.append(...summary.childNodes);
+        opener.setAttribute("aria-haspopup", "dialog");
+        opener.setAttribute("aria-controls", modal.id);
+        action.replaceWith(opener);
+        const instance = window.bootstrap.Modal.getOrCreateInstance(modal);
+        opener.addEventListener("click", () => {
+            password.value = "";
+            instance.show(opener);
+        });
+        modal.addEventListener("shown.bs.modal", () => {
+            (form.querySelector("[data-pdf-error]") ?? password).focus();
+        });
+        modal.addEventListener("hidden.bs.modal", () => {
+            password.value = "";
+            opener.focus();
+        });
+        form.addEventListener("formdata", () => {
+            password.value = "";
+            instance.hide();
+        });
+        if (reopen) instance.show(opener);
+    });
+})();

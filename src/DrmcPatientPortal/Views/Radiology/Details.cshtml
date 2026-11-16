@@ -1,21 +1,15 @@
 @model PatientReportCard
 @{
+    ViewData["Title"] = Model.Description;
     var returnUrl = Context.Request.Query["returnUrl"].ToString();
     var hasReturnUrl = Url.IsLocalUrl(returnUrl);
     var backUrl = hasReturnUrl ? Url.Content(returnUrl) : Url.Action("Index");
 }
-@{ ViewData["Title"] = Loc["Report_RadiologyRequest"]; }
-<section class="page-header"><div class="container">
-    <a href="@backUrl" class="text-white text-opacity-75 small">@(hasReturnUrl ? Loc["Report_BackPrevious"] : Loc["Report_BackImaging"])</a>
-    <h1 class="display-6 fw-bold mt-2">@Loc["Report_RadiologyRequest"]</h1>
+<section class="patient-record-header"><div class="container patient-report-detail-container">
+    <a href="@backUrl" class="patient-record-back"><i class="bi bi-arrow-left" aria-hidden="true"></i> @(hasReturnUrl ? Loc["Report_BackPrevious"] : Loc["Report_BackImaging"])</a>
+    <p class="patient-record-eyebrow">@Loc["Nav_Radiology"]</p>
+    <h1 class="h2 fw-bold text-break mb-0">@Model.Description</h1>
 </div></section>
-<section class="section py-5 bg-light"><div class="container" style="max-width: 720px;">
-    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-        <partial name="_PatientReportCard" model="Model" />
-        <nav class="pt-3 mt-3 border-top" aria-label="@Loc["Report_RequestActions"]">
-            @if (Model.ClinicalEncounterId.HasValue)
-            { <a asp-controller="Visits" asp-action="Details" asp-route-id="@Model.ClinicalEncounterId" class="btn btn-outline-secondary">@Loc["Report_BackEncounter"]</a> }
-            <a href="@backUrl" class="btn btn-outline-secondary">@(hasReturnUrl ? Loc["Report_BackPrevious"] : Loc["Report_BackImaging"])</a>
-        </nav>
-    </div>
+<section class="section patient-report-section"><div class="container patient-report-detail-container">
+    <partial name="_PatientReportDetails" model="Model" />
 </div></section>

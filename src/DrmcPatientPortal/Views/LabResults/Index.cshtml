@@ -1,73 +1,64 @@
 @model LabResultsIndexViewModel
 @{
-    ViewData["Title"] = "Diagnostic & Laboratory Results";
+    ViewData["Title"] = Loc["PatientUX_ResultsTitle"];
 }
 
-<section class="page-header">
+<section class="patient-record-header">
     <div class="container">
         <div>
-            <h1 class="display-6 fw-bold mb-0">Laboratory &amp; Diagnostic Results</h1>
+            <h1 class="h2 fw-bold mb-2">@Loc["PatientUX_ResultsTitle"]</h1>
+            <p class="text-muted mb-0">@Loc["PatientUX_ResultsHelp"]</p>
         </div>
     </div>
 </section>
 
 <!-- Result filters -->
-<section class="py-3 bg-white border-bottom sticky-top shadow-xs" style="z-index: 1020;">
+<section class="py-3 bg-white border-bottom">
     <div class="container">
-        <form asp-action="Index" method="get" class="lab-filter-form has-search" id="labResultFilterForm">
+        <details class="patient-report-filter-disclosure" open="@(Model.HasFilters || ViewData["DateRangeError"] is not null)">
+            <summary class="patient-report-filter-summary"><i class="bi bi-funnel" aria-hidden="true"></i> @Loc["PatientUX_FilterResults"]</summary>
+        <form asp-action="Index" method="get" class="lab-filter-form has-search" id="labResultFilterForm" role="search" aria-label="@Loc["PatientUX_ResultsTitle"]">
             <div class="radiology-search-field">
-                <label for="labSearch" class="form-label small fw-semibold">Search</label>
-                <input id="labSearch" name="search" type="search" class="form-control" value="@Model.SearchTerm" maxlength="200" placeholder="Exam description or encounter reference" />
+                <label for="labSearch" class="form-label small fw-semibold">@Loc["PatientUX_Search"]</label>
+                <input id="labSearch" name="search" type="search" class="form-control" value="@Model.SearchTerm" maxlength="200" placeholder="@Loc["PatientUX_ReportSearchHint"]" />
             </div>
             <div class="lab-request-status-field">
-                <label for="requestStatus" class="form-label small fw-semibold">Request status</label>
+                <label for="requestStatus" class="form-label small fw-semibold">@Loc["PatientUX_RequestStatus"]</label>
                 <select id="requestStatus" name="status" class="form-select">
-                    <option value="" selected="@(Model.SelectedStatus == null)">All requests</option>
-                    <option value="pending" selected="@(Model.SelectedStatus == "pending")">Pending requests</option>
-                    <option value="released" selected="@(Model.SelectedStatus == "released")">Released reports</option>
+                    <option value="" selected="@(Model.SelectedStatus == null)">@Loc["PatientUX_AllRequests"]</option>
+                    <option value="pending" selected="@(Model.SelectedStatus == "pending")">@Loc["PatientUX_PendingRequests"]</option>
+                    <option value="released" selected="@(Model.SelectedStatus == "released")">@Loc["PatientUX_ReleasedReports"]</option>
                 </select>
             </div>
             <div class="lab-filter-toolbar">
                 <div class="lab-category-field">
-                    <label for="labCategoryFilter" class="form-label small fw-semibold text-dark mb-1 lab-filter-label">Test category</label>
-                    <select id="labCategoryFilter" name="category" class="form-select" aria-label="Filter by test category">
-                        <option value="" selected="@(!Model.SelectedCategory.HasValue)">All Tests (@Model.TotalCount)</option>
+                    <label for="labCategoryFilter" class="form-label small fw-semibold text-dark mb-1 lab-filter-label">@Loc["PatientUX_TestCategory"]</label>
+                    <select id="labCategoryFilter" name="category" class="form-select">
+                        <option value="" selected="@(!Model.SelectedCategory.HasValue)">@Loc["PatientUX_AllTests", Model.TotalCount]</option>
                         @foreach (var category in Enum.GetValues<LabCategory>())
                         {
                             <option value="@category" selected="@(Model.SelectedCategory == category)">@category.DisplayName()</option>
                         }
                     </select>
                 </div>
-                <button type="button"
-                        class="btn btn-outline-drmc lab-date-toggle d-md-none"
-                        id="labDateToggle"
-                        aria-expanded="@(Model.SelectedDateRange is not null || ViewData["DateRangeError"] is not null ? "true" : "false")"
-                        aria-controls="labDatePanel">
-                    <i class="bi bi-calendar3" aria-hidden="true"></i>
-                    <span>Date</span>
-                    @if (!string.IsNullOrEmpty(Model.SelectedDateRange))
-                    {
-                        <span class="filter-active-dot" aria-label="Date filter active"></span>
-                    }
-                </button>
             </div>
 
             <div id="labDatePanel" class="lab-date-panel @(Model.SelectedDateRange is not null || ViewData["DateRangeError"] is not null ? "is-open" : null)">
                 <div class="lab-date-field">
-                    <label for="labDateFilter" class="form-label small fw-semibold text-dark mb-1">Encounter date</label>
+                    <label for="labDateFilter" class="form-label small fw-semibold text-dark mb-1">@Loc["PatientUX_VisitDate"]</label>
                     <select id="labDateFilter" name="dateRange" class="form-select" aria-controls="customLabDateRange">
-                        <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDateRange))">Any date</option>
-                        <option value="30d" selected="@(Model.SelectedDateRange == "30d")">Last 30 days</option>
-                        <option value="6m" selected="@(Model.SelectedDateRange == "6m")">Last 6 months</option>
-                        <option value="year" selected="@(Model.SelectedDateRange == "year")">This year</option>
-                        <option value="custom" selected="@(Model.SelectedDateRange == "custom")">Custom date range</option>
+                        <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedDateRange))">@Loc["Report_AnyDate"]</option>
+                        <option value="30d" selected="@(Model.SelectedDateRange == "30d")">@Loc["Report_Last30Days"]</option>
+                        <option value="6m" selected="@(Model.SelectedDateRange == "6m")">@Loc["Report_Last6Months"]</option>
+                        <option value="year" selected="@(Model.SelectedDateRange == "year")">@Loc["Report_ThisYear"]</option>
+                        <option value="custom" selected="@(Model.SelectedDateRange == "custom")">@Loc["Report_CustomRange"]</option>
                     </select>
                 </div>
                 <div id="customLabDateRange" class="lab-custom-date @(Model.SelectedDateRange == "custom" ? null : "d-none")">
                     <fieldset class="custom-date-range">
-                        <legend class="visually-hidden">Custom encounter date range</legend>
+                        <legend class="visually-hidden">@Loc["PatientUX_CustomVisitDate"]</legend>
                         <div>
-                            <label for="labStartDate" class="form-label small fw-semibold text-dark mb-1">From</label>
+                            <label for="labStartDate" class="form-label small fw-semibold text-dark mb-1">@Loc["Report_From"]</label>
                             <input id="labStartDate"
                                    name="startDate"
                                    type="date"
@@ -76,7 +67,7 @@
                                    class="form-control" />
                         </div>
                         <div>
-                            <label for="labEndDate" class="form-label small fw-semibold text-dark mb-1">To</label>
+                            <label for="labEndDate" class="form-label small fw-semibold text-dark mb-1">@Loc["Report_To"]</label>
                             <input id="labEndDate"
                                    name="endDate"
                                    type="date"
@@ -93,15 +84,16 @@
                 </div>
                 <div class="lab-filter-actions">
                     <button type="submit" class="btn btn-primary-drmc fw-semibold">
-                        <i class="bi bi-funnel me-1" aria-hidden="true"></i> Apply
+                        <i class="bi bi-funnel me-1" aria-hidden="true"></i> @Loc["Report_Apply"]
                     </button>
                     @if (Model.HasFilters)
                     {
-                        <a asp-action="Index" class="btn btn-outline-secondary fw-semibold">Clear</a>
+                        <a asp-action="Index" class="btn btn-outline-secondary fw-semibold">@Loc["PatientUX_Clear"]</a>
                     }
                 </div>
             </div>
         </form>
+        </details>
     </div>
 </section>
 
@@ -114,12 +106,10 @@
             data-custom-range="customLabDateRange"
             data-start="labStartDate"
             data-end="labEndDate"
-            data-toggle="labDateToggle"
-            data-panel="labDatePanel"
             data-today="@DrmcPatientPortal.Services.ClinicalClock.Today.ToString("yyyy-MM-dd")"></script>
 }
 
-<section class="section py-5 bg-light">
+<section class="section patient-report-section">
     <div class="container">
         @{ ViewData["ReportKind"] = "lab"; }
         <partial name="_EncounterReportGroups" model="Model.Results" />

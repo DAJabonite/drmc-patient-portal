@@ -1,16 +1,15 @@
 @model PatientReportCard
 @{
+    ViewData["Title"] = Model.Description;
     var returnUrl = Context.Request.Query["returnUrl"].ToString();
     var hasReturnUrl = Url.IsLocalUrl(returnUrl);
     var backUrl = hasReturnUrl ? Url.Content(returnUrl) : Url.Action("Index");
 }
-@{ ViewData["Title"] = Loc["Report_LabRequest"]; }
-<section class="page-header"><div class="container">
-    <a href="@backUrl" class="text-white text-opacity-75 small">@(hasReturnUrl ? Loc["Report_BackPrevious"] : Loc["Report_BackLab"])</a>
-    <h1 class="display-6 fw-bold mt-2">@Loc["Report_LabRequest"]</h1>
+<section class="patient-record-header"><div class="container patient-report-detail-container">
+    <a href="@backUrl" class="patient-record-back"><i class="bi bi-arrow-left" aria-hidden="true"></i> @(hasReturnUrl ? Loc["Report_BackPrevious"] : Loc["Report_BackLab"])</a>
+    <p class="patient-record-eyebrow">@Loc["PatientUX_ResultsTitle"]</p>
+    <h1 class="h2 fw-bold text-break mb-0">@Model.Description</h1>
 </div></section>
-<section class="section py-5 bg-light"><div class="container" style="max-width: 720px;">
-    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-        <partial name="_PatientReportCard" model="Model" />
-    </div>
+<section class="section patient-report-section"><div class="container patient-report-detail-container">
+    <partial name="_PatientReportDetails" model="Model" />
 </div></section>

@@ -366,6 +366,7 @@
   <data name="Report_ForDescription" xml:space="preserve"><value>for {0}</value></data>
   <data name="Report_PdfPasswordHelp" xml:space="preserve"><value>Confirm your password each time you view or download this PDF.</value></data>
   <data name="Report_Continue" xml:space="preserve"><value>Continue</value></data>
+  <data name="Report_Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Report_EnterPasswordView" xml:space="preserve"><value>Enter password to view PDF</value></data>
   <data name="Report_EnterPasswordDownload" xml:space="preserve"><value>Enter password to download PDF</value></data>
   <data name="Report_ViewPdf" xml:space="preserve"><value>View PDF</value></data>
@@ -644,4 +645,39 @@
   <data name="Privacy_ConsentLeave" xml:space="preserve"><value>Leave signup</value></data>
   <data name="Privacy_ConsentContinue" xml:space="preserve"><value>Agree and continue</value></data>
   <data name="Privacy_ConsentJavaScript" xml:space="preserve"><value>You need JavaScript to sign up. You can still read the following document.</value></data>
+  <data name="PatientUX_ResultsTitle" xml:space="preserve"><value>Laboratory results</value></data>
+  <data name="PatientUX_ResultsHelp" xml:space="preserve"><value>Find a report by test, visit or date. Open a report to view or download its official PDF.</value></data>
+  <data name="PatientUX_ImagingHelp" xml:space="preserve"><value>Your imaging requests and official reports, with preparation guidance below.</value></data>
+  <data name="PatientUX_PdfAvailable" xml:space="preserve"><value>PDF available</value></data>
+  <data name="PatientUX_PdfUnavailable" xml:space="preserve"><value>PDF unavailable in the portal</value></data>
+  <data name="PatientUX_AwaitingResult" xml:space="preserve"><value>Awaiting result</value></data>
+  <data name="PatientUX_RequestCancelled" xml:space="preserve"><value>Request cancelled</value></data>
+  <data name="PatientUX_OpenReport" xml:space="preserve"><value>Open report</value></data>
+  <data name="PatientUX_ReportDetails" xml:space="preserve"><value>Report details</value></data>
+  <data name="PatientUX_OfficialReport" xml:space="preserve"><value>Official report</value></data>
+  <data name="PatientUX_OfficialReportHelp" xml:space="preserve"><value>View the official PDF in a new tab or save a copy.</value></data>
+  <data name="PatientUX_ConfirmView" xml:space="preserve"><value>Confirm to view PDF</value></data>
+  <data name="PatientUX_ConfirmDownload" xml:space="preserve"><value>Confirm to download PDF</value></data>
+  <data name="PatientUX_PdfNewTab" xml:space="preserve"><value>Opens in a new tab.</value></data>
+  <data name="PatientUX_Visit" xml:space="preserve"><value>Visit</value></data>
+  <data name="PatientUX_ImagingServices" xml:space="preserve"><value>Imaging services at DRMC</value></data>
+  <data name="PatientUX_ImagingDepartment" xml:space="preserve"><value>Radiology department and doctors.</value></data>
+  <data name="PatientUX_Search" xml:space="preserve"><value>Search</value></data>
+  <data name="PatientUX_ReportSearchHint" xml:space="preserve"><value>Test name or visit reference</value></data>
+  <data name="PatientUX_RequestStatus" xml:space="preserve"><value>Request status</value></data>
+  <data name="PatientUX_AllRequests" xml:space="preserve"><value>All requests</value></data>
+  <data name="PatientUX_PendingRequests" xml:space="preserve"><value>Pending requests</value></data>
+  <data name="PatientUX_ReleasedReports" xml:space="preserve"><value>Released reports</value></data>
+  <data name="PatientUX_TestCategory" xml:space="preserve"><value>Test category</value></data>
+  <data name="PatientUX_AllTests" xml:space="preserve"><value>All tests ({0})</value></data>
+  <data name="PatientUX_ImagingType" xml:space="preserve"><value>Imaging type</value></data>
+  <data name="PatientUX_AllImaging" xml:space="preserve"><value>All imaging ({0})</value></data>
+  <data name="PatientUX_CustomVisitDate" xml:space="preserve"><value>Custom visit date range</value></data>
+  <data name="PatientUX_Clear" xml:space="preserve"><value>Clear</value></data>
+  <data name="PatientUX_VisitDate" xml:space="preserve"><value>Visit date</value></data>
+  <data name="PatientUX_ReportListSummary" xml:space="preserve"><value>Requests: {0} · Visits: {1}. Recently updated visits appear first.</value></data>
+  <data name="PatientUX_ReportGroupCount" xml:space="preserve"><value>Requests: {0}</value></data>
+  <data name="PatientUX_UnassignedVisit" xml:space="preserve"><value>Visit not assigned</value></data>
+  <data name="PatientUX_FilterResults" xml:space="preserve"><value>Filter results</value></data>
+  <data name="PatientUX_DateNotRecorded" xml:space="preserve"><value>Date not recorded</value></data>
 </root>

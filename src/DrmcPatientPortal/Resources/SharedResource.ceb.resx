@@ -366,6 +366,7 @@
   <data name="Report_ForDescription" xml:space="preserve"><value>alang sa {0}</value></data>
   <data name="Report_PdfPasswordHelp" xml:space="preserve"><value>Isulod pag-usab ang imong password matag pagtan-aw o pag-download niini nga PDF.</value></data>
   <data name="Report_Continue" xml:space="preserve"><value>Padayon</value></data>
+  <data name="Report_Cancel" xml:space="preserve"><value>Kanselahon</value></data>
   <data name="Report_EnterPasswordView" xml:space="preserve"><value>Isulod ang password aron makita ang PDF</value></data>
   <data name="Report_EnterPasswordDownload" xml:space="preserve"><value>Isulod ang password aron ma-download ang PDF</value></data>
   <data name="Report_ViewPdf" xml:space="preserve"><value>Tan-awa ang PDF</value></data>
@@ -644,4 +645,39 @@
   <data name="Privacy_ConsentLeave" xml:space="preserve"><value>Gawas sa pagparehistro</value></data>
   <data name="Privacy_ConsentContinue" xml:space="preserve"><value>Uyon ug padayon</value></data>
   <data name="Privacy_ConsentJavaScript" xml:space="preserve"><value>Kinahanglan ang JavaScript aron magparehistro. Mabasa gihapon nimo ang mosunod nga dokumento.</value></data>
+  <data name="PatientUX_ResultsTitle" xml:space="preserve"><value>Mga resulta sa laboratoryo</value></data>
+  <data name="PatientUX_ResultsHelp" xml:space="preserve"><value>Pangitaa ang report pinaagi sa pagsusi, pagbisita, o petsa. Ablihi ang report aron tan-awon o i-download ang opisyal nga PDF.</value></data>
+  <data name="PatientUX_ImagingHelp" xml:space="preserve"><value>Ang imong mga imaging request ug opisyal nga report, uban sa giya sa pagpangandam sa ubos.</value></data>
+  <data name="PatientUX_PdfAvailable" xml:space="preserve"><value>Maablihan ang PDF</value></data>
+  <data name="PatientUX_PdfUnavailable" xml:space="preserve"><value>Dili magamit ang PDF sa portal</value></data>
+  <data name="PatientUX_AwaitingResult" xml:space="preserve"><value>Naghulat sa resulta</value></data>
+  <data name="PatientUX_RequestCancelled" xml:space="preserve"><value>Gikansela ang hangyo</value></data>
+  <data name="PatientUX_OpenReport" xml:space="preserve"><value>Ablihi ang report</value></data>
+  <data name="PatientUX_ReportDetails" xml:space="preserve"><value>Mga detalye sa report</value></data>
+  <data name="PatientUX_OfficialReport" xml:space="preserve"><value>Opisyal nga report</value></data>
+  <data name="PatientUX_OfficialReportHelp" xml:space="preserve"><value>Tan-awa ang opisyal nga PDF sa bag-ong tab o pagtipig og kopya.</value></data>
+  <data name="PatientUX_ConfirmView" xml:space="preserve"><value>Kumpirmahi aron tan-awon ang PDF</value></data>
+  <data name="PatientUX_ConfirmDownload" xml:space="preserve"><value>Kumpirmahi aron i-download ang PDF</value></data>
+  <data name="PatientUX_PdfNewTab" xml:space="preserve"><value>Moabli sa bag-ong tab.</value></data>
+  <data name="PatientUX_Visit" xml:space="preserve"><value>Pagbisita</value></data>
+  <data name="PatientUX_ImagingServices" xml:space="preserve"><value>Mga serbisyo sa imaging sa DRMC</value></data>
+  <data name="PatientUX_ImagingDepartment" xml:space="preserve"><value>Departamento ug mga doktor sa radiology.</value></data>
+  <data name="PatientUX_Search" xml:space="preserve"><value>Pangitaa</value></data>
+  <data name="PatientUX_ReportSearchHint" xml:space="preserve"><value>Ngalan sa pagsusi o reperensiya sa pagbisita</value></data>
+  <data name="PatientUX_RequestStatus" xml:space="preserve"><value>Kahimtang sa hangyo</value></data>
+  <data name="PatientUX_AllRequests" xml:space="preserve"><value>Tanang hangyo</value></data>
+  <data name="PatientUX_PendingRequests" xml:space="preserve"><value>Mga naghulat nga hangyo</value></data>
+  <data name="PatientUX_ReleasedReports" xml:space="preserve"><value>Mga gipagawas nga report</value></data>
+  <data name="PatientUX_TestCategory" xml:space="preserve"><value>Kategoriya sa pagsusi</value></data>
+  <data name="PatientUX_AllTests" xml:space="preserve"><value>Tanang pagsusi ({0})</value></data>
+  <data name="PatientUX_ImagingType" xml:space="preserve"><value>Matang sa imaging</value></data>
+  <data name="PatientUX_AllImaging" xml:space="preserve"><value>Tanang imaging ({0})</value></data>
+  <data name="PatientUX_CustomVisitDate" xml:space="preserve"><value>Piniling sakop sa petsa sa pagbisita</value></data>
+  <data name="PatientUX_Clear" xml:space="preserve"><value>Hawani</value></data>
+  <data name="PatientUX_VisitDate" xml:space="preserve"><value>Petsa sa pagbisita</value></data>
+  <data name="PatientUX_ReportListSummary" xml:space="preserve"><value>Mga hangyo: {0} · Mga pagbisita: {1}. Una ang mga pagbisitang bag-ong gi-update.</value></data>
+  <data name="PatientUX_ReportGroupCount" xml:space="preserve"><value>Mga hangyo: {0}</value></data>
+  <data name="PatientUX_UnassignedVisit" xml:space="preserve"><value>Walay gitudlong pagbisita</value></data>
+  <data name="PatientUX_FilterResults" xml:space="preserve"><value>Sala ang mga resulta</value></data>
+  <data name="PatientUX_DateNotRecorded" xml:space="preserve"><value>Wala matala ang petsa</value></data>
 </root>

@@ -1,27 +1,29 @@
 @model PatientReportPage
 @{ var kind = ViewData["ReportKind"] as string ?? "lab"; }
-<p class="small text-muted">@Loc["Report_CountSummary", Model.Pagination.Total, Model.RequestCount, Model.PdfCount]</p>
+<p class="small text-muted mb-3">@Loc["PatientUX_ReportListSummary", Model.RequestCount, Model.Pagination.Total]</p>
 @if (Model.EncounterGroups.Count == 0 && Model.LegacyReports.Count == 0)
 {
-    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" data-testid="@(kind + "-no-match")">
+    <div class="patient-report-group p-4 mb-4" data-testid="@(kind + "-no-match")">
         <h2 class="h5">@Loc["Report_NoMatch"]</h2>
         <p class="text-muted">@Loc["Report_TryFilters"]</p>
         <a asp-action="Index" class="fw-semibold">@Loc["Report_ClearFilters"]</a>
     </div>
 }
-<div class="d-flex flex-column gap-3">
-    @for (var i = 0; i < Model.EncounterGroups.Count; i++)
+<div class="patient-report-groups">
+    @foreach (var group in Model.EncounterGroups)
     {
-        var group = Model.EncounterGroups[i];
-        <details class="card border-0 shadow-sm rounded-4 bg-white" data-testid="@(kind + "-encounter-group")" data-encounter-id="@group.EncounterId" open="@(i == 0)">
-            <summary class="p-4 fw-bold text-primary-drmc text-break">
-                @Loc["Report_Encounter"] @group.Reference · <time datetime="@group.Date.ToString("yyyy-MM-dd")">@group.Date.ToString("MMM d, yyyy")</time>
-                <span class="badge bg-light text-secondary border ms-2">@Loc["Report_GroupCounts", group.Reports.Count, group.Reports.Count(r => r.HasPdf)]</span>
-            </summary>
-            <div class="px-4 pb-4">
-                @foreach (var report in group.Reports) { <partial name="_PatientReportCard" model="report" /> }
+        <section class="patient-report-group" aria-labelledby="@(kind + "-visit-" + group.EncounterId)" data-testid="@(kind + "-encounter-group")" data-encounter-id="@group.EncounterId">
+            <div class="patient-report-group-heading">
+                <h2 id="@(kind + "-visit-" + group.EncounterId)" class="h6 fw-bold mb-1">
+                    @Loc["PatientUX_Visit"] · <time datetime="@group.Date.ToString("yyyy-MM-dd")">@group.Date.ToString("MMM d, yyyy")</time>
+                </h2>
+                <div class="d-flex flex-wrap justify-content-between gap-2 small">
+                    <a asp-controller="Visits" asp-action="Details" asp-route-id="@group.EncounterId" class="text-break">@group.Reference</a>
+                    <span class="text-muted">@Loc["PatientUX_ReportGroupCount", group.Reports.Count]</span>
+                </div>
             </div>
-        </details>
+            @foreach (var report in group.Reports) { <partial name="_PatientReportCard" model="report" /> }
+        </section>
     }
 </div>
 @if (Model.Pagination.Total > 0) { <partial name="_Pagination" model="Model.Pagination" /> }
@@ -29,10 +31,12 @@
 { <p class="small text-muted">@Loc["Report_LegacyExcluded"]</p> }
 @if (Model.LegacyPagination.Total > 0)
 {
-    <section class="card border-0 shadow-sm rounded-4 p-4 bg-white mt-4" aria-labelledby="legacyReportsHeading" data-testid="@(kind + "-unassigned")">
-        <h2 id="legacyReportsHeading" class="h5 fw-bold">@Loc["Report_Unassigned"]</h2>
-        <p class="small text-muted">@Loc["Report_LegacyHelp"]</p>
+    <section class="patient-report-group mt-4" aria-labelledby="legacyReportsHeading" data-testid="@(kind + "-unassigned")">
+        <div class="patient-report-group-heading">
+            <h2 id="legacyReportsHeading" class="h6 fw-bold">@Loc["PatientUX_UnassignedVisit"]</h2>
+            <p class="small text-muted mb-0">@Loc["Report_LegacyHelp"]</p>
+        </div>
         @foreach (var report in Model.LegacyReports) { <partial name="_PatientReportCard" model="report" /> }
-        <partial name="_Pagination" model="Model.LegacyPagination" />
+        <div class="px-3"><partial name="_Pagination" model="Model.LegacyPagination" /></div>
     </section>
 }

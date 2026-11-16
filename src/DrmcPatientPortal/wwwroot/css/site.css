@@ -78,11 +78,11 @@ main {
 }
 
 .report-status-waiting {
-    color: #F59E0B !important;
+    color: #8a4b00 !important;
 }
 
 .report-status-finished {
-    color: #10B981 !important;
+    color: #1b6148 !important;
 }
 
 .btn-outline-secondary {
@@ -2001,16 +2001,6 @@ code,
 .btn-outline-drmc:focus {
     color: #fff;
     background: var(--drmc-primary);
-}
-
-.pdf-password-modal .modal-footer {
-    padding: .35rem .6rem;
-}
-
-.pdf-password-modal .modal-footer .btn {
-    min-height: 34px;
-    padding-top: .25rem;
-    padding-bottom: .25rem;
 }
 
 /* Footer */
