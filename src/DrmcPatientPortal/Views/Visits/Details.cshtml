@@ -77,9 +77,7 @@
             <!-- Care Plan, Medications & Home Instructions -->
             <div class="mb-4">
                 <h3 class="h6 fw-bold text-primary-drmc mb-2">@Loc["Enc_CarePlan"]</h3>
-                <div class="p-4 bg-primary-subtle border border-primary border-opacity-25 rounded-3 text-dark small leading-relaxed" style="white-space: pre-line;">
-                    @Model.CarePlanAndInstructions
-                </div>
+                <div class="px-3 py-2 bg-primary-subtle border border-primary border-opacity-25 rounded-3 text-dark small leading-relaxed" style="white-space: pre-line;">@Model.CarePlanAndInstructions.Trim()</div>
             </div>
 
             @foreach (var reportSection in new[] {

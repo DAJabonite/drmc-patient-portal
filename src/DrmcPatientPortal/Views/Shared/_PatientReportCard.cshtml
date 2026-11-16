@@ -3,6 +3,9 @@
 @{
     var listUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
     var detailsUrl = QueryHelpers.AddQueryString(Url.Content("~" + Model.DetailsUrl), "returnUrl", listUrl);
+    var reportStatusClass = Model.Status is "Awaiting report" or "Requested"
+        ? "report-status-waiting"
+        : "report-status-finished";
 }
 <article class="py-3 border-top" data-report-id="@Model.Id" data-report-source="@Model.Source">
     <h2 class="h6 fw-bold text-dark text-break">@Model.Description</h2>
@@ -18,7 +21,7 @@
         { <time datetime="@Model.ExamDate.Value.ToString("yyyy-MM-dd")">@Model.ExamDate.Value.ToString("MMM d, yyyy")</time> }
         else { <span>@Loc["Report_NoTestDate"]</span> }
     </p>
-    <p class="small mb-2">@Loc["Report_Status"] <strong>@Loc["ReportStatus_" + Model.Status.ToLowerInvariant()]</strong></p>
+    <p class="small mb-2">@Loc["Report_Status"] <strong class="@reportStatusClass">@Loc["ReportStatus_" + Model.Status.ToLowerInvariant()]</strong></p>
     @if (!string.IsNullOrEmpty(Model.RequestReference)) { <p class="small text-muted text-break mb-2">@Loc["Report_RequestReference"] @Model.RequestReference</p> }
     @if (Model.CanOpenPdf)
     {
@@ -29,5 +32,9 @@
         <p class="small text-muted mb-2">@(Model.Status == "Cancelled" ? Loc["Report_Cancelled"] : Model.HasPdf ? Loc["Report_UnavailablePdf"] : Loc["Report_PendingPdf"])</p>
     }
     @if (ViewContext.RouteData.Values["controller"]?.ToString() == "Visits" || ViewContext.RouteData.Values["action"]?.ToString() != "Details")
-    { <a href="@detailsUrl" class="small fw-semibold">@Loc["Report_Details"]</a> }
+    {
+        <div class="text-end mt-2">
+            <a href="@detailsUrl" class="small fw-semibold">@Loc["Report_Details"]</a>
+        </div>
+    }
 </article>

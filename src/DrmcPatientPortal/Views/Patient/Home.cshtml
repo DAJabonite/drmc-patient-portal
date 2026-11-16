@@ -91,9 +91,12 @@
                             <div class="record-preview-list">
                                 @foreach (var lab in Model.LabResults.Take(2))
                                 {
+                                    var labStatusClass = lab.Status is "Awaiting report" or "Requested"
+                                        ? "report-status-waiting"
+                                        : "report-status-finished";
                                     <a href="@Url.Content("~" + lab.DetailsUrl)" class="record-preview">
                                         <span><strong>@lab.Description</strong><small>@(lab.EncounterReference ?? "Encounter not assigned") · @(lab.EncounterDate?.ToString("MMM d, yyyy") ?? lab.ExamDate?.ToString("MMM d, yyyy"))</small></span>
-                                        <span class="text-primary-drmc fw-semibold">@(lab.CanOpenPdf ? "View report" : lab.Status)</span>
+                                        <span class="@labStatusClass fw-semibold">@(lab.CanOpenPdf ? "View report" : lab.Status)</span>
                                     </a>
                                 }
                             </div>
