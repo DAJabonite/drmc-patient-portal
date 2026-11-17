@@ -13,7 +13,7 @@
 <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
 <div class="admin-card">
     <div class="admin-card-header">
-        <form method="get" class="d-flex flex-wrap flex-grow-1 gap-2" role="search">
+        <form method="get" data-live-filter data-live-search class="d-flex flex-wrap flex-grow-1 gap-2" role="search">
             <div class="admin-search"><i class="bi bi-search" aria-hidden="true"></i><label for="search" class="visually-hidden">Search</label><input id="search" name="search" type="search" value="@Model.Search" maxlength="450" class="form-control" placeholder="Search actor, action or record" /></div>
             <div class="admin-filter-narrow"><label for="patientId" class="visually-hidden">Patient reference</label><input id="patientId" name="patientId" type="number" min="1" value="@Model.PatientId" placeholder="Patient #" class="form-control" /></div>
             <button class="btn btn-outline-secondary" type="submit">Filter</button>

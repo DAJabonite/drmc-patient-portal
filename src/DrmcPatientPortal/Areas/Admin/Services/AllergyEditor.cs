@@ -1,6 +1,7 @@
 using DrmcPatientPortal.Areas.Admin.Models;
 using DrmcPatientPortal.Data;
 using DrmcPatientPortal.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace DrmcPatientPortal.Areas.Admin.Services;
 
@@ -9,6 +10,10 @@ public sealed class AllergyEditor : ClinicalEditor<PatientAllergy, AllergyInput>
     public override string Name => "PatientAllergies";
     public override string Title => "Patient allergies";
     public override string SearchColumn => "Allergen";
+    public override IQueryable<PatientAllergy> Search(IQueryable<PatientAllergy> query, string search) => query.Where(a =>
+        EF.Functions.Collate(a.Allergen, "Latin1_General_100_CI_AS").Contains(search) ||
+        EF.Functions.Collate(a.Patient.FullName, "Latin1_General_100_CI_AS").Contains(search) ||
+        a.Patient.HospitalNumber != null && EF.Functions.Collate(a.Patient.HospitalNumber, "Latin1_General_100_CI_AS").Contains(search));
     public override int? PatientId(PatientAllergy entity) => entity.PatientRecordId;
     public override string Summary(PatientAllergy entity) => entity.Severity + " | " + entity.RecordedAt.ToString("yyyy-MM-dd HH:mm");
     public override AllergyInput Input(ApplicationDbContext db, PatientAllergy entity) => new()

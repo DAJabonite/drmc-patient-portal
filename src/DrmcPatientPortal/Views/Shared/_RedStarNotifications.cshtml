@@ -1,0 +1,33 @@
+@model DrmcPatientPortal.Services.RedStarPortalState
+@{ var returnUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString; }
+@if (Model.Enrolled)
+{
+    <details class="redstar-notifications" data-notification-surface>
+        <summary class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-bell" aria-hidden="true"></i>
+            <span class="badge bg-primary ms-1" data-notification-count hidden="@(Model.UnreadCount == 0)">@Model.UnreadCount</span>
+            <span class="visually-hidden">@Loc["RS_Notifications"]</span>
+        </summary>
+        <section class="redstar-notification-panel shadow" aria-label="@Loc["RS_Notifications"]">
+            <h2 class="h6 mb-3">@Loc["RS_Reminders"]</h2>
+            @if (Model.Notifications.Count == 0) { <p class="text-muted mb-0">@Loc["RS_NoNotifications"]</p> }
+            @foreach (var notification in Model.Notifications)
+            {
+                <article class="border rounded-3 p-3 mb-2" data-redstar-notification="@notification.Id">
+                    <span class="badge bg-primary mb-2" data-notification-unread hidden="@notification.IsRead">@Loc["RS_Unread"]</span>
+                    <span class="small text-muted" data-notification-read hidden="@(!notification.IsRead)">@Loc["RS_Read"]</span>
+                    <p class="small mb-2">@Loc["RS_AppointmentReminder", notification.DueDate.ToString("MMMM d, yyyy")]</p>
+                    <a asp-area="" asp-controller="Medications" asp-action="Details" asp-route-id="@notification.PrescriptionId" class="small">@Loc["Rx_ViewTagubilin"]</a>
+                    @if (!notification.IsRead)
+                    {
+                        <form asp-area="" asp-controller="RedStarPatient" asp-action="Read" asp-route-id="@notification.Id" method="post" data-redstar-read="@notification.Id" class="mt-2">
+                            <input type="hidden" name="returnUrl" value="@returnUrl" />
+                            <button class="btn btn-outline-secondary btn-sm" type="submit">@Loc["RS_MarkRead"]</button>
+                        </form>
+                    }
+                </article>
+            }
+            <p data-notification-status role="status" class="small text-danger mb-0" data-error="@Loc["RS_ReadError"]"></p>
+        </section>
+    </details>
+}

@@ -1,5 +1,15 @@
 .patient-record-header { padding: 2rem 0 1.5rem; background: #f5f7fa; color: #152c49; border-bottom: 1px solid #e2e8ef; }
 .patient-record-header p { max-width: 48rem; }
+.redstar-notifications { position: relative; flex-shrink: 0; }
+.redstar-notifications > summary { list-style: none; }
+.redstar-notifications > summary::-webkit-details-marker { display: none; }
+.redstar-notification-panel { position: absolute; right: 0; top: calc(100% + .5rem); z-index: 1100; width: min(22rem, calc(100vw - 2rem)); max-height: min(70vh, 32rem); overflow-y: auto; padding: 1rem; color: #152c49; background: #fff; border: 1px solid #e2e8ef; border-radius: .75rem; }
+.redstar-notifications summary:focus-visible { outline: 3px solid #152c49; outline-offset: 3px; }
+[data-notification-count][hidden], [data-redstar-notification] [hidden] { display: none !important; }
+@media (max-width: 991.98px) {
+  .mobile-header .redstar-notifications > summary { color: #fff; border-color: rgba(255, 255, 255, .35); }
+  .mobile-header .redstar-notification-panel { position: fixed; top: calc(var(--mobile-header-height) + .5rem); right: 1rem; }
+}
 .patient-record-eyebrow { font-size: .875rem; color: #53657b; margin: 1rem 0 .5rem; }
 .patient-record-back { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; font-weight: 600; color: #174d7c; }
 .patient-report-section { padding: 2rem 0; background: #f5f7fa; }

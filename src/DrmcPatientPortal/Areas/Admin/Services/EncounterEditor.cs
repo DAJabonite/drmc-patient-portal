@@ -11,6 +11,10 @@ public sealed class EncounterEditor : ClinicalEditor<ClinicalEncounter, Encounte
     public override string Name => "ClinicalEncounters";
     public override string Title => "Clinical encounters";
     public override string SearchColumn => "EncounterReference";
+    public override IQueryable<ClinicalEncounter> Search(IQueryable<ClinicalEncounter> query, string search) => query.Where(e =>
+        EF.Functions.Collate(e.EncounterReference, "Latin1_General_100_CI_AS").Contains(search) ||
+        EF.Functions.Collate(e.Patient.FullName, "Latin1_General_100_CI_AS").Contains(search) ||
+        e.Patient.HospitalNumber != null && EF.Functions.Collate(e.Patient.HospitalNumber, "Latin1_General_100_CI_AS").Contains(search));
     public override int? PatientId(ClinicalEncounter entity) => entity.PatientRecordId;
     public override string Summary(ClinicalEncounter entity) => entity.EncounterDate.ToString("yyyy-MM-dd HH:mm") + " | " + entity.Department;
     public override async Task ConfigureFormAsync(ApplicationDbContext db, ViewDataDictionary viewData, EncounterInput input, OwnershipContext? context, CancellationToken token) =>

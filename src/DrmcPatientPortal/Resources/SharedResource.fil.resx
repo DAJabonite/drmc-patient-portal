@@ -680,4 +680,11 @@
   <data name="PatientUX_UnassignedVisit" xml:space="preserve"><value>Walang nakatalagang pagbisita</value></data>
   <data name="PatientUX_FilterResults" xml:space="preserve"><value>I-filter ang mga resulta</value></data>
   <data name="PatientUX_DateNotRecorded" xml:space="preserve"><value>Hindi nakatala ang petsa</value></data>
+  <data name="List_Loading" xml:space="preserve"><value>Ina-update ang mga resulta…</value></data>
+  <data name="List_Updated" xml:space="preserve"><value>Nai-update ang mga resulta.</value></data>
+  <data name="List_Error" xml:space="preserve"><value>Hindi ma-update ang mga resulta. Pakisubukang muli.</value></data>
+  <data name="RS_NoNotifications" xml:space="preserve"><value>Walang mga paalala sa appointment.</value></data>
+  <data name="RS_Unread" xml:space="preserve"><value>Hindi pa nababasa</value></data>
+  <data name="RS_Read" xml:space="preserve"><value>Nabasa</value></data>
+  <data name="RS_ReadError" xml:space="preserve"><value>Hindi mamarkahang nabasa ang paalalang ito. Pakisubukang muli.</value></data>
 </root>

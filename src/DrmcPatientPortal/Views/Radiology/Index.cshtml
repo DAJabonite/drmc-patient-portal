@@ -6,11 +6,10 @@
     var dept = Model.Department;
 }
 
-<section class="patient-record-header">
+<section class="patient-record-header bg-white">
     <div class="container">
         <div>
-            <h1 class="h2 fw-bold mb-2">@Loc["Nav_Radiology"]</h1>
-            <p class="text-muted mb-0">@Loc["PatientUX_ImagingHelp"]</p>
+            <h1 class="h2 fw-bold mb-0">@Loc["Nav_Radiology"]</h1>
         </div>
     </div>
 </section>
@@ -20,7 +19,7 @@
     <div class="container">
         <details class="patient-report-filter-disclosure" open="@(Model.HasFilters || ViewData["DateRangeError"] is not null)">
             <summary class="patient-report-filter-summary"><i class="bi bi-funnel" aria-hidden="true"></i> @Loc["PatientUX_FilterResults"]</summary>
-        <form asp-action="Index" method="get" class="lab-filter-form has-search" id="radiologyFilterForm" role="search" aria-label="@Loc["Nav_Radiology"]">
+        <form asp-action="Index" method="get" data-live-filter class="lab-filter-form has-search" id="radiologyFilterForm" role="search" aria-label="@Loc["Nav_Radiology"]">
             <div class="radiology-search-field">
                 <label for="radiologySearch" class="form-label small fw-semibold text-dark mb-1">@Loc["PatientUX_Search"]</label>
                 <input id="radiologySearch" name="search" type="search" class="form-control"

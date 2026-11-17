@@ -15,7 +15,9 @@ public sealed class RadiologyEditor : ClinicalEditor<RadiologyStudy, RadiologyIn
     public override int? PatientId(RadiologyStudy entity) => entity.PatientRecordId;
     public override string Summary(RadiologyStudy entity) => entity.StudyName + " | " + entity.Modality.DisplayName() + " | " + entity.Status.DisplayName();
     public override IQueryable<RadiologyStudy> Search(IQueryable<RadiologyStudy> query, string search) => query.Where(r =>
-        EF.Functions.Collate(r.AccessionNumber, "Latin1_General_100_CI_AS").Contains(search) || EF.Functions.Collate(r.StudyName, "Latin1_General_100_CI_AS").Contains(search));
+        EF.Functions.Collate(r.AccessionNumber, "Latin1_General_100_CI_AS").Contains(search) || EF.Functions.Collate(r.StudyName, "Latin1_General_100_CI_AS").Contains(search) ||
+        EF.Functions.Collate(r.Patient.FullName, "Latin1_General_100_CI_AS").Contains(search) ||
+        r.Patient.HospitalNumber != null && EF.Functions.Collate(r.Patient.HospitalNumber, "Latin1_General_100_CI_AS").Contains(search));
 
     // Enum identifiers are never rendered; show display names instead.
     public override IReadOnlyList<RecordField> Fields(ApplicationDbContext db, RadiologyStudy entity) => base.Fields(db, entity)

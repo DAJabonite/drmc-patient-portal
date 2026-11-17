@@ -3,11 +3,10 @@
     ViewData["Title"] = Loc["PatientUX_ResultsTitle"];
 }
 
-<section class="patient-record-header">
+<section class="patient-record-header bg-white">
     <div class="container">
         <div>
-            <h1 class="h2 fw-bold mb-2">@Loc["PatientUX_ResultsTitle"]</h1>
-            <p class="text-muted mb-0">@Loc["PatientUX_ResultsHelp"]</p>
+            <h1 class="h2 fw-bold mb-0">@Loc["PatientUX_ResultsTitle"]</h1>
         </div>
     </div>
 </section>
@@ -17,7 +16,7 @@
     <div class="container">
         <details class="patient-report-filter-disclosure" open="@(Model.HasFilters || ViewData["DateRangeError"] is not null)">
             <summary class="patient-report-filter-summary"><i class="bi bi-funnel" aria-hidden="true"></i> @Loc["PatientUX_FilterResults"]</summary>
-        <form asp-action="Index" method="get" class="lab-filter-form has-search" id="labResultFilterForm" role="search" aria-label="@Loc["PatientUX_ResultsTitle"]">
+        <form asp-action="Index" method="get" data-live-filter class="lab-filter-form has-search" id="labResultFilterForm" role="search" aria-label="@Loc["PatientUX_ResultsTitle"]">
             <div class="radiology-search-field">
                 <label for="labSearch" class="form-label small fw-semibold">@Loc["PatientUX_Search"]</label>
                 <input id="labSearch" name="search" type="search" class="form-control" value="@Model.SearchTerm" maxlength="200" placeholder="@Loc["PatientUX_ReportSearchHint"]" />

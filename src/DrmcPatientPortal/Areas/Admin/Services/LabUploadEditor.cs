@@ -18,7 +18,9 @@ public sealed class LabUploadEditor : ClinicalEditor<LabResult, LabUploadInput>
     public override string Summary(LabResult entity) => entity.AccessionNumber + " | " + entity.Status;
     public override IQueryable<LabResult> Search(IQueryable<LabResult> query, string search) => query.Where(l =>
         EF.Functions.Collate(l.AccessionNumber, "Latin1_General_100_CI_AS").Contains(search) ||
-        EF.Functions.Collate(l.TestName, "Latin1_General_100_CI_AS").Contains(search));
+        EF.Functions.Collate(l.TestName, "Latin1_General_100_CI_AS").Contains(search) ||
+        EF.Functions.Collate(l.Patient.FullName, "Latin1_General_100_CI_AS").Contains(search) ||
+        l.Patient.HospitalNumber != null && EF.Functions.Collate(l.Patient.HospitalNumber, "Latin1_General_100_CI_AS").Contains(search));
     public override IReadOnlyList<RecordField> Fields(ApplicationDbContext db, LabResult entity) =>
         base.Fields(db, entity).Where(f => f.Label is not nameof(LabResult.ReportFileName) and not nameof(LabResult.ReportOriginalFileNameProtected) and not nameof(LabResult.ReportSha256))
             .Select(f => f.Label == nameof(LabResult.AccessionNumber) ? f with { Label = "Report reference" } : f).ToArray();

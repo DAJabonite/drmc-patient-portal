@@ -18,7 +18,7 @@
 })();
 
 // Keep staff role menus inside the viewport on narrow and short screens.
-document.querySelectorAll(".staff-access-actions .dropdown-toggle").forEach((button) => {
+const initializeStaffDropdowns = () => document.querySelectorAll(".staff-access-actions .dropdown-toggle").forEach((button) => {
     window.bootstrap.Dropdown.getOrCreateInstance(button, {
         popperConfig: (config) => ({
             ...config,
@@ -28,6 +28,8 @@ document.querySelectorAll(".staff-access-actions .dropdown-toggle").forEach((but
         }),
     });
 });
+initializeStaffDropdowns();
+document.addEventListener('drmc:list-updated', initializeStaffDropdowns);
 
 // Print buttons (registration code slip).
 document.querySelectorAll("[data-admin-print]").forEach((button) => button.addEventListener("click", () => window.print()));

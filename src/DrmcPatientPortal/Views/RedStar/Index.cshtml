@@ -56,14 +56,24 @@
         @foreach (var request in Model.Requests) { <li class="list-group-item px-0">@request.RequestedDate.ToString("MMM d, yyyy") · @Loc["RS_Request_" + request.State]</li> }
         </ul></div>
     }
-    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4" id="reminders">
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4" id="reminders" data-notification-surface>
         <h2 class="h5">@Loc["RS_Reminders"]</h2><p class="small text-muted">@Loc["RS_ReminderHelp"]</p>
         @foreach (var notification in Model.Notifications)
         {
-            <div class="border rounded-3 p-3 mb-2 d-flex align-items-center justify-content-between flex-wrap gap-2"><span>@Loc["RS_AppointmentReminder", notification.Appointment.DueDate.ToString("MMMM d, yyyy")]</span>
-                @if (!notification.IsRead) { <form asp-action="Read" asp-route-id="@notification.Id" method="post"><button class="btn btn-outline-secondary btn-sm" type="submit">@Loc["RS_MarkRead"]</button></form> }
+            <div class="border rounded-3 p-3 mb-2 d-flex align-items-center justify-content-between flex-wrap gap-2" data-redstar-notification="@notification.Id">
+                <span>@Loc["RS_AppointmentReminder", notification.Appointment.DueDate.ToString("MMMM d, yyyy")]</span>
+                <span class="badge bg-primary" data-notification-unread hidden="@notification.IsRead">@Loc["RS_Unread"]</span>
+                <span class="small text-muted" data-notification-read hidden="@(!notification.IsRead)">@Loc["RS_Read"]</span>
+                @if (!notification.IsRead)
+                {
+                    <form asp-action="Read" asp-route-id="@notification.Id" method="post" data-redstar-read="@notification.Id">
+                        <input type="hidden" name="returnUrl" value="@(Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString)" />
+                        <button class="btn btn-outline-secondary btn-sm" type="submit">@Loc["RS_MarkRead"]</button>
+                    </form>
+                }
             </div>
         }
+        <p data-notification-status role="status" class="small text-danger mb-0" data-error="@Loc["RS_ReadError"]"></p>
         <form asp-action="Preferences" method="post" class="mt-3">
             <input type="hidden" name="rowVersion" value="@Convert.ToBase64String(Model.Patient.RowVersion)" />
             <div class="form-check"><input class="form-check-input" id="emailReminders" name="emailEnabled" value="true" type="checkbox" checked="@Model.Patient.EmailRemindersEnabled" aria-describedby="emailReminderHelp" /><label class="form-check-label" for="emailReminders">@Loc["RS_EmailOptIn"]</label></div>

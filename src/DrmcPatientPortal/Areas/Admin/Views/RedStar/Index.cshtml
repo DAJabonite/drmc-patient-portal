@@ -29,14 +29,10 @@
     <div class="col-sm-4"><a asp-action="Index" asp-route-search="@Model.Search" asp-route-program="@Model.Program" asp-route-status="Expired" asp-route-worklist="all" asp-route-month="@Model.Month" class="card h-100 text-decoration-none @(Model.Status == RedStarRegistryStatusFilter.Expired || Model.Worklist == "expired" ? "border-primary" : null)"><div class="card-body"><span class="d-block text-muted">Expired (@reportPeriod)</span><strong class="fs-3">@Model.Summary.ExpiredThisMonthCount</strong><span class="d-block small text-muted">Recorded status date in this month</span></div></a></div>
 </div>
 <div class="card mb-3"><div class="card-body">
-    <form asp-action="Index" method="get" class="d-flex flex-wrap gap-3 align-items-end">
-        <input name="search" type="hidden" value="@Model.Search" />
-        <input name="program" type="hidden" value="@Model.Program" />
-        <input name="status" type="hidden" value="@Model.Status" />
-        <input name="worklist" type="hidden" value="@Model.Worklist" />
-        <div><label for="report-month" class="form-label">Report month / year</label><input id="report-month" name="month" type="month" value="@Model.Month" min="1900-01" max="2200-12" class="form-control" required /></div>
-        <button class="btn btn-outline-primary" type="submit">Apply period</button>
-    </form>
+    <div class="d-flex flex-wrap gap-3 align-items-end">
+        <div><label for="report-month" class="form-label">Report month / year</label><input id="report-month" name="month" form="redStarFilterForm" type="month" value="@Model.Month" min="1900-01" max="2200-12" class="form-control" required /></div>
+        <button form="redStarFilterForm" class="btn btn-outline-primary" type="submit">Apply period</button>
+    </div>
 </div></div>
 <p class="small text-muted">Summary totals cover the entire registry. Active and Living are current totals; the selected report month applies to Expired records using their recorded status date. Table filters apply to the listed and downloaded rows.</p>
 <h2 class="h6">Clinic-wide worklists</h2>
@@ -48,12 +44,11 @@
 </div>
 <p class="small text-muted">Follow-up review flags active ART patients with an uncollected refill at least one calendar month past its scheduled date. Staff review the record; this flag does not change enrollment status.</p>
 <div class="card mb-4"><div class="card-body">
-    <form asp-action="Index" method="get" class="row g-3 align-items-end">
-        <div class="col-md-4"><label for="search" class="form-label">Patient code / code name</label><input id="search" name="search" value="@Model.Search" maxlength="120" class="form-control" autocomplete="off" /></div>
+    <form asp-action="Index" method="get" id="redStarFilterForm" data-live-filter data-live-search class="row g-3 align-items-end">
+        <div class="col-md-4"><label for="search" class="form-label">Patient name / code / code name</label><input id="search" name="search" type="search" value="@Model.Search" maxlength="120" class="form-control" autocomplete="off" /></div>
         <div class="col-md-3"><label for="program" class="form-label">Program</label><select id="program" name="program" class="form-select"><option value="">All programs</option>@foreach (var program in Enum.GetValues<RedStarProgram>()) { <option value="@program" selected="@(Model.Program == program)">@program</option> }</select></div>
         <div class="col-md-3"><label for="status" class="form-label">Status</label><select id="status" name="status" class="form-select">@if (Model.Worklist != "all") { <option value="">Worklist default</option> }@foreach (var status in new[] { RedStarRegistryStatusFilter.Active, RedStarRegistryStatusFilter.Living, RedStarRegistryStatusFilter.Expired, RedStarRegistryStatusFilter.AwaitingVerification, RedStarRegistryStatusFilter.TransferredOut, RedStarRegistryStatusFilter.Discontinued, RedStarRegistryStatusFilter.Completed }) { <option value="@status" selected="@(Model.Status == status)">@(status == RedStarRegistryStatusFilter.Living ? "Living (active ART)" : AdminChips.Humanize(status))</option> }</select></div>
         <input name="worklist" type="hidden" value="@Model.Worklist" />
-        <input name="month" type="hidden" value="@Model.Month" />
         <div class="col-md-2"><button class="btn btn-primary" type="submit">Filter</button> <a asp-action="Index" class="btn btn-link">Reset</a></div>
     </form>
 </div></div>
