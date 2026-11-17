@@ -45,7 +45,7 @@
         @if (Model.RedStarEnrolled) { <partial name="_RedStarRefillCard" model="Model.RedStarRefill" /> }
 
         <div class="row g-3">
-            <div class="col-md-6 col-xl-3">
+            <div class="col-md-6">
                 <article class="card summary-card h-100">
                     <div class="card-body p-4 d-flex flex-column">
                         <div class="summary-card-heading">
@@ -60,8 +60,12 @@
                             var latestEnc = Model.Encounters.First();
                             <div class="record-preview-list">
                                 <a asp-controller="Visits" asp-action="Details" asp-route-id="@latestEnc.Id" class="record-preview">
-                                    <span><strong>@latestEnc.Department</strong><small>@latestEnc.EncounterReference · @latestEnc.EncounterDate.ToString("MMM d, yyyy")</small></span>
-                                    <span class="badge status-badge text-bg-primary">@Loc[$"EncounterType_{latestEnc.Type}"]</span>
+                                    <span class="record-preview-content">
+                                        <strong>@latestEnc.Department</strong>
+                                        <small>@latestEnc.EncounterDate.ToString("MMM d, yyyy")</small>
+                                        <small class="record-preview-reference" title="@latestEnc.EncounterReference">@latestEnc.EncounterReference</small>
+                                    </span>
+                                    <span class="record-preview-status badge status-badge text-bg-primary">@Loc[$"EncounterType_{latestEnc.Type}"]</span>
                                 </a>
                             </div>
                         }
@@ -74,7 +78,7 @@
                 </article>
             </div>
 
-            <div class="col-md-6 col-xl-3">
+            <div class="col-md-6">
                 <article class="card summary-card h-100">
                     <div class="card-body p-4 d-flex flex-column">
                         <div class="summary-card-heading">
@@ -98,8 +102,12 @@
                                         _ => "text-muted"
                                     };
                                     <a href="@Url.Content("~" + lab.DetailsUrl)" class="record-preview">
-                                        <span><strong>@lab.Description</strong><small>@(lab.EncounterReference ?? "Encounter not assigned") · @(lab.EncounterDate?.ToString("MMM d, yyyy") ?? lab.ExamDate?.ToString("MMM d, yyyy"))</small></span>
-                                        <span class="@labStatusClass fw-semibold">@(lab.CanOpenPdf ? "View report" : lab.Status)</span>
+                                        <span class="record-preview-content">
+                                            <strong>@lab.Description</strong>
+                                            <small>@(lab.EncounterDate?.ToString("MMM d, yyyy") ?? lab.ExamDate?.ToString("MMM d, yyyy"))</small>
+                                            <small class="record-preview-reference" title="@lab.EncounterReference">@(lab.EncounterReference ?? "Encounter not assigned")</small>
+                                        </span>
+                                        <span class="record-preview-status @labStatusClass fw-semibold">@(lab.CanOpenPdf ? "View report" : lab.Status)</span>
                                     </a>
                                 }
                             </div>
@@ -114,7 +122,7 @@
                 </article>
             </div>
 
-            <div class="col-md-6 col-xl-3">
+            <div class="col-md-6">
                 <article class="card summary-card h-100">
                     <div class="card-body p-4 d-flex flex-column">
                         <div class="summary-card-heading">
@@ -130,7 +138,7 @@
                 </article>
             </div>
 
-            <div class="col-md-6 col-xl-3">
+            <div class="col-md-6">
                 <article class="card summary-card h-100">
                     <div class="card-body p-4 d-flex flex-column">
                         <div class="summary-card-heading">

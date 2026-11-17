@@ -1237,6 +1237,7 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
     border-radius: 50%;
     font-size: 0.875rem;
     font-weight: 800;
+    font-variant-numeric: tabular-nums;
 }
 
 .status-badge {
@@ -1403,10 +1404,11 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
     min-width: 0;
     min-height: 52px;
     display: flex;
-    align-items: center;
+    flex-wrap: wrap;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 0.6rem;
-    padding: 0.65rem;
+    gap: 0.5rem 1rem;
+    padding: 0.85rem;
     color: var(--drmc-text);
     background: var(--drmc-surface-soft);
     border-radius: var(--drmc-radius-sm);
@@ -1418,23 +1420,40 @@ main > section:first-child.bg-primary-drmc:not(.hero-section):not(.dashboard-her
     display: block;
 }
 
-.record-preview > span:first-child {
-    flex: 1;
+.record-preview-content {
+    flex: 1 1 15rem;
     min-width: 0;
 }
 
+.record-preview-status {
+    max-width: 100%;
+    flex: 0 1 auto;
+    font-size: 0.875rem;
+}
+
 .card .record-preview .status-badge {
-    flex-shrink: 0;
-    white-space: nowrap;
+    white-space: normal;
+    text-align: left;
 }
 
 .record-preview strong {
     font-size: 0.875rem;
+    line-height: 1.4;
+    overflow-wrap: break-word;
+    text-wrap: pretty;
 }
 
 .record-preview small {
     color: var(--drmc-text-muted);
     font-size: 0.875rem;
+}
+
+.record-preview .record-preview-reference {
+    margin-top: 0.15rem;
+    overflow: hidden;
+    font-size: 0.75rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .empty-state {
