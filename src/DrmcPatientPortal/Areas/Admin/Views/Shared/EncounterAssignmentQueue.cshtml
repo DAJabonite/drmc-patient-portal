@@ -14,4 +14,4 @@
         <a asp-action="NeedsEncounterAssignment" asp-route-page="@(Model.Page + 1)" class="btn btn-outline-secondary @(Model.Page == Model.Pages ? "disabled" : null)">Next</a>
     </nav>
 </div>
-<a asp-action="Index" class="btn btn-link">Back to records</a>
+<a asp-area="Admin" asp-controller="@ViewContext.RouteData.Values["controller"]" asp-action="Index" asp-route-id="@null" class="btn btn-link">Back to records</a>

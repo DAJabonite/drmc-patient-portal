@@ -52,9 +52,10 @@ public static class PrescriptionQueries
         while (true)
         {
             var rows = await query.AsNoTracking().Where(p => p.Id > after).OrderBy(p => p.Id).Take(100)
-                .Select(p => new { p.Id, p.RxNumber, p.GenericName }).ToListAsync(token);
+                .Select(p => new { p.Id, p.RxNumber, p.GenericName, p.Patient.FullName, p.Patient.HospitalNumber }).ToListAsync(token);
             if (rows.Count == 0) break;
-            matches.AddRange(rows.Where(p => RedStarPhiProtection.Contains(p.RxNumber, search) || RedStarPhiProtection.Contains(p.GenericName, search)).Select(p => p.Id));
+            matches.AddRange(rows.Where(p => RedStarPhiProtection.Contains(p.RxNumber, search) || RedStarPhiProtection.Contains(p.GenericName, search) ||
+                RedStarPhiProtection.Contains(p.FullName, search) || p.HospitalNumber is not null && RedStarPhiProtection.Contains(p.HospitalNumber, search)).Select(p => p.Id));
             after = rows[^1].Id;
         }
         var ids = matches.ToArray();

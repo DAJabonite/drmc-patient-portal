@@ -680,4 +680,11 @@
   <data name="PatientUX_UnassignedVisit" xml:space="preserve"><value>Visit not assigned</value></data>
   <data name="PatientUX_FilterResults" xml:space="preserve"><value>Filter results</value></data>
   <data name="PatientUX_DateNotRecorded" xml:space="preserve"><value>Date not recorded</value></data>
+  <data name="List_Loading" xml:space="preserve"><value>Updating results…</value></data>
+  <data name="List_Updated" xml:space="preserve"><value>Results updated.</value></data>
+  <data name="List_Error" xml:space="preserve"><value>Unable to update results. Please try again.</value></data>
+  <data name="RS_NoNotifications" xml:space="preserve"><value>No appointment reminders.</value></data>
+  <data name="RS_Unread" xml:space="preserve"><value>Unread</value></data>
+  <data name="RS_Read" xml:space="preserve"><value>Read</value></data>
+  <data name="RS_ReadError" xml:space="preserve"><value>Unable to mark this reminder as read. Please try again.</value></data>
 </root>

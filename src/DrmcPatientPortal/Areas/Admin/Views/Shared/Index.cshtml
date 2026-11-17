@@ -4,6 +4,8 @@
     ViewData["Title"] = Model.Title;
     var controller = ViewContext.RouteData.Values["controller"]?.ToString();
     var nav = AdminNavigation.Find(controller);
+    var searchHint = controller is "ClinicalEncounters" or "LabResults" or "RadiologyStudies" or "Prescriptions" or "PatientAllergies"
+        ? "Search patient name, hospital number or record" : "Search " + Model.Title.ToLowerInvariant();
     var metadataLabel = controller switch
     {
         "ClinicalEncounters" => "Department",
@@ -35,11 +37,11 @@
 <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
 <div class="admin-card">
     <div class="admin-card-header">
-        <form method="get" class="d-flex flex-grow-1 gap-2" role="search">
+        <form method="get" data-live-filter data-live-search class="d-flex flex-grow-1 gap-2" role="search">
             <div class="admin-search">
                 <i class="bi bi-search" aria-hidden="true"></i>
                 <label for="search" class="visually-hidden">Search @Model.Title.ToLowerInvariant()</label>
-                <input id="search" name="search" value="@Model.Search" maxlength="450" class="form-control" type="search" placeholder="Search @Model.Title.ToLowerInvariant()" />
+                <input id="search" name="search" value="@Model.Search" maxlength="450" class="form-control" type="search" placeholder="@searchHint" />
             </div>
             <input type="hidden" name="contextId" value="@Model.ContextId" />
             <button class="btn btn-outline-secondary" type="submit">Search</button>

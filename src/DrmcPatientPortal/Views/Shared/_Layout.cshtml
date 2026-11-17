@@ -94,6 +94,7 @@
                          alt="Davao Regional Medical Center, Department of Health" />
                 </picture>
             </a>
+            <partial name="_RedStarNotifications" model="redStarState" />
             <button class="mobile-menu-trigger" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileUtilityMenu"
                     aria-controls="mobileUtilityMenu" aria-label="@Loc["Mobile_Menu"]">
                 <i class="bi bi-list" aria-hidden="true"></i>
@@ -126,7 +127,7 @@
                 }
             </ul>
             <div class="nav-account d-flex align-items-center gap-2">
-                @if (redStarState.UnreadCount > 0) { <a class="btn btn-sm btn-outline-secondary" href="/Patient/RedStar#reminders" aria-label="@Loc["RS_Notifications"]"><i class="bi bi-bell" aria-hidden="true"></i><span class="badge bg-primary ms-1">@redStarState.UnreadCount</span><span class="visually-hidden">@Loc["RS_Notifications"]</span></a> }
+                <partial name="_RedStarNotifications" model="redStarState" />
                 @if (!signedIn)
                 {
                     <button class="nav-menu-trigger btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-2 px-3 py-1 text-primary-drmc fw-semibold bg-white border-primary-subtle"
@@ -141,6 +142,8 @@
         </div>
     </nav>
 
+    <div data-live-status role="status" aria-live="polite" class="visually-hidden small px-3"
+         data-loading="@Loc["List_Loading"]" data-updated="@Loc["List_Updated"]" data-error="@Loc["List_Error"]"></div>
     <main id="main-content" role="main" tabindex="-1">
         @RenderBody()
         @if (ViewData["Pagination"] is DrmcPatientPortal.Services.PortalPagination pagination)
@@ -220,6 +223,8 @@
     <script src="~/lib/jquery/jquery.min.js"></script>
     <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/live-list.js" asp-append-version="true"></script>
+    <script src="~/js/redstar-notifications.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

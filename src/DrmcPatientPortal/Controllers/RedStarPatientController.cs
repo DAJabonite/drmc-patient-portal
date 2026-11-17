@@ -93,20 +93,16 @@ public sealed class RedStarPatientController(ApplicationDbContext db, RedStarPat
     }
 
     [HttpPost("Read/{id:guid}")]
-    public async Task<IActionResult> Read(Guid id, CancellationToken token)
+    public async Task<IActionResult> Read(Guid id, string? returnUrl, CancellationToken token)
     {
-        var ownedIds = patients.OwnedPatients(Actor).Select(p => p.Id);
-        var accountIndex = db.Phi.AccountIndex(Actor);
-        var prescriptions = await PrescriptionQueries.OwnedAsync(db, Actor, token);
-        var refills = PrescriptionRefills.EligibleQuery(db).Where(a => prescriptions.Select(p => p.Id).Contains(a.PrescriptionId!.Value));
-        var reminder = await db.RedStarReminders.Where(r => r.Id == id && r.PortalUserIdBlindIndex == accountIndex &&
-            ownedIds.Contains(r.Appointment.Enrollment.PatientId) && r.Channel == RedStarReminderChannel.InApp &&
-            r.State == RedStarDeliveryState.Delivered && r.AppointmentRevision == r.Appointment.Revision &&
-            refills.Select(a => a.Id).Contains(r.AppointmentId)).AsTracking().SingleOrDefaultAsync(token);
+        var reminders = await patients.NotificationsAsync(Actor, token);
+        var reminder = await reminders.Where(r => r.Id == id).AsTracking().SingleOrDefaultAsync(token);
         if (reminder is null) return NotFound();
         reminder.IsRead = true;
         await RedStarAuditTrail.RecordAsync(db, Actor, "ReadReminder", "Notification/" + id, token);
-        return RedirectToAction(nameof(Index));
+        if (Request.Headers.Accept.ToString().Contains("application/json", StringComparison.OrdinalIgnoreCase))
+            return Json(new { unreadCount = await reminders.CountAsync(r => !r.IsRead, token) });
+        return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl!) : RedirectToAction(nameof(Index));
     }
 
     private async Task<IQueryable<RedStarAppointment>> ConfirmableAppointmentsAsync(ApplicationDbContext database, int id, CancellationToken token)

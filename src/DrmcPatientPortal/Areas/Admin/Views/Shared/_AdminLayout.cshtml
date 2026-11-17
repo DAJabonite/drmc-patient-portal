@@ -104,6 +104,8 @@
                     </div>
                 </div>
             </header>
+            <div data-live-status role="status" aria-live="polite" class="visually-hidden small px-3"
+                 data-loading="@Loc["List_Loading"]" data-updated="@Loc["List_Updated"]" data-error="@Loc["List_Error"]"></div>
             <main id="admin-main" class="admin-main" tabindex="-1">
                 @RenderBody()
             </main>
@@ -112,6 +114,7 @@
     <script src="~/lib/jquery/jquery.min.js"></script>
     <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/live-list.js" asp-append-version="true"></script>
     <script src="~/js/admin.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
